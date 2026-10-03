@@ -1,4 +1,4 @@
-import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import { getRuntime } from '@magmacomputing/tempo/support';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
@@ -45,7 +45,7 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 		(installedClass as any).dialectsRegistry = rt.dialects;
 
 		// 2. Static tools on Tempo.dialects
-		if (!Object.hasOwn(installedClass, 'dialects')) {
+		if (!hasOwn(installedClass, 'dialects')) {
 			const staticNamespace: DialectsStaticNamespace = {
 				parse: (input: string, mask: string, dialectOrOptions?: string | any, options?: any): Tempo => {
 					const opts = typeof dialectOrOptions === 'object' && dialectOrOptions !== null ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
@@ -77,7 +77,7 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 		}
 
 		// 3. Instance namespace t.dialects
-		if (!Object.hasOwn(installedClass.prototype, 'dialects')) {
+		if (!hasOwn(installedClass.prototype, 'dialects')) {
 			Object.defineProperty(installedClass.prototype, 'dialects', {
 				get: function (this: Tempo): DialectsInstanceNamespace {
 					const self = this;

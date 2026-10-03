@@ -93,13 +93,34 @@ function matchesRule(url: string, rule: string | RegExp | ((url: string) => bool
 		return rule.test(url);
 
 	if (isString(rule)) {
-		if (url.startsWith(rule)) return true;
 		try {
-			const parsed = new URL(url, 'http://localhost');
-			if (parsed.origin === rule || parsed.host === rule || parsed.hostname === rule) return true;
-			if (parsed.pathname.startsWith(rule)) return true;
+			const parsedUrl = new URL(url, 'http://localhost');
+
+			// 1. If rule is a relative path prefix like '/api/'
+			if (rule.startsWith('/')) {
+				return parsedUrl.pathname.startsWith(rule);
+			}
+
+			// 2. If rule specifies an absolute origin or URL with scheme
+			if (rule.includes('://') || rule.startsWith('//')) {
+				const parsedRule = new URL(rule, 'http://localhost');
+				if (parsedUrl.origin !== parsedRule.origin) {
+					return false;
+				}
+				// If rule specifies only an origin, require exact origin match without leaking into other paths
+				if (parsedRule.pathname === '/' || parsedRule.pathname === '') {
+					return true;
+				}
+				// If rule specifies an explicit path, enforce path prefix matching
+				return parsedUrl.pathname.startsWith(parsedRule.pathname);
+			}
+
+			// 3. If rule is a bare hostname or host (e.g. 'api.trusted.com')
+			if (parsedUrl.host === rule || parsedUrl.hostname === rule) {
+				return true;
+			}
 		} catch {
-			return url.includes(rule);
+			return false;
 		}
 	}
 	return false;
@@ -113,7 +134,8 @@ function isUrlAllowed(
 	interceptFetch?: NtpFetchFilter,
 	trustedOrigins?: NtpOriginMatcher | readonly (string | RegExp)[],
 ): boolean {
-	if (!interceptFetch) return false;
+	if (interceptFetch === false) return false;
+	if (!interceptFetch && !trustedOrigins) return false;
 
 	// 1. If explicit trustedOrigins is specified, it strictly dictates allowed requests
 	if (trustedOrigins) {
@@ -202,8 +224,9 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			};
 		}
 
-		// 3. Setup passive fetch interception if enabled
-		if (options.interceptFetch && !_fetchPatched && isFunction(globalThis.fetch)) {
+		// 3. Setup passive fetch interception if enabled (or activated via trustedOrigins)
+		const shouldIntercept = options.interceptFetch !== false && (Boolean(options.interceptFetch) || Boolean(options.trustedOrigins));
+		if (shouldIntercept && !_fetchPatched && isFunction(globalThis.fetch)) {
 			_fetchPatched = true;
 			_originalFetch = globalThis.fetch;
 			const originalFetch = globalThis.fetch;

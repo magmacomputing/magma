@@ -74,6 +74,15 @@ export const isReference = (val: any): val is object =>
 	!isPrimitive(val);
 
 /**
+ * Determines whether an object has a property with the specified name as its own property.
+ */
+export function hasOwn<K extends PropertyKey>(obj: unknown, key: K): obj is Record<K, unknown> {
+	if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function'))
+		return false;
+	return Object.hasOwn(obj, key);
+}
+
+/**
  * Checks if the given argument is an object with a Symbol.toStringTag property.
  * @internal
  */

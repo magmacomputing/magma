@@ -11,7 +11,7 @@ import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
@@ -665,7 +665,7 @@ export class Tempo {
 
 					registerPlugin(plugin, state);
 					const pluginName = (plugin as any).name;
-					const existingConfigOpts = (isString(pluginName) && pluginName.length > 0)
+					const existingConfigOpts = isText(pluginName)
 						? (state.config.pluginOptions?.[pluginName] ?? state.config.plugins?.[pluginName])
 						: undefined;
 					const resolvedOptions = {
@@ -674,7 +674,7 @@ export class Tempo {
 						...(isObject(callSiteOptions) ? callSiteOptions : {})
 					};
 
-					if (isString(pluginName) && pluginName.length > 0 && pluginName !== 'anonymous' && !isEmpty(resolvedOptions)) {
+					if (isText(pluginName) && pluginName !== 'anonymous' && !isEmpty(resolvedOptions)) {
 						state.config.pluginOptions = {
 							...(state.config.pluginOptions ?? {}),
 							[pluginName]: resolvedOptions
@@ -1617,7 +1617,7 @@ export class Tempo {
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
 		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
 		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
-		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
+		else if (isString(this.#tempo) && isText(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
@@ -1877,14 +1877,14 @@ export class Tempo {
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): Readonly<t.GeoConfig> | undefined {
-		if ('geo' in this.#memo) return this.#memo.geo;
+		if (hasOwn(this.#memo, 'geo')) return this.#memo.geo;
 		const res = this.#local.config.geo
 			?? (this as any)[$Internal]().config.geo
 			?? getStashedGeo();
 		return (this.#memo.geo = res ? Object.freeze({ ...res }) : undefined);
 	}
 	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
-		if ('sphere' in this.#memo) return this.#memo.sphere;
+		if (hasOwn(this.#memo, 'sphere')) return this.#memo.sphere;
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
@@ -2169,8 +2169,8 @@ export class Tempo {
 			logError(msg, this.#local.config);
 			return undefined as any;
 		}
-		if (isObject(res) && 'value' in res) {
-			return (res as any).value ?? (undefined as any);
+		if (hasOwn(res, 'value')) {
+			return res.value ?? (undefined as any);
 		}
 		return res;
 	}

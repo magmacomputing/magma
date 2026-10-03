@@ -4,7 +4,7 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isObject, isString, isDefined, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isNumber, isObject, isString, isText, isDefined, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 const offsetCache = new Map<string, { jan: number; jul: number }>();
@@ -218,8 +218,8 @@ export function getTemporalIds(tzOrZdt?: Temporal.ZonedDateTime | Temporal.TimeZ
 	const tzStr = toId(rawTz);
 	const calStr = toId(rawCal);
 
-	const tzId = (tzStr.trim().length > 0 && tzStr !== '[object Object]' && tzStr !== 'undefined') ? tzStr : fallbackTz;
-	const calId = (calStr.trim().length > 0 && calStr !== '[object Object]' && calStr !== 'undefined') ? calStr : 'iso8601';
+	const tzId = (isText(tzStr) && tzStr !== '[object Object]' && tzStr !== 'undefined') ? tzStr : fallbackTz;
+	const calId = (isText(calStr) && calStr !== '[object Object]' && calStr !== 'undefined') ? calStr : 'iso8601';
 
 	return [tzId, calId];
 }

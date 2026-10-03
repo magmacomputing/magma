@@ -209,6 +209,7 @@ export type EnumMethodKeys =
 	| 'entries'
 	| 'invert'
 	| 'has'
+	| 'get'
 	| 'includes'
 	| 'keyOf'
 	| 'forEach'

@@ -14,6 +14,8 @@ import type * as t from '../tempo.type.js';
 
 const BRACES_REGEX = new RegExp(Match.braces, 'g');
 const RE_NAMED_CAPTURE_GROUP = /\(\?<([a-zA-Z][\w]*)>/g;
+const RE_NON_IDENTIFIER_CHARS = /[^A-Za-z0-9_$]/g;
+const RE_IDENTIFIER_START = /^[A-Za-z_$]/;
 
 export interface PatternCompilerOptions {
 	state: t.Internal.State;
@@ -86,8 +88,8 @@ export class PatternCompiler {
 				}
 
 				if (res && name.includes('.')) {										// wrap dotted extensions for identification
-					let safeName = name.trim().replace(/[^A-Za-z0-9_$]/g, '_');
-					if (!/^[A-Za-z_$]/.test(safeName)) safeName = `_${safeName}`;
+					let safeName = name.trim().replace(RE_NON_IDENTIFIER_CHARS, '_');
+					if (!RE_IDENTIFIER_START.test(safeName)) safeName = `_${safeName}`;
 					if (!res.startsWith(`(?<${safeName}>`))
 						res = `(?<${safeName}>${res})`;
 				}
@@ -140,7 +142,7 @@ export class PatternCompiler {
 						.forEach(w => words.add(w));
 				});
 				if (words.size > 0) {
-					const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+					const escapedWords = Array.from(words).map(w => Match.escape(w));
 					escapedWords.sort((a, b) => b.length - a.length);
 					const wordPattern = escapedWords.join('|');
 					modPattern = `[\\+\\-\\<\\>][\\=]?|${wordPattern}`;

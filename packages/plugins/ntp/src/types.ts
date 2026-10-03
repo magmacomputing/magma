@@ -45,12 +45,11 @@ export interface NtpSyncOptions {
 
 	/**
 	 * Optional trusted origin(s), URL prefixes, regex patterns, or predicate to restrict passive fetch interception.
-	 * Recommended when `interceptFetch: true` is enabled in applications making external or third-party requests.
+	 * Automatically enables `interceptFetch` unless `interceptFetch: false` is explicitly specified.
 	 *
 	 * @example
 	 * ```ts
 	 * Tempo.use(NtpPlugin, {
-	 *   interceptFetch: true,
 	 *   trustedOrigins: ['https://api.mycompany.com', '/api/']
 	 * });
 	 * ```

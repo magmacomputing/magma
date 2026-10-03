@@ -121,6 +121,25 @@ export function ownValues<T extends Obj>(json: T, all = false): ValueOf<T>[] {
 	return ownEntries(json, all).map(([_, value]) => value as ValueOf<T>);
 }
 
+/**
+ * Checks whether an object possesses a specific own property, unwrapping Proxies if present.
+ * Safe against null, undefined, and non-object primitives.
+ * 
+ * @param obj - The target object to inspect
+ * @param key - The property key to test
+ * @returns True if the unwrapped target possesses key as an own property
+ * @example
+ * ```ts
+ * if (hasOwn(config, 'timeZone')) { ... }
+ * ```
+ */
+export function hasOwn(obj: unknown, key: PropertyKey): boolean {
+	if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function'))
+		return false;
+
+	return Object.hasOwn(unwrap(obj as object), key);
+}
+
 const RE_BRACKET_PATH = /\[([^\[\]]*)\]/g;
 
 /**

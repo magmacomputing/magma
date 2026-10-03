@@ -1,5 +1,5 @@
 import { Tempo, Interval } from '@magmacomputing/tempo';
-import { asText, isText, isString, isNumber, isReference, isFunction, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
+import { asText, isText, isString, isNumber, isReference, isFunction, hasOwn, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -170,7 +170,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 			if (prop === 'toJSON')
 				return (inspectableMeta as any).toJSON;
 
-			if (Object.hasOwn(inspectableMeta, prop))
+			if (hasOwn(inspectableMeta, prop))
 				return (inspectableMeta as any)[prop];
 
 			if (prop === 'constructor')
@@ -189,7 +189,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 		},
 		has(target, prop) {
 			if (prop === CUSTOM_INSPECT_SYMBOL || prop === 'toJSON') return true;
-			if (Object.hasOwn(inspectableMeta, prop)) return true;
+			if (hasOwn(inspectableMeta, prop)) return true;
 			return Reflect.has(interval, prop);
 		},
 		getOwnPropertyDescriptor(target, prop) {
@@ -201,7 +201,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 					enumerable: false,
 				};
 			}
-			if (Object.hasOwn(inspectableMeta, prop)) {
+			if (hasOwn(inspectableMeta, prop)) {
 				return {
 					value: (inspectableMeta as any)[prop],
 					writable: false,

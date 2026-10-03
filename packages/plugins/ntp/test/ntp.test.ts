@@ -183,6 +183,11 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			expect(Tempo.ntp.isCalibrated).toBe(false);
 			expect(Tempo.ntp.drift.sampleCount).toBe(0);
 
+			// Lookalike host call: should NOT calibrate
+			await globalThis.fetch('https://api.trusted.com.attacker.com/steal');
+			expect(Tempo.ntp.isCalibrated).toBe(false);
+			expect(Tempo.ntp.drift.sampleCount).toBe(0);
+
 			// 2. Trusted origin call: SHOULD calibrate
 			await globalThis.fetch('https://api.trusted.com/data');
 			expect(Tempo.ntp.isCalibrated).toBe(true);
@@ -220,6 +225,60 @@ describe('NtpPlugin & ClockDriftEngine', () => {
 			await globalThis.fetch('https://api.other.com/safe-zone/time');
 			expect(Tempo.ntp.isCalibrated).toBe(true);
 			expect(Tempo.ntp.drift.sampleCount).toBe(1);
+
+			Tempo.ntp.dispose();
+		});
+
+		it('automatically activates fetch interception when trustedOrigins is provided without interceptFetch', async () => {
+			Tempo.ntp.dispose();
+
+			const mockEpoch = Date.now() + 1500;
+			globalThis.fetch = vi.fn().mockImplementation(async () => {
+				return {
+					status: 200,
+					headers: new Headers({
+						'Server-Timing': `clock=${mockEpoch}`,
+					}),
+				} as any;
+			});
+
+			(NtpPlugin as any).install(Tempo, {
+				trustedOrigins: ['https://auto-active.example.com'],
+			});
+
+			// Untrusted origin: not calibrated
+			await globalThis.fetch('https://other.com/api');
+			expect(Tempo.ntp.isCalibrated).toBe(false);
+
+			// Trusted origin: auto-intercepts and calibrates
+			await globalThis.fetch('https://auto-active.example.com/api');
+			expect(Tempo.ntp.isCalibrated).toBe(true);
+			expect(Tempo.ntp.drift.sampleCount).toBe(1);
+
+			Tempo.ntp.dispose();
+		});
+
+		it('respects interceptFetch: false even when trustedOrigins is provided', async () => {
+			Tempo.ntp.dispose();
+
+			const mockEpoch = Date.now() + 1500;
+			globalThis.fetch = vi.fn().mockImplementation(async () => {
+				return {
+					status: 200,
+					headers: new Headers({
+						'Server-Timing': `clock=${mockEpoch}`,
+					}),
+				} as any;
+			});
+
+			(NtpPlugin as any).install(Tempo, {
+				interceptFetch: false,
+				trustedOrigins: ['https://auto-active.example.com'],
+			});
+
+			// With interceptFetch: false, fetch wrapper is not active and no calibration occurs
+			await globalThis.fetch('https://auto-active.example.com/api');
+			expect(Tempo.ntp.isCalibrated).toBe(false);
 
 			Tempo.ntp.dispose();
 		});

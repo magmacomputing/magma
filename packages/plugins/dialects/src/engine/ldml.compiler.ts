@@ -1,4 +1,4 @@
-import { pad, suffix, WeakCache } from '@magmacomputing/tempo/library';
+import { pad, suffix, isNumber, WeakCache } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 
 type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
@@ -369,11 +369,7 @@ export function compileLdmlParser(mask: string): RegExp {
 /** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonth(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	if (enums.MONTH && (enums.MONTH as any)[cap]) return (enums.MONTH as any)[cap];
-	if (enums.MONTHS && (enums.MONTHS as any)[cap]) return (enums.MONTHS as any)[cap];
-	const short3 = cap.slice(0, 3);
-	if (enums.MONTH && (enums.MONTH as any)[short3]) return (enums.MONTH as any)[short3];
-	return undefined;
+	return enums.MONTH.get(cap) ?? enums.MONTHS.get(cap) ?? enums.MONTH.get(cap.slice(0, 3));
 }
 
 /**

@@ -226,9 +226,8 @@ class TickerInstance implements Ticker.Descriptor {
 
 		if (cb) this.#reactive.on('data', (t) => cb(t, () => this.stop()));
 
-		const durationKeys = new Set(Object.keys(enums.DURATIONS));
 		for (const [key, val] of Object.entries(rest))
-			if (isDefined(val) && (durationKeys.has(key) || key in enums.ELEMENT || key.startsWith('#')))
+			if (isDefined(val) && (key.startsWith('#') || enums.DURATIONS.has(key) || enums.ELEMENT.has(key)))
 				this.#payload[key] = val;
 
 		const isSeed = isDefined(rawOptions.seed);

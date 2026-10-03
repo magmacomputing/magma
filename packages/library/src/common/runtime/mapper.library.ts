@@ -1,5 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isText, isFunction, isDefined, isCallable, isBoolean } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isText, isFunction, isDefined, isCallable, isBoolean, hasOwn } from '#library/assertion.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 
@@ -236,10 +236,10 @@ const assembleGeoConfig = (
 		latitude: nLat ?? lat,
 		longitude: nLng ?? lng,
 		...(sphere ? { sphere } : {}),
-		...(isString(meta?.city) && !isEmpty(meta.city) ? { city: meta.city.trim() } : {}),
-		...(isString(meta?.country) && !isEmpty(meta.country) ? { country: meta.country.trim() } : {}),
+		...(isText(meta?.city) ? { city: meta.city.trim() } : {}),
+		...(isText(meta?.country) ? { country: meta.country.trim() } : {}),
 		...(elevation !== undefined ? { elevation } : {}),
-		...(isString(meta?.timezone) && !isEmpty(meta.timezone) ? { timezone: meta.timezone.trim() } : {}),
+		...(isText(meta?.timezone) ? { timezone: meta.timezone.trim() } : {}),
 	};
 };
 
@@ -325,7 +325,7 @@ export const coerceGeo = (input?: any): GeoConfig | undefined => {
  * @internal
  */
 const resolveCacheKey = (keyOrOpts?: string | Record<string, any>): string => {
-	if (isString(keyOrOpts) && !isEmpty(keyOrOpts)) {
+	if (isText(keyOrOpts)) {
 		const trimmed = keyOrOpts.trim();
 		return (trimmed.startsWith(MAP_KEY))
 			? trimmed
@@ -333,11 +333,11 @@ const resolveCacheKey = (keyOrOpts?: string | Record<string, any>): string => {
 	}
 	if (keyOrOpts && isObject(keyOrOpts)) {
 		const provider = keyOrOpts.provider ?? activeGeoProvider;
-		const providerPrefix = provider && isString(provider.name) && !isEmpty(provider.name)
+		const providerPrefix = provider && isText(provider.name)
 			? `provider:${provider.name}`
 			: undefined;
 		const k = keyOrOpts.key ?? keyOrOpts.ip ?? keyOrOpts.query;
-		if (isString(k) && !isEmpty(k)) {
+		if (isText(k)) {
 			const trimmedKey = k.trim();
 			return providerPrefix
 				? `${MAP_KEY}:${providerPrefix}:${trimmedKey}`
@@ -346,7 +346,7 @@ const resolveCacheKey = (keyOrOpts?: string | Record<string, any>): string => {
 		if (providerPrefix) {
 			return `${MAP_KEY}:${providerPrefix}`;
 		}
-	} else if (activeGeoProvider && isString(activeGeoProvider.name) && !isEmpty(activeGeoProvider.name)) {
+	} else if (activeGeoProvider && isText(activeGeoProvider.name)) {
 		return `${MAP_KEY}:provider:${activeGeoProvider.name}`;
 	}
 	return MAP_KEY;
@@ -613,21 +613,21 @@ export const getSpatialReverseCache = (): BoundedCache<string, GeoConfig> => rev
  */
 export const getSpatialCacheKey = (lat: number, lng: number, sourceOrOpts?: string | Record<string, any>): string => {
 	const bucket = `${lat.toFixed(2)},${lng.toFixed(2)}`;
-	if (isString(sourceOrOpts) && !isEmpty(sourceOrOpts)) {
+	if (isText(sourceOrOpts))
 		return `${bucket}:${sourceOrOpts.trim()}`;
-	}
+
 	if (isObject(sourceOrOpts)) {
-		const hasExplicitProvider = Object.hasOwn(sourceOrOpts, 'provider');
+		const hasExplicitProvider = hasOwn(sourceOrOpts, 'provider');
 		const provider = hasExplicitProvider ? sourceOrOpts.provider : activeGeoProvider;
-		const providerName = provider && isString(provider.name) && !isEmpty(provider.name) ? provider.name.trim() : undefined;
-		const rawEndpoint = isString(sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint) && !isEmpty(sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint)
+		const providerName = provider && isText(provider.name) ? provider.name.trim() : undefined;
+		const rawEndpoint = isText(sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint)
 			? (sourceOrOpts.reverseEndpoint ?? sourceOrOpts.reverseGeoEndpoint).trim()
 			: undefined;
 		const endpoint = rawEndpoint && isValidGeoEndpoint(rawEndpoint) ? rawEndpoint : undefined;
 		if (providerName && endpoint) return `${bucket}:${providerName}:${endpoint}`;
 		if (providerName) return `${bucket}:${providerName}`;
 		if (endpoint) return `${bucket}:${endpoint}`;
-	} else if (activeGeoProvider && isString(activeGeoProvider.name) && !isEmpty(activeGeoProvider.name)) {
+	} else if (activeGeoProvider && isText(activeGeoProvider.name)) {
 		return `${bucket}:${activeGeoProvider.name.trim()}`;
 	}
 	return bucket;
@@ -667,8 +667,8 @@ export async function reverseGeocode(
 		}
 	}
 
-	const hasExplicitProvider = isObject(opts) && Object.hasOwn(opts, 'provider');
-	const provider = hasExplicitProvider ? opts.provider : activeGeoProvider;
+	const hasExplicitProvider = hasOwn(opts, 'provider');
+	const provider = hasExplicitProvider ? opts?.provider : activeGeoProvider;
 	if (provider && isFunction(provider.reverseGeocode)) {
 		try {
 			const res = await provider.reverseGeocode(coerced, opts);

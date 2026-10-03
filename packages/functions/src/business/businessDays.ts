@@ -6,6 +6,7 @@ import {
 	isDefined,
 	isNumber,
 	isUndefined,
+	hasOwn,
 	type DateInput,
 	type Temporal,
 } from '../support/index.js';
@@ -59,7 +60,7 @@ interface NormalizedBusinessDayOptions extends BusinessDayOptions {
 
 function normalizeOptions(options?: BusinessDayOptions): NormalizedBusinessDayOptions | undefined {
 	if (!options) return undefined;
-	if (options.holidays && !('_holidaySet' in (options as any))) {
+	if (options.holidays && !hasOwn(options, '_holidaySet')) {
 		return {
 			...options,
 			_holidaySet: buildHolidaySet(options.holidays),

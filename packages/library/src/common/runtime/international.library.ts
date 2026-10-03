@@ -1,12 +1,13 @@
 import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale, hasOwn } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import type { LooseUnion } from '#library/type.library.js';
 
 const RE_UNDERSCORE = /_/g;
 const RE_LOCALE_CLEANSE = /[.@]/;
+const RE_REGION_SUBTAG = /^[a-zA-Z]{2}$|^\d{3}$/;
 
 export type LocaleInput = string | Intl.Locale | undefined;
 export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
@@ -16,7 +17,7 @@ export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
  * @internal 
  */
 export const hasIntl = (feature?: LooseUnion<keyof typeof Intl>): boolean =>
-	typeof Intl !== 'undefined' && (!feature || (Object.hasOwn(Intl, feature) && isCallable((Intl as Record<string, unknown>)[feature])));
+	typeof Intl !== 'undefined' && (!feature || (hasOwn(Intl, feature) && isCallable((Intl as Record<string, unknown>)[feature])));
 
 /**
  * Cleanses a raw locale string by trimming whitespace, converting POSIX underscores
@@ -302,7 +303,7 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 	}
 	const region = loc?.region
 		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().region : undefined)
-		?? regionSubtags.find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase();
+		?? regionSubtags.find((subtag) => RE_REGION_SUBTAG.test(subtag))?.toUpperCase();
 	const script = loc?.script
 		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().script : undefined);
 

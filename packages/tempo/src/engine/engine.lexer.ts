@@ -1,11 +1,15 @@
 import '#library/temporal.polyfill.js';
-import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant, isNumber, RE_COMBINING_MARKS } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
 import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
+
+const RE_LEADING_DIGITS = /^(\d+)/;
+const RE_ERA_BCE = /b\.?c\.?(?:e\.?)?|bc/i;
+const RE_ZONE_OFFSET = /^([+-])(\d{1,2})(?::?(\d{2}))?$/;
 
 /**
  * Internal Lexer helpers for the Tempo parsing engine.  
@@ -72,7 +76,7 @@ export function resolveNth(str: any): number {
 		case 'fourth': case '4th': return 4;
 		case 'fifth': case '5th': return 5;
 		default: {
-			const match = low.match(/^(\d+)/);
+			const match = low.match(RE_LEADING_DIGITS);
 			if (match) {
 				const val = parseInt(match[1], 10);
 				if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
@@ -127,10 +131,10 @@ export function prefix(str: any): any {
 /** resolve a relative modifier (+, -, <, >, =, etc) */
 export function normalizeModifier(mod: string, config: any = {}): string {
 	if (mod && config?.registry?.modifiers) {
-		const norm = mod.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+		const norm = mod.toLowerCase().trim().normalize('NFD').replace(RE_COMBINING_MARKS, "");
 		for (const [sym, words] of Object.entries(config.registry.modifiers)) {
 			if (asArray(words as string[])
-				.map(w => w.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ""))
+				.map(w => w.toLowerCase().trim().normalize('NFD').replace(RE_COMBINING_MARKS, ""))
 				.includes(norm)) {
 				return sym;
 			}
@@ -190,9 +194,9 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
 	const nthVal = resolveNth(nthStr);
 	const weekday = prefix(wkd);
-	const targetWkd = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
+	const targetWkd = enums.WEEKDAY.get(weekday) ?? enums.WEEKDAYS.get(weekday);
 
-	if (!Number.isFinite(targetWkd)) return undefined;
+	if (!isNumber(targetWkd)) return undefined;
 
 	let fallbackAnchor = config?.anchor;
 	if (isTempo(fallbackAnchor)) fallbackAnchor = fallbackAnchor.toDateTime();
@@ -269,9 +273,9 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 
 	const weekday = prefix(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
-	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
+	const offset = enums.WEEKDAY.get(weekday) ?? enums.WEEKDAYS.get(weekday);
 
-	if (!Number.isFinite(offset)) {
+	if (!isNumber(offset)) {
 		logError(`Invalid weekday token: "${wkd}"`, config);
 		return dateTime;
 	}
@@ -394,7 +398,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 			logError(`[Tempo#lexer] Cannot resolve era '${era}' without an explicit year`, config);
 			return dateTime;
 		}
-		const isBCE = /b\.?c\.?(?:e\.?)?|bc/i.test(era);
+		const isBCE = RE_ERA_BCE.test(era);
 		if (isBCE) {
 			yy = String(-(Number(yy) - 1));
 		}
@@ -529,7 +533,7 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	let zone: string | undefined = brk || tzd;
 
 	if (zone) {
-		const match = zone.match(/^([+-])(\d{1,2})(?::?(\d{2}))?$/);
+		const match = zone.match(RE_ZONE_OFFSET);
 		if (match)
 			zone = `${match[1]}${match[2].padStart(2, '0')}:${match[3] ?? '00'}`;
 	}

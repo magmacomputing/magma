@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
@@ -35,8 +35,20 @@ declare module '../tempo.class.js' {
 	}
 }
 
-const REGEX_DIGITS = /^\d+$/;
-const REGEX_SIGNED_DIGITS = /^-?\d+$/;
+const RE_SIGNED_DIGITS = /^-?\d+$/;
+const RE_H12_TAG = /\{h12[^}]*\}/;
+const RE_H12_GLOBAL = /\{h12[^}]*\}/g;
+const RE_MI_GLOBAL = /\{mi[^}]*\}/g;
+const RE_SS_GLOBAL = /\{ss[^}]*\}/g;
+const RE_MS_GLOBAL = /\{ms[^}]*\}/g;
+const RE_US_GLOBAL = /\{us[^}]*\}/g;
+const RE_NS_GLOBAL = /\{ns[^}]*\}/g;
+const RE_FF_GLOBAL = /\{ff[^}]*\}/g;
+const RE_SPACE_MODIFIER = /:space/g;
+const RE_FORMAT_BRACES = new RegExp(Match.formatBraces.source, 'g');
+const RE_DOT = /\./g;
+const RE_HASH_PREFIX = /^#/;
+const RE_COLON = /:/g;
 
 /**
  * Resolves dot-delimited namespace tokens (e.g. '{geo.city}', '{custom.tag.name}')
@@ -229,7 +241,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	// auto-meridiem: if {h12} is present and {mer} is absent, append it after the last time component
 	if (template.includes('{h12') && !template.includes('{mer')) {
-		const hMatch = template.match(/\{h12[^}]*\}/);
+		const hMatch = template.match(RE_H12_TAG);
 		let merMod = '';
 		let skipMeridiem = false;
 		if (hMatch) {
@@ -248,21 +260,21 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				const matches = [...template.matchAll(rgx)];
 				return matches.at(-1)?.index ?? -1;
 			}
-			const hIndex = lastSearch(/\{h12[^}]*\}/g);
-			const miIndex = lastSearch(/\{mi[^}]*\}/g);
-			const ssIndex = lastSearch(/\{ss[^}]*\}/g);
+			const hIndex = lastSearch(RE_H12_GLOBAL);
+			const miIndex = lastSearch(RE_MI_GLOBAL);
+			const ssIndex = lastSearch(RE_SS_GLOBAL);
 			const subIndex = Math.max(
-				lastSearch(/\{ms[^}]*\}/g),
-				lastSearch(/\{us[^}]*\}/g),
-				lastSearch(/\{ns[^}]*\}/g),
-				lastSearch(/\{ff[^}]*\}/g)
+				lastSearch(RE_MS_GLOBAL),
+				lastSearch(RE_US_GLOBAL),
+				lastSearch(RE_NS_GLOBAL),
+				lastSearch(RE_FF_GLOBAL)
 			);
 			const index = Math.max(hIndex, miIndex, ssIndex, subIndex);
 
 			if (index !== -1) {
 				const end = template.indexOf('}', index) + 1;
 				const prefix = merMod.includes(':space') ? ' ' : '';
-				const cleanMod = merMod.replace(/:space/g, '');
+				const cleanMod = merMod.replace(RE_SPACE_MODIFIER, '');
 				template = template.slice(0, end) + `${prefix}{mer${cleanMod}}` + template.slice(end);
 			}
 		}
@@ -270,7 +282,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const li = getLI(canonicalLocales(config?.locale)[0]);
 
-	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
+	const result = template.replace(RE_FORMAT_BRACES, (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
 		const normMods = modifiers.map(m => m.toLowerCase());
 		if (token === 'tzd') token = 'tz';											// @deprecated, will remove in v5.0.0
@@ -451,19 +463,19 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'raw':
-					if (REGEX_DIGITS.test(String(res)))
+					if (RE_DIGITS.test(String(res)))
 						res = BigInt(String(res)).toString();
 					break;
 				case 'dots': {
 					if (token === 'mer' || token === 'era')
-						res = String(res).replace(/\./g, '').split('').join('.') + '.';
+						res = String(res).replace(RE_DOT, '').split('').join('.') + '.';
 					break;
 				}
 				case 'locale': {
 					try {
 						const lang = getLanguage(config?.locale);
 						const dict = config?.registry?.locales?.[lang];
-						const tokenPath = token.replace(/^#/, '').split('.');
+						const tokenPath = token.replace(RE_HASH_PREFIX, '').split('.');
 						const valStr = canonicalTerm ?? String(res);
 
 						// 1. Check user-defined registry.locales (hierarchical, leaf, or flat)
@@ -538,12 +550,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						let off = normMods.includes('short')
 							? (zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset)
 							: zdt.offset;
-						if (normMods.includes('compact')) off = off.replace(/:/g, '');
+						if (normMods.includes('compact')) off = off.replace(RE_COLON, '');
 						res = off;
 					}
 					break;
 				case 'compact':
-					res = String(res).replace(/:/g, '');
+					res = String(res).replace(RE_COLON, '');
 					break;
 				case 'offsetshort': // @deprecated, will remove in v5.0.0
 					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
@@ -573,10 +585,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				default: {
-					if (REGEX_DIGITS.test(mod)) {
+					if (isDigits(mod)) {
 						const width = parseInt(mod, 10);
 						const strVal = String(res);
-						if (REGEX_SIGNED_DIGITS.test(strVal)) {
+						if (RE_SIGNED_DIGITS.test(strVal)) {
 							if (token === 'ff') {
 								res = width > 0 ? strVal.slice(0, width) : strVal;
 							} else if (width > 0) {

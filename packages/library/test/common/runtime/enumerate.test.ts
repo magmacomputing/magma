@@ -55,8 +55,39 @@ describe('enumify stealth proxy', () => {
 
 		expect(MyEnum.keys()).toContain(sym);
 		expect(MyEnum.has(sym)).toBe(true);
-		expect((MyEnum as any)[sym]).toBe('symbol-value');
 		expect(MyEnum.entries().find(([key]) => key === sym)).toBeDefined();
+	});
+
+	it('should safely retrieve values via get() without prototype or method bleed', () => {
+		const MyEnum = enumify({ A: 1, Zero: 0, False: false, Empty: '', Undef: undefined, Null: null });
+		expect(MyEnum.get('A')).toBe(1);
+		expect(MyEnum.get('Zero')).toBe(0);
+		expect(MyEnum.get('False')).toBe(false);
+		expect(MyEnum.get('Empty')).toBe('');
+		expect(MyEnum.get('Undef')).toBeUndefined();
+		expect(MyEnum.has('Undef')).toBe(true);
+
+		// Non-existent keys
+		expect(MyEnum.get('NonExistent')).toBeUndefined();
+		expect(MyEnum.has('NonExistent')).toBe(false);
+
+		// Prototype and method bleed protection
+		expect(MyEnum.get('has')).toBeUndefined();
+		expect(MyEnum.get('get')).toBeUndefined();
+		expect(MyEnum.get('keys')).toBeUndefined();
+		expect(MyEnum.get('toString')).toBeUndefined();
+		expect(MyEnum.get('valueOf')).toBeUndefined();
+	});
+
+	it('should support get() on extended enums across prototype chain', () => {
+		const BASE = enumify({ A: 1, B: 2 });
+		const EXTENDED = BASE.extend({ C: 3 });
+
+		expect(EXTENDED.get('A')).toBe(1);
+		expect(EXTENDED.get('B')).toBe(2);
+		expect(EXTENDED.get('C')).toBe(3);
+		expect(EXTENDED.get('D')).toBeUndefined();
+		expect(EXTENDED.get('has')).toBeUndefined();
 	});
 
 	describe('caller-context branching', () => {
