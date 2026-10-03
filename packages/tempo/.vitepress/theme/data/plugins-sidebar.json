@@ -83,6 +83,24 @@
     ]
   },
   {
+    "text": "Batch Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/batch.index"
+      },
+      {
+        "text": "Parallel Worker Pool & SharedArrayBuffer Architecture",
+        "link": "/doc/9-plugins/batch.worker-architecture"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/batch.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Celestial Plugin",
     "collapsed": true,
     "items": [
@@ -105,6 +123,28 @@
       {
         "text": "Production Use Cases & Architectural Patterns",
         "link": "/doc/9-plugins/celestial.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Dialects Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/dialects.index"
+      },
+      {
+        "text": "Migration & Legacy Compatibility",
+        "link": "/doc/9-plugins/dialects.migration-and-compatibility"
+      },
+      {
+        "text": "Token Specification & Cross-Ecosystem Matrix",
+        "link": "/doc/9-plugins/dialects.token-specification"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/dialects.use-cases-and-patterns"
       }
     ]
   },
@@ -179,6 +219,20 @@
     ]
   },
   {
+    "text": "Snap Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/snap.index"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/snap.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Spatial Plugin",
     "collapsed": true,
     "items": [
@@ -201,6 +255,24 @@
       {
         "text": "Production Use Cases & Architectural Patterns",
         "link": "/doc/9-plugins/spatial.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Sync Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/sync.index"
+      },
+      {
+        "text": "Lock-Free Atomics & Memory Architecture",
+        "link": "/doc/9-plugins/sync.atomic-architecture"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/sync.use-cases-and-patterns"
       }
     ]
   },
@@ -239,24 +311,8 @@
         "link": "/doc/9-plugins/astro.index"
       },
       {
-        "text": "Batch (Multi-Threaded SAB)",
-        "link": "/doc/9-plugins/batch.index"
-      },
-      {
-        "text": "Dialects (Luxon, strftime, Moment)",
-        "link": "/doc/9-plugins/dialects.index"
-      },
-      {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"
-      },
-      {
-        "text": "Snap (Block Rounding)",
-        "link": "/doc/9-plugins/snap.index"
-      },
-      {
-        "text": "Sync (Thread Synchronization)",
-        "link": "/doc/9-plugins/sync.index"
       }
     ]
   }

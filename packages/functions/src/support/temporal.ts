@@ -54,6 +54,12 @@ export interface ResolvedDateParts {
 export const ISO_CALENDAR_DATE_REGEX = /^(?:([+-]\d{4,6})|(\d{4}))(?:-(\d{2})(?:-(\d{2}))?)?(?:[T\s]\d{2}(?::\d{2}(?::\d{2}(?:\.\d+)?)?)?(?:Z|[+-]\d{2}(?::?\d{2})?)?(?:\[[A-Za-z0-9_/+-]+\])?)?$/;
 
 /**
+ * Regular expression matching ISO 8601 offset suffixes (+HH:MM, -HH:MM, +HHMM, -HH, or Z).
+ * @internal
+ */
+export const ISO_OFFSET_SUFFIX_REGEX = /([+-]\d{2}(?::?\d{2})?|Z)$/i;
+
+/**
  * Fast Gregorian leap year check for a full calendar year number.
  * @internal
  */
@@ -263,14 +269,19 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 		try {
 			return Temporal.ZonedDateTime.from(trimmed);
 		} catch {
+			const offsetMatch = trimmed.match(ISO_OFFSET_SUFFIX_REGEX);
+			if (offsetMatch) {
+				try {
+					const offsetTz = offsetMatch[1].toUpperCase() === 'Z' ? 'UTC' : offsetMatch[1];
+					return Temporal.Instant.from(trimmed).toZonedDateTimeISO(offsetTz);
+				} catch {
+					// Fall through to PlainDateTime if instant parsing fails
+				}
+			}
 			try {
 				return Temporal.PlainDateTime.from(trimmed).toZonedDateTime(fallbackTz);
 			} catch {
-				try {
-					return Temporal.Instant.from(trimmed).toZonedDateTimeISO(fallbackTz);
-				} catch {
-					return Temporal.PlainDate.from(trimmed).toZonedDateTime(fallbackTz);
-				}
+				return Temporal.PlainDate.from(trimmed).toZonedDateTime(fallbackTz);
 			}
 		}
 	}

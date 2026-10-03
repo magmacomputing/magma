@@ -336,8 +336,10 @@ class TickerInstance implements Ticker.Descriptor {
 				this.#next = this.#isShorthand ? this.#next.set(this.#payload) : this.#next.add(this.#payload);
 			this.#isNtpCalibratedSeeded = true;
 		}
-		const ntpOffset = (this.#useNtp && isNumber((this.#TempoClass as any).ntp?.offset)) ? (this.#TempoClass as any).ntp.offset : 0;
-		const diff = Math.round(this.#next.epoch.ms - (instant().epochMilliseconds + ntpOffset));
+		const currentEpochMs = (isCalibrated && isFunction((this.#TempoClass as any).ntp?.now))
+			? (this.#TempoClass as any).ntp.now().epoch.ms
+			: instant().epochMilliseconds;
+		const diff = Math.round(this.#next.epoch.ms - currentEpochMs);
 		if (diff > 0) return Math.min(diff, 2_147_483_647);
 
 		if (!this.#isForward) {

@@ -207,7 +207,27 @@ const PREFERRED_DOC_ORDER = {
     'geofencing',
     'solar-offset',
     'use-cases-and-patterns',
-  ]
+  ],
+  dialects: [
+    'index',
+    'migration-and-compatibility',
+    'token-specification',
+    'use-cases-and-patterns',
+  ],
+  batch: [
+    'index',
+    'worker-architecture',
+    'use-cases-and-patterns',
+  ],
+  sync: [
+    'index',
+    'atomic-architecture',
+    'use-cases-and-patterns',
+  ],
+  snap: [
+    'index',
+    'use-cases-and-patterns',
+  ],
 };
 
 function getPluginGroupName(pluginId) {

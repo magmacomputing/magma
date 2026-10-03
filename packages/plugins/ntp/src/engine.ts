@@ -163,8 +163,8 @@ export class ClockDriftEngine {
 		const measuredOffset = serverTimeMs - (localBefore + (rttMs / 2));
 		const sampleUncertainty = (rttMs / 2) + (isCoarse ? 500 : 0);
 
-		this.#baselineNtpMs = serverTimeMs + (rttMs / 2);
-		this.#baselinePerfNow = isFunction(globalThis.performance?.now) ? performance.now() : 0;
+		let finalOffset = measuredOffset;
+		let finalUncertainty = sampleUncertainty;
 
 		if (this.#state.sampleCount === 0) {
 			this.#state = {
@@ -175,16 +175,19 @@ export class ClockDriftEngine {
 			};
 		} else {
 			// Exponential Moving Average (EMA) smoothing to dampen network jitter
-			const smoothedOffset = (this.#options.alpha * measuredOffset) + ((1 - this.#options.alpha) * this.#state.offsetMs);
-			const smoothedUncertainty = (this.#options.alpha * sampleUncertainty) + ((1 - this.#options.alpha) * this.#state.uncertaintyMs);
+			finalOffset = (this.#options.alpha * measuredOffset) + ((1 - this.#options.alpha) * this.#state.offsetMs);
+			finalUncertainty = (this.#options.alpha * sampleUncertainty) + ((1 - this.#options.alpha) * this.#state.uncertaintyMs);
 
 			this.#state = {
-				offsetMs: Math.round(smoothedOffset),
-				uncertaintyMs: Math.round(smoothedUncertainty),
+				offsetMs: Math.round(finalOffset),
+				uncertaintyMs: Math.round(finalUncertainty),
 				lastSyncedAt: Date.now(),
 				sampleCount: this.#state.sampleCount + 1,
 			};
 		}
+
+		this.#baselineNtpMs = (localBefore + rttMs) + finalOffset;
+		this.#baselinePerfNow = isFunction(globalThis.performance?.now) ? performance.now() : 0;
 	}
 
 	/**
