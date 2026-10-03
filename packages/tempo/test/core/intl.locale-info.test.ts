@@ -14,7 +14,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 		it('defaults to ISO Monday start when localeInfo is false (default baseline)', () => {
 			const t = new Tempo('2026-09-16T15:30:00Z', { locale: 'en-US' }); // localeInfo defaults to false
-			expect(t.intl.firstDay).toBe(7); // inspectable as Sunday
+			expect(t.intl.info.firstDay).toBe(7); // inspectable as Sunday
 
 			const weekStart = t.set({ week: 'start' });
 			expect(weekStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-09-14 00:00:00');
@@ -47,7 +47,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 		it('behaves with ISO Monday start for en-GB when localeInfo: true', () => {
 			const t = new Tempo('2026-09-16T15:30:00Z', { locale: 'en-GB', localeInfo: true });
-			expect(t.intl.firstDay).toBe(1); // Monday
+			expect(t.intl.info.firstDay).toBe(1); // Monday
 
 			const weekStart = t.set({ week: 'start' });
 			expect(weekStart.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-09-14 00:00:00');
@@ -60,7 +60,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 		it('adapts week boundaries for Saturday-first regions (ar-SA) when localeInfo: true', () => {
 			const t = new Tempo('2026-09-16T15:30:00Z', { locale: 'ar-SA', localeInfo: true });
-			const fd = t.intl.firstDay; // 6 (Saturday) or 7 (Sunday) depending on ICU
+			const fd = t.intl.info.firstDay; // 6 (Saturday) or 7 (Sunday) depending on ICU
 
 			const weekStart = t.set({ week: 'start' });
 			expect(weekStart.dow).toBe(fd);
@@ -261,39 +261,39 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(Object.isFrozen(t1.intl)).toBe(true);
 		});
 
-		it('provides correct locale information properties on t.intl', () => {
+		it('provides correct locale information properties on t.intl.info', () => {
 			const tUS = new Tempo('2026-01-01', { locale: 'en-US' });
-			expect(tUS.intl.firstDay).toBe(7);
-			expect(tUS.intl.weekend).toEqual([6, 7]);
-			expect(tUS.intl.region).toBe('US');
-			expect(tUS.intl.script).toBe('Latn');
-			expect(tUS.intl.direction).toBe('ltr');
+			expect(tUS.intl.info.firstDay).toBe(7);
+			expect(tUS.intl.info.weekend).toEqual([6, 7]);
+			expect(tUS.intl.info.region).toBe('US');
+			expect(tUS.intl.info.script).toBe('Latn');
+			expect(tUS.intl.info.direction).toBe('ltr');
 
 			const tAU = new Tempo('2026-01-01', { locale: 'en-AU' });
-			expect(tAU.intl.region).toBe('AU');
-			expect(tAU.intl.script).toBe('Latn');
+			expect(tAU.intl.info.region).toBe('AU');
+			expect(tAU.intl.info.script).toBe('Latn');
 
 			const tAR = new Tempo('2026-01-01', { locale: 'ar-SA' });
-			expect(tAR.intl.region).toBe('SA');
-			expect(tAR.intl.script).toBe('Arab');
-			expect(tAR.intl.direction).toBe('rtl');
+			expect(tAR.intl.info.region).toBe('SA');
+			expect(tAR.intl.info.script).toBe('Arab');
+			expect(tAR.intl.info.direction).toBe('rtl');
 		});
 
-		it('exposes Tempo.intl statically matching the global locale', () => {
-			expect(Tempo.intl).toBeDefined();
-			expect(Tempo.intl).toBe(new Tempo('2026-01-01', { locale: Tempo.config.locale }).intl);
-			expect(typeof Tempo.intl.firstDay).toBe('number');
-			expect(Array.isArray(Tempo.intl.weekend)).toBe(true);
-			expect(typeof Tempo.intl.region).toBe('string');
-			expect(typeof Tempo.intl.script).toBe('string');
+		it('exposes Tempo.intl.info statically matching the global locale', () => {
+			expect(Tempo.intl.info).toBeDefined();
+			expect(Tempo.intl.info).toBe(new Tempo('2026-01-01', { locale: Tempo.config.locale }).intl.info);
+			expect(typeof Tempo.intl.info.firstDay).toBe('number');
+			expect(Array.isArray(Tempo.intl.info.weekend)).toBe(true);
+			expect(typeof Tempo.intl.info.region).toBe('string');
+			expect(typeof Tempo.intl.info.script).toBe('string');
 		});
 
 		it('resolves subclass static intl for sandboxes created with Tempo.create()', () => {
 			const ArabicTempo = Tempo.create({ locale: 'ar-SA' });
-			expect(ArabicTempo.intl.region).toBe('SA');
-			expect(ArabicTempo.intl.script).toBe('Arab');
-			expect(ArabicTempo.intl.direction).toBe('rtl');
-			expect(ArabicTempo.intl).toBe(new ArabicTempo('2026-01-01').intl);
+			expect(ArabicTempo.intl.info.region).toBe('SA');
+			expect(ArabicTempo.intl.info.script).toBe('Arab');
+			expect(ArabicTempo.intl.info.direction).toBe('rtl');
+			expect(ArabicTempo.intl.info).toBe(new ArabicTempo('2026-01-01').intl.info);
 		});
 	});
 
@@ -344,7 +344,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 		it('transliterates digits when :locale is applied in non-latn locales', () => {
 			const tEG = new Tempo('2026-10-24T15:30:00Z', { locale: 'ar-EG' });
 
-			expect(tEG.intl.numberingSystem).toBe('arab');
+			expect(tEG.intl.info.numberingSystem).toBe('arab');
 			expect(tEG.format('{yyyy:locale}')).toBe('٢٠٢٦');
 			expect(tEG.format('{mm:locale}')).toBe('١٠');
 			expect(tEG.format('{dd:locale}')).toBe('٢٤');
@@ -361,7 +361,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 	describe('7. BiDi Directionality & Isolation', () => {
 		it('wraps localized RTL text tokens with Unicode BiDi isolates', () => {
 			const tEG = new Tempo('2026-10-24T15:30:00Z', { locale: 'ar-EG' });
-			expect(tEG.intl.direction).toBe('rtl');
+			expect(tEG.intl.info.direction).toBe('rtl');
 
 			const formatted = tEG.format('{mon:locale}');
 			expect(formatted.startsWith('\u2067')).toBe(true);
@@ -370,7 +370,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 		it('does not wrap LTR text tokens with BiDi isolates', () => {
 			const tUS = new Tempo('2026-10-24T15:30:00Z', { locale: 'en-US' });
-			expect(tUS.intl.direction).toBe('ltr');
+			expect(tUS.intl.info.direction).toBe('ltr');
 
 			const formatted = tUS.format('{mon:locale}');
 			expect(formatted.includes('\u2067')).toBe(false);
@@ -453,6 +453,100 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(tAR.format('{intl.direction}')).toBe('rtl');
 			expect(tAR.format('{intl.region}')).toBe('SA');
 			expect(tAR.format('{intl.script}')).toBe('Arab');
+		});
+	});
+
+	describe('9. Structured t.intl Namespace (info, locale, and backward compatibility)', () => {
+		it('exposes t.intl.info cultural metadata', () => {
+			const t = new Tempo('2026-09-16', { locale: 'en-US' });
+			expect(t.intl.info.firstDay).toBe(7);
+			expect(t.intl.info.weekend).toEqual([6, 7]);
+			expect(t.intl.info.direction).toBe('ltr');
+			expect(t.intl.info.region).toBe('US');
+			expect(t.intl.info.baseName).toBe('en-US');
+		});
+
+		it('exposes t.intl.locale native Intl.Locale instance', () => {
+			const t = new Tempo('2026-09-16', { locale: 'en-US' });
+			expect(t.intl.locale).toBeInstanceOf(Intl.Locale);
+			expect(t.intl.locale?.baseName).toBe('en-US');
+			expect(t.intl.locale?.language).toBe('en');
+		});
+
+		it('supports static Tempo.intl.info and Tempo.intl.locale', () => {
+			try {
+				Tempo.init({ locale: 'fr-FR' });
+				expect(Tempo.intl.info.firstDay).toBe(1);
+				expect(Tempo.intl.info.direction).toBe('ltr');
+				expect(Tempo.intl.locale?.baseName).toBe('fr-FR');
+			} finally {
+				Tempo.init();
+			}
+		});
+	});
+
+	describe('10. High-Performance Intl Utility Hub', () => {
+		it('formats relative time pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.relativeTime(-1, 'day')).toMatch(/1 day ago|yesterday/);
+			expect(tEn.intl.relativeTime(2, 'month')).toMatch(/in 2 months/);
+
+			const tFr = new Tempo('2026-10-02', { locale: 'fr-FR' });
+			expect(tFr.intl.relativeTime(-2, 'day')).toMatch(/il y a 2 jours/);
+			expect(tFr.intl.relativeTime(3, 'month')).toMatch(/dans 3 mois/);
+		});
+
+		it('formats localized lists pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.list(['Apple', 'Banana', 'Orange'])).toBe('Apple, Banana, and Orange');
+
+			const tFr = new Tempo('2026-10-02', { locale: 'fr-FR' });
+			expect(tFr.intl.list(['lundi', 'mardi', 'mercredi'])).toBe('lundi, mardi et mercredi');
+		});
+
+		it('formats localized numbers pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.number(1234567.89)).toBe('1,234,567.89');
+
+			const tDe = new Tempo('2026-10-02', { locale: 'de-DE' });
+			// German uses period for thousands and comma for decimals: 1.234.567,89
+			expect(tDe.intl.number(1234567.89)).toBe('1.234.567,89');
+		});
+
+		it('resolves plural category rules pre-bound to instance locale', () => {
+			const tEn = new Tempo('2026-10-02', { locale: 'en-US' });
+			expect(tEn.intl.plural(1)).toBe('one');
+			expect(tEn.intl.plural(5)).toBe('other');
+
+			const tAr = new Tempo('2026-10-02', { locale: 'ar-EG' });
+			expect(tAr.intl.plural(0)).toBe('zero');
+			expect(tAr.intl.plural(1)).toBe('one');
+			expect(tAr.intl.plural(2)).toBe('two');
+		});
+
+		it('returns memoized constructor instances (dtf, rtf, lf, nf) pre-bound to context', () => {
+			const t = new Tempo('2026-10-02', { locale: 'en-US', timeZone: 'America/New_York' });
+
+			const dtf1 = t.intl.dtf({ dateStyle: 'short' });
+			const dtf2 = t.intl.dtf({ dateStyle: 'short' });
+			expect(dtf1).toBe(dtf2); // Memoized instance reference
+			expect(dtf1.resolvedOptions().timeZone).toBe('America/New_York');
+
+			const rtf = t.intl.rtf();
+			expect(rtf).toBeInstanceOf(Intl.RelativeTimeFormat);
+			expect(rtf.resolvedOptions().locale).toMatch(/en/);
+
+			const lf = t.intl.lf();
+			expect(lf).toBeInstanceOf(Intl.ListFormat);
+
+			const nf = t.intl.nf();
+			expect(nf).toBeInstanceOf(Intl.NumberFormat);
+		});
+
+		it('supports Temporal.TimeZoneLike objects for timezone pre-binding', () => {
+			const tLondon = new Tempo('2026-10-02', { locale: 'en-GB', timeZone: { id: 'Europe/London' } as any });
+			const dtf = tLondon.intl.dtf({ dateStyle: 'short' });
+			expect(dtf.resolvedOptions().timeZone).toBe('Europe/London');
 		});
 	});
 });

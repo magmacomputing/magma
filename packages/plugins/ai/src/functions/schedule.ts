@@ -1,5 +1,5 @@
 import { Tempo, Interval } from '@magmacomputing/tempo';
-import { asText, isText, isString, isNumber, isReference, isFunction, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
+import { asText, isText, isString, isNumber, isReference, isFunction, hasOwn, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -99,7 +99,7 @@ function buildContextPrompt(
 	busyEvents: Array<{ start: Tempo; end: Tempo; title?: string | undefined }>,
 	durationMinutes: number
 ): string {
-	const weekend = anchorTempo.intl?.weekend ?? [6, 7];
+	const weekend = anchorTempo.intl?.info?.weekend ?? [6, 7];
 	const activeDays = formatActiveDays(workingHours.days, weekend);
 	const whStart = workingHours.start ?? '09:00';
 	const whEnd = workingHours.end ?? '17:00';
@@ -114,7 +114,7 @@ function buildContextPrompt(
 	return `Reference Anchor Time: ${anchorTempo.format('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}')} (${timeZone})
 Target TimeZone: ${timeZone}
 Target Locale: ${anchorTempo.locale}
-Week Starts On: ${anchorTempo.intl.firstDay} (1=Mon, 7=Sun, 6=Sat)
+Week Starts On: ${anchorTempo.intl.info.firstDay} (1=Mon, 7=Sun, 6=Sat)
 Regional Weekend Days: [${weekend.join(', ')}]
 Working Hours: ${whStart} to ${whEnd} (${activeDays}) in ${workingHours.timeZone || timeZone}
 Required Slot Duration: ${durationMinutes} minutes
@@ -170,7 +170,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 			if (prop === 'toJSON')
 				return (inspectableMeta as any).toJSON;
 
-			if (Object.hasOwn(inspectableMeta, prop))
+			if (hasOwn(inspectableMeta, prop))
 				return (inspectableMeta as any)[prop];
 
 			if (prop === 'constructor')
@@ -189,7 +189,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 		},
 		has(target, prop) {
 			if (prop === CUSTOM_INSPECT_SYMBOL || prop === 'toJSON') return true;
-			if (Object.hasOwn(inspectableMeta, prop)) return true;
+			if (hasOwn(inspectableMeta, prop)) return true;
 			return Reflect.has(interval, prop);
 		},
 		getOwnPropertyDescriptor(target, prop) {
@@ -201,7 +201,7 @@ function wrapScheduleInterval(interval: Interval<Tempo>, meta: TempoScheduleMeta
 					enumerable: false,
 				};
 			}
-			if (Object.hasOwn(inspectableMeta, prop)) {
+			if (hasOwn(inspectableMeta, prop)) {
 				return {
 					value: (inspectableMeta as any)[prop],
 					writable: false,
@@ -247,7 +247,7 @@ export async function scheduleAI(
 		operationName: 'scheduleAI',
 	});
 
-	const weekendSet = new Set<number>(anchorTempo.intl?.weekend ?? [6, 7]);
+	const weekendSet = new Set<number>(anchorTempo.intl?.info?.weekend ?? [6, 7]);
 	const defaultActiveDays = [1, 2, 3, 4, 5, 6, 7].filter(d => !weekendSet.has(d));
 	const workingHours: TempoWorkingHours = {
 		start: options?.workingHours?.start ?? '09:00',

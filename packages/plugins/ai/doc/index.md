@@ -103,6 +103,7 @@ To streamline error handling and data consumption, return shapes across the AI p
 > [!IMPORTANT]
 > **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we strongly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
 
+- [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) (Interactive conversational scheduling, multi-LLM consensus, multi-tenant proxy gateways)
 - [Security & Privacy Architecture](./security.md) (Smart Debug Telemetry, PII Masking, HTTPS & Proxy Introspection)
 - [Multi-Provider Execution Modes](./modes.md) (Hedged, RoundRobin, Adaptive, Race, Consensus, Fallback)
 - [Provider Architecture & Security](./architecture.md) (BYOK vs Proxy patterns, Browser Security, TLS 1.3 & Privacy Guarantees)

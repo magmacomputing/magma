@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+</div>
+
+<br>
+
 # Spatial Geofencing & Bounding Boxes
 
 This guide details spatial boundary containment, circular radius proximity checks, and rectangular bounding box geofencing in `@magmacomputing/tempo-plugin-spatial`.

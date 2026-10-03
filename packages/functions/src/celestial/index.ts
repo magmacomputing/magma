@@ -4,6 +4,8 @@ export {
 	REF_NEW_MOON_MS,
 	REF_PERIGEE_MS,
 	ANOMALISTIC_MONTH,
+	HALF_DAY_MS,
+	DAY_MS,
 	type SolarOptions,
 	type SolarTwilightWindow,
 } from './support.js';
@@ -15,6 +17,7 @@ export {
 	getLunarPhaseRange,
 	getMoonriseMoonset,
 	getLunarTransit,
+	getLunarAntiTransit,
 	getLunarDistance,
 	getLunarPosition,
 	getCrescentTilt,

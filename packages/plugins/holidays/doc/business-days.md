@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-holidays</a>
+</div>
+
+<br>
+
 # Business Days & SLA Arithmetic
 
 The **Regional Holidays Plugin** extends Tempo with robust business day operations and SLA (Service Level Agreement) working hours arithmetic under the `t.holidays` namespace.

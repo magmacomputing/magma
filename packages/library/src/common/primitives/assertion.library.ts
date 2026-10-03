@@ -2,6 +2,9 @@ import { sym } from '#library/symbol.library.js';
 import { getType, protoType } from '#library/type.library.js';
 import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#library/type.library.js';
 
+/** @internal check if an object has an own property (respects Proxy/Shadowing) */
+export { hasOwn } from '#library/primitive.library.js';
+
 /**
  * Asserts if a value matches one of the provided types from the Type system.
  * 
@@ -29,8 +32,53 @@ export const isText = (obj: unknown): obj is string => typeof obj === 'string' &
 /** Type guard to check if a value is a finite number */
 export const isNumber = (obj: unknown): obj is number => Number.isFinite(obj);
 
-const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;
-const RE_REGEXP_LITERAL = /^\/.*\/$/;
+/** Regular expression matching integer digits string (`^\d+$`) */
+export const RE_DIGITS = /^\d+$/;
+/** Regular expression matching signed integer string (`^[+-]?[0-9]+$`) */
+export const RE_INTEGER = /^[+-]?[0-9]+$/;
+/** Regular expression matching BigInt literal notation (`123n` or `-123n`) */
+export const RE_BIGINT_LITERAL = /^[+-]?[0-9]+n$/;
+/** Regular expression matching regular expression string literal (`/.../`) */
+export const RE_REGEXP_LITERAL = /^\/.*\/$/;
+/** Regular expression matching HTTP or HTTPS protocol prefixes (`http://` or `https://`) */
+export const RE_HTTP_URL = /^https?:\/\//i;
+/** Regular expression matching file protocol prefix (`file://`) */
+export const RE_FILE_URL = /^file:\/\//i;
+/** Regular expression matching one or more whitespace characters (`\s+`) */
+export const RE_WHITESPACE = /\s+/;
+/** Global regular expression matching one or more whitespace characters (`\s+/g`) */
+export const RE_WHITESPACES = /\s+/g;
+/** Global regular expression matching Unicode combining diacritical marks */
+export const RE_COMBINING_MARKS = /[\u0300-\u036f]/g;
+/** Regular expression matching hexadecimal string */
+export const RE_HEX = /^[0-9a-f]+$/i;
+/** Regular expression matching 8-character hexadecimal string */
+export const RE_HEX_8 = /^[0-9a-f]{8}$/i;
+/** Regular expression matching Base64 string */
+export const RE_BASE64 = /^[A-Za-z0-9+/]*={0,2}$/;
+/** Regular expression matching Base64URL string */
+export const RE_BASE64URL = /^[A-Za-z0-9_-]*$/;
+/** Regular expression matching standard UUID format */
+export const RE_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Type guard to check if a value is an integer digits string (e.g. '123') */
+export const isDigits = (obj: unknown): obj is string => typeof obj === 'string' && RE_DIGITS.test(obj);
+/** Type guard to check if a string is an HTTP or HTTPS URL */
+export const isHttpUrl = (obj: unknown): obj is string => typeof obj === 'string' && RE_HTTP_URL.test(obj);
+/** Type guard to check if a string is a file URL */
+export const isFileUrl = (obj: unknown): obj is string => typeof obj === 'string' && RE_FILE_URL.test(obj);
+/** Type guard to check if a value consists entirely of whitespace characters */
+export const isWhitespace = (obj: unknown): obj is string => typeof obj === 'string' && obj.length > 0 && obj.trim().length === 0;
+/** Type guard to check if a value is a hexadecimal string */
+export const isHex = (obj: unknown): obj is string => typeof obj === 'string' && RE_HEX.test(obj);
+/** Type guard to check if a value is a Base64 string */
+export const isBase64 = (obj: unknown): obj is string =>
+	typeof obj === 'string' && obj.length % 4 !== 1 && (!obj.includes('=') || obj.length % 4 === 0) && RE_BASE64.test(obj);
+/** Type guard to check if a value is a Base64URL string */
+export const isBase64Url = (obj: unknown): obj is string =>
+	typeof obj === 'string' && obj.length % 4 !== 1 && RE_BASE64URL.test(obj);
+/** Type guard to check if a value is a valid UUID string */
+export const isUuid = (obj: unknown): obj is string => typeof obj === 'string' && RE_UUID.test(obj);
 
 /**
  * Tests if a value can be safely converted to a numeric value.
@@ -207,3 +255,4 @@ export function assertString(str: unknown): asserts str is string { assertCondit
  * @throws {Error} Always throws an error
  */
 export function assertNever(val: never): asserts val is never { throw new Error(`Unexpected object: ${val}`) };
+

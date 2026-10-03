@@ -6,6 +6,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.0] - 2026-10-02
+
+### Architecture & Internationalization
+- **Refactored `t.intl` Sub-Namespace (`t.intl.info` & `t.intl.locale`)**:
+  - Sub-namespaced `t.intl` (and `Tempo.intl`) into `{ info: ResolvedLocaleInfo, locale?: Intl.Locale }`.
+  - Maintained backward-compatible fallback accessors directly on `t.intl` (e.g. `t.intl.firstDay`, `t.intl.weekend`, `t.intl.direction`, `t.intl.region`) marked as `@deprecated` for v4.x.
+  - Renamed documentation `tempo.locale.md` → `tempo.intl.md` and added architectural design scope.
+- **High-Performance `Tempo.intl` Utility Hub**:
+  - Elevated `t.intl` and `Tempo.intl` into a zero-instance-overhead internationalization utility hub with pre-bound, memoized formatters: `relativeTime()`, `list()`, `number()`, `plural()`, and constructor getters `dtf()`, `rtf()`, `lf()`, `nf()`.
+
+### Formatting & Modifiers
+- **Enhanced `.format()` Token Modifiers & Translations**:
+  - Formatting supports hierarchical translations for namespaced tokens (e.g. `{geo.sphere:locale}`), locale-aware translation functions, and combined time-zone offset styles (e.g. `{tz:offset:short}`, `{tz:short:offset}`).
+
 ## [4.4.4] - 2026-09-30
 
 ### Added & Exported

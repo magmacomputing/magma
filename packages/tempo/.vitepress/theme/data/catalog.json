@@ -15,7 +15,7 @@
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
-    "version": "1.1.1"
+    "version": "1.2.0"
   },
   {
     "id": "batch",
@@ -24,7 +24,7 @@
     "packageName": "@magmacomputing/tempo-plugin-batch",
     "plan": "community",
     "status": "active",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   {
     "id": "finance",
@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-sync",
     "plan": "community",
     "status": "active",
-    "version": "1.1.1"
+    "version": "1.1.2"
   },
   {
     "id": "ai",
@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "2.3.0"
+    "version": "2.3.1"
   },
   {
     "id": "ticker",
@@ -69,7 +69,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.5.2"
+    "version": "2.6.0"
   },
   {
     "id": "geo",
@@ -104,7 +104,7 @@
     "name": "Holidays Plugin",
     "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
     "packageName": "@magmacomputing/tempo-plugin-holidays",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "plan": "community",
     "status": "active"
   },
@@ -113,6 +113,15 @@
     "name": "Spatial Plugin",
     "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
     "packageName": "@magmacomputing/tempo-plugin-spatial",
+    "version": "1.0.0",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "ntp",
+    "name": "Ntp Plugin",
+    "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
+    "packageName": "@magmacomputing/tempo-plugin-ntp",
     "version": "1.0.0",
     "plan": "community",
     "status": "active"

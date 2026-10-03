@@ -5,6 +5,15 @@ All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be doc
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.1] - 2026-10-02
+
+### Enhanced
+- **Runtime Introspection & Branding (`Symbol.toStringTag`)**:
+  - Added `[Symbol.toStringTag]` getters returning `'Tempo.AiError'` on `TempoAiError` and `'Tempo.HttpError'` on `HttpError` for consistent runtime error inspection.
+
+### Changed
+- **Intl Namespace Integration**: Updated grounding context and prompts across `diffAI`, `scheduleAI`, `parseAI`, `recurrenceAI`, `formatAI`, and `extractAI` to target the structured `tempo.intl.info.*` namespace properties.
+
 ## [2.3.0] - 2026-09-24
 
 ### Added

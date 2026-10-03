@@ -2,8 +2,8 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish } from '#library/assertion.library.js';
-import { evaluate } from '#library/evaluation.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits } from '#library/assertion.library.js';
+import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
@@ -35,8 +35,20 @@ declare module '../tempo.class.js' {
 	}
 }
 
-const REGEX_DIGITS = /^\d+$/;
-const REGEX_SIGNED_DIGITS = /^-?\d+$/;
+const RE_SIGNED_DIGITS = /^-?\d+$/;
+const RE_H12_TAG = /\{h12[^}]*\}/;
+const RE_H12_GLOBAL = /\{h12[^}]*\}/g;
+const RE_MI_GLOBAL = /\{mi[^}]*\}/g;
+const RE_SS_GLOBAL = /\{ss[^}]*\}/g;
+const RE_MS_GLOBAL = /\{ms[^}]*\}/g;
+const RE_US_GLOBAL = /\{us[^}]*\}/g;
+const RE_NS_GLOBAL = /\{ns[^}]*\}/g;
+const RE_FF_GLOBAL = /\{ff[^}]*\}/g;
+const RE_SPACE_MODIFIER = /:space/g;
+const RE_FORMAT_BRACES = new RegExp(Match.formatBraces.source, 'g');
+const RE_DOT = /\./g;
+const RE_HASH_PREFIX = /^#/;
+const RE_COLON = /:/g;
 
 /**
  * Resolves dot-delimited namespace tokens (e.g. '{geo.city}', '{custom.tag.name}')
@@ -62,6 +74,42 @@ function resolveNamespaceToken(obj: unknown, token: string): string {
 	return isObject(curr)
 		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)
 		: String(curr);
+}
+
+/**
+ * Resolves localized translations from a nested registry.locales dictionary,
+ * cascading from deep hierarchical token path -> leaf property -> flat value.
+ */
+function resolveLocaleFromDictionary(
+	dict: Record<string, any> | undefined,
+	tokenPath: string[],
+	rawValue: string,
+	locale?: string
+): string | undefined {
+	if (!isObject(dict)) return undefined;
+
+	// 1. Hierarchical traversal: dict.geo.sphere['south']
+	let curr: any = dict;
+	for (const segment of tokenPath) {
+		if (!hasOwn(curr, segment)) {
+			curr = undefined;
+			break;
+		}
+		curr = curr[segment];
+	}
+	if (hasOwn(curr, rawValue))
+		return evaluateString(curr[rawValue], locale);
+
+	// 2. Leaf property: dict.sphere['south']
+	const leaf = tokenPath.at(-1);
+	if (leaf && hasOwn(dict, leaf) && hasOwn(dict[leaf], rawValue))
+		return evaluateString(dict[leaf][rawValue], locale);
+
+	// 3. Flat match: dict['south']
+	if (hasOwn(dict, rawValue))
+		return evaluateString(dict[rawValue], locale);
+
+	return undefined;
 }
 
 /**
@@ -170,7 +218,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	if (!isZonedDateTime(zdt)) return '';
 
-	const isNamedFormat = isString(fmt) && formats && hasOwn(formats, fmt);
+	const isNamedFormat = isString(fmt) && hasOwn(formats, fmt);
 	const dialect = evaluate(options?.dialect ?? config?.dialect);
 	if (dialect && isString(fmt) && !isNamedFormat) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
@@ -193,7 +241,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	// auto-meridiem: if {h12} is present and {mer} is absent, append it after the last time component
 	if (template.includes('{h12') && !template.includes('{mer')) {
-		const hMatch = template.match(/\{h12[^}]*\}/);
+		const hMatch = template.match(RE_H12_TAG);
 		let merMod = '';
 		let skipMeridiem = false;
 		if (hMatch) {
@@ -212,21 +260,21 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				const matches = [...template.matchAll(rgx)];
 				return matches.at(-1)?.index ?? -1;
 			}
-			const hIndex = lastSearch(/\{h12[^}]*\}/g);
-			const miIndex = lastSearch(/\{mi[^}]*\}/g);
-			const ssIndex = lastSearch(/\{ss[^}]*\}/g);
+			const hIndex = lastSearch(RE_H12_GLOBAL);
+			const miIndex = lastSearch(RE_MI_GLOBAL);
+			const ssIndex = lastSearch(RE_SS_GLOBAL);
 			const subIndex = Math.max(
-				lastSearch(/\{ms[^}]*\}/g),
-				lastSearch(/\{us[^}]*\}/g),
-				lastSearch(/\{ns[^}]*\}/g),
-				lastSearch(/\{ff[^}]*\}/g)
+				lastSearch(RE_MS_GLOBAL),
+				lastSearch(RE_US_GLOBAL),
+				lastSearch(RE_NS_GLOBAL),
+				lastSearch(RE_FF_GLOBAL)
 			);
 			const index = Math.max(hIndex, miIndex, ssIndex, subIndex);
 
 			if (index !== -1) {
 				const end = template.indexOf('}', index) + 1;
 				const prefix = merMod.includes(':space') ? ' ' : '';
-				const cleanMod = merMod.replace(/:space/g, '');
+				const cleanMod = merMod.replace(RE_SPACE_MODIFIER, '');
 				template = template.slice(0, end) + `${prefix}{mer${cleanMod}}` + template.slice(end);
 			}
 		}
@@ -234,8 +282,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const li = getLI(canonicalLocales(config?.locale)[0]);
 
-	const result = template.replace(new RegExp(Match.formatBraces, 'g'), (_match: string, fullToken: string) => {
+	const result = template.replace(RE_FORMAT_BRACES, (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
+		const normMods = modifiers.map(m => m.toLowerCase());
 		if (token === 'tzd') token = 'tz';											// @deprecated, will remove in v5.0.0
 		let res: any;
 
@@ -267,7 +316,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dd': res = pad(zdt.day); break;
 			case 'day': res = zdt.day.toString(); break;
 			case 'dow': {
-				if (modifiers.includes('locale')) {
+				if (normMods.includes('locale')) {
 					const firstDay = li.firstDay;
 					const localDow = ((zdt.dayOfWeek - firstDay + 7) % 7) + 1;
 					res = localDow.toString();
@@ -280,7 +329,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
 			case 'h24': case 'hh': {
-				if (modifiers.includes('locale') && token === 'hh') {
+				if (normMods.includes('locale') && token === 'hh') {
 					const hc = li.hourCycle;
 					if (hc === 'h12') {
 						res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
@@ -307,7 +356,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dmy':
 			case 'mdy':
 			case 'ymd': {
-				const isShort = modifiers.includes('yy') || modifiers.includes('year');
+				const isShort = normMods.includes('short') || normMods.includes('yy') || normMods.includes('year'); // :yy & :year @deprecated, will remove in v5.0.0
 				const y = pad(isShort ? zdt.year % 100 : zdt.year, isShort ? 2 : 4);
 				const m = pad(zdt.month);
 				const d = pad(zdt.day);
@@ -318,7 +367,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'hms': res = `${pad(zdt.hour)}${pad(zdt.minute)}${pad(zdt.second)}`; break;
 			case 'time': {
-				if (modifiers.includes('locale')) {
+				if (normMods.includes('locale')) {
 					const is12 = li.hourCycle === 'h12' || li.hourCycle === 'h11';
 					const h12 = zdt.hour % 12;
 					const h = li.hourCycle === 'h11' ? pad(h12)
@@ -358,7 +407,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						: (termObj ?? `{${token}}`);
 				} else if (token.includes('.')) {
 					if (token.startsWith('intl.')) {
-						res = resolveNamespaceToken({ intl: li }, token);
+						res = resolveNamespaceToken({ intl: { ...li, info: li, locale: li.locale } }, token);
 					} else if (isTempo(obj)) {
 						res = resolveNamespaceToken(obj, token);
 					} else {
@@ -372,6 +421,16 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		}
 
 		if (res === `{${token}}` || modifiers.length === 0) return res;
+
+		let canonicalTerm: string | undefined;
+		if (token.startsWith('#') && isTempo(obj)) {
+			const termVal = (obj as unknown as Tempo).term[token.slice(1)];
+			if (isObject(termVal)) {
+				canonicalTerm = String(termVal.key ?? termVal.id ?? res);
+			} else if (isDefined(termVal)) {
+				canonicalTerm = String(termVal);
+			}
+		}
 
 		const dtOptions = config?.intl?.dateTimeFormat ?? {};
 
@@ -404,53 +463,46 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'raw':
-					if (REGEX_DIGITS.test(String(res)))
+					if (RE_DIGITS.test(String(res)))
 						res = BigInt(String(res)).toString();
 					break;
 				case 'dots': {
 					if (token === 'mer' || token === 'era')
-						res = String(res).replace(/\./g, '').split('').join('.') + '.';
+						res = String(res).replace(RE_DOT, '').split('').join('.') + '.';
 					break;
 				}
 				case 'locale': {
 					try {
-						if (token.startsWith('#') && isTempo(obj)) {
+						const lang = getLanguage(config?.locale);
+						const dict = config?.registry?.locales?.[lang];
+						const tokenPath = token.replace(RE_HASH_PREFIX, '').split('.');
+						const valStr = canonicalTerm ?? String(res);
+
+						// 1. Check user-defined registry.locales (hierarchical, leaf, or flat)
+						let registered = resolveLocaleFromDictionary(dict, tokenPath, valStr, config?.locale);
+						if (!isDefined(registered) && canonicalTerm && canonicalTerm !== String(res))
+							registered = resolveLocaleFromDictionary(dict, tokenPath, String(res), config?.locale);
+
+						if (isDefined(registered)) {
+							res = registered;
+						} else if (token.startsWith('#') && isTempo(obj)) {
+							// 2. Fall back to Term Plugin bundled dictionary
 							const termKey = token.slice(1);
 							const termName = termKey.split('.')[0];
 							const plugin = findTermPlugin(termName, (obj.constructor as any)[$Internal]());
 
 							if (plugin) {
-								const termVal = (obj as unknown as Tempo).term[termKey];
-								const lang = getLanguage(config?.locale);
 								let locRes: any;
-								let valStr: string;
-								let baseKey: string | undefined;
+								const flatGroups = Array.isArray(plugin.groups) ? plugin.groups : (isObject(plugin.groups) ? Object.values(plugin.groups).flat() : []);
+								const group = flatGroups.find((g: any) => g.key === valStr);
+								if (group && isObject(group.locale))
+									locRes = group.locale[lang] ?? group.locale.en;
 
-								if (isObject(termVal)) {
-									valStr = String(termVal.label ?? termVal.key ?? termVal.id);
-									baseKey = String(termVal.key ?? termVal.id);
-								} else {
-									valStr = String(termVal);
-								}
-
-								// 1. Global Registry (user override)
-								if (config?.registry?.locales?.[lang]?.[valStr])
-									locRes = config.registry.locales[lang][valStr];
-
-								// 2. Term's Bundled Dictionary (plugin default)
-								else {
-									const searchKey = baseKey ?? valStr;
-									const flatGroups = Array.isArray(plugin.groups) ? plugin.groups : (isObject(plugin.groups) ? Object.values(plugin.groups).flat() : []);
-									const group = flatGroups.find((g: any) => g.key === searchKey);
-									if (group && isObject(group.locale))
-										locRes = group.locale[lang] ?? group.locale.en;
-								}
-
-								// 3. Execution or Assignment
 								if (isDefined(locRes))
-									res = isFunction(locRes) ? locRes(config?.locale) : locRes;
+									res = evaluateString(locRes, config?.locale);
 							}
 						} else {
+							// 3. Fall back to native Intl for core date tokens
 							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
 							if (token === 'mon') res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
 							else if (token === 'mmm') res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
@@ -474,9 +526,13 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'longgeneric': {
 					const modKey = mod.toLowerCase();
 					if (token === 'tz') {
-						const styleMap: Record<string, any> = { short: 'short', long: 'long', shortoffset: 'shortOffset', longoffset: 'longOffset', shortgeneric: 'shortGeneric', longgeneric: 'longGeneric' };
-						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: styleMap[modKey] }).formatToParts(zdt.epochMilliseconds);
-						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
+						if (modKey === 'short' && normMods.includes('offset')) {
+							res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
+						} else {
+							const styleMap: Record<string, any> = { short: 'short', long: 'long', shortoffset: 'shortOffset', longoffset: 'longOffset', shortgeneric: 'shortGeneric', longgeneric: 'longGeneric' };
+							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: styleMap[modKey] }).formatToParts(zdt.epochMilliseconds);
+							res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
+						}
 					} else if (token === 'mon' || token === 'mmm') {
 						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, month: modKey }).format(zdt.epochMilliseconds);
 					} else if (token === 'wkd' || token === 'www') {
@@ -490,12 +546,21 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'offset':
-					if (token === 'tz') res = zdt.offset;
+					if (token === 'tz') {
+						let off = normMods.includes('short')
+							? (zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset)
+							: zdt.offset;
+						if (normMods.includes('compact')) off = off.replace(RE_COLON, '');
+						res = off;
+					}
 					break;
-				case 'offsetshort':
+				case 'compact':
+					res = String(res).replace(RE_COLON, '');
+					break;
+				case 'offsetshort': // @deprecated, will remove in v5.0.0
 					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
 					break;
-				case 'offsetcompact':
+				case 'offsetcompact': // @deprecated, will remove in v5.0.0
 					if (token === 'tz') res = zdt.offset.replace(':', '');
 					break;
 				case 'z':
@@ -520,10 +585,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				default: {
-					if (REGEX_DIGITS.test(mod)) {
+					if (isDigits(mod)) {
 						const width = parseInt(mod, 10);
 						const strVal = String(res);
-						if (REGEX_SIGNED_DIGITS.test(strVal)) {
+						if (RE_SIGNED_DIGITS.test(strVal)) {
 							if (token === 'ff') {
 								res = width > 0 ? strVal.slice(0, width) : strVal;
 							} else if (width > 0) {
@@ -538,7 +603,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 		}
 
-		if (modifiers.includes('locale')) {
+		if (normMods.includes('locale')) {
 			if (li.numberingSystem && li.numberingSystem !== 'latn')
 				res = localizeDigits(res, li.numberingSystem);
 

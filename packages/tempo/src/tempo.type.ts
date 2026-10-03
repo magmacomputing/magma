@@ -12,9 +12,10 @@ import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
 import type { WeakCache } from '#library/weakcache.class.js';
+import type { Interval as TempoInterval } from '#library/scheduling/interval.class.js';
 
 export type { GeoOptions, GeoConfig };
-export type { ResolvedLocaleInfo, LocaleWeekInfo } from '#library/international.library.js';
+export type { ResolvedLocaleInfo, LocaleWeekInfo, TempoIntlNamespace } from '#library/international.library.js';
 
 import { sym, type TempoBrand } from '#tempo/support/support.symbol.js';
 import * as enums from '#tempo/support/support.enum.js';
@@ -402,7 +403,7 @@ export namespace Internal {
 		/** custom data augmentation registries */							registry?: {
 		/** Format string templates */														formats?: Property<any>;
 		/** Dialect formatting/parsing engines */									dialects?: Record<string, any>;
-		/** Locale-specific configurations */											locales?: Record<string, Record<string, string | Function>>;
+		/** Locale-specific configurations */											locales?: Record<string, Record<string, string | Function | Record<string, any>>>;
 		/** Temporal modifiers for relative dates */							modifiers?: Record<string, string | readonly string[] | string[]>;
 		/** Token evaluators for custom parsing patterns */				tokens?: Record<string, TokenEvaluator>;
 		/** Snippet registry for parsing shortcuts */							snippets?: Snippet | RegistryOption<Pattern>;
@@ -511,7 +512,7 @@ export namespace Internal {
 		/** custom data augmentation registries */
 		readonly registry: Readonly<{
 			formats: FormatRegistry;
-			locales: Readonly<Record<string, Readonly<Record<string, string | Function>>>>;
+			locales: Readonly<Record<string, Readonly<Record<string, any>>>>;
 			modifiers?: Readonly<Record<string, string | readonly string[]>>;
 			tokens?: Readonly<Record<string, TokenEvaluator>>;
 			dialects?: Readonly<Record<string, any>>;
@@ -529,10 +530,18 @@ export namespace Internal {
 		/** regional date-parsing configuration */							monthDay?: MonthDay;
 		/** parse planner configuration (layoutOrder, etc.) */  planner?: PlannerOptions;
 		/** term plugins to be registered via Tempo.addTerm() */terms?: TermPlugin | readonly TermPlugin[] | TermPlugin[];
-		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
-		/** custom data augmentation registries */							registry?: { formats?: Property<any>, dialects?: Record<string, any>, locales?: Record<string, Record<string, string | Function>>, modifiers?: Record<string, string | readonly string[] | string[]>, tokens?: Record<string, TokenEvaluator>, numbers?: Record<string, number> };
-		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
+		/** custom data augmentation registries */
+		registry?: {
+			formats?: Property<any>;
+			dialects?: Record<string, any>;
+			locales?: Record<string, Record<string, string | Function | Record<string, any>>>;
+			modifiers?: Record<string, string | readonly string[] | string[]>;
+			tokens?: Record<string, TokenEvaluator>;
+			numbers?: Record<string, number>;
+		};
 		/** URLs or file paths to inherit configuration from */	extends?: string | readonly string[] | string[];
+		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;
+		/** noise words to ignore during parsing via Tempo.ignore() */ignore?: Ignore;
 		/**
 		 * Plugins or terms to extend onto Tempo.
 		 * 
@@ -557,7 +566,7 @@ export type DelegatorHost = Internal.DelegatorHost;
 /**
  * Interval representing a continuous temporal range between two points.
  */
-export type Interval = import('#library/scheduling/interval.class.js').Interval<Tempo>;
+export type Interval = TempoInterval<Tempo>;
 
 /**
  * Constructor type for Tempo.Interval.

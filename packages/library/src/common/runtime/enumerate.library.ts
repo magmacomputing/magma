@@ -22,6 +22,7 @@ export type EnumMethods<T extends Property<any> = any> = {
 	/** tuple of enumerable entries */												entries(): readonly (readonly [KeyOf<T>, ValueOf<T>])[];
 	/** return an object with the keys and values swapped */	invert(): Readonly<Invert<T>>;
 	/** check if a 'key' exists in the Enum */								has(key: LooseKey<KeyOf<T>>): boolean;
+	/** return the value for a given key, or undefined */			get(key: LooseKey<KeyOf<T>> | PropertyKey): ValueOf<T> | undefined;
 	/** check if a 'value' exists in the Enum */							includes(search: LooseKey<ValueOf<T>>): boolean;
 	/** return the key for a given value */										keyOf(search: LooseKey<ValueOf<T>>): KeyOf<T>;
 	/** iterate through all Enum entries */										forEach(fn: (entry: readonly [KeyOf<T>, ValueOf<T>], index: number, enumify: EnumifyType<any>) => void, thisArg?: any): void;
@@ -52,6 +53,7 @@ const ENUM = secure(Object.create(null, {
 	invert: memoizeMethod('invert', function (this: any) { return Object.fromEntries(this.entries().map(([key, val]: any) => [val, key])) }),
 
 	has: value(function (this: any, key: PropertyKey) { return this.keys().includes(key as any) }),
+	get: value(function (this: any, key: PropertyKey) { return this.has(key) ? this[key] : undefined }),
 	count: value(function (this: any) { return this.keys().length }),
 	includes: value(function (this: any, search: any) { return this.values().includes(search) }),
 	keyOf: value(function (this: any, search: any) { return this.invert()[search] }),

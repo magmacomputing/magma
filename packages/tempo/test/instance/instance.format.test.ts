@@ -117,19 +117,16 @@ describe(`${label} format method`, () => {
     expect(t.format('{yyyy}-{mm}')).toBe('2024-05');
   });
 
-  test('formats compound tokens dmy, mdy, ymd with :yy or :year modifiers', () => {
+  test('formats compound tokens dmy, mdy, ymd with :short modifier', () => {
     const t = new Tempo('2024-05-20');
     expect(t.format('{dmy}')).toBe('20052024');
-    expect(t.format('{dmy:yy}')).toBe('200524');
-    expect(t.format('{dmy:year}')).toBe('200524');
+    expect(t.format('{dmy:short}')).toBe('200524');
 
     expect(t.format('{mdy}')).toBe('05202024');
-    expect(t.format('{mdy:yy}')).toBe('052024');
-    expect(t.format('{mdy:year}')).toBe('052024');
+    expect(t.format('{mdy:short}')).toBe('052024');
 
     expect(t.format('{ymd}')).toBe('20240520');
-    expect(t.format('{ymd:yy}')).toBe('240520');
-    expect(t.format('{ymd:year}')).toBe('240520');
+    expect(t.format('{ymd:short}')).toBe('240520');
   });
 
   test('formats spatial tokens {geo.*} with modifiers and graceful fallback', () => {
@@ -189,6 +186,92 @@ describe(`${label} format method`, () => {
     } finally {
       delete (Tempo.prototype as any).custom;
     }
+  });
+
+  test('localizes namespace tokens using nested registry.locales hierarchy', () => {
+    // 1. Deep path matching (e.g. geo.sphere)
+    const tFr = new Tempo('2026-10-24T15:30:00', {
+      locale: 'fr-FR',
+      geo: { city: 'sydney', sphere: 'south' },
+      registry: {
+        locales: {
+          fr: {
+            geo: {
+              sphere: {
+                north: 'nord',
+                south: 'sud',
+                equator: 'équateur',
+              },
+              city: {
+                sydney: 'Sydney (Australie)',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(tFr.format('{geo.sphere}')).toBe('south');
+    expect(tFr.format('{geo.sphere:locale}')).toBe('sud');
+    expect(tFr.format('{geo.sphere:locale:title}')).toBe('Sud');
+    expect(tFr.format('{geo.sphere:locale:upper}')).toBe('SUD');
+    expect(tFr.format('{geo.city:locale}')).toBe('Sydney (Australie)');
+
+    // 2. Leaf property fallback (e.g. sphere.south)
+    const tEsLeaf = new Tempo('2026-10-24T15:30:00', {
+      locale: 'es-ES',
+      geo: { sphere: 'south' },
+      registry: {
+        locales: {
+          es: {
+            sphere: {
+              south: 'sur',
+            },
+          },
+        },
+      },
+    });
+    expect(tEsLeaf.format('{geo.sphere:locale}')).toBe('sur');
+    expect(tEsLeaf.format('{geo.sphere:locale:title}')).toBe('Sur');
+
+    // 3. Flat property fallback (e.g. south -> 'Süden')
+    const tDeFlat = new Tempo('2026-10-24T15:30:00', {
+      locale: 'de-DE',
+      geo: { sphere: 'south' },
+      registry: {
+        locales: {
+          de: {
+            south: 'Süden',
+          },
+        },
+      },
+    });
+    expect(tDeFlat.format('{geo.sphere:locale}')).toBe('Süden');
+
+    // 4. Function value in dictionary
+    const tFunc = new Tempo('2026-10-24T15:30:00', {
+      locale: 'it-IT',
+      geo: { sphere: 'north' },
+      registry: {
+        locales: {
+          it: {
+            geo: {
+              sphere: {
+                north: (loc?: string) => `settentrione (${loc})`,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(tFunc.format('{geo.sphere:locale}')).toBe('settentrione (it-IT)');
+
+    // 5. Graceful fallback when no translation registered
+    const tNoTrans = new Tempo('2026-10-24T15:30:00', {
+      locale: 'ja-JP',
+      geo: { sphere: 'south' },
+    });
+    expect(tNoTrans.format('{geo.sphere:locale}')).toBe('south');
   });
 
 });

@@ -94,7 +94,7 @@ export function toTempoOrNull(
 	timeZone: string,
 	sphere?: 'north' | 'south'
 ): Tempo | null {
-	return ms != null
+	return isNumber(ms)
 		? new Tempo(ms, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) })
 		: null;
 }

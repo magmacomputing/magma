@@ -113,7 +113,7 @@ async function parseSingleInput(str: string, options?: AiParseOptions): Promise<
 		}
 	}
 
-	const intl = anchorTempo.intl;
+	const intl = anchorTempo.intl.info;
 	const contextString = `Current Time: ${anchorTempo.format('{wkd}, {yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')}, Timezone: ${tz}, Calendar: ${cal}, Locale: ${loc}, Hemisphere: ${sph}, Week Starts On: ${intl.firstDay} (1=Mon, 7=Sun, 6=Sat), Regional Weekend Days: [${intl.weekend.join(', ')}].`;
 
 	const winningCandidate = await executeWithMode<any>(

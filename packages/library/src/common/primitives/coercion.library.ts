@@ -1,6 +1,6 @@
 import { clone, stringify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
-import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject } from '#library/assertion.library.js';
+import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject, RE_INTEGER } from '#library/assertion.library.js';
 import { trimAll } from '#library/string.library.js';
 
 /**
@@ -136,7 +136,6 @@ export function asNumber<T = undefined>(val: unknown, fallback?: T): number | T 
 	return fallback as T;
 }
 
-const RE_INTEGER = /^[+-]?[0-9]+$/;
 const RE_SIGN_START = /^[+-]/;
 const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
 const MIN_SAFE_INTEGER_BIGINT = BigInt(Number.MIN_SAFE_INTEGER);

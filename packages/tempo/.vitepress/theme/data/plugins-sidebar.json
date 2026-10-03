@@ -13,8 +13,8 @@
     ]
   },
   {
-    "text": "AI Plugin (@magmacomputing/tempo-plugin-ai)",
-    "collapsed": false,
+    "text": "AI Plugin",
+    "collapsed": true,
     "items": [
       {
         "text": "Overview",
@@ -75,12 +75,34 @@
       {
         "text": "Provider Architecture",
         "link": "/doc/9-plugins/ai.architecture"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/ai.use-cases-and-patterns"
       }
     ]
   },
   {
-    "text": "Celestial Plugin (@magmacomputing/tempo-plugin-celestial)",
-    "collapsed": false,
+    "text": "Batch Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/batch.index"
+      },
+      {
+        "text": "Parallel Worker Pool & SharedArrayBuffer Architecture",
+        "link": "/doc/9-plugins/batch.worker-architecture"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/batch.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Celestial Plugin",
+    "collapsed": true,
     "items": [
       {
         "text": "Overview",
@@ -97,12 +119,38 @@
       {
         "text": "Astronomical Tidal Mechanics & Coastal Predictions",
         "link": "/doc/9-plugins/celestial.tides"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/celestial.use-cases-and-patterns"
       }
     ]
   },
   {
-    "text": "Geo Plugin (@magmacomputing/tempo-plugin-geo)",
-    "collapsed": false,
+    "text": "Dialects Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/dialects.index"
+      },
+      {
+        "text": "Migration & Legacy Compatibility",
+        "link": "/doc/9-plugins/dialects.migration-and-compatibility"
+      },
+      {
+        "text": "Token Specification & Cross-Ecosystem Matrix",
+        "link": "/doc/9-plugins/dialects.token-specification"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/dialects.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Geo Plugin",
+    "collapsed": true,
     "items": [
       {
         "text": "Overview",
@@ -119,12 +167,16 @@
       {
         "text": "Storage & Multi-Tenant Caching",
         "link": "/doc/9-plugins/geo.storage-and-caching"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/geo.use-cases-and-patterns"
       }
     ]
   },
   {
-    "text": "Holidays Plugin (@magmacomputing/tempo-plugin-holidays)",
-    "collapsed": false,
+    "text": "Holidays Plugin",
+    "collapsed": true,
     "items": [
       {
         "text": "Overview",
@@ -137,80 +189,130 @@
       {
         "text": "Regional Calendars & Dynamic Preloading",
         "link": "/doc/9-plugins/holidays.regional-calendars"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/holidays.use-cases-and-patterns"
       }
     ]
   },
   {
-    "text": "Spatial Plugin (@magmacomputing/tempo-plugin-spatial)",
-    "collapsed": false,
+    "text": "NTP Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/ntp.index"
+      },
+      {
+        "text": "Cristian Algorithm & Precision Specs",
+        "link": "/doc/9-plugins/ntp.algorithms-and-precision"
+      },
+      {
+        "text": "Ticker Integration & Atomic Clocks",
+        "link": "/doc/9-plugins/ntp.ticker-integration"
+      },
+      {
+        "text": "Use Cases & Production Patterns",
+        "link": "/doc/9-plugins/ntp.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Snap Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/snap.index"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/snap.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Spatial Plugin",
+    "collapsed": true,
     "items": [
       {
         "text": "Overview",
         "link": "/doc/9-plugins/spatial.index"
       },
       {
-        "text": "Natural Solar Time Offset",
-        "link": "/doc/9-plugins/spatial.solar-offset"
+        "text": "Transit, Velocity & Navigation",
+        "link": "/doc/9-plugins/spatial.transit-and-navigation"
       },
       {
         "text": "Spatial Geofencing & Bounding Boxes",
         "link": "/doc/9-plugins/spatial.geofencing"
       },
       {
-        "text": "Transit, Velocity & Navigation",
-        "link": "/doc/9-plugins/spatial.transit-and-navigation"
+        "text": "Natural Solar Time Offset",
+        "link": "/doc/9-plugins/spatial.solar-offset"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/spatial.use-cases-and-patterns"
       }
     ]
   },
   {
-    "text": "Ticker Plugin (@magmacomputing/tempo-plugin-ticker)",
-    "collapsed": false,
+    "text": "Sync Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/sync.index"
+      },
+      {
+        "text": "Lock-Free Atomics & Memory Architecture",
+        "link": "/doc/9-plugins/sync.atomic-architecture"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/sync.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
+    "text": "Ticker Plugin",
+    "collapsed": true,
     "items": [
       {
         "text": "Overview",
         "link": "/doc/9-plugins/ticker.index"
       },
       {
-        "text": "Event Streams & Reactive Clocks",
-        "link": "/doc/9-plugins/ticker.reactive-clocks-and-events"
-      },
-      {
         "text": "Intervals & Scheduling Engines",
         "link": "/doc/9-plugins/ticker.intervals-and-scheduling"
       },
       {
+        "text": "Event Streams & Reactive Clocks",
+        "link": "/doc/9-plugins/ticker.reactive-clocks-and-events"
+      },
+      {
         "text": "Resource Management & Lifecycle",
         "link": "/doc/9-plugins/ticker.resource-management"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/ticker.use-cases-and-patterns"
       }
     ]
   },
   {
     "text": "Single-Feature Community Plugins",
-    "collapsed": false,
+    "collapsed": true,
     "items": [
       {
         "text": "Astro (Seasons & Solstices)",
         "link": "/doc/9-plugins/astro.index"
       },
       {
-        "text": "Batch (Multi-Threaded SAB)",
-        "link": "/doc/9-plugins/batch.index"
-      },
-      {
-        "text": "Dialects (Luxon, strftime, Moment)",
-        "link": "/doc/9-plugins/dialects.index"
-      },
-      {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"
-      },
-      {
-        "text": "Snap (Block Rounding)",
-        "link": "/doc/9-plugins/snap.index"
-      },
-      {
-        "text": "Sync (Thread Synchronization)",
-        "link": "/doc/9-plugins/sync.index"
       }
     ]
   }

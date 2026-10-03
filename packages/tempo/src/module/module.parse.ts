@@ -43,6 +43,8 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 }
 
 const BRACED_CACHE = new WeakCache<string, RegExp>();
+const RE_SINGLE_WHITESPACE = /\s/;
+const RE_REGEX_ESCAPE_CHAR = /[\\^$*+?.()|[\]{}]/;
 
 /** Compiles a native braced format mask into a cached parsing expression. */
 function compileBracedPattern(fmt: string): RegExp {
@@ -129,10 +131,10 @@ function compileBracedPattern(fmt: string): RegExp {
 			i = end + 1;
 		} else {
 			const ch = fmt[i];
-			if (/\s/.test(ch)) {
+			if (RE_SINGLE_WHITESPACE.test(ch)) {
 				pattern += '\\s+';
-				while (i + 1 < fmt.length && /\s/.test(fmt[i + 1])) i++;
-			} else if (/[\\^$*+?.()|[\]{}]/.test(ch)) {
+				while (i + 1 < fmt.length && RE_SINGLE_WHITESPACE.test(fmt[i + 1])) i++;
+			} else if (RE_REGEX_ESCAPE_CHAR.test(ch)) {
 				pattern += '\\' + ch;
 			} else {
 				pattern += ch;
@@ -149,11 +151,7 @@ function compileBracedPattern(fmt: string): RegExp {
 /** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonthNum(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	if (enums.MONTH && (enums.MONTH as any)[cap]) return (enums.MONTH as any)[cap];
-	if (enums.MONTHS && (enums.MONTHS as any)[cap]) return (enums.MONTHS as any)[cap];
-	const short3 = cap.slice(0, 3);
-	if (enums.MONTH && (enums.MONTH as any)[short3]) return (enums.MONTH as any)[short3];
-	return undefined;
+	return enums.MONTH.get(cap) ?? enums.MONTHS.get(cap) ?? enums.MONTH.get(cap.slice(0, 3));
 }
 
 /** Parses input with a native braced mask, using the supplied date and calendar defaults. */
@@ -380,7 +378,7 @@ const _ParseEngine = {
 
 			dateTime = dt;
 
-			const hasExplicitTzOption = state.options && hasOwn(state.options, 'timeZone');
+			const hasExplicitTzOption = hasOwn(state.options, 'timeZone');
 			const effectiveTz = hasExplicitTzOption ? targetTz : (timeZone ?? targetTz);
 			if (isZonedDateTime(dateTime) && !state.errored)
 				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);
@@ -721,7 +719,7 @@ const withState = <A extends any[], R>(fn: (state: t.Internal.State, ...args: A)
 		}
 
 		const res = fn(state, ...callArgs) as any;
-		return (isObject(res) && 'type' in res && 'value' in res) ? res.value : res;
+		return (hasOwn(res, 'type') && hasOwn(res, 'value')) ? res.value : res;
 	}
 }
 

@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+</div>
+
+<br>
+
 # Astronomical Tidal Mechanics & Coastal Predictions
 
 This guide explores astronomical tidal state classification, syzygy and quadrature alignment, perigee factors, King Tide indicators, local coastal tide predictions, and lunitidal port calibration in `@magmacomputing/tempo-plugin-celestial`.

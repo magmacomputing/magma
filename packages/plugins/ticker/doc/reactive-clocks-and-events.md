@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+</div>
+
+<br>
+
 # Event Streams & Reactive Clocks
 
 This guide covers event-driven integrations with the `@magmacomputing/tempo-plugin-ticker` plugin, including event listeners, active timer diagnostics, and zero-drift multi-timezone dashboards using reactive signals.

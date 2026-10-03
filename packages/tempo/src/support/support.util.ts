@@ -5,12 +5,15 @@ import { raise as boundaryRaise } from '#library/boundary.library.js';
 import { sym, Token } from './support.symbol.js';
 import { asType, getType } from '#library/type.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
-import { isSymbol, isUndefined, isDefined, isString, isNullish, isObject } from '#library/assertion.library.js';
+import { isSymbol, isUndefined, isDefined, isString, isObject, isReference, RE_COMBINING_MARKS, RE_HEX_8 } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { getDTF, getLC } from '#library/international.library.js';
 import { getRuntime } from './support.runtime.js';
 import type * as t from '../tempo.type.js';
+
+/** @internal check if an object has an own property (respects Proxy/Shadowing) */
+export { hasOwn } from '#library/primitive.library.js';
 
 /** @internal normalize layout-order options into a clean string array */
 export function normalizeLayoutOrder(value: unknown): string[] {
@@ -87,9 +90,6 @@ export const logTrace = createLogger('trace');
 /** @internal check if an object is a proxy */
 export const isProxy = (obj: any): boolean => isDefined(obj?.[sym.$Target]);
 
-/** @internal check if an object has an own property (respects Proxy/Shadowing) */
-export const hasOwn = (obj: any, key: PropertyKey): boolean =>
-	isNullish(obj) ? false : Object.hasOwn(unwrap(obj), key);
 
 /** @internal get the prototype of an object */
 export const proto = (obj: any): any => Object.getPrototypeOf(unwrap(obj));
@@ -123,7 +123,7 @@ export function getSymbol(key?: string | symbol): symbol {
 	}
 
 	if (isString(key) && (key as string).includes('.')) {
-		const description = (key as string).split('.').pop()!;	// use last segment as description
+		const description = (key as string).split('.').at(-1)!;	// use last segment as description
 		return (Token as any)[key as string] ??= Symbol(description);
 	}
 
@@ -211,9 +211,18 @@ export function resolveMonthDay(value: t.MonthDay | boolean | Readonly<t.MonthDa
 		resolvedLocales
 	}
 }
+const RE_REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
+const RE_TRAILING_ESCAPED_DOT = /\\?\.$/;
+const RE_TRAILING_DOT = /\.$/;
+
+const escapeRegex = (s: string) => s.replace(RE_REGEX_ESCAPE, '\\$&');
+const optionalPunctuation = (s: string) => s.replace(RE_TRAILING_ESCAPED_DOT, '\\.?');
+const normalizeKey = (s: string) => s.replace(RE_TRAILING_DOT, '').toLowerCase();
+const removeAccents = (s: string) => s.normalize('NFD').replace(RE_COMBINING_MARKS, '');
+
 /** @internal identify valid sync tokens */
 export function isSyncToken(status: any): status is string {
-	return isString(status) && /^[0-9a-f]{8}$/.test(status);
+	return isString(status) && RE_HEX_8.test(status);
 }
 
 /** @internal generate localized snippets for months, weekdays, and relative events */
@@ -228,10 +237,6 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 	const events: Record<string, string> = {};
 
 	const dtOptions: Intl.DateTimeFormatOptions = { timeZone: 'UTC' };
-	const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-	const optionalPunctuation = (s: string) => s.replace(/\\?\.$/, '\\.?');
-	const normalizeKey = (s: string) => s.replace(/\.$/, '').toLowerCase();
-	const removeAccents = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 	const addEntry = (map: Record<string, { value: number; locale: string }>, locale: string, str: string, index: number, longList: string[], shortList?: string[]) => {
 		const key = normalizeKey(str);
@@ -241,14 +246,13 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 		if (unaccented !== key) map[unaccented] = { value: index, locale };
 
 		longList.push(optionalPunctuation(escapeRegex(str)));
-		if (unaccented !== key) {
+		if (unaccented !== key)
 			longList.push(optionalPunctuation(escapeRegex(unaccented)));
-		}
+
 		if (shortList) {
 			shortList.push(optionalPunctuation(escapeRegex(str)));
-			if (unaccented !== key) {
+			if (unaccented !== key)
 				shortList.push(optionalPunctuation(escapeRegex(unaccented)));
-			}
 		}
 	};
 

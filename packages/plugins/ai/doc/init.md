@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `initAI` — Provider Initialization & Farm Configuration
 
 `initAI()` sets up the global configuration for `@magmacomputing/tempo-plugin-ai`, managing provider authentication, multi-provider execution modes, global SLAs/timeouts, and caching strategies.

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	haversineDistance,
 	calculateBearing,
@@ -82,7 +82,7 @@ export const SpatialPlugin: TempoPlugin<SpatialPluginOptions> = definePlugin({
 	install(this: any, TempoClass: any) {
 		const installedClass = TempoClass || this;
 
-		if (!Object.hasOwn(installedClass, 'spatial')) {
+		if (!hasOwn(installedClass, 'spatial')) {
 			const spatialNamespace: TempoSpatialNamespace = {
 				distance: haversineDistance,
 				bearing: calculateBearing,

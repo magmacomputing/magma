@@ -1,7 +1,7 @@
 import { toHex } from '#library/number.library.js';
 import { objectify } from '#library/serialize.library.js';
 import { asString, asError } from '#library/coercion.library.js';
-import { isError, isString, isPlainObject, isText } from '#library/assertion.library.js';
+import { isError, isString, isPlainObject, isText, RE_WHITESPACES } from '#library/assertion.library.js';
 import { bufferToBase64, base64ToBuffer, encodeBuffer, encodeText, decodeBuffer } from '#library/buffer.library.js';
 
 const crypto = globalThis.crypto;
@@ -160,8 +160,6 @@ export const verify = async (signature: Promise<ArrayBuffer> | ArrayBuffer | Uin
 	return subtle.verify(keys.SignKey, keypair.publicKey, buffer as BufferSource, encodeBuffer(doc));
 }
 
-const RE_WHITESPACE = /\s+/g;
-
 /**
  * Compares two byte buffers in constant time to prevent timing attacks.
  * 
@@ -199,7 +197,7 @@ export const importPublicKey = async (pem: string, alg: string = keys.SignKey, h
 
 	const pemContents = pem
 		.substring(pem.indexOf(pemHeader) + pemHeader.length, pem.indexOf(pemFooter))
-		.replace(RE_WHITESPACE, '');
+		.replace(RE_WHITESPACES, '');
 
 	const binaryDer = base64ToBuffer(pemContents);
 
@@ -228,7 +226,7 @@ export const importPrivateKey = async (pem: string, alg: string = keys.SignKey, 
 
 	const pemContents = pem
 		.substring(pem.indexOf(pemHeader) + pemHeader.length, pem.indexOf(pemFooter))
-		.replace(RE_WHITESPACE, '');
+		.replace(RE_WHITESPACES, '');
 
 	const binaryDer = base64ToBuffer(pemContents);
 

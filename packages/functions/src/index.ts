@@ -1,20 +1,45 @@
 // --- Business ---
 export { isSameFiscalQuarter } from './business/isSameFiscalQuarter.js';
 export { workingHoursUntil, type SLAOptions, preloadHolidays } from './business/workingHoursUntil.js';
+export {
+	isBusinessDay,
+	nextBusinessDay,
+	prevBusinessDay,
+	addBusinessDays,
+	businessDaysBetween,
+	type BusinessDayOptions,
+} from './business/index.js';
 
 // --- Calendar ---
-export { getPublicHolidays, type PublicHoliday } from './calendar/getPublicHolidays.js';
-export { isFirstDayOfMonth } from './calendar/isFirstDayOfMonth.js';
-export { getISOWeekOfYear } from './calendar/getISOWeekOfYear.js';
+export {
+	getISOWeekOfYear,
+	isFirstDayOfMonth,
+	isLastDayOfMonth,
+	isLeapYear,
+	daysInMonth,
+	isWeekend,
+	isWeekday,
+	getPublicHolidays,
+	type WeekendOptions,
+	type PublicHoliday,
+	type DateInput,
+	type TemporalLikeDate,
+} from './calendar/index.js';
 
 // --- Scheduling ---
 export { nextCron, prevCron } from './scheduling/cron.js';
 
 // --- Timezone & Location ---
-export { isDST } from './timezone/isDST.js';
-export { normalizeUtcOffset } from './timezone/normalizeUtcOffset.js';
-export { getOffsets } from './timezone/getOffsets.js';
-export { getHemisphere } from './timezone/getHemisphere.js';
+export {
+	isDST,
+	normalizeUtcOffset,
+	getOffsets,
+	getHemisphere,
+	isValidTimeZone,
+	getDSTTransitions,
+	type Hemisphere,
+	type DSTTransitionsResult,
+} from './timezone/index.js';
 
 // --- Duration ---
 export { normaliseFractionalDurations } from './duration/normaliseFractionalDurations.js';
@@ -26,6 +51,7 @@ export {
 	getMoonriseMoonset,
 	getLunarPosition,
 	getLunarTransit,
+	getLunarAntiTransit,
 	getLunarDistance,
 	getCrescentTilt,
 	getSolarEvents,
@@ -37,6 +63,8 @@ export {
 	getEclipse,
 	SYNODIC_MONTH,
 	REF_NEW_MOON_MS,
+	HALF_DAY_MS,
+	DAY_MS,
 	LUNAR_PHASE_KEYS,
 	SOLAR_PHASE_STATES,
 	SOLAR_PHASE_NAMES,
@@ -69,8 +97,10 @@ export {
 export {
 	haversineDistance,
 	calculateBearing,
+	calculateDestination,
 	calculateMidpoint,
 	calculateVelocity,
+	closestCoordinate,
 	isImpossibleTravel,
 	isWithin,
 	inBoundingBox,
@@ -90,5 +120,40 @@ export {
 	type GeoConfig,
 	type GeoSphere,
 	type CoordinateInput,
+	type ClosestCoordinateResult,
 } from './spatial/index.js';
+
+// --- Support & Type Assertions ---
+export {
+	isNumber,
+	isString,
+	isText,
+	isBoolean,
+	isFunction,
+	isNullish,
+	isUndefined,
+	isDefined,
+	isDate,
+	isPrimitive,
+	isObject,
+	isReference,
+	isTempo,
+	isTemporal,
+	getTemporal,
+	unwrapTemporal,
+	extractDateParts,
+	coerceZonedDateTime,
+	extractEpochMs,
+	toEpochMs,
+	isLeapYearNumber,
+	ISO_CALENDAR_DATE_REGEX,
+	getLocale,
+	fetchWithTimeout,
+	normalizeCoords,
+	extractRawCoords,
+	resolveCoordinates,
+	type ResolvedDateParts,
+	type DateSourceType,
+} from './support/index.js';
+
 

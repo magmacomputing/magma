@@ -2,9 +2,18 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
-## [2.5.2] - 2026-09-30
+## [2.6.0] - 2026-10-02
+
+### Added
+- **NTP Clock Drift Compensation (`ntp: true`)**:
+  - Integrated optional NTP clock synchronization support via `options.ntp: true`.
+  - When enabled, seeds ticker cadence baseline from `Tempo.ntp.now()` and compensates cadence scheduling delays against remote server drift (`Tempo.ntp.offset`).
+  - Added graceful fallback to system clock if `@magmacomputing/tempo-plugin-ntp` is not loaded or uncalibrated.
+  - Added `ntp: boolean` status flag to `ticker.info` and `Tempo.tickers` snapshot registry.
 
 ### Changed & Refactored
+- **Runtime Introspection & Branding (`Symbol.toStringTag`)**:
+  - Added `[Symbol.toStringTag]` getter returning `'Tempo.Ticker'` on `TickerInstance` for structured runtime type identification and DevTools inspection.
 - **Reactive Stream Engine Migration (`Reactive<Tempo>`)**:
   - Re-architected internal async iteration, push event dispatching, and pull queuing to delegate directly to `Reactive<Tempo>` from the Tempo Plugin SDK (`#library`).
   - Eliminated manual promise queue state and listener dispatch boilerplate.

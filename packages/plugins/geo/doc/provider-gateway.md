@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+</div>
+
+<br>
+
 # Pluggable Geocoding Provider Gateway
 
 This guide explains how to connect custom geocoding and geolocation providers (such as OpenStreetMap Nominatim, Mapbox, Google Maps, or internal corporate IP proxies) to `@magmacomputing/tempo-plugin-geo`.

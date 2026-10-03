@@ -1,4 +1,4 @@
-import { isCallable, isString, isPlainObject } from '#library/assertion.library.js';
+import { isCallable, isString, isPlainObject, hasOwn } from '#library/assertion.library.js';
 
 /**
  * Type for a JSONC reviver function that transforms parsed values.
@@ -151,7 +151,7 @@ export function parseJSONC<T = any>(
 ): T | undefined {
 	const isFn = isCallable(optionsOrReviver);
 	const reviver = isFn ? optionsOrReviver : optionsOrReviver?.reviver;
-	const isSafe = !isFn && (optionsOrReviver?.safe === true || (optionsOrReviver != null && 'fallback' in optionsOrReviver));
+	const isSafe = !isFn && (optionsOrReviver?.safe === true || hasOwn(optionsOrReviver, 'fallback'));
 	const fallback = !isFn ? optionsOrReviver?.fallback : undefined;
 
 	try {
@@ -218,7 +218,7 @@ export function isRawJSON(obj: unknown): boolean {
 	if (isCallable((JSON as any).isRawJSON))
 		return (JSON as any).isRawJSON(obj);
 
-	return isPlainObject(obj) && 'rawJSON' in obj && isString((obj as any).rawJSON);
+	return isPlainObject(obj) && hasOwn(obj, 'rawJSON') && isString(obj.rawJSON);
 }
 
 /**

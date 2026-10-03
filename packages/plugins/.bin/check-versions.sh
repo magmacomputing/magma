@@ -8,6 +8,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 
 packages=(
   "tempo:packages/tempo/package.json"
+  "tempo-fns:packages/functions/package.json"
 )
 
 for plugin_dir in "${REPO_ROOT}/packages/plugins"/*; do

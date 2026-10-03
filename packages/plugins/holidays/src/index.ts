@@ -1,4 +1,4 @@
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 import {
 	isPublicHoliday,
@@ -168,7 +168,7 @@ export const HolidaysPlugin: TempoPlugin = definePlugin({
 			normalizeCountryCode,
 		};
 
-		if (!Object.hasOwn(TempoClass, 'holidays')) {
+		if (!hasOwn(TempoClass, 'holidays')) {
 			Object.defineProperty(TempoClass, 'holidays', {
 				value: Object.freeze(staticNamespace),
 				writable: false,
@@ -177,7 +177,7 @@ export const HolidaysPlugin: TempoPlugin = definePlugin({
 			});
 		}
 
-		if (!Object.hasOwn(TempoClass.prototype, 'holidays')) {
+		if (!hasOwn(TempoClass.prototype, 'holidays')) {
 			Object.defineProperty(TempoClass.prototype, 'holidays', {
 				get(this: Tempo): TempoHolidaysNamespace {
 					const instance = this;

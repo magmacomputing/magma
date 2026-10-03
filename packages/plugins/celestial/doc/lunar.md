@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+</div>
+
+<br>
+
 # Lunar Ephemeris, Phases & Topocentric Position
 
 This guide covers synodic lunar phase cycles, illumination ratio, lunar age, hemisphere-aware emoji rendering, topocentric horizon events (`moonrise`/`moonset`), meridian transits, real-time sky position (`altitude`/`azimuth`), crescent tilt orientation, distance, and supermoon/micromoon identification in `@magmacomputing/tempo-plugin-celestial`.

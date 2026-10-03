@@ -49,6 +49,7 @@ Explore detailed guides on specific capabilities:
 - **[Intervals & Scheduling Engines](./intervals-and-scheduling.md)**: Semantic durations (`{ months: 1 }`), calendar terms (`#timeOfDay`), 5-field Cron expressions (`0 9 * * 1-5`), RFC 5545 RRULE, countdowns, and one-shot meeting alerts.
 - **[Resource Management & Lifecycle](./resource-management.md)**: Explicit resource management (`using` / `await using`), async generators (`for await`), programmatic controls (`stop`, `info`, `pulse`), limits, and zombie process prevention.
 - **[Event Streams & Reactive Clocks](./reactive-clocks-and-events.md)**: Event listeners (`.on('pulse')`, `.on('stop')`, `.on('catch')`), registry diagnostics (`Ticker.active`), and zero-drift multi-timezone dashboards with UI signals.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Zero-drift telemetry heartbeats, leak prevention via `using`, streaming market tick generators, multi-timezone cron schedules, and laptop sleep recovery.
 
 ---
 

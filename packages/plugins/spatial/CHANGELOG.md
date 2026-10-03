@@ -5,6 +5,13 @@ All notable changes to the `@magmacomputing/tempo-plugin-spatial` project will b
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-10-03
+
+### Changed
+- **Internal Cleanups & Compatibility**:
+  - Replaced prototype `Object.hasOwn` with the unified `hasOwn` helper from `@magmacomputing/tempo/plugin/sdk`.
+  - Added comprehensive documentation for geofencing, solar offset, navigation, and transit use cases.
+
 ## [1.0.0] - 2026-09-27
 
 ### Added

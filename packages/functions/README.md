@@ -18,20 +18,32 @@ This package provides a bridge for developers transitioning from legacy date wra
 
 ### Why `tempo-fns`?
 1. **Tree-shakeable**: Import exactly what you need. `import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns'` pulls in zero extra bloat.
-2. **Native Temporal**: Functions accept native `Temporal.ZonedDateTime` and `Temporal.PlainDate` objects. You don't *have* to use the `Tempo` class.
-3. **Synergy**: If you *do* use the `Tempo` class wrapper, `tempo-fns` provides advanced business-intelligence utilities that inherently understand Tempo's Terms engine (e.g., `isSameFiscalQuarter`).
+2. **Native Temporal & Universal Inputs**: Functions accept native `Temporal.PlainDate`, `Temporal.ZonedDateTime`, ISO date strings, standard JS `Date` objects, and timestamps. No wrapper required.
+3. **Synergy**: If you *do* use the `Tempo` class wrapper, `tempo-fns` functions seamlessly accept `Tempo` instances and provide advanced business-intelligence utilities that understand Tempo's Terms engine (e.g., `isSameFiscalQuarter`).
 
 ## Usage (NPM / Modern Bundlers)
 
+Every function is a standalone, pure export:
+
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { isFirstDayOfMonth, isSameFiscalQuarter } from '@magmacomputing/tempo-fns';
+import { isFirstDayOfMonth, isBusinessDay, nextBusinessDay, haversineDistance } from '@magmacomputing/tempo-fns';
 
-const today = new Tempo();
+// 1. Works with simple ISO strings
+isFirstDayOfMonth('2026-10-01'); // true
+isBusinessDay('2026-10-02');    // true (Friday)
 
-if (isFirstDayOfMonth(today)) {
-  console.log('Rent is due!');
-}
+// 2. Works with native Temporal objects
+const today = Temporal.Now.plainDateISO();
+const nextTradingDay = nextBusinessDay(today);
+
+// 3. Works with standard JS Dates & timestamps
+isFirstDayOfMonth(new Date(2026, 9, 1)); // true
+
+// 4. Geodesic & Navigation math with zero dependencies
+const distanceKm = haversineDistance(
+  { lat: 40.7128, lng: -74.006 }, // NYC
+  { lat: 51.5074, lng: -0.1278 }   // London
+);
 ```
 
 ## Usage (Static CDN / Browser Global)
@@ -43,5 +55,6 @@ If you aren't using a bundler (like Vite, Webpack, or Rollup), we provide a pre-
 <script>
   // Access functions via the Functions global
   Functions.isFirstDayOfMonth(Temporal.Now.plainDateISO());
+  Functions.isBusinessDay('2026-10-02');
 </script>
 ```

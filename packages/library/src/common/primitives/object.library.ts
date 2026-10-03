@@ -36,9 +36,8 @@ const getObjectKeys = (obj: any): PropertyKey[] => {
 		const descs = Object.getOwnPropertyDescriptors(curr);
 		for (const [key, desc] of Object.entries(descs)) {
 			if (!isSafeKey(key)) continue;
-			if (desc.enumerable || isFunction(desc.get)) {
+			if (desc.enumerable || isFunction(desc.get))
 				keys.add(key);
-			}
 		}
 		curr = Object.getPrototypeOf(curr);
 	}

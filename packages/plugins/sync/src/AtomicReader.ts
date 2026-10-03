@@ -18,6 +18,10 @@ export class AtomicReader {
 		this.#view = new BigInt64Array(buffer);
 	}
 
+	get [Symbol.toStringTag](): string {
+		return 'Tempo.AtomicReader';
+	}
+
 	/**
 	 * Returns the exact synchronized epoch timestamp in nanoseconds.
 	 * Executes in O(1) time with lock-free atomic read.

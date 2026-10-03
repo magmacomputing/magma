@@ -1,5 +1,6 @@
 import { stringify, objectify } from '#library/serialize.library.js';
 import { padTo } from '#library/string.library.js';
+import { RE_BASE64URL } from '#library/assertion.library.js';
 
 const CHUNK_SIZE = 8192;
 
@@ -8,7 +9,6 @@ const RE_SLASH = /\//g;
 const RE_EQUALS = /=/g;
 const RE_DASH = /-/g;
 const RE_UNDERSCORE = /_/g;
-const RE_BASE64URL = /^[A-Za-z0-9_-]*$/;
 
 /**
  * Encodes a text string into a Uint8Array using UTF-8 encoding.

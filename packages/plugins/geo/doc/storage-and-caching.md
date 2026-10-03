@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+</div>
+
+<br>
+
 # Storage & Multi-Tenant Caching
 
 This guide covers coordinate persistence, 24-hour TTL caching, multi-tenant partitioning, and critical operational warnings when using `@magmacomputing/tempo-plugin-geo`.

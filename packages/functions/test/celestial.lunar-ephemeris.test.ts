@@ -29,6 +29,9 @@ describe('Lunar Ephemeris Pure Functions (tempo-fns)', () => {
 			expect(typeof res.angularDiameterArcmin).toBe('number');
 			expect(res.angularDiameterArcmin).toBeGreaterThan(28);
 			expect(res.angularDiameterArcmin).toBeLessThan(35);
+
+			expect(typeof res.zenith).toBe('number');
+			expect(res.zenith).toBeCloseTo(90 - res.altitude, 1);
 		});
 
 		it('calculates position correctly when given coordinate options object', () => {
@@ -37,6 +40,7 @@ describe('Lunar Ephemeris Pure Functions (tempo-fns)', () => {
 			expect(res.longitude).toBe(-0.1278);
 			expect(typeof res.rightAscensionDeg).toBe('number');
 			expect(typeof res.declinationDeg).toBe('number');
+			expect(typeof res.zenith).toBe('number');
 		});
 	});
 

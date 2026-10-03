@@ -38,6 +38,12 @@ export const isNullish = (val: any): val is null | undefined =>
 	val === null || val === undefined;
 
 /**
+ * Validates whether an argument is undefined.
+ */
+export const isUndefined = (val: any): val is undefined =>
+	val === undefined;
+
+/**
  * Validates whether an argument is defined (neither null nor undefined).
  */
 export const isDefined = <T>(val: T | null | undefined): val is T =>
@@ -66,6 +72,15 @@ export const isObject = (val: any): val is Record<string | symbol, any> =>
  */
 export const isReference = (val: any): val is object =>
 	!isPrimitive(val);
+
+/**
+ * Determines whether an object has a property with the specified name as its own property.
+ */
+export function hasOwn<K extends PropertyKey>(obj: unknown, key: K): obj is Record<K, unknown> {
+	if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function'))
+		return false;
+	return Object.hasOwn(obj, key);
+}
 
 /**
  * Checks if the given argument is an object with a Symbol.toStringTag property.

@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `parseAI` — Natural Language Point-in-Time Parsing
 
 `parseAI()` is the primary entry point for converting complex, unstructured natural language date/time expressions into deterministic `Tempo` instances.

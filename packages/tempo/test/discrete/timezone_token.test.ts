@@ -72,13 +72,22 @@ describe('Canonical {tz} and backwards-compatible {tzd} timezone token', () => {
     const t = new Tempo('2026-08-06T16:16:00+10:00[Australia/Sydney]', { locale: 'en-AU' });
     expect(t.format('{tz}')).toBe('Australia/Sydney');
     expect(t.format('{tz:offset}')).toBe('+10:00');
+    expect(t.format('{tz:offset:short}')).toBe('+10');
+    expect(t.format('{tz:short:offset}')).toBe('+10');
+    expect(t.format('{tz:offset:compact}')).toBe('+1000');
     expect(t.format('{tz:short}')).toBe('AEST');
+    expect(t.format('{tz:long}')).toBe('Australian Eastern Standard Time');
+    expect(t.format('{tz:z}')).toBe('+10');
+    expect(t.format('{tz:zz}')).toBe('+10:00');
+    expect(t.format('{tz:zzz}')).toBe('+1000');
   });
 
   it('formats with legacy {tzd} and modifiers identically to {tz}', () => {
     const t = new Tempo('2026-08-06T16:16:00+10:00[Australia/Sydney]', { locale: 'en-AU' });
     expect(t.format('{tzd}')).toBe('Australia/Sydney');
     expect(t.format('{tzd:offset}')).toBe('+10:00');
+    expect(t.format('{tzd:offset:short}')).toBe('+10');
+    expect(t.format('{tzd:offset:compact}')).toBe('+1000');
     expect(t.format('{tzd:short}')).toBe('AEST');
   });
 

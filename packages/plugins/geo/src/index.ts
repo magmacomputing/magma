@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	geoLookup,
 	resolveGeoCoordinates,
@@ -32,7 +32,7 @@ import {
 import {
 	geoLocation,
 } from '@magmacomputing/library/browser/mapper.library.js';
-import { isString, isNumber, isObject, isEmpty, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
+import { isString, isNumber, isObject, isText, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
 import type { MutableObject } from '@magmacomputing/library/primitives/type.library.js';
 
 /**
@@ -149,7 +149,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 			}
 		}
 
-		if (!Object.hasOwn(installedClass, 'geo')) {
+		if (!hasOwn(installedClass, 'geo')) {
 			const geoNamespace: TempoGeoNamespace = {
 				lookup: (opts?: Record<string, any>) => geoLookup(getEffectiveOptions(opts)),
 				resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
@@ -235,7 +235,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 
 				let instance: Tempo = this;
 				const targetTz = mergedGeo.timezone;
-				if (setTimezone && isString(targetTz) && !isEmpty(targetTz))
+				if (setTimezone && isText(targetTz))
 					instance = this.set({ timeZone: targetTz });
 
 				const targetLocale = (mergedGeo.country || isString(setLocale))

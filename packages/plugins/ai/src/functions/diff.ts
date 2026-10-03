@@ -30,7 +30,7 @@ function calculateGroundingMetrics(
 	startTempo: Tempo,
 	endTempo: Tempo,
 	holidays?: string[],
-	weekendDays: readonly number[] = startTempo.intl?.weekend ?? [6, 7],
+	weekendDays: readonly number[] = startTempo.intl?.info?.weekend ?? [6, 7],
 ) {
 	const calendarDays = Math.round(startTempo.until(endTempo, 'day') * 100) / 100;
 	const elapsedHours = Math.round(startTempo.until(endTempo, 'hour') * 100) / 100;

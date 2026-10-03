@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-holidays</a>
+</div>
+
+<br>
+
 # Regional Calendars & Dynamic Preloading
 
 The **Regional Holidays Plugin** features high-precision offline algorithmic calendars for major world economies and dynamic asynchronous preloading for over 100+ countries.

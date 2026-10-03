@@ -7,6 +7,10 @@ export class HttpError extends Error {
 		super(`${status}: ${statusText}`);
 		this.name = 'HttpError';
 	}
+
+	get [Symbol.toStringTag](): string {
+		return 'Tempo.HttpError';
+	}
 }
 
 export interface FetchRequestConfig {
