@@ -5,6 +5,13 @@ All notable changes to `@magmacomputing/tempo-plugin-dialects` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-10-03
+
+### Changed
+- **Tempo 4.5.0 Compatibility**:
+  - Updated peer and development dependencies to require `@magmacomputing/tempo` `^4.5.0`.
+  - Refactored month parsing in `ldml.compiler.ts` and `strftime.compiler.ts` to utilize the safe `enums.MONTH.get()` registry API without unsafe type assertions.
+
 ## [1.0.2] - 2026-09-29
 
 ### Changed & Performance

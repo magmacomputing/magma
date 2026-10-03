@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "2.3.2"
+    "version": "2.3.1"
   },
   {
     "id": "ticker",
@@ -78,7 +78,7 @@
     "packageName": "@magmacomputing/tempo-plugin-geo",
     "plan": "community",
     "status": "active",
-    "version": "1.4.1"
+    "version": "1.4.2"
   },
   {
     "id": "_std",
@@ -95,7 +95,7 @@
     "name": "Dialects Plugin",
     "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
     "packageName": "@magmacomputing/tempo-plugin-dialects",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "plan": "community",
     "status": "active"
   },
@@ -113,7 +113,7 @@
     "name": "Spatial Plugin",
     "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
     "packageName": "@magmacomputing/tempo-plugin-spatial",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "plan": "community",
     "status": "active"
   },

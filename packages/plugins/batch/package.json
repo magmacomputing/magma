@@ -33,10 +33,11 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.4.0"
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "devDependencies": {
-    "@js-temporal/polyfill": "^0.5.1"
+    "@js-temporal/polyfill": "^0.5.1",
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "keywords": [
     "tempo",

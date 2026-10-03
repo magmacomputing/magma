@@ -33,9 +33,11 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.4.3"
+    "@magmacomputing/tempo": "^4.5.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@magmacomputing/tempo": "^4.5.0"
+  },
   "keywords": [
     "tempo",
     "tempo-plugin",

@@ -29,14 +29,14 @@
     "prepublishOnly": "tempo-cli prepublish"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.4.0"
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-ntp",
     "plan": "community"
   },
   "devDependencies": {
-    "@magmacomputing/tempo": "^4.4.4"
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "keywords": [
     "tempo",

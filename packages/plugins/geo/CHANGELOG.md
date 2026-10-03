@@ -5,6 +5,14 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2026-10-03
+
+### Changed
+- **Internal Cleanups & Compatibility**:
+  - Replaced prototype `Object.hasOwn` with the unified `hasOwn` helper from `@magmacomputing/tempo/plugin/sdk`.
+  - Streamlined timezone string validation with `isText`.
+  - Added comprehensive documentation for use cases, patterns, and cultural synchronization.
+
 ## [1.4.1] - 2026-09-28
 
 ### Fixed
