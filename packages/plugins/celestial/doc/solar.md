@@ -28,13 +28,20 @@ import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
-const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+const t = new Tempo('2026-06-21T12:00:00Z', {
+  timeZone: 'America/New_York',
+  geo: { lat: 40.7128, lng: -74.006 }
+});
 
 console.log(t.term.sun);          // 'daylight'
 console.log(t.term.solar.key);    // 'daylight'
 console.log(t.term.solar.phase);  // 'Daylight'
 console.log(t.term.solar.phases); // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 ```
+
+::: tip Explicit Timezone Pairing
+While `{ geo: { lat, lng } }` automatically determines `sphere`, it does not auto-infer political timezone rules. Always pair geographic coordinates with an explicit `timeZone` (e.g. `'America/New_York'` or `'UTC'`) to ensure twilight ranges and day/night boundary timestamps project deterministically across all environments (including CI runners and cloud servers).
+:::
 
 ---
 

@@ -78,12 +78,13 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 	});
 
 	it('honors numeric anchor 0 in LunarTerm and SolarTerm resolvers', () => {
-		const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+		const t = new Tempo('2026-06-21T12:00:00Z', { timeZone: 'UTC', geo: { lat: 40.7128, lng: -74.006 } });
 		
 		const solarRes = SolarTerm.resolve.call(t, 0)[0];
 		const lunarRes = LunarTerm.resolve.call(t, 0)[0];
 
-		expect(solarRes.year).toBe(1970);
+		// Epoch 0 (1970-01-01T00:00:00Z) is in the night phase starting at sunset on 1969-12-31 in New York
+		expect(solarRes.year).toBe(1969);
 		expect(lunarRes.year).toBe(1969);
 	});
 
