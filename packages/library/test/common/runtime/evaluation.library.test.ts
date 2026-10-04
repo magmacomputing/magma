@@ -1,4 +1,4 @@
-import { evaluate, evaluateAsync, evaluateConfig, evaluateConfigAsync } from '#library/evaluation.library.js';
+import { evaluate, evaluateWith, evaluateString, evaluateAsync, evaluateConfig, evaluateConfigAsync } from '#library/evaluation.library.js';
 import { registerType } from '#library/type.library.js';
 import { dynamicProxy } from '#library/proxy.library.js';
 import { Pledge } from '#library/pledge.class.js';
@@ -321,6 +321,42 @@ describe('evaluation.library', () => {
 			const desc = Object.getOwnPropertyDescriptor(proxy, 'frozenProp');
 			expect(desc?.configurable).toBe(false);
 			expect(desc?.writable).toBe(false);
+		});
+	});
+
+	describe('evaluateWith()', () => {
+		it('should return scalar values as-is', () => {
+			expect(evaluateWith(42)).toBe(42);
+			expect(evaluateWith('static')).toBe('static');
+			expect(evaluateWith(null)).toBe(null);
+		});
+
+		it('should invoke functions forwarding arguments', () => {
+			const fn = (a: number, b: number) => a + b;
+			expect(evaluateWith(fn, 2, 3)).toBe(5);
+
+			const greet = (name: string, title = 'Mr.') => `Hello, ${title} ${name}`;
+			expect(evaluateWith(greet, 'Smith')).toBe('Hello, Mr. Smith');
+			expect(evaluateWith(greet, 'Jones', 'Dr.')).toBe('Hello, Dr. Jones');
+		});
+	});
+
+	describe('evaluateString()', () => {
+		it('should stringify scalar values', () => {
+			expect(evaluateString(42)).toBe('42');
+			expect(evaluateString('static')).toBe('static');
+			expect(evaluateString(true)).toBe('true');
+			expect(evaluateString(null)).toBe('');
+			expect(evaluateString(undefined)).toBe('');
+		});
+
+		it('should invoke functions forwarding arguments and stringify result', () => {
+			const fn = (locale?: string) => locale === 'fr' ? 'Sud' : 'South';
+			expect(evaluateString(fn, 'fr')).toBe('Sud');
+			expect(evaluateString(fn, 'en')).toBe('South');
+			expect(evaluateString(() => 123)).toBe('123');
+			expect(evaluateString(() => null)).toBe('');
+			expect(evaluateString(() => undefined)).toBe('');
 		});
 	});
 });

@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+</div>
+
+<br>
+
 # Intervals & Scheduling Engines
 
 The `@magmacomputing/tempo-plugin-ticker` plugin supports a unified scheduling interface capable of driving continuous loops via semantic durations, calendar terms, standard 5-field cron syntax, RFC 5545 recurrence rules, and virtual clock countdowns.
@@ -169,3 +175,36 @@ Tempo.ticker({
 
 > [!NOTE]
 > **Future Seeds**: If the seed time is in the future, the Ticker remains dormant until that scheduled time is reached, fires its single pulse, and terminates automatically. For delays exceeding 32-bit integer timeout limits (~24.8 days), timeout capping re-arms the timer until the target epoch is reached.
+
+---
+
+## 8. Network Time & Clock Drift Compensation (`ntp: true`)
+
+When orchestrating mission-critical workflows across distributed nodes, virtual machines, or IoT edge devices whose local hardware clocks may drift, you can pair Ticker with `@magmacomputing/tempo-plugin-ntp`:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+
+Tempo.use(TickerPlugin);
+Tempo.use(NtpPlugin);
+
+// Calibrate once with reliable reference server (same-origin or CORS-enabled)
+await Tempo.ntp.sync('/api/time');
+
+// Start ticker with NTP compensation enabled
+await using driftCompensated = Tempo.ticker({
+  ntp: true,
+  seconds: 10,
+  limit: 5
+}, (t) => {
+  console.log('True NTP-synchronized pulse:', t.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{fff}'));
+});
+```
+
+When `ntp: true` is enabled:
+- **Baseline Initialization**: Defaults to `Tempo.ntp.now()` instead of system clock when unseeded.
+- **Delay Compensation**: Automatically shifts loop countdown delays against measured remote offset (`Tempo.ntp.offset`).
+- **Graceful Fallback**: If `@magmacomputing/tempo-plugin-ntp` is not loaded or uncalibrated, Ticker safely falls back to standard local system time without throwing errors.
+

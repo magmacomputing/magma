@@ -57,7 +57,7 @@ const DOMAIN_GROUPS: DomainGroup[] = [
     id: 'system',
     title: '⚡ High Performance & System Execution',
     description: 'Lock-free thread synchronization, continuous execution loops, and SAB multi-threading.',
-    pluginIds: ['batch', 'sync', 'ticker']
+    pluginIds: ['batch', 'ntp', 'sync', 'ticker']
   },
   {
     id: 'dialects',

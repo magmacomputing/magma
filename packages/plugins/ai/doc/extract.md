@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `extractAI` — Unstructured Text & Calendar Event Extraction
 
 `extractAI()` scans unstructured, multi-paragraph text (emails, meeting transcripts, chat logs, task notes, calendar invitations) to automatically identify, parse, and extract all embedded temporal entities and time-bound events into structured `TempoAiExtractResult` records containing native `Tempo` instances.

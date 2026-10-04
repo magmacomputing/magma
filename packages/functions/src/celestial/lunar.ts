@@ -247,10 +247,14 @@ export interface LunarPositionResult {
 	altitude: number;
 	/** Compass azimuth bearing in degrees from True North (0..360, North=0, East=90) */
 	azimuth: number;
+	/** Angular distance from overhead zenith in degrees (90° - altitude) */
+	zenith: number;
 	/** True if Moon is above observer's horizon accounting for horizontal parallax and refraction */
 	isAboveHorizon: boolean;
 	/** Epoch millisecond of upper meridian culmination (transit) during the observer's local calendar day, or undefined */
 	transitMs?: number | undefined;
+	/** Epoch millisecond of lower meridian culmination (anti-transit / nadir) during the observer's local calendar day, or undefined */
+	antiTransitMs?: number | undefined;
 	/** Apparent right ascension in degrees (0..360) */
 	rightAscensionDeg: number;
 	/** Apparent declination in degrees (-90..90) */
@@ -330,6 +334,56 @@ export function getLunarTransit(
 }
 
 /**
+ * Calculates the local lower meridian transit (lower culmination / nadir / anti-transit) timestamp for a date and location.
+ *
+ * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
+ * @param latOrOptions - Latitude in degrees or coordinate options
+ * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
+ * @returns Epoch millisecond timestamp of lower meridian transit (nadir), or undefined if no anti-transit occurs on the local calendar day
+ */
+export function getLunarAntiTransit(
+	dateInput: Date | number | string,
+	latOrOptions: number | SolarOptions = 0,
+	lonInput = 0
+): number | undefined {
+	const epochMs = toEpochMs(dateInput);
+
+	const { lng } = resolveCoordinates(latOrOptions, lonInput);
+	const { startOfDayMs } = getStartOfLocalDayMs(epochMs, lng);
+	const dayStartMs = startOfDayMs - (lng * 240000);
+
+	const getShiftedHa = (tMs: number) => {
+		const ha = getMoonHourAngle(tMs, lng);
+		let shifted = normalizeDegrees((ha * 180 / Math.PI) + 180);
+		if (shifted > 180) shifted -= 360;
+		return shifted * (Math.PI / 180);
+	};
+
+	let prevHa = getShiftedHa(dayStartMs);
+
+	for (let i = 1; i <= 24; i++) {
+		const currentMs = dayStartMs + (i * 3600000);
+		const currHa = getShiftedHa(currentMs);
+
+		if (prevHa < 0 && currHa >= 0) {
+			const fraction = -prevHa / (currHa - prevHa);
+			let antiTransitEst = Math.round(dayStartMs + ((i - 1 + fraction) * 3600000));
+			const refinedHa = getShiftedHa(antiTransitEst);
+			const rate = (currHa - prevHa) / 3600000;
+
+			if (rate !== 0)
+				antiTransitEst = Math.round(antiTransitEst - (refinedHa / rate));
+
+			return antiTransitEst;
+		}
+
+		prevHa = currHa;
+	}
+
+	return undefined;
+}
+
+/**
  * Calculates lunar distance, horizontal parallax, apparent angular diameter, and supermoon/micromoon status.
  *
  * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
@@ -353,12 +407,12 @@ export function getLunarDistance(dateInput: Date | number | string): LunarDistan
 }
 
 /**
- * Calculates topocentric altitude, azimuth, meridian transit, and apparent visual coordinates of the Moon.
+ * Calculates topocentric altitude, azimuth, meridian transit, anti-transit, and apparent visual coordinates of the Moon.
  *
  * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
  * @param latOrOptions - Latitude in degrees or coordinate options
  * @param lonInput - Longitude in degrees when `latOrOptions` is a latitude
- * @returns Real-time topocentric position (altitude, azimuth, visibility, transit, RA, Dec, distance)
+ * @returns Real-time topocentric position (altitude, azimuth, zenith, visibility, transit, anti-transit, RA, Dec, distance)
  */
 export function getLunarPosition(
 	dateInput: Date | number | string,
@@ -389,15 +443,20 @@ export function getLunarPosition(
 	const isAboveHorizon = (altGeoRad / rad) >= targetAlt;
 
 	const { distanceKm, angularDiameterArcmin } = getLunarDistanceMetrics(hp);
+	const altitude = Math.round(altDeg * 100) / 100;
+	const zenith = Math.round((90 - altitude) * 100) / 100;
 	const transitMs = getLunarTransit(epochMs, lat, lng);
+	const antiTransitMs = getLunarAntiTransit(epochMs, lat, lng);
 
 	return {
 		latitude: lat,
 		longitude: lng,
-		altitude: Math.round(altDeg * 100) / 100,
+		altitude,
 		azimuth: Math.round(azDeg * 100) / 100,
+		zenith,
 		isAboveHorizon,
 		transitMs,
+		antiTransitMs,
 		rightAscensionDeg: Math.round(normalizeDegrees(ra * 180 / Math.PI) * 100) / 100,
 		declinationDeg: Math.round((dec * 180 / Math.PI) * 100) / 100,
 		distanceKm,

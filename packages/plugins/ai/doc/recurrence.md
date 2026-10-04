@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `recurrenceAI` — Recurrence Rules & Schedule Translation
 
 `recurrenceAI()` provides multi-directional translation between natural language repeating schedule descriptions (*"Every 2nd Tuesday of the month at 3pm"*) and RFC 5545 **RRULE strings**, generating paged `Tempo` instance batches on demand.

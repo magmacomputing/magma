@@ -27,11 +27,11 @@
 ## ⚡ Quick Start
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
 // 🔌 Instantly Extensible (with deterministic defaults)
 Tempo.init({ 
-  plugins: [AstroPlugin],
+  plugins: [CelestialPlugin],
   timeZone: 'America/New_York'
 });
 

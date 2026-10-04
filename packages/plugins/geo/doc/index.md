@@ -47,6 +47,7 @@ Explore detailed guides on specific capabilities:
 - **[Provider Gateway & Geocoding](./provider-gateway.md)**: Forward geocoding, reverse geocoding, custom geocoding providers (`OpenStreetMapProvider`, `IpApiProvider`, `MockGeoProvider`), and call-site overrides.
 - **[Cultural Synchronization](./cultural-sync.md)**: Automatic cultural locale inference (`setLocale: true` / `'native'`), territorial language resolution, and internationalization synergy.
 - **[Storage & Multi-Tenant Caching](./storage-and-caching.md)**: Ambient coordinate caching, 24h TTL `BoundedCache`, tenant isolation, and server vs. client operational warnings.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Multi-tenant SaaS localization, pluggable geocoding gateways, isolated tenant storage caching, and server edge middleware.
 
 ---
 

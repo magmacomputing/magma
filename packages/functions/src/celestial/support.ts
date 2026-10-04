@@ -1,4 +1,41 @@
-import { isNumber, isObject, isString } from '../support/index.js';
+import {
+	isNumber,
+	isObject,
+	toEpochMs,
+} from '../support/index.js';
+
+export { toEpochMs };
+
+/**
+ * Resolves latitude, longitude, and elevation for celestial calculations,
+ * defaulting each missing or invalid component to 0.
+ *
+ * @param latOrOptions - Latitude number or options object
+ * @param lngInput - Optional longitude number
+ * @returns Object with lat, lng, and elevation numbers
+ */
+export function resolveCoordinates(
+	latOrOptions: number | SolarOptions = 0,
+	lngInput = 0
+): { lat: number; lng: number; elevation: number } {
+	if (isNumber(latOrOptions))
+		return { lat: latOrOptions, lng: isNumber(lngInput) ? lngInput : 0, elevation: 0 };
+
+	if (isObject(latOrOptions)) {
+		const geo = latOrOptions.geo;
+		const lat = latOrOptions.latitude ?? latOrOptions.lat ?? geo?.latitude ?? geo?.lat ?? 0;
+		const lng = latOrOptions.longitude ?? latOrOptions.long ?? latOrOptions.lng ?? latOrOptions.lon ?? geo?.longitude ?? geo?.lng ?? geo?.long ?? geo?.lon ?? 0;
+		const elevation = latOrOptions.elevation ?? geo?.elevation ?? 0;
+
+		return {
+			lat: isNumber(lat) ? lat : 0,
+			lng: isNumber(lng) ? lng : 0,
+			elevation: isNumber(elevation) ? elevation : 0,
+		};
+	}
+
+	return { lat: 0, lng: 0, elevation: 0 };
+}
 
 /** Average duration of a complete lunar cycle (new moon to new moon) in days */
 export const SYNODIC_MONTH = 29.53058867;
@@ -11,6 +48,12 @@ export const REF_PERIGEE_MS = 947031600000;
 
 /** Anomalistic Month length in days (perigee to perigee) */
 export const ANOMALISTIC_MONTH = 27.55455;
+
+/** Milliseconds in half a standard day (12 hours = 43,200,000 ms) */
+export const HALF_DAY_MS = 43_200_000;
+
+/** Milliseconds in a standard day (24 hours = 86,400,000 ms) */
+export const DAY_MS = 86_400_000;
 
 export interface SolarOptions {
 	latitude?: number;
@@ -31,43 +74,6 @@ export interface SolarOptions {
 export interface SolarTwilightWindow {
 	sunriseMs: number | null;
 	sunsetMs: number | null;
-}
-
-/**
- * Normalizes a Date object, ISO date string, or timestamp into milliseconds since the Unix epoch.
- *
- * @internal
- * @param dateInput - Date value, ISO date string, or epoch timestamp in milliseconds
- * @returns Timestamp in milliseconds since Unix epoch
- */
-export function toEpochMs(dateInput: Date | number | string): number {
-	return isNumber(dateInput)
-		? dateInput
-		: isString(dateInput)
-			? new Date(dateInput).getTime()
-			: dateInput.getTime();
-}
-
-/**
- * Resolves latitude, longitude, and elevation from positional arguments or a coordinate options object.
- *
- * @param latOrOptions - A latitude value or options containing coordinate fields
- * @param lngInput - The longitude used when `latOrOptions` is a numeric latitude
- * @returns An object containing the resolved `lat`, `lng`, and `elevation` values
- */
-export function resolveCoordinates(latOrOptions: number | SolarOptions = 0, lngInput = 0): { lat: number; lng: number; elevation: number } {
-	if (isNumber(latOrOptions))
-		return { lat: latOrOptions, lng: lngInput, elevation: 0 };
-
-	if (isObject(latOrOptions)) {
-		const geo = (latOrOptions as any).geo ?? latOrOptions;
-		const lat = geo.latitude ?? geo.lat ?? (latOrOptions as any).latitude ?? (latOrOptions as any).lat ?? 0;
-		const lng = geo.longitude ?? geo.lng ?? geo.lon ?? geo.long ?? (latOrOptions as any).longitude ?? (latOrOptions as any).lng ?? (latOrOptions as any).lon ?? (latOrOptions as any).long ?? 0;
-		const rawElevation = geo.elevation ?? (latOrOptions as any).elevation;
-		const elevation = isNumber(rawElevation) ? rawElevation : 0;
-		return { lat, lng, elevation };
-	}
-	return { lat: 0, lng: 0, elevation: 0 };
 }
 
 /**

@@ -1,11 +1,14 @@
-import '#library/temporal.polyfill.js';
-import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
-import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
+import { Match, enums, Enum, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
+
+const RE_LEADING_DIGITS = /^(\d+)/;
+const RE_ERA_BCE = /b\.?c\.?(?:e\.?)?|bc/i;
+const RE_ZONE_OFFSET = /^([+-])(\d{1,2})(?::?(\d{2}))?$/;
 
 /**
  * Internal Lexer helpers for the Tempo parsing engine.  
@@ -22,22 +25,26 @@ namespace Lexer {
 function num(groups: Record<string, string | number>) {
 	return ownEntries(groups)
 		.reduce((acc: Record<string, number>, [key, val]: [string, any]) => {
+			if (isNumber(val)) {
+				acc[key] = val;
+				return acc;
+			}
 			const v = isString(val) ? val.trim() : val;
 			if (v === '') return acc;
-			if (Number.isFinite(Number(v))) {
+			if (isNumeric(v)) {
 				acc[key] = Number(v);
 				return acc;
 			}
 
 			const num = resolveNumber(val);
-			if (enums.NUMBER.has(num)) {
+			if (Enum.has(enums.NUMBER, num)) {
 				acc[key] = enums.NUMBER[num as t.Number];
 				return acc;
 			}
 
 			const cal = prefix(val);															// get the three-character prefix for a Weekday/Month
-			if (enums.WEEKDAY.has(cal)) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
-			else if (enums.MONTH.has(cal)) acc[key] = enums.MONTH[cal as t.MONTH];
+			if (Enum.has(enums.WEEKDAY, cal)) acc[key] = enums.WEEKDAY[cal as t.WEEKDAY];
+			else if (Enum.has(enums.MONTH, cal)) acc[key] = enums.MONTH[cal as t.MONTH];
 
 			return acc;
 		}, {} as Record<string, number>);
@@ -52,7 +59,7 @@ function num(groups: Record<string, string | number>) {
 export function resolveNumber(str: any): t.Number | any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
-	return enums.NUMBER.keys().find(key => key.startsWith(low)) ?? str;
+	return Enum.keys(enums.NUMBER).find((key: string) => key.startsWith(low)) ?? str;
 }
 
 /**
@@ -72,7 +79,7 @@ export function resolveNth(str: any): number {
 		case 'fourth': case '4th': return 4;
 		case 'fifth': case '5th': return 5;
 		default: {
-			const match = low.match(/^(\d+)/);
+			const match = low.match(RE_LEADING_DIGITS);
 			if (match) {
 				const val = parseInt(match[1], 10);
 				if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
@@ -91,9 +98,8 @@ export function resolveNth(str: any): number {
 export function clearGroupKeys(groups: t.Groups, ...baseKeys: string[]) {
 	for (const key of ownKeys(groups)) {
 		for (const base of baseKeys) {
-			if (key === base || key.startsWith(`${base}_alt`)) {
+			if (key === base || key.startsWith(`${base}_alt`))
 				delete groups[key];
-			}
 		}
 	}
 }
@@ -113,7 +119,7 @@ export function prefix(str: any): any {
 	if (low === 'all' || low === 'eve') return 'All';					// handle special case of "all" / "every"
 
 	for (const table of [enums.WEEKDAY, enums.MONTH]) {
-		const match = table.keys().find(key => {
+		const match = (Enum.keys(table) as string[]).find(key => {
 			const normalized = key.toLowerCase();
 			return normalized.startsWith(low);
 		});
@@ -127,10 +133,10 @@ export function prefix(str: any): any {
 /** resolve a relative modifier (+, -, <, >, =, etc) */
 export function normalizeModifier(mod: string, config: any = {}): string {
 	if (mod && config?.registry?.modifiers) {
-		const norm = mod.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+		const norm = mod.toLowerCase().trim().normalize('NFD').replace(RE_COMBINING_MARKS, "");
 		for (const [sym, words] of Object.entries(config.registry.modifiers)) {
 			if (asArray(words as string[])
-				.map(w => w.toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, ""))
+				.map(w => w.toLowerCase().trim().normalize('NFD').replace(RE_COMBINING_MARKS, ""))
 				.includes(norm)) {
 				return sym;
 			}
@@ -190,9 +196,9 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
 export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
 	const nthVal = resolveNth(nthStr);
 	const weekday = prefix(wkd);
-	const targetWkd = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
+	const targetWkd = Enum.get(enums.WEEKDAY, weekday) ?? Enum.get(enums.WEEKDAYS, weekday);
 
-	if (!Number.isFinite(targetWkd)) return undefined;
+	if (!isNumber(targetWkd)) return undefined;
 
 	let fallbackAnchor = config?.anchor;
 	if (isTempo(fallbackAnchor)) fallbackAnchor = fallbackAnchor.toDateTime();
@@ -269,9 +275,9 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 
 	const weekday = prefix(wkd);
 	const { nbr: adjust = 1 } = num({ nbr });
-	const offset = (enums.WEEKDAY as any)[weekday] ?? (enums.WEEKDAYS as any)[weekday];
+	const offset = Enum.get(enums.WEEKDAY, weekday) ?? Enum.get(enums.WEEKDAYS, weekday);
 
-	if (!Number.isFinite(offset)) {
+	if (!isNumber(offset)) {
 		logError(`Invalid weekday token: "${wkd}"`, config);
 		return dateTime;
 	}
@@ -394,7 +400,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 			logError(`[Tempo#lexer] Cannot resolve era '${era}' without an explicit year`, config);
 			return dateTime;
 		}
-		const isBCE = /b\.?c\.?(?:e\.?)?|bc/i.test(era);
+		const isBCE = RE_ERA_BCE.test(era);
 		if (isBCE) {
 			yy = String(-(Number(yy) - 1));
 		}
@@ -529,7 +535,7 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	let zone: string | undefined = brk || tzd;
 
 	if (zone) {
-		const match = zone.match(/^([+-])(\d{1,2})(?::?(\d{2}))?$/);
+		const match = zone.match(RE_ZONE_OFFSET);
 		if (match)
 			zone = `${match[1]}${match[2].padStart(2, '0')}:${match[3] ?? '00'}`;
 	}

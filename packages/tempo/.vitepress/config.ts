@@ -78,7 +78,7 @@ export default withMermaid(defineConfig({
           items: [
             { text: 'Sandbox Factory', link: '/doc/4-advanced-reference/sandbox-factory' },
             { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
-            { text: 'The Role of Locale', link: '/doc/4-advanced-reference/tempo.locale' },
+            { text: 'Internationalization & Locale', link: '/doc/4-advanced-reference/tempo.intl' },
             { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },
             { text: 'Weekday Engine', link: '/doc/4-advanced-reference/tempo.weekday' },
             { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' }

@@ -2,6 +2,8 @@ import type { SolarOffsetOptions } from './types.js';
 import { coerceGeo, extractEpochMs } from './support.js';
 import { isNumber, isReference, isFunction, isText, isDefined } from '../support/index.js';
 
+const RE_GMT_OFFSET = /GMT([+-])(\d{2}):(\d{2})/;
+
 /**
  * Resolves civil timezone offset in minutes for a given epoch timestamp.
  * Uses Temporal if present in runtime, with seamless fallback to Intl.DateTimeFormat.
@@ -24,7 +26,7 @@ const resolveCivilTimezoneOffset = (tz: string, epochMs: number): number | undef
 		const tzPart = parts.find((p) => p.type === 'timeZoneName')?.value;
 		if (tzPart) {
 			if (tzPart === 'GMT' || tzPart === 'UTC') return 0;
-			const match = tzPart.match(/GMT([+-])(\d{2}):(\d{2})/);
+			const match = tzPart.match(RE_GMT_OFFSET);
 			if (match) {
 				const sign = match[1] === '-' ? -1 : 1;
 				return sign * (parseInt(match[2], 10) * 60 + parseInt(match[3], 10));
@@ -73,7 +75,7 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 
 	// If no civil timezone, use natural solar timezone meridian (round(lng / 15) * 15)
 	const refMeridian =
-		offsetMinutes !== undefined
+		isDefined(offsetMinutes)
 			? (offsetMinutes / 60) * 15
 			: Math.round(lng / 15) * 15;
 

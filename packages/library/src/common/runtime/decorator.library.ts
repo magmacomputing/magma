@@ -1,6 +1,6 @@
 import { $Mutable, $Unwrapped } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isString, isSymbol, isCallable, isPlainObject } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol, isCallable, isPlainObject, hasOwn } from '#library/assertion.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -293,7 +293,7 @@ export function StringTag<T extends Constructor>(tagOrValue?: string | T, contex
 		const tagName = customTag ?? getClassName(value, contextName);
 
 		if (tagName) {
-			if (proto && !Object.hasOwn(proto, Symbol.toStringTag)) {
+			if (proto && !hasOwn(proto, Symbol.toStringTag)) {
 				Object.defineProperty(proto, Symbol.toStringTag, {
 					value: tagName,
 					configurable: true,

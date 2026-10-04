@@ -3,7 +3,7 @@ import { Tempo } from '@magmacomputing/tempo';
 
 describe('isSameFiscalQuarter', () => {
 	beforeAll(() => {
-		Tempo.init();
+		Tempo.init({ sphere: 'north' });
 	});
 
 	it('should return true for dates in the same fiscal quarter', () => {

@@ -221,8 +221,8 @@ For standalone usage, pass the plugin directly to `Tempo.use()` using any patter
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-import { HolidayPlugin } from 'tempo-plugin-holiday';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { HolidayPlugin } from '@magmacomputing/tempo-plugin-holidays';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 
 // Pattern 0: bare
@@ -236,7 +236,7 @@ Tempo.use([HolidayPlugin, { region: 'US-NY' }]);
 
 // Mix and match in a single call:
 Tempo.use(
-  AstroTerm,
+  CelestialPlugin,
   TickerPlugin({ interval: 500 }),
   [GeoPlugin, { timeout: 5000 }],
 );
@@ -248,13 +248,13 @@ All three patterns are supported directly in the `plugins` array of `tempo.confi
 ```typescript
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
 Tempo.init({
   plugins: [
-    AstroTerm,                            // Pattern 0: bare
-    TickerPlugin({ interval: 1000 }),     // Pattern 1: factory closure
-    [GeoPlugin, { timeout: 5000 }],      // Pattern 2: tuple
+    CelestialPlugin,                       // Pattern 0: bare
+    TickerPlugin({ interval: 1000 }),      // Pattern 1: factory closure
+    [GeoPlugin, { timeout: 5000 }],        // Pattern 2: tuple
   ],
 });
 ```

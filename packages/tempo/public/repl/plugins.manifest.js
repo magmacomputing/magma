@@ -4,20 +4,15 @@
  */
 
 export const SUPPORTED_EXTRA_PLUGINS = {
-	"astro": {
-		name: "@magmacomputing/tempo-plugin-astro",
-		version: "2.4.0",
-		loader: () => import("@magmacomputing/tempo-plugin-astro").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-astro" + "@2.4.0"))
-	},
 	"celestial": {
 		name: "@magmacomputing/tempo-plugin-celestial",
-		version: "1.1.0",
-		loader: () => import("@magmacomputing/tempo-plugin-celestial").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-celestial" + "@1.1.0"))
+		version: "1.2.0",
+		loader: () => import("@magmacomputing/tempo-plugin-celestial").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-celestial" + "@1.2.0"))
 	},
 	"batch": {
 		name: "@magmacomputing/tempo-plugin-batch",
-		version: "1.2.0",
-		loader: () => import("@magmacomputing/tempo-plugin-batch").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-batch" + "@1.2.0"))
+		version: "1.2.1",
+		loader: () => import("@magmacomputing/tempo-plugin-batch").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-batch" + "@1.2.1"))
 	},
 	"finance": {
 		name: "@magmacomputing/tempo-plugin-finance",
@@ -31,37 +26,42 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"sync": {
 		name: "@magmacomputing/tempo-plugin-sync",
-		version: "1.1.0",
-		loader: () => import("@magmacomputing/tempo-plugin-sync").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-sync" + "@1.1.0"))
+		version: "1.1.2",
+		loader: () => import("@magmacomputing/tempo-plugin-sync").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-sync" + "@1.1.2"))
 	},
 	"ai": {
 		name: "@magmacomputing/tempo-plugin-ai",
-		version: "2.3.0",
-		loader: () => import("@magmacomputing/tempo-plugin-ai").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ai" + "@2.3.0"))
+		version: "2.3.1",
+		loader: () => import("@magmacomputing/tempo-plugin-ai").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ai" + "@2.3.1"))
 	},
 	"ticker": {
 		name: "@magmacomputing/tempo-plugin-ticker",
-		version: "2.5.0",
-		loader: () => import("@magmacomputing/tempo-plugin-ticker").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ticker" + "@2.5.0"))
+		version: "2.6.0",
+		loader: () => import("@magmacomputing/tempo-plugin-ticker").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ticker" + "@2.6.0"))
 	},
 	"geo": {
 		name: "@magmacomputing/tempo-plugin-geo",
-		version: "1.4.1",
-		loader: () => import("@magmacomputing/tempo-plugin-geo").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-geo" + "@1.4.1"))
+		version: "1.4.2",
+		loader: () => import("@magmacomputing/tempo-plugin-geo").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-geo" + "@1.4.2"))
 	},
 	"dialects": {
 		name: "@magmacomputing/tempo-plugin-dialects",
-		version: "1.0.1",
-		loader: () => import("@magmacomputing/tempo-plugin-dialects").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-dialects" + "@1.0.1"))
+		version: "1.0.3",
+		loader: () => import("@magmacomputing/tempo-plugin-dialects").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-dialects" + "@1.0.3"))
 	},
 	"holidays": {
 		name: "@magmacomputing/tempo-plugin-holidays",
-		version: "1.0.0",
-		loader: () => import("@magmacomputing/tempo-plugin-holidays").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-holidays" + "@1.0.0"))
+		version: "1.0.2",
+		loader: () => import("@magmacomputing/tempo-plugin-holidays").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-holidays" + "@1.0.2"))
 	},
 	"spatial": {
 		name: "@magmacomputing/tempo-plugin-spatial",
+		version: "1.0.1",
+		loader: () => import("@magmacomputing/tempo-plugin-spatial").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-spatial" + "@1.0.1"))
+	},
+	"ntp": {
+		name: "@magmacomputing/tempo-plugin-ntp",
 		version: "1.0.0",
-		loader: () => import("@magmacomputing/tempo-plugin-spatial").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-spatial" + "@1.0.0"))
+		loader: () => import("@magmacomputing/tempo-plugin-ntp").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ntp" + "@1.0.0"))
 	}
 };

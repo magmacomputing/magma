@@ -1,5 +1,5 @@
 import '#library/temporal.polyfill.js';
-import { isString } from '#library/assertion.library.js';
+import { isDigits, isString, RE_WHITESPACE } from '#library/assertion.library.js';
 
 /**
  * Represents a single parsed cron field with its allowed values and restriction status.
@@ -31,7 +31,7 @@ export interface CronSchedule {
  */
 function parseStrictInt(token: string, min: number, max: number): number {
 	const trimmed = token.trim();
-	if (!/^\d+$/.test(trimmed))
+	if (!isDigits(trimmed))
 		throw new Error(`Invalid numeric cron token: "${token}"`);
 
 	const num = Number(trimmed);
@@ -65,7 +65,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
 			if (slashParts.length !== 2)
 				throw new Error(`Invalid step expression: ${part}`);
 			const [range, stepStr] = slashParts;
-			if (!/^\d+$/.test(stepStr.trim()))
+			if (!isDigits(stepStr.trim()))
 				throw new Error(`Invalid step value: ${stepStr}`);
 
 			const step = Number(stepStr.trim());
@@ -111,7 +111,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
  * @throws Error if the pattern is invalid or malformed
  */
 export function parseCron(pattern: string): CronSchedule {
-	const fields = pattern.trim().split(/\s+/);
+	const fields = pattern.trim().split(RE_WHITESPACE);
 	if (fields.length !== 5)
 		throw new Error('Invalid cron pattern. Expected 5 fields (min, hr, dom, mon, dow).');
 
@@ -134,7 +134,7 @@ export function isCronString(val: unknown): val is string {
 	if (!isString(val)) return false;
 	const trimmed = val.trim();
 	if (trimmed.startsWith('FREQ=') || trimmed.startsWith('RRULE:')) return false;
-	const fields = trimmed.split(/\s+/);
+	const fields = trimmed.split(RE_WHITESPACE);
 	if (fields.length !== 5) return false;
 	try {
 		parseCron(trimmed);

@@ -557,8 +557,8 @@ function focusActiveCard() {
   color: var(--vp-c-white);
 }
 .tempo-btn-brand:hover {
-  background-color: #2980b9;
-  color: white;
+  background-color: var(--vp-c-brand-2, #2980b9);
+  color: var(--vp-c-white);
 }
 
 .tempo-btn-alt {

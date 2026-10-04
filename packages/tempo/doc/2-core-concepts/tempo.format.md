@@ -141,12 +141,17 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
 | `:space`| String | Injects a leading space (used by `{h12}` auto-meridiem) | `{h12:space:dots}` → `03:30 a.m.` |
 | `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
-| `:short` | String | Yields a short or abbreviated style | `{mon:short}` → `Oct` |
+| `:short` | Universal / String | Yields a short or abbreviated style | `{mon:short}` → `Oct`, `{dmy:short}` → `241026` |
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
-| `:yy` | Compound Date | Truncates the internal year component to 2 digits | `{dmy:yy}` → `241026` |
-| `:offset` | `{tz}` | Full numeric timezone offset | `{tz:offset}` → `+10:00` |
-| `:offsetShort` | `{tz}` | Narrow numeric timezone offset | `{tz:offsetShort}` → `+10` |
-| `:offsetCompact` | `{tz}` | Compact numeric timezone offset | `{tz:offsetCompact}` → `+1000` |
+| `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |
+| `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset | `{tz:offset}` → `+10:00` |
+
+> [!TIP]
+> **Timezone Formatting & Offset Variations**
+> `{tz}` defaults to the IANA timezone identifier (e.g. `Australia/Sydney`). Modifiers can be composed seamlessly:
+> * **Named Styles**: `{tz:short}` → `AEST`, `{tz:long}` → `Australian Eastern Standard Time`.
+> * **Chained Offsets**: `{tz:offset}` → `+10:00`, `{tz:offset:short}` → `+10`, `{tz:offset:compact}` → `+1000`.
+> * **Shorthands & Aliases**: LDML aliases (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`) are supported as drop-in shorthands.
 
 > [!TIP]
 > **Numeric Zero-Fill Padding & Fractional Precision Slicing**
@@ -245,6 +250,43 @@ t.format('{geo.city}, {geo.country} · {h12}:{mi} {mer}');
 const tNoGeo = new Tempo('2026-10-24T15:30:00');
 tNoGeo.format('Time: {hh}:{mi} [{geo.city}]');
 // "Time: 15:30 []"
+```
+
+### 🌐 Hierarchical Localization (`{namespace.key:locale}`)
+When using `:locale` on namespace tokens (e.g. `{geo.sphere:locale}` or `{custom.tag:locale}`), Tempo resolves translations from the global `registry.locales` dictionary using an intuitive, cascading fallback:
+
+1. **Deep Hierarchical Path**: `locales[lang]?.geo?.sphere?.['south']` → `"sud"`
+2. **Leaf Property Scoped**: `locales[lang]?.sphere?.['south']` → `"sud"`
+3. **Flat Word Match**: `locales[lang]?.['south']` → `"sud"`
+4. **Canonical Fallback**: If no dictionary match exists, gracefully returns the raw canonical value (`"south"`).
+
+```typescript
+Tempo.init({
+  locale: 'fr-FR',
+  registry: {
+    locales: {
+      fr: {
+        geo: {
+          sphere: {
+            north: 'nord',
+            south: 'sud',
+            equator: 'équateur',
+          },
+          city: {
+            sydney: 'Sydney (Australie)',
+          },
+        },
+      },
+    },
+  },
+});
+
+const t = new Tempo('2026-10-24', { geo: { city: 'sydney', sphere: 'south' } });
+
+t.format('{geo.sphere:locale}');        // "sud"
+t.format('{geo.sphere:locale:title}');  // "Sud" (modifiers chain seamlessly)
+t.format('{geo.sphere:locale:upper}');  // "SUD"
+t.format('{geo.city:locale}');          // "Sydney (Australie)"
 ```
 
 ---

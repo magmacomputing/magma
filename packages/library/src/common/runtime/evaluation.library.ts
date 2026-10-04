@@ -35,6 +35,46 @@ export function evaluate<T>(...values: (Evaluable<T> | undefined)[]): T | undefi
 }
 
 /**
+ * Evaluates a value or invokes a function with the provided arguments.
+ * If the value is not a function, it is returned as-is.
+ * 
+ * @param val - A scalar value or function to evaluate
+ * @param args - Arguments forwarded to the function if val is callable
+ * @returns The resolved value
+ * @example
+ * ```ts
+ * evaluateWith(42); // 42
+ * evaluateWith((name: string) => `Hello, ${name}`, 'World'); // 'Hello, World'
+ * ```
+ */
+export function evaluateWith<T, A extends any[] = any[]>(
+	val: T | ((...args: A) => T),
+	...args: A
+): T {
+	return isFunction(val) ? (val as any)(...args) : val;
+}
+
+/**
+ * Evaluates a value or invokes a function with the provided arguments, stringifying the result.
+ * 
+ * @param val - A value or function to evaluate
+ * @param args - Arguments forwarded to the function if val is callable
+ * @returns The stringified result
+ * @example
+ * ```ts
+ * evaluateString('test'); // 'test'
+ * evaluateString((locale?: string) => locale === 'fr' ? 'Sud' : 'South', 'fr'); // 'Sud'
+ * ```
+ */
+export function evaluateString<A extends any[] = any[]>(
+	val: unknown,
+	...args: A
+): string {
+	const resolved = isFunction(val) ? (val as any)(...args) : val;
+	return isNullish(resolved) ? '' : String(resolved);
+}
+
+/**
  * Evaluates candidate synchronous or asynchronous scalars, Promises, or supplier functions in order, returning the first defined result (async lazy coalesce).
  * Supplier functions represent deferred asynchronous work and are invoked lazily only when reached during evaluation.
  * Rejection handlers are attached upfront to direct Promise candidates to prevent unobserved rejections if iteration short-circuits on an earlier defined candidate.

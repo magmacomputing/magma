@@ -7,6 +7,8 @@ import {
 	getZodiacSign,
 	getChineseZodiac,
 	getTidalState,
+	HALF_DAY_MS,
+	DAY_MS,
 } from '../src/celestial/index.js';
 
 describe('Astro Pure Functions (tempo-fns)', () => {
@@ -228,6 +230,17 @@ describe('Astro Pure Functions (tempo-fns)', () => {
 		const customTide = getTidalState('2026-03-03T12:00:00Z', { ...sydneyCoords, lunitidalIntervalMin: 120 });
 		expect(customTide.lunitidalIntervalMin).toBe(120);
 		expect(customTide.nextHighTideMs).toBeGreaterThan(tide.nextHighTideMs!);
+	});
+
+	it('calculates solarNadirMs and nadir angle for solar culmination and positions', () => {
+		const sydneyCoords = { lat: -33.8688, lng: 151.2093 };
+		const res = getSunriseSunset('2026-12-21T02:00:00Z', sydneyCoords);
+		expect(res.solarNadirMs).toBeDefined();
+		expect(res.solarNadirMs).toBe(res.solarNoonMs + HALF_DAY_MS);
+
+		const midday = getSolarPosition('2026-12-21T02:00:00Z', sydneyCoords);
+		expect(midday.nadir).toBeCloseTo(90 + midday.altitude, 1);
+		expect(midday.zenith + midday.nadir).toBeCloseTo(180, 1);
 	});
 });
 

@@ -27,7 +27,7 @@ function extractRegionFromLocale(locale?: string): string | undefined {
  * Fallback Cascade:
  * 1. options.country (explicit override)
  * 2. tempo.geo.country (geographic location)
- * 3. tempo.intl.region (internationalization settings)
+ * 3. tempo.intl.info.region (internationalization settings)
  * 4. tempo.locale region (e.g. 'en-AU' -> 'AU')
  * 5. Default fallback to 'US'
  *
@@ -40,7 +40,7 @@ export function resolveHolidayOptions(tempo?: Tempo, options: HolidayOptions = {
 
 	const resolvedCountry = options.country
 		?? tempo?.geo?.country
-		?? (tempo as any)?.intl?.region
+		?? (tempo as any)?.intl?.info?.region
 		?? localeRegion
 		?? 'US';
 
@@ -103,7 +103,7 @@ export function getHolidayName(tempo: Tempo, options?: HolidayOptions): string |
 
 /**
  * Determines whether a Tempo instance is a standard working business day (Mon-Fri and not a holiday).
- * Respects cultural weekend definitions from `tempo.intl.weekend` (e.g. [5, 6] in Middle Eastern locales).
+ * Respects cultural weekend definitions from `tempo.intl.info.weekend` (e.g. [5, 6] in Middle Eastern locales).
  *
  * @param tempo - The Tempo instance to evaluate
  * @param options - Configuration options
@@ -111,7 +111,7 @@ export function getHolidayName(tempo: Tempo, options?: HolidayOptions): string |
  */
 export function isBusinessDay(tempo: Tempo, options?: HolidayOptions): boolean {
 	const dow = tempo.toDateTime().dayOfWeek;
-	const weekendDays: readonly number[] = (tempo as any).intl?.weekend ?? [6, 7];
+	const weekendDays: readonly number[] = (tempo as any).intl?.info?.weekend ?? [6, 7];
 	if (weekendDays.includes(dow)) return false;
 	return !isPublicHoliday(tempo, options);
 }

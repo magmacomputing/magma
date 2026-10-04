@@ -1,4 +1,4 @@
-import { isString } from '../support/index.js';
+import { isString, isText } from '../support/index.js';
 import type { LocaleSyncMode } from './types.js';
 
 /**
@@ -187,7 +187,7 @@ export function resolveCulturalLocale(
 	// Regional mode (default: true / 'regional' / 'region'): preserve source language and script, adapt region
 	let baseLang = 'en';
 	let script: string | undefined;
-	if (isString(currentLocale) && currentLocale.length > 0) {
+	if (isText(currentLocale)) {
 		const loc = cleanLocale(currentLocale);
 		baseLang = loc?.language ?? currentLocale.split('-')[0] ?? 'en';
 		if (loc?.script) script = loc.script;

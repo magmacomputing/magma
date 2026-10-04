@@ -1,5 +1,7 @@
 import type { Tempo } from '@magmacomputing/tempo';
 
+const RE_WHITESPACE = /\s+/;
+
 type CronField = { allowed: Set<number>; restricted: boolean };
 
 interface CronSchedule {
@@ -46,9 +48,9 @@ function parseCronField(field: string, min: number, max: number): CronField {
 					throw new Error(`[tempo-fns] Invalid range: ${range}`);
 
 			}
-			for (let i = start; i <= end; i += step) {
+			for (let i = start; i <= end; i += step)
 				allowed.add(i);
-			}
+
 		} else if (part.includes('-')) {
 			const [start, end] = part.split('-').map(Number);
 			if (start > end)
@@ -76,7 +78,7 @@ function parseCronField(field: string, min: number, max: number): CronField {
  * ```
  */
 export function parseCron(pattern: string): CronSchedule {
-	const fields = pattern.trim().split(/\s+/);
+	const fields = pattern.trim().split(RE_WHITESPACE);
 	if (fields.length !== 5) {
 		throw new Error('[tempo-fns] Invalid cron pattern. Expected 5 fields (min, hr, dom, mon, dow).');
 	}
@@ -129,7 +131,7 @@ export function nextCron(tempo: Tempo, pattern: string): Tempo {
 	let current = tempo.toDateTime().add({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
 
 	const maxLimit = current.add({ years: 5 }).epochNanoseconds;
-	for (;;) { // Max iterations to prevent infinite loops (5 years max approx)
+	for (; ;) { // Max iterations to prevent infinite loops (5 years max approx)
 		if (current.epochNanoseconds > maxLimit) throw new Error('[tempo-fns] Could not find next cron match within 5 years.');
 		if (!schedule.months.allowed.has(current.month)) {
 			current = current.add({ months: 1 }).with({ day: 1, hour: 0, minute: 0 });
@@ -174,7 +176,7 @@ export function prevCron(tempo: Tempo, pattern: string): Tempo {
 	let current = tempo.toDateTime().subtract({ minutes: 1 }).with({ second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
 
 	const minLimit = current.subtract({ years: 5 }).epochNanoseconds;
-	for (;;) {
+	for (; ;) {
 		if (current.epochNanoseconds < minLimit) throw new Error('[tempo-fns] Could not find previous cron match within 5 years.');
 		if (!schedule.months.allowed.has(current.month)) {
 			current = current.subtract({ months: 1 });

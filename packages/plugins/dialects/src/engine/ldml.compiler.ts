@@ -1,5 +1,5 @@
 import { pad, suffix, WeakCache } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { enums, Enum } from '@magmacomputing/tempo/support';
 
 type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 
@@ -52,11 +52,11 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 
 				case 'MMMM':
 				case 'LLLL':
-					parts.push((z) => enums.MONTHS.keyOf(z.month as any) ?? String(z.month));
+					parts.push((z) => Enum.keyOf(enums.MONTHS, z.month) ?? String(z.month));
 					break;
 				case 'MMM':
 				case 'LLL':
-					parts.push((z) => enums.MONTH.keyOf(z.month as any) ?? String(z.month));
+					parts.push((z) => Enum.keyOf(enums.MONTH, z.month) ?? String(z.month));
 					break;
 				case 'MM':
 				case 'LL':
@@ -145,12 +145,12 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 
 				case 'EEEE':
 				case 'cccc':
-					parts.push((z) => enums.WEEKDAYS.keyOf(z.dayOfWeek as any) ?? String(z.dayOfWeek));
+					parts.push((z) => Enum.keyOf(enums.WEEKDAYS, z.dayOfWeek) ?? String(z.dayOfWeek));
 					break;
 				case 'EEE':
 				case 'ccc':
 				case 'E':
-					parts.push((z) => enums.WEEKDAY.keyOf(z.dayOfWeek as any) ?? String(z.dayOfWeek));
+					parts.push((z) => Enum.keyOf(enums.WEEKDAY, z.dayOfWeek) ?? String(z.dayOfWeek));
 					break;
 				case 'c':
 				case 'e':
@@ -369,11 +369,7 @@ export function compileLdmlParser(mask: string): RegExp {
 /** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonth(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	if (enums.MONTH && (enums.MONTH as any)[cap]) return (enums.MONTH as any)[cap];
-	if (enums.MONTHS && (enums.MONTHS as any)[cap]) return (enums.MONTHS as any)[cap];
-	const short3 = cap.slice(0, 3);
-	if (enums.MONTH && (enums.MONTH as any)[short3]) return (enums.MONTH as any)[short3];
-	return undefined;
+	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
 /**
@@ -382,7 +378,7 @@ function resolveMonth(str: string): number | undefined {
 export function parseLdml(
 	input: string,
 	mask: string,
-	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined; [key: string]: any } = {}
+	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileLdmlParser(mask);
 	const match = rx.exec(input.trim());

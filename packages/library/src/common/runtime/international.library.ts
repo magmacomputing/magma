@@ -1,21 +1,23 @@
-import { getOffsets } from '#library/temporal.library.js';
+import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale, hasOwn } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import type { LooseUnion } from '#library/type.library.js';
 
 const RE_UNDERSCORE = /_/g;
 const RE_LOCALE_CLEANSE = /[.@]/;
+const RE_REGION_SUBTAG = /^[a-zA-Z]{2}$|^\d{3}$/;
 
 export type LocaleInput = string | Intl.Locale | undefined;
+export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
 
 /** 
  * Guard check for runtime Intl namespace and constructor availability.
  * @internal 
  */
 export const hasIntl = (feature?: LooseUnion<keyof typeof Intl>): boolean =>
-	typeof Intl !== 'undefined' && (!feature || (Object.hasOwn(Intl, feature) && isCallable((Intl as Record<string, unknown>)[feature])));
+	typeof Intl !== 'undefined' && (!feature || (hasOwn(Intl, feature) && isCallable((Intl as Record<string, unknown>)[feature])));
 
 /**
  * Cleanses a raw locale string by trimming whitespace, converting POSIX underscores
@@ -116,6 +118,106 @@ export interface ResolvedLocaleInfo {
 	readonly timeZones: readonly string[];
 }
 
+export interface TempoIntlNamespace {
+	/**
+	 * Resolved cultural and regional calendar metadata (firstDay, weekend, direction, hourCycle, etc.)
+	 * via the host engine's CLDR / Intl.Locale Info database.
+	 */
+	readonly info: ResolvedLocaleInfo;
+
+	/**
+	 * Memoized native Intl.Locale instance for the active locale.
+	 */
+	readonly locale?: Intl.Locale | undefined;
+
+	/**
+	 * Formats a relative time description (e.g. -1, 'day' -> 'yesterday' or 'il y a 1 jour')
+	 * pre-bound to the active locale and backed by a globally memoized Intl.RelativeTimeFormat instance.
+	 */
+	relativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions): string;
+
+	/**
+	 * Formats an iterable or array of strings into a localized list (e.g. ['A', 'B', 'C'] -> 'A, B, and C')
+	 * pre-bound to the active locale and backed by a globally memoized Intl.ListFormat instance.
+	 */
+	list(items: Iterable<string>, options?: Intl.ListFormatOptions): string;
+
+	/**
+	 * Formats a number according to the active locale and numbering system
+	 * backed by a globally memoized Intl.NumberFormat instance.
+	 */
+	number(value: number | bigint, options?: Intl.NumberFormatOptions): string;
+
+	/**
+	 * Resolves the plural category rule ('zero' | 'one' | 'two' | 'few' | 'many' | 'other')
+	 * for a numeric value in the active locale.
+	 */
+	plural(value: number, options?: Intl.PluralRulesOptions): Intl.LDMLPluralRule;
+
+	/**
+	 * Returns a globally memoized native Intl.DateTimeFormat instance pre-bound to the active locale and timezone.
+	 */
+	dtf(options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat;
+
+	/**
+	 * Returns a globally memoized native Intl.RelativeTimeFormat instance pre-bound to the active locale.
+	 */
+	rtf(options?: Intl.RelativeTimeFormatOptions): Intl.RelativeTimeFormat;
+
+	/**
+	 * Returns a globally memoized native Intl.ListFormat instance pre-bound to the active locale.
+	 */
+	lf(options?: Intl.ListFormatOptions): Intl.ListFormat;
+
+	/**
+	 * Returns a globally memoized native Intl.NumberFormat instance pre-bound to the active locale.
+	 */
+	nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat;
+
+	// =========================================================================
+	// Backward Compatibility Fallbacks (@deprecated for v4.x, removed in v5.0.0)
+	// =========================================================================
+
+	/** @deprecated Use `intl.info.firstDay` instead. To be removed in v5.0.0. */
+	readonly firstDay: number;
+
+	/** @deprecated Use `intl.info.weekend` instead. To be removed in v5.0.0. */
+	readonly weekend: readonly number[];
+
+	/** @deprecated Use `intl.info.direction` instead. To be removed in v5.0.0. */
+	readonly direction: 'ltr' | 'rtl';
+
+	/** @deprecated Use `intl.info.hourCycle` instead. To be removed in v5.0.0. */
+	readonly hourCycle: string;
+
+	/** @deprecated Use `intl.info.hourCycles` instead. To be removed in v5.0.0. */
+	readonly hourCycles: readonly string[];
+
+	/** @deprecated Use `intl.info.numberingSystem` instead. To be removed in v5.0.0. */
+	readonly numberingSystem: string;
+
+	/** @deprecated Use `intl.info.numberingSystems` instead. To be removed in v5.0.0. */
+	readonly numberingSystems: readonly string[];
+
+	/** @deprecated Use `intl.info.region` instead. To be removed in v5.0.0. */
+	readonly region?: string | undefined;
+
+	/** @deprecated Use `intl.info.script` instead. To be removed in v5.0.0. */
+	readonly script?: string | undefined;
+
+	/** @deprecated Use `intl.info.language` instead. To be removed in v5.0.0. */
+	readonly language?: string | undefined;
+
+	/** @deprecated Use `intl.info.timeZones` instead. To be removed in v5.0.0. */
+	readonly timeZones: readonly string[];
+
+	/** @deprecated Use `intl.info.baseName` instead. To be removed in v5.0.0. */
+	readonly baseName: string;
+
+	/** @deprecated Use `intl.info.weekInfo` instead. To be removed in v5.0.0. */
+	readonly weekInfo: LocaleWeekInfo;
+}
+
 /**
  * Legacy Heuristic Fallback Tables
  * 
@@ -201,7 +303,7 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 	}
 	const region = loc?.region
 		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().region : undefined)
-		?? regionSubtags.find((subtag) => /^[a-zA-Z]{2}$|^\d{3}$/.test(subtag))?.toUpperCase();
+		?? regionSubtags.find((subtag) => RE_REGION_SUBTAG.test(subtag))?.toUpperCase();
 	const script = loc?.script
 		?? (isCallable((loc as any)?.maximize) ? (loc as any).maximize().script : undefined);
 
@@ -255,6 +357,60 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		numberingSystem: numberingSystems[0],
 		numberingSystems,
 		timeZones,
+	});
+});
+
+/**
+ * Memoized helper for the structured TempoIntlNamespace.
+ * @internal
+ */
+export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput, timeZone?: TimeZoneInput): TempoIntlNamespace => {
+	const info = getLI(localeTag);
+	const loc = getLC(localeTag) ?? getLC('en-US');
+	const targetLocale = loc?.toString() ?? info.baseName;
+	const resolvedTz = timeZone ? getTemporalIds(timeZone)[0] : undefined;
+
+	return Object.freeze({
+		info,
+		locale: loc,
+		relativeTime(value: number, unit: Intl.RelativeTimeFormatUnit, options?: Intl.RelativeTimeFormatOptions): string {
+			return getRTF(targetLocale, options).format(value, unit);
+		},
+		list(items: Iterable<string>, options?: Intl.ListFormatOptions): string {
+			return getLF(targetLocale, options).format(Array.from(items));
+		},
+		number(value: number | bigint, options?: Intl.NumberFormatOptions): string {
+			return getNF(targetLocale, options).format(value);
+		},
+		plural(value: number, options?: Intl.PluralRulesOptions): Intl.LDMLPluralRule {
+			return getPR(targetLocale, options).select(value);
+		},
+		dtf(options?: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+			const dtfOpts = (resolvedTz && !options?.timeZone) ? { ...options, timeZone: resolvedTz } : options;
+			return getDTF(targetLocale, dtfOpts);
+		},
+		rtf(options?: Intl.RelativeTimeFormatOptions): Intl.RelativeTimeFormat {
+			return getRTF(targetLocale, options);
+		},
+		lf(options?: Intl.ListFormatOptions): Intl.ListFormat {
+			return getLF(targetLocale, options);
+		},
+		nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat {
+			return getNF(targetLocale, options);
+		},
+		firstDay: info.firstDay,
+		weekend: info.weekend,
+		direction: info.direction,
+		hourCycle: info.hourCycle,
+		hourCycles: info.hourCycles,
+		numberingSystem: info.numberingSystem,
+		numberingSystems: info.numberingSystems,
+		region: info.region,
+		script: info.script,
+		language: info.language,
+		timeZones: info.timeZones,
+		baseName: info.baseName,
+		weekInfo: info.weekInfo,
 	});
 });
 

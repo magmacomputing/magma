@@ -87,34 +87,60 @@ async function main() {
 		return;
 	}
 
-	const entries = readdirSync(PLUGINS_DIR);
-	const pluginDirs = [];
+	const corePackages = [
+		{ name: 'tempo (core)', npmName: '@magmacomputing/tempo', relPath: 'packages/tempo' },
+		{ name: 'tempo-fns', npmName: '@magmacomputing/tempo-fns', relPath: 'packages/functions' },
+	];
 
-	for (const name of entries) {
-		if (name.startsWith('.')) continue;
-		const fullPath = join(PLUGINS_DIR, name);
+	const packageDirs = [];
+
+	for (const pkg of corePackages) {
+		const fullPath = join(REPO_ROOT, pkg.relPath);
 		const pkgJsonPath = join(fullPath, 'package.json');
-		if (statSync(fullPath).isDirectory() && existsSync(pkgJsonPath)) {
+		if (existsSync(pkgJsonPath)) {
 			try {
 				const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
 				if (!pkgJson.private) {
-					pluginDirs.push({ name, pkgJson, fullPath, relPath: `packages/plugins/${name}` });
+					packageDirs.push({ name: pkg.name, npmName: pkgJson.name || pkg.npmName, pkgJson, fullPath, relPath: pkg.relPath });
 				}
-			} catch {
-				// ignore malformed
+			} catch {}
+		}
+	}
+
+	if (existsSync(PLUGINS_DIR)) {
+		const entries = readdirSync(PLUGINS_DIR);
+		for (const name of entries) {
+			if (name.startsWith('.')) continue;
+			const fullPath = join(PLUGINS_DIR, name);
+			const pkgJsonPath = join(fullPath, 'package.json');
+			if (statSync(fullPath).isDirectory() && existsSync(pkgJsonPath)) {
+				try {
+					const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'));
+					if (!pkgJson.private) {
+						packageDirs.push({
+							name: `plugin-${name}`,
+							npmName: pkgJson.name || `@magmacomputing/tempo-plugin-${name}`,
+							pkgJson,
+							fullPath,
+							relPath: `packages/plugins/${name}`
+						});
+					}
+				} catch {
+					// ignore malformed
+				}
 			}
 		}
 	}
 
 	// Fetch NPM versions concurrently
-	const npmPromises = pluginDirs.map(p => fetchNpmVersion(p.pkgJson.name || `@magmacomputing/tempo-plugin-${p.name}`));
+	const npmPromises = packageDirs.map(p => fetchNpmVersion(p.npmName));
 	const npmVersions = await Promise.all(npmPromises);
 
 	const rows = [];
 	let hasError = false;
 
-	for (let i = 0; i < pluginDirs.length; i++) {
-		const { name, pkgJson, relPath } = pluginDirs[i];
+	for (let i = 0; i < packageDirs.length; i++) {
+		const { name, pkgJson, relPath } = packageDirs[i];
 		const branchVersion = pkgJson.version ?? '0.0.0';
 		const npmVersion = npmVersions[i];
 
@@ -130,7 +156,7 @@ async function main() {
 		}
 
 		// Count changed src and doc files
-		const srcDiffRaw = getGitOutput(`git diff --name-only ${mainCommit}...HEAD -- ${relPath}/src`);
+		const srcDiffRaw = getGitOutput(`git diff --name-only ${mainCommit}...HEAD -- ${relPath}/src ${relPath}/commands ${relPath}/index.js`);
 		const srcCount = srcDiffRaw ? srcDiffRaw.split('\n').filter(Boolean).length : 0;
 
 		const docDiffRaw = getGitOutput(`git diff --name-only ${mainCommit}...HEAD -- ${relPath}/doc ${relPath}/*.md`);
@@ -142,7 +168,7 @@ async function main() {
 		let status = '🟢 Up to date';
 
 		if (mainVersion === '[NEW]') {
-			status = `🆕 New Plugin (v${branchVersion})`;
+			status = `🆕 New Package (v${branchVersion})`;
 		} else if (srcCount > 0) {
 			if (isBumpedOverMain) {
 				status = `🚀 Ready to Publish (v${branchVersion})`;
@@ -178,7 +204,7 @@ async function main() {
 	// Print Header
 	console.log('');
 	console.log(
-		'Plugin Package'.padEnd(18) + ' | ' +
+		'Package / Workspace'.padEnd(20) + ' | ' +
 		'Src'.padStart(3) + ' | ' +
 		'Doc'.padStart(3) + ' | ' +
 		'NPM Version'.padEnd(12) + ' | ' +
@@ -187,7 +213,7 @@ async function main() {
 		'Status / Action'
 	);
 	console.log(
-		'-'.repeat(18) + '-+-' +
+		'-'.repeat(20) + '-+-' +
 		'-'.repeat(3) + '-+-' +
 		'-'.repeat(3) + '-+-' +
 		'-'.repeat(12) + '-+-' +
@@ -198,7 +224,7 @@ async function main() {
 
 	for (const r of rows) {
 		console.log(
-			r.name.padEnd(18) + ' | ' +
+			r.name.padEnd(20) + ' | ' +
 			String(r.srcCount).padStart(3) + ' | ' +
 			String(r.docCount).padStart(3) + ' | ' +
 			r.npmVersion.padEnd(12) + ' | ' +

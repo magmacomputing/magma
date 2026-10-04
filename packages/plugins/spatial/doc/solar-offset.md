@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+</div>
+
+<br>
+
 # Natural Solar Time Offset
 
 This guide explains natural solar time offset calculations and meridian longitudinal delta modeling in `@magmacomputing/tempo-plugin-spatial`.

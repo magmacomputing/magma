@@ -135,7 +135,7 @@ export const DEFAULTS = {
 			]
 		}
 	},
-	LOCALE: {} as Record<string, Record<string, string | Function>>,
+	LOCALE: {} as Record<string, Record<string, any>>,
 } as const;
 
 /** @internal Centralized mutable state for all extendable registries */
@@ -308,4 +308,7 @@ export default {
 	PARSE,
 	MONTH_DAY,
 	LOCALE,
+	Enum,
 }
+
+export { Enum } from '#library/enumerate.library.js';

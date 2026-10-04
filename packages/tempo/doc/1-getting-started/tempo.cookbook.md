@@ -257,7 +257,7 @@ t.format('ui-date'); // Resolved with all modifiers intact!
 
 👉 **Learn More:** 
 - [Smart Formatting Guide](../2-core-concepts/tempo.format.md)
-- [The Role of Locale](../4-advanced-reference/tempo.locale.md)
+- [Internationalization & Locale](../4-advanced-reference/tempo.intl.md)
 - [Smart Parsing Guide](../2-core-concepts/tempo.parse.md)
 
 ---

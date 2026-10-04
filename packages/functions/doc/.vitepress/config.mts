@@ -42,6 +42,7 @@ export default defineConfig({
 					{ text: 'Celestial', link: '/functions/celestial/' },
 					{ text: 'Duration', link: '/functions/duration/' },
 					{ text: 'Scheduling', link: '/functions/scheduling/' },
+					{ text: 'Spatial', link: '/functions/spatial/' },
 					{ text: 'Timezone', link: '/functions/timezone/' },
 				]
 			},

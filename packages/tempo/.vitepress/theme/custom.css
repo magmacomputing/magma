@@ -1,5 +1,21 @@
 /* Custom global theme styles for Tempo Plugins catalog */
 
+:root {
+  --vp-c-brand-1: #3498db;
+  --vp-c-brand-2: #2980b9;
+  --vp-c-brand-3: #1f618d;
+  --vp-c-brand-soft: rgba(52, 152, 219, 0.14);
+  --vp-c-brand: var(--vp-c-brand-1);
+}
+
+.dark {
+  --vp-c-brand-1: #3498db;
+  --vp-c-brand-2: #5dade2;
+  --vp-c-brand-3: #2980b9;
+  --vp-c-brand-soft: rgba(52, 152, 219, 0.16);
+  --vp-c-brand: var(--vp-c-brand-1);
+}
+
 .btn {
   background-color: var(--vp-c-brand);
   color: white;
@@ -36,5 +52,38 @@
 mjx-container {
   font-size: 90% !important;
   vertical-align: -0.05em;
+}
+
+/* Standardize plugin overview logos to match the 90px ecosystem standard */
+.vp-doc img[src*="plugin-logo"] {
+  width: 90px;
+  height: auto;
+}
+
+/* Sub-page Eyebrow Breadcrumb Navigation */
+.plugin-eyebrow {
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+
+.plugin-eyebrow a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 14px;
+  border-radius: 16px;
+  background-color: var(--vp-c-brand-soft);
+  color: var(--vp-c-brand-1);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.plugin-eyebrow a:hover {
+  background-color: color-mix(in srgb, var(--vp-c-brand-1) 22%, transparent);
+  border-color: var(--vp-c-brand-2);
+  color: var(--vp-c-brand-2);
 }
 

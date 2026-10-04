@@ -29,14 +29,14 @@ In bundled frontend environments (like Vite or Webpack), you can still maintain 
 ```typescript
 // tempo.config.ts
 import { defineConfig } from '@magmacomputing/tempo';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 export default defineConfig({
   timeZone: 'Australia/Sydney',        // Set your baseline timezone
   extends: './tempo-base.config.jsonc',// Inherit local base config
   plugins: [
-    AstroTerm,                         // 1. Executable plugin or term
+    CelestialPlugin,                   // 1. Executable plugin or term
     TickerPlugin,                      // 2. Plugin singleton (or factory closure)
   ],
   pluginOptions: {
@@ -126,7 +126,7 @@ Using `tempo.config.ts` or `Tempo.bootstrap()` is the modern standard, but it in
 
 ::: tip
 **Looking to configure Internationalization?**  
-Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [The Role of Locale](../4-advanced-reference/tempo.locale.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](../1-getting-started/tempo.cookbook.md#format-modifiers-localization) guides for configuration details.
+Tempo offers deep integration with native `Intl` APIs for both parsing and formatting foreign languages out-of-the-box. See [Internationalization & Locale](../4-advanced-reference/tempo.intl.md) for a general guide, and the [Internationalized Parsing](./tempo.parse.md#internationalized-parsing-locales) and [Format Modifiers & Localization](../1-getting-started/tempo.cookbook.md#format-modifiers-localization) guides for configuration details.
 :::
 
 ---

@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+</div>
+
+<br>
+
 # Resource Management & Lifecycle
 
 Because Ticker execution loops are driven by asynchronous background timers (`setTimeout` / `setImmediate`), proper resource management is essential for preventing memory leaks, test suite hangs, and unhandled timer handles.

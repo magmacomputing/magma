@@ -3,6 +3,8 @@ import { isDefined, isFunction, isPrimitive, isSafeKey } from '#library/assertio
 import { sym } from '#library/symbol.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
 
+const RE_STACK_SCRIPT_URL = /([^ \n\(@])*([a-z]*:\/\/\/?)*?[a-z0-9\/\\]*\.js/ig;
+
 /** General utility functions */
 
 /**
@@ -42,7 +44,7 @@ export const getCaller = () => {
  */
 export const getScript = (nbr = 1) => {
 	const stackTrace = new Error().stack
-		?.match(/([^ \n\(@])*([a-z]*:\/\/\/?)*?[a-z0-9\/\\]*\.js/ig)
+		?.match(RE_STACK_SCRIPT_URL)
 		?.[nbr]
 	return decodeURI(stackTrace ?? '');												// decodeURI is needed to handle spaces in file-names
 }

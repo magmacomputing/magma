@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # Security & Privacy Architecture
 
 The `@magmacomputing/tempo-plugin-ai` plugin is engineered with a **"Privacy and Security by Default"** philosophy. Because date parsing and calendar scheduling frequently interact with Personally Identifiable Information (PII)—such as meeting attendees, emails, phone numbers, and sensitive notes—the plugin incorporates multi-layered security controls to protect user data across transit, runtime memory, log output, and caching tiers.

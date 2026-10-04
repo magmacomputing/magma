@@ -2,6 +2,12 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-batch` project will be documented in this file.
 
+## [1.2.1] - 2026-10-02
+
+### Enhanced
+- **Runtime Introspection & Branding**:
+  - Added `[Symbol.toStringTag]` getter returning `'Tempo.BatchOrchestrator'` on `BatchOrchestrator` for structured runtime type identification and DevTools inspection.
+
 ## [1.2.0] - 2026-09-18
 
 ### Added

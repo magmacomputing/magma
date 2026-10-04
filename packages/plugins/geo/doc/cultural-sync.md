@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+</div>
+
+<br>
+
 # Cultural Locale Synchronization
 
 This guide explores the cultural synchronization engine in `@magmacomputing/tempo-plugin-geo`, linking physical geography with localized language, date formatting, and regional calendar conventions.

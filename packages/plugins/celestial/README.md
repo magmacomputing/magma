@@ -16,6 +16,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 ## Features
 
+- **Astronomical Seasons & Solar Events**: Calculates precise astronomical equinoxes (Vernal, Autumnal) and solstices (Summer, Winter) with sub-minute precision, hemisphere awareness (`sphere: 'north' | 'south'`), and standard Tempo terms (`t.term.astro`, `t.term.equinox`, `t.term.solstice`, `t.term.astronomy`).
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
 - **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
 - **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination 0.0–1.0 fraction, age in days, hemisphere-aware emoji indicators, and location-aware `moonrise` and `moonset` events.
@@ -84,13 +85,21 @@ Tempo.use(CelestialPlugin);
 
 const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 
+// --- Astronomical Seasons & Solar Events ---
+console.log(t.term.astro);               // 'Summer' (or 'Winter' if sphere: 'south')
+console.log(t.term.astronomy.season);    // 'Summer'
+console.log(t.term.astronomy.event);     // 'Solstice'
+console.log(t.term.solstice);            // 'Summer'
+
 // --- Solar Day State & Phase Querying ---
 console.log(t.term.sun);                 // 'daylight'
 console.log(t.term.solar.key);           // 'daylight'
 console.log(t.term.solar.phase);         // 'Daylight'
 console.log(t.term.solar.phases);        // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 console.log(t.term.solar.sunrise);       // Tempo instance for local sunrise
-console.log(t.term.solar.noon);          // Tempo instance for local solar noon
+console.log(t.term.solar.noon);          // Tempo instance for local solar noon (upper culmination)
+console.log(t.term.solar.nadir);         // Tempo instance for local solar midnight (lower culmination)
+console.log(t.term.solar.zenith);        // Zenith angle in degrees (90° - altitude)
 console.log(t.term.solar.solarTime);     // Tempo instance for local apparent solar time
 console.log(t.term.solar.geo);           // { latitude: 40.7128, longitude: -74.006 }
 
@@ -100,6 +109,9 @@ console.log(t.term.lunar.phase);         // 'Waxing Crescent'
 console.log(t.term.lunar.phases);        // ['new-moon', 'waxing-crescent', 'first-quarter', 'waxing-gibbous', 'full-moon', 'waning-gibbous', 'third-quarter', 'waning-crescent']
 console.log(t.term.lunar.illumination);  // 0.45
 console.log(t.term.lunar.moonrise);      // Tempo instance for local moonrise (or null)
+console.log(t.term.lunar.transit);       // Tempo instance for upper meridian culmination (or null)
+console.log(t.term.lunar.nadir);         // Tempo instance for lower culmination / anti-transit (or null)
+console.log(t.term.lunar.zenith);        // Lunar zenith distance angle in degrees (90° - altitude)
 
 // --- Astronomical Tidal Mechanics ---
 console.log(t.term.tide);                // 'spring', 'neap', or 'normal'

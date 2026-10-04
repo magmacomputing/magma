@@ -1,5 +1,6 @@
 import type { ImpossibleTravelOptions } from './types.js';
 import { calculateVelocity } from './calculateVelocity.js';
+import { isDefined } from '../support/index.js';
 
 /**
  * Evaluates whether travel between two timestamped geographic instances represents an impossible travel anomaly
@@ -25,7 +26,7 @@ export function isImpossibleTravel(from: any, to: any, options?: ImpossibleTrave
 	const defaultMax = unit === 'miles' ? 560 : (unit === 'm' ? 250 : 900); // 900 km/h ≈ 560 mph ≈ 250 m/s
 
 	let fallbackThreshold: number;
-	if (options?.maxCommercialSpeedKmH !== undefined) {
+	if (isDefined(options?.maxCommercialSpeedKmH)) {
 		if (unit === 'miles') {
 			fallbackThreshold = options.maxCommercialSpeedKmH * 0.621371;
 		} else if (unit === 'm') {

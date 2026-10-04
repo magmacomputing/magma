@@ -2,6 +2,12 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-sync` project will be documented in this file.
 
+## [1.1.2] - 2026-10-02
+
+### Enhanced
+- **Runtime Introspection & Branding**:
+  - Added `[Symbol.toStringTag]` getters to `AtomicClock` (`'Tempo.AtomicClock'`) and `AtomicReader` (`'Tempo.AtomicReader'`), providing TC39-aligned branding for `Object.prototype.toString` and debugging tools.
+
 ## [1.1.1] - 2026-09-29
 
 ### Performance & Memory

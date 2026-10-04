@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-spatial",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -43,14 +43,14 @@
     "plan": "community"
   },
   "dependencies": {
-    "@magmacomputing/tempo-fns": "^1.1.0"
+    "@magmacomputing/tempo-fns": "^1.2.0"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.4.0"
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/tempo": "^4.4.0"
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "keywords": [
     "tempo",

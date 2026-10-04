@@ -700,7 +700,6 @@
 			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@latest",
 			"@magmacomputing/tempo-fns": "https://esm.sh/@magmacomputing/tempo-fns@latest",
 			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@latest",
-			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@latest",
 			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch@latest",
 			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@latest",
 			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@latest",
@@ -710,6 +709,7 @@
 			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@latest",
 			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial@latest",
 			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@latest",
+			"@magmacomputing/tempo-plugin-ntp": "https://esm.sh/@magmacomputing/tempo-plugin-ntp@latest",
 			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@latest"
 		}
 	}
@@ -795,6 +795,7 @@
 							<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
 							<option value="ai">Preset: AI Semantic Parsing & Scheduling</option>
 							<option value="holidays">Preset: Regional Public Holidays & SLA Business Days</option>
+							<option value="ntp">Preset: Network Time Sync & Drift (NTP)</option>
 						</select>
 					</div>
 
@@ -993,7 +994,7 @@ console.log('ar-SA Weekend Days:', sa.intl.weekend); // [5, 6] (Friday, Saturday
 
 return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.weekend.includes(today.dow)}\`;`,
 
-			astro: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-astro)
+			astro: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-celestial)
 const sydney = new Tempo('2026-07-01', { sphere: 'south' });
 const london = new Tempo('2026-07-01', { sphere: 'north' });
 
@@ -1069,6 +1070,18 @@ try {
 } finally {
   Tempo.sync.stopClock();
 }`,
+
+			ntp: `// 🌐 Network Time Sync & Drift Calibration (@magmacomputing/tempo-plugin-ntp)
+const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
+Tempo.use(NtpPlugin);
+
+console.log('Calibrating clock with remote time source...');
+const sample = await Tempo.ntp.sync('https://worldtimeapi.org/api/timezone/Etc/UTC');
+
+console.log('Sync Result: Offset', sample.offsetMs, 'ms (Uncertainty: ±' + sample.uncertaintyMs + 'ms, Samples: ' + sample.sampleCount + ')');
+console.log('Calibrated Tempo:', Tempo.ntp.now().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'));
+
+return \`Calibrated! Offset: \${Tempo.ntp.offset}ms | Local: \${new Tempo().format('{hh}:{mi}:{ss}.{ms}')} vs NTP: \${Tempo.ntp.now().format('{hh}:{mi}:{ss}.{ms}')}\`;`,
 
 			ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
 const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
@@ -1227,13 +1240,11 @@ return t.iso;`
 
 				statusText.textContent = 'Loading Tempo core & plugins...';
 				const { Tempo } = await import('@magmacomputing/tempo');
-				const { AstroPlugin } = await import('@magmacomputing/tempo-plugin-astro');
 				const { GeoPlugin } = await import('@magmacomputing/tempo-plugin-geo');
 				const { CelestialPlugin } = await import('@magmacomputing/tempo-plugin-celestial');
 
 				// Register default plugins
 				Tempo.use(GeoPlugin);
-				Tempo.use(AstroPlugin);
 				Tempo.use(CelestialPlugin);
 
 				// Dynamically register extra plugin if specified in query param against auto-synced manifest
@@ -1245,7 +1256,7 @@ return t.iso;`
 					try {
 						statusText.textContent = `Loading ${targetPlugin.name}...`;
 						const mod = await targetPlugin.loader();
-						const pluginObj = Object.values(mod).find(v => typeof v === 'object' && v !== null && 'name' in v && 'install' in v);
+						const pluginObj = Object.values(mod).find(v => (typeof v === 'object' || typeof v === 'function') && v !== null && 'name' in v && 'install' in v);
 						if (pluginObj) Tempo.use(pluginObj);
 					} catch (e) {
 						console.warn(`Plugin ${pluginParam} dynamic load:`, e);

@@ -11,9 +11,9 @@ import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
-import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, type ResolvedLocaleInfo } from '#library/international.library.js';
+import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
@@ -34,7 +34,7 @@ import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, Enum, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
@@ -395,7 +395,7 @@ export class Tempo {
 		markConfig(discovery);																	// auto-mark the discovery object
 
 		const isSandbox = shape !== _global;
-		let opts: Record<string, any> = isFunction(discovery.options) ? discovery.options() : (discovery.options || {});
+		let opts: Record<string, any> = evaluate(discovery.options, {}) ?? {};
 
 		// 1. Process TimeZones (normalize to lowercase for lookup)
 		if (discovery.timeZones) {
@@ -465,11 +465,11 @@ export class Tempo {
 
 		// 5. Process Options
 		if (discovery.ignore) {
-			const ignore = isFunction(discovery.ignore) ? discovery.ignore() : discovery.ignore;
+			const ignore = evaluate(discovery.ignore);
 			opts = { ...opts, ignore };
 		}
 
-		const res = isFunction(opts) ? opts() : opts;
+		const res = evaluate(opts, {}) ?? {};
 
 		if (shape === _global) {
 			this[$buildGuard]();
@@ -482,18 +482,15 @@ export class Tempo {
 	/** @internal */
 	static [$buildGuard](targetState?: Internal.State) {
 		const state = targetState ?? this[$Internal]();
-		// Note: We MUST use Object.keys() here instead of enums.XXX.keys() because this static guard 
-		// executes during module initialization. Circular dependencies mean the enumify methods 
-		// (like .keys()) may not be fully attached to the prototype yet!
 		const wordsList = [
-			...Object.keys(enums.NUMBER),
-			...Object.keys(enums.WEEKDAY),
-			...Object.keys(enums.WEEKDAYS),
-			...Object.keys(enums.MONTH),
-			...Object.keys(enums.MONTHS),
-			...Object.keys(enums.DURATION),
-			...Object.keys(enums.DURATIONS),
-			...Object.keys(enums.TIMEZONE),
+			...Enum.keys(enums.NUMBER),
+			...Enum.keys(enums.WEEKDAY),
+			...Enum.keys(enums.WEEKDAYS),
+			...Enum.keys(enums.MONTH),
+			...Enum.keys(enums.MONTHS),
+			...Enum.keys(enums.DURATION),
+			...Enum.keys(enums.DURATIONS),
+			...Enum.keys(enums.TIMEZONE),
 			...(state.aliasEngine?.getAliases(undefined, true).map((a: any) => a.name) ?? []),
 			...ownKeys(state.parse.ignore),
 			...ownKeys(state.parse.snippet),
@@ -665,7 +662,7 @@ export class Tempo {
 
 					registerPlugin(plugin, state);
 					const pluginName = (plugin as any).name;
-					const existingConfigOpts = (isString(pluginName) && pluginName.length > 0)
+					const existingConfigOpts = isText(pluginName)
 						? (state.config.pluginOptions?.[pluginName] ?? state.config.plugins?.[pluginName])
 						: undefined;
 					const resolvedOptions = {
@@ -674,7 +671,7 @@ export class Tempo {
 						...(isObject(callSiteOptions) ? callSiteOptions : {})
 					};
 
-					if (isString(pluginName) && pluginName.length > 0 && pluginName !== 'anonymous' && !isEmpty(resolvedOptions)) {
+					if (isText(pluginName) && pluginName !== 'anonymous' && !isEmpty(resolvedOptions)) {
 						state.config.pluginOptions = {
 							...(state.config.pluginOptions ?? {}),
 							[pluginName]: resolvedOptions
@@ -847,7 +844,7 @@ export class Tempo {
 								const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
 								if (type) {
 									const aliases: [string, any][] = [];
-									const monthKeys = Tempo.MONTH.keys();
+									const monthKeys = Enum.keys(Tempo.MONTH);
 									config.ranges.forEach(r => {
 										if (r.key) {
 											let val: string | undefined;
@@ -1273,7 +1270,7 @@ export class Tempo {
 		if (isSymbol(key)) return key;
 
 		if (isString(key) && key.includes('.')) {
-			const description = key.split('.').pop()!;						// use last segment as description
+			const description = key.split('.').at(-1)!;						// use last segment as description
 			return Token[key as keyof typeof Token] ??= Symbol(description);
 		}
 
@@ -1305,7 +1302,7 @@ export class Tempo {
 
 		// Create an object that only contains CONFIG-specific defaults as its prototype,
 		// preventing parse-related keys (like planner, monthDay) from leaking into the config state.
-		const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
+		const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => Enum.has(enums.CONFIG, key)));
 		const out = Object.create(configDefaults);
 
 		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor', 'result');
@@ -1414,9 +1411,9 @@ export class Tempo {
 		return this.config.registry;
 	}
 
-	/** Resolved cultural and regional locale information for the global locale via Intl.LocaleInfo */
-	static get intl(): ResolvedLocaleInfo {
-		return getLI(Tempo.#locale(this[$Internal]().config.locale));
+	/** Internationalization namespace (info, locale, and cultural metadata) for the global locale */
+	static get intl(): TempoIntlNamespace {
+		return getIntlNamespace(Tempo.#locale(this.config.locale), this.config.timeZone);
 	}
 
 	/** static Tempo properties getter */
@@ -1617,7 +1614,7 @@ export class Tempo {
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
 		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
 		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
-		else if (isString(this.#tempo) && !isEmpty(input) && guard.test(trimAll(input)))
+		else if (isString(this.#tempo) && isText(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 
 		// 🧬 Unified State Hand-off (from clone / mutate)
@@ -1864,8 +1861,8 @@ export class Tempo {
 	 * @deprecated Use `dd` (Tempo canonical) or `zdt.day` instead. To be removed in v5.0.0.
 	 */
 	get day() { return this.toDateTime().day as t.dd }
-	/** Resolved cultural and regional locale information (firstDay, weekend, direction, etc.) via Intl.LocaleInfo */
-	get intl(): ResolvedLocaleInfo { return getLI(this.locale); }
+	/** Internationalization namespace (info, locale, and cultural metadata) */
+	get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
@@ -1877,14 +1874,14 @@ export class Tempo {
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): Readonly<t.GeoConfig> | undefined {
-		if ('geo' in this.#memo) return this.#memo.geo;
+		if (hasOwn(this.#memo, 'geo')) return this.#memo.geo;
 		const res = this.#local.config.geo
 			?? (this as any)[$Internal]().config.geo
 			?? getStashedGeo();
 		return (this.#memo.geo = res ? Object.freeze({ ...res }) : undefined);
 	}
 	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
-		if ('sphere' in this.#memo) return this.#memo.sphere;
+		if (hasOwn(this.#memo, 'sphere')) return this.#memo.sphere;
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
@@ -1892,7 +1889,7 @@ export class Tempo {
 		const geoSphere = this.geo?.sphere;
 
 		const res = evaluate(
-			this.#local.options && hasOwn(this.#local.options, 'sphere') ? this.#local.options.sphere : undefined,
+			hasOwn(this.#local.options, 'sphere') ? this.#local.options?.sphere : undefined,
 			geoSphere,
 			isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
@@ -2066,18 +2063,19 @@ export class Tempo {
 
 		// Evaluate and snapshot dynamic context suppliers for this specific Tempo instance
 		const rawTz = options.timeZone ?? (options as any).timezone ?? (options as any).TimeZone;
-		const explicitTz = evaluate(rawTz);
-		const evaluatedTz = explicitTz ?? evaluate(classState.config.timeZone);
+		const explicitTz = evaluate<Temporal.TimeZoneLike>(rawTz);
+		const evaluatedTz = explicitTz ?? evaluate<Temporal.TimeZoneLike>(classState.config.timeZone);
 		let resolvedZone: string | undefined;
 		if (isDefined(evaluatedTz)) {
-			const zone = String(evaluatedTz).toLowerCase();
-			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(evaluatedTz));
+			const tzString = isObject(evaluatedTz) ? getTemporalIds(evaluatedTz)[0] : String(evaluatedTz);
+			const zone = tzString.toLowerCase();
+			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(tzString);
 			setProperty(this.#local.config, 'timeZone', resolvedZone);
 		}
 
 		const rawCal = options.calendar ?? (options as any).Calendar;
-		const explicitCal = evaluate(rawCal);
-		const evaluatedCal = explicitCal ?? evaluate(classState.config.calendar);
+		const explicitCal = evaluate<Temporal.CalendarLike>(rawCal);
+		const evaluatedCal = explicitCal ?? evaluate<Temporal.CalendarLike>(classState.config.calendar);
 		if (isDefined(evaluatedCal))
 			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
 
@@ -2168,8 +2166,8 @@ export class Tempo {
 			logError(msg, this.#local.config);
 			return undefined as any;
 		}
-		if (isObject(res) && 'value' in res) {
-			return (res as any).value ?? (undefined as any);
+		if (hasOwn(res, 'value')) {
+			return res.value ?? (undefined as any);
 		}
 		return res;
 	}
@@ -2209,7 +2207,7 @@ export class Tempo {
 			const record = { ...cast<Record<string, unknown>>(tempo) };
 			let hasMapped = false;
 			for (const [k, v] of Object.entries(record)) {
-				const resolved = enums.ELEMENT.has(k) ? `${enums.ELEMENT[k as t.Element]}s` : undefined;
+				const resolved = Enum.has(enums.ELEMENT, k) ? `${enums.ELEMENT[k as t.Element]}s` : undefined;
 				if (resolved) {
 					record[resolved] = v;
 					delete record[k];
@@ -2229,15 +2227,15 @@ export class Tempo {
 		if (!isPlainObject(arg)) return false;
 
 		const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
-		if (keys.some(key => enums.MUTATION.has(key)))
+		if (keys.some(key => Enum.has(enums.MUTATION, key)))
 			return false;
 
 		// 2. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
-		if (keys.some(key => (enums.ZONED_DATE_TIME.has(key) && !enums.CONFIG.has(key)) || enums.DURATIONS.has(key)))
+		if (keys.some(key => (Enum.has(enums.ZONED_DATE_TIME, key) && !Enum.has(enums.CONFIG, key)) || Enum.has(enums.DURATIONS, key)))
 			return false;
 
 		// 3. If it contains any recognized Config or Parse keys, it's definitely an options object
-		if (keys.some(key => enums.CONFIG.has(key) || enums.PARSE.has(key)))
+		if (keys.some(key => Enum.has(enums.CONFIG, key) || Enum.has(enums.PARSE, key)))
 			return true;
 
 		// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object

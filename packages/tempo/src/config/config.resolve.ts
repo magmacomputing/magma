@@ -1,4 +1,4 @@
-import { isFunction, isString, isObject, isSafeKey } from '#library/assertion.library.js';
+import { isFunction, isString, isObject, isSafeKey, isHttpUrl, isFileUrl, RE_FILE_URL } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { parseJSONC } from '#library/json.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
@@ -11,20 +11,6 @@ declare const require: any;
 const ctx = getContext();
 let nodeReq: ((id: string) => any) | null | undefined = undefined;
 let syncCache: Options | null | undefined = undefined;
-
-/**
- * Checks whether a specifier string is an http or https URL.
- */
-function isHttpUrl(specifier: string): boolean {
-	return /^https?:\/\//i.test(specifier);
-}
-
-/**
- * Checks whether a specifier string is a file:// URL.
- */
-function isFileUrl(specifier: string): boolean {
-	return /^file:\/\//i.test(specifier);
-}
 
 /**
  * Resolves a relative specifier against an HTTP URL or filesystem location.
@@ -215,7 +201,7 @@ function resolveLocalConfigPath(target: string, currentDir: string, path?: any, 
 
 		if (urlMod?.fileURLToPath)
 			return urlMod.fileURLToPath(target);
-		return target.replace(/^file:\/\//i, '');
+		return target.replace(RE_FILE_URL, '');
 	}
 
 	if (path && !path.isAbsolute(target)) {

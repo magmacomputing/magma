@@ -6,7 +6,7 @@ This template outlines the standard operating procedure for preparing and publis
 
 Ensure the plugin's `package.json` contains the correct community configuration:
 
-- **Version**: Set to `"0.1.0"` for the initial bootstrap release (allowing the official `1.0.0` GA release to be published via CI with full Sigstore provenance).
+- **Version**: Set to `"1.0.0"` for the initial plugin release. For local bootstrap publishing to establish npm registry presence prior to configuring GitHub Actions Trusted Publisher, maintainers may temporarily adjust `package.json` to `0.1.0`, publish locally, and revert via `git stash; git stash drop` before executing the official `v1.0.0` provenance release in CI.
 - **License**: Must strictly be `"MIT"`.
 - **Type**: Set `"type": "module"`.
 - **Files**: Include the published files array (omit `"src"` as `"dist"` contains all compiled JavaScript bundles and TypeScript `.d.ts` type definitions):
@@ -131,12 +131,88 @@ To ensure your tests are properly type-checked in isolation, create a `test/tsco
 > **Do not import test primitives from `'vitest'` in test scripts.**
 > In the Tempo workspace and plugin ecosystem, Vitest runs with `globals: true` (configured in `vitest.shared.ts` / `vitest.config.ts`). Standard testing utilities (`describe`, `it`, `test`, `expect`, `beforeEach`, `afterEach`, `beforeAll`, `afterAll`, `vi`) are globally injected into the test runtime environment. Do not write `import { describe, it, expect } from 'vitest';`.
 
-## 4. Documentation (`README.md` & `doc/index.md`)
+> [!TIP]
+> **Automatic Monorepo Vitest Resolution**:
+> All `@magmacomputing/tempo-plugin-*` packages are dynamically resolved from source (`packages/plugins/<name>/src/index.ts`) via global wildcard aliases in `vitest.shared.ts` and `vitest.config.mts`. You do **not** need to manually edit any Vitest configuration files when creating a new plugin.
 
-Community plugins must follow a uniform documentation standard.
+## 4. Documentation Architecture (`README.md` & `doc/`)
 
-### Structure
-- **Logo**: `![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)` (for README) or `![Tempo Plugin](/plugin-logo.svg)` (for docs).
+Community plugins follow a structured, modular documentation model designed to provide quick developer onboarding while offering comprehensive architectural depth for mission-critical deployments.
+
+### Multi-Page Documentation Model
+
+Plugin documentation in `doc/` is organized into three distinct tiers:
+
+1. **Primary Landing / Index Page (`doc/index.md` & `README.md`)**:
+   Every plugin has a canonical entrypoint providing:
+   - **Hero Branding**: Logo (`![Tempo Plugin](/plugin-logo.svg)` on docs, constrained to 90px max-width; full raw GitHub URL on README) and centered badge row.
+   - **Introduction & Value Proposition**: Clear explanation of what problem the plugin solves, its architectural benefits, and why it exists.
+   - **Installation & Quickstart**: Canonical package install command (`npm install @magmacomputing/tempo-plugin-[name]`) and minimal copyable initialization snippet.
+   - **Interactive Live REPL**: Embedded `<PluginRepl plugin="[name]" />` component (docs) or sandbox callout link (README) allowing users to execute code directly in the browser sandbox.
+   - **Comprehensive API Surface Catalog**: Structured reference table outlining all exported methods, terms, namespaces, input types, and return types, cross-linking to relevant concept guides.
+   - **Guides & Deep-Dives Directory**: Clear navigation links to all accompanying concept pages and the use-cases guide.
+   - **Community Notice & Licensing**: Free and open-source under MIT.
+
+2. **Sub-Topic "Concept" Deep-Dive Pages (`doc/[concept].md`)**:
+   Depending on the complexity and scope of the topic, plugins provide one or more focused sub-topic pages that explore domain mechanics, architectural trade-offs, and critical operational caveats:
+   - **Domain Theory & Core Mechanics**: Foundational algorithms and mechanics (e.g. astronomical coordinate frames, solar zenith angles, geodetic datums, NTP clock skew filtering & Marzullo intersections).
+   - **Architecture & Operational Caveats**: Realities of running in production—event loop blocking, drift accumulation, unref/dispose lifecycles (`using`), timezone ambiguities, concurrency, caching tiers, or upstream rate limits.
+   - *Reference Implementations*:
+     - **Ticker Plugin**: [`intervals-and-scheduling.md`](./intervals-and-scheduling.md) (interval precision, jitter, drift), [`reactive-clocks-and-events.md`](./reactive-clocks-and-events.md) (event emitters, async generators), and [`resource-management.md`](./resource-management.md) (explicit disposal via `using`, `unref()`).
+     - **NTP Plugin**: [`algorithms-and-precision.md`](./algorithms-and-precision.md) (packet filters, dispersion) and [`ticker-integration.md`](./ticker-integration.md) (drift synchronization).
+     - **Celestial Plugin**: [`solar.md`](./solar.md), [`lunar.md`](./lunar.md), and [`tides.md`](./tides.md).
+     - **Geo Plugin**: [`provider-gateway.md`](./provider-gateway.md), [`cultural-sync.md`](./cultural-sync.md), and [`storage-and-caching.md`](./storage-and-caching.md).
+     - **Spatial Plugin**: [`transit-and-navigation.md`](./transit-and-navigation.md), [`geofencing.md`](./geofencing.md), and [`solar-offset.md`](./solar-offset.md).
+     - **Holidays Plugin**: [`business-days.md`](./business-days.md) and [`regional-calendars.md`](./regional-calendars.md).
+     - **AI Plugin**: [`modes.md`](./modes.md), [`security.md`](./security.md), [`grounding.md`](./grounding.md), [`rate-limits.md`](./rate-limits.md), and [`architecture.md`](./architecture.md).
+
+3. **Use-Cases & Production Patterns Sub-Topic Page (`doc/use-cases-and-patterns.md`)**:
+   Every multi-page plugin must include a dedicated `use-cases-and-patterns.md` guide. While API references and concept pages document *how* functions work, this page 'sells the benefits' and demonstrates *why* the plugin is valuable:
+   - **Imagined Real-World Scenarios**: Present concrete business or engineering dilemmas where the plugin solves a non-trivial challenge (e.g. T+2 financial settlement rolling across Easter bank holidays, anti-cheat countdown synchronizers, port tidal flood clearance, multi-tenant partitioned geocoding, multi-model LLM consensus).
+   - **End-to-End Architectural Patterns**: Show complete integration recipes with backend queues, database models, microservice lifecycles, streaming APIs, or worker threads.
+   - **Focus on Business Value**: Frame each pattern around the problem statement, architectural diagram/flow, and validated implementation snippet rather than dry syntax repetition.
+
+### Sub-Page Presentation & Styling Rules
+
+To maintain visual hierarchy and clean reading UX across VitePress:
+
+1. **Eyebrow Breadcrumb Navigation**:
+   Sub-pages omit the large plugin hero logo and lead directly with an **eyebrow breadcrumb** pointing back to `./index.html`:
+   ```markdown
+   <div class="plugin-eyebrow">
+     <a href="./index.html">← @magmacomputing/tempo-plugin-[name]</a>
+   </div>
+
+   <br>
+
+   # [Sub-Page Title]
+   ```
+2. **Omit Redundant Badges & Hero Logo**:
+   The 90px hero logo (`/plugin-logo.svg`) and badge rows belong strictly on the primary `doc/index.md` landing page. Do **not** duplicate them on sub-pages; keep sub-pages focused purely on technical concepts and patterns.
+3. **Internal Sibling Navigation**:
+   Cross-link between sibling guides within the plugin using relative links (e.g. `[Deep Dive](./deep-dive.md)` or `[Use Cases](./use-cases-and-patterns.md)`). The monorepo harvester automatically translates these into flat VitePress topic routes (`[pluginId].[file].md`).
+
+### Sidebar & Harvester Registration (`packages/tempo/bin/harvest-plugins.mjs`)
+
+Whenever introducing a new multi-page plugin or adding sub-pages:
+1. Register the plugin's page hierarchy in `PREFERRED_DOC_ORDER` in `packages/tempo/bin/harvest-plugins.mjs`:
+   ```javascript
+   const PREFERRED_DOC_ORDER = {
+     // ...
+     [name]: [
+       'index',
+       'concept-1',
+       'concept-2',
+       'use-cases-and-patterns',
+     ],
+   };
+   ```
+2. **Ordering Convention**: Always list `'index'` first, followed by the logical progression of sub-topic concept pages (from fundamental concepts to advanced operational caveats), concluding with `'use-cases-and-patterns'`.
+3. If the plugin name requires custom title capitalization in the sidebar accordion, register it in `getPluginGroupName()` in `harvest-plugins.mjs`.
+
+### Primary Landing Page Structure Details (`README.md` & `doc/index.md`)
+
+- **Logo**: `![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)` (for README) or `![Tempo Plugin](/plugin-logo.svg)` (for docs, styled with max-width: 90px).
 - **Header**: `# @magmacomputing/tempo-plugin-[name]`
 - **Badges**: Standard visual indicators placed immediately below the Header. Badges must be aligned horizontally in a **single centered row** using `<p align="center">` with `style="display: inline-block; margin: 0 4px;"`:
   - **`README.md` (5 Badges)**: NPM Version, Peer Dependency, License, TypeScript Ready, and Docs VitePress:
@@ -158,7 +234,16 @@ Community plugins must follow a uniform documentation standard.
   - In `README.md` (GitHub / NPM): Insert an in-context callout link immediately below the primary usage code example:
     `> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=[name])**`
 - **Documentation Link** (README only): Link to full docs at `https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html`.
-- **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required."
+- **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license."
+
+### Code Snippet Validation & Zero-Hallucination Policy
+
+When writing user documentation (`README.md`, `doc/index.md`, concept pages, or `use-cases-and-patterns.md`):
+> [!IMPORTANT]
+> **Mandatory Code Snippet Validation (Zero-Hallucination Policy)**: Never invent or guess API signatures, method chains, or return values. Every single code snippet and expected output comment must be executed and confirmed against live code in Node.js or automated Vitest tests before committing.
+- **Never guess or hallucinate API signatures**: Concur with Tempo's actual methods and types (e.g. standard duration records like `t.add({ day: 1 })`, never invented chained string mutations like `.mutate.add('1 day')`). Always cross-reference the plugin's `src/index.ts` and `src/types.ts`.
+- **Verify exact numbers & calendar outputs**: Run code examples in Node.js against the compiled plugin/Tempo builds or write automated Vitest tests to confirm that printed dates, day counts, and returned values are 100% mathematically and chronologically accurate.
+- **Verify statutory vs. industry rules**: Confirm whether a calendar rule represents a national statutory holiday or an exchange-specific closure before documenting it as a built-in behavior.
 
 ### Standard Icons & UI Actions
 

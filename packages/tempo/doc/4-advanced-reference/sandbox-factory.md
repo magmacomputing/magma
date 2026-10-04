@@ -67,11 +67,11 @@ For unit tests, request-scoped operations, or short-lived calculations, pass an 
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
 // Synchronous callback: automatically disposed on return
 const season = Tempo.create((sb) => {
-  sb.use(AstroPlugin);
+  sb.use(CelestialPlugin);
   return sb('2026-06-21').term.astronomy.season;
 });
 

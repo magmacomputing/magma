@@ -1,3 +1,9 @@
+<div class="plugin-eyebrow">
+  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+</div>
+
+<br>
+
 # `scheduleAI` — Intelligent Appointment Booking & Conflict Resolution
 
 `scheduleAI()` provides automated slot booking, calendar conflict detection, working hour verification, and iterative slot bumping. It evaluates a natural language booking request (e.g. *"45 min sync next Wednesday afternoon"*) alongside a list of existing busy intervals and working hours to find the best available appointment slots.

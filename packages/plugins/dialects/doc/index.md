@@ -6,15 +6,19 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-The **Dialects Plugin** enables Tempo to format and parse dates using established external format standards such as **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime`**.
+The **Dialects Plugin** enables Tempo to seamlessly format and parse dates using established external formatting standards, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime` (C, Python, Linux)**.
+
+It provides transparent drop-in compatibility shims, multi-candidate fallback parsing, and an automated `.explain()` translation engine to assist incremental migrations to native Tempo `{token}` syntax.
 
 ---
 
-## 🚀 Installation
+## 🚀 Installation & Quickstart
 
 ```bash
 npm install @magmacomputing/tempo-plugin-dialects
 ```
+
+<PluginRepl plugin="dialects" />
 
 ### Registration
 
@@ -23,23 +27,34 @@ import { Tempo } from '@magmacomputing/tempo';
 import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
 
 Tempo.use(DialectsPlugin);
+
+const t = new Tempo('2026-10-24T15:30:45');
+
+// Format using external dialect masks
+console.log(t.format('yyyy-MM-dd HH:mm:ss', { dialect: DIALECT.Ldml })); // "2026-10-24 15:30:45"
+console.log(t.format('%Y-%m-%d %H:%M:%S', { dialect: DIALECT.Strftime })); // "2026-10-24 15:30:45"
+console.log(t.format('[Recorded on] MMMM Do YYYY', { dialect: DIALECT.Moment })); // "Recorded on October 24th 2026"
 ```
 
-Or via side-effect import in scripts / REPLs:
+#### Zero-Boilerplate Auto-Installation (Side-Effect Import)
 
 ```typescript
+import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-dialects/install';
+
+const t = new Tempo('2026-10-24T15:30:45');
+console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 ```
 
 ---
 
 ## 🔤 Supported Dialects
 
-| Dialect Identifier | Canonical Constant | Common Aliases | Format Example | Description |
+| Dialect Identifier | Canonical Constant | Common Aliases | Format Example | Primary Ecosystems |
 | :--- | :--- | :--- | :--- | :--- |
-| `'ldml'` | `DIALECT.Ldml` | `'luxon'`, `'datefns'`, `'cldr'` | `yyyy-MM-dd HH:mm:ss.SSS` | Standard Unicode LDML / UTS #35 tokens. |
-| `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C / Python / SQL specifiers. |
-| `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD` | Legacy Moment.js tokens. |
+| `'ldml'` | `DIALECT.Ldml` | `'luxon'`, `'datefns'`, `'cldr'` | `yyyy-MM-dd HH:mm:ss.SSS` | Luxon, date-fns, CLDR, Unicode UTS #35 |
+| `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog, SQL |
+| `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD HH:mm:ss` | Moment.js, Day.js |
 
 > [!TIP]
 > **Native Tempo Syntax is Optimal**
@@ -47,73 +62,32 @@ import '@magmacomputing/tempo-plugin-dialects/install';
 
 ---
 
-## 🛠️ Usage Examples
+## 📚 API Surface Catalog
 
-<PluginRepl plugin="dialects" />
+The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance utilities onto `t.dialects`, and attaches convenience shims directly onto `Tempo`:
 
-### 1. Unicode LDML & Luxon Style Formatting
+| API / Method | Target | Input | Returns | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| **`t.toFormat(mask, options?)`** | Instance | Format mask string, options | `string` | **Luxon Drop-In Formatter**. Formats the instance using LDML (or explicit dialect). |
+| **`t.dialects.ldml(mask)`** | Instance | Unicode LDML mask | `string` | Fast-path formatter for Unicode LDML / Luxon / date-fns masks. |
+| **`t.dialects.strftime(mask)`** | Instance | POSIX strftime mask | `string` | Fast-path formatter for POSIX strftime specifiers (`%Y`, `%m`, `%d`, etc.). |
+| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%` specifiers. |
+| **`t.dialects.explain(mask, dialect?)`** | Instance | External format mask | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
+| **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask. |
+| **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser (first matching mask succeeds). |
+| **`Tempo.dialects.parse(input, mask, dialect?)`** | Static | Date string, mask, dialect | `Tempo` | Explicit dialect parser. |
+| **`Tempo.dialects.fromFormats(input, masks[], ...)`**| Static | Date string, candidate masks | `Tempo` | Explicit multi-candidate fallback parser. |
+| **`Tempo.dialects.explain(mask, dialect?)`** | Static | External format mask | `ExplainResult` | AST analyzer translating legacy masks into native Tempo `{token}` syntax. |
 
-```typescript
-const t = new Tempo('2026-10-24T15:30:45');
+---
 
-// Via Core .format() with dialect option
-t.format('yyyy-MM-dd HH:mm:ss', { dialect: 'ldml' }); // "2026-10-24 15:30:45"
+## 📖 Architecture & Specialized Guides
 
-// Via .dialects namespace
-t.dialects.ldml('dd LLL yyyy');                       // "24 Oct 2026"
-t.dialects.ldml("'Today is' EEEE, MMMM d");           // "Today is Saturday, October 24"
+To explore technical deep-dives, token compatibility matrices, and production patterns, consult the dedicated guides below:
 
-// Via Luxon drop-in alias
-t.toFormat('yyyy-MM-dd');                             // "2026-10-24"
-```
-
-### 2. POSIX `strftime` Formatting
-
-```typescript
-const t = new Tempo('2026-10-24T15:30:45');
-
-// Via Core .format() with explicit 'strftime' dialect
-t.format('%Y-%m-%d %H:%M:%S', { dialect: 'strftime' }); // "2026-10-24 15:30:45"
-t.dialects.strftime('%B %d, %Y (%A)');                  // "October 24, 2026 (Saturday)"
-```
-
-### 3. Parsing with Dialect Masks
-
-```typescript
-// Explicit static parser
-const t1 = Tempo.dialects.parse('24/10/2026', 'dd/MM/yyyy');
-
-// Fallback across multiple candidate masks (first matching wins)
-const t2 = Tempo.dialects.fromFormats('24/10/2026', [
-  'yyyy-MM-dd',
-  'dd/MM/yyyy',
-  'MM/dd/yyyy'
-]);
-
-// Luxon migration alias
-const t3 = Tempo.fromFormat('2026-10-24 15:30', 'yyyy-MM-dd HH:mm');
-```
-
-### 4. Migration Helper (`explain`)
-
-Use `Tempo.dialects.explain()` (or instance `t.dialects.explain()`) to translate legacy masks into native Tempo `{token}` patterns with a breakdown of each mapped token to guide incremental migration:
-
-```typescript
-const result = Tempo.dialects.explain('YYYY-MM-DD HH:mm:ss', 'moment');
-
-console.log(result.pattern); 
-// => "{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}"
-
-console.log(result.tokens);
-// [
-//   { source: 'YYYY', tempo: '{yyyy}', desc: '4-digit year' },
-//   { source: 'MM', tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
-//   { source: 'DD', tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
-//   { source: 'HH', tempo: '{hh}', desc: '24-hour clock (00-23)' },
-//   { source: 'mm', tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
-//   { source: 'ss', tempo: '{ss}', desc: 'Zero-padded second (00-59)' }
-// ]
-```
+- **[Migration & Legacy Compatibility](./migration-and-compatibility.md)**: Resolving the `YYYY` vs `yyyy` year trap, handling bracketed/quoted escaping, using `.explain()` for automated codemods, and performance benchmarks.
+- **[Token Specification & Cross-Ecosystem Matrix](./token-specification.md)**: Exhaustive token lookup table mapping LDML, Moment, strftime, and native Tempo tokens across years, months, days, sub-seconds, and timezones.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Multi-candidate webhook ingestion pipelines, enterprise POSIX syslog formatting, and zero-downtime gradual modernization recipes.
 
 ---
 
@@ -127,4 +101,4 @@ console.log(result.tokens);
 
 ## 📄 Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.

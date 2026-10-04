@@ -47,6 +47,7 @@ Explore detailed guides on specific capabilities:
 - **[Transit & Navigation](./transit-and-navigation.md)**: Great-Circle distance, compass bearing, geographic midpoint, transit velocity, and impossible travel anomaly detection.
 - **[Spatial Geofencing](./geofencing.md)**: Proximity checking (`isWithin`), rectangular bounding boxes (`inBoundingBox`), and antimeridian crossing resolution.
 - **[Natural Solar Time Offset](./solar-offset.md)**: Longitude delta calculations (`solarOffset`), meridian drift, and circadian rhythm alignment.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Zero-trust impossible travel detection, depot geofencing, flight sector planning, and physical solar noon alignment.
 
 ---
 

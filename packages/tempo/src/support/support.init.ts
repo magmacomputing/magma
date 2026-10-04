@@ -1,5 +1,5 @@
 import '#library/temporal.polyfill.js';
-import { enumify } from '#library/enumerate.library.js';
+import { enumify, Enum } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, isEnglish } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
@@ -335,11 +335,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						modifiers: { ...(state.config.registry?.modifiers ?? {}) }
 					};
 					if (arg.value.formats) {
-						const extended = state.config.registry.formats?.extend ? state.config.registry.formats.extend(arg.value.formats) : arg.value.formats;
+						const extended = state.config.registry.formats ? Enum.extend(state.config.registry.formats, arg.value.formats) : arg.value.formats;
 						setProperty(state.config.registry, 'formats', extended);
 					}
 					if (arg.value.locales) {
-						const extended = (state.config.registry.locales as any)?.extend ? (state.config.registry.locales as any).extend(arg.value.locales) : arg.value.locales;
+						const extended = state.config.registry.locales ? Enum.extend(state.config.registry.locales, arg.value.locales) : arg.value.locales;
 						setProperty(state.config.registry, 'locales', extended);
 					}
 					if (arg.value.modifiers) {

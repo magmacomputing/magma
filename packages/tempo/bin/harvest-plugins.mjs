@@ -43,6 +43,10 @@ const KNOWN_TITLES = {
   'ticker.intervals-and-scheduling': 'Intervals & Scheduling Engines',
   'ticker.resource-management': 'Resource Management & Lifecycle',
   'ticker.reactive-clocks-and-events': 'Event Streams & Reactive Clocks',
+  'ntp.index': 'NTP (Network Time Synchronization)',
+  'ntp.use-cases-and-patterns': 'Use Cases & Production Patterns',
+  'ntp.ticker-integration': 'Ticker Integration & Atomic Clocks',
+  'ntp.algorithms-and-precision': 'Cristian Algorithm & Precision Specs',
   'dialects.index': 'Dialects (Luxon, strftime, Moment)',
   'spatial.index': 'Spatial (GIS, Haversine & Transit)',
   'spatial.transit-and-navigation': 'Transit, Velocity & Navigation',
@@ -100,6 +104,10 @@ function harvest(dir, pluginDirName, pluginId, isExternal = false) {
     // Rewrite internal sibling links within the same plugin's doc/ folder
     // Maps: ./other.md -> ./[pluginId].other.md
     content = content.replace(/\]\(\.\/([^/]+)\.md(?:([#?][^)]*))?\)/g, `](./${pluginId}.$1.md$2)`);
+    content = content.replace(/href="\.\/([^/"#?]+?)\.(?:md|html)(?:([#?][^"]*))?"/g, (_m, p1, p2) => {
+      const base = p1.startsWith(`${pluginId}.`) ? p1.slice(pluginId.length + 1) : p1;
+      return `href="./${pluginId}.${base}.html${p2 || ''}"`;
+    });
 
     // Rewrite cross-plugin relative links so they work in VitePress
     // Maps: ../../[plugin-dir]/doc/[filename].md -> ./[normalised-pluginId].[filename].md
@@ -157,34 +165,81 @@ const PREFERRED_DOC_ORDER = {
     'security',
     'grounding',
     'rate-limits',
-    'architecture'
+    'architecture',
+    'use-cases-and-patterns',
   ],
   geo: [
     'index',
     'provider-gateway',
-    'geofencing',
-    'transit-and-navigation',
     'cultural-sync',
     'storage-and-caching',
-    'solar-offset'
+    'use-cases-and-patterns',
   ],
   celestial: [
     'index',
     'solar',
     'lunar',
-    'tides'
-  ]
+    'tides',
+    'use-cases-and-patterns',
+  ],
+  holidays: [
+    'index',
+    'business-days',
+    'regional-calendars',
+    'use-cases-and-patterns',
+  ],
+  ntp: [
+    'index',
+    'algorithms-and-precision',
+    'ticker-integration',
+    'use-cases-and-patterns',
+  ],
+  ticker: [
+    'index',
+    'intervals-and-scheduling',
+    'reactive-clocks-and-events',
+    'resource-management',
+    'use-cases-and-patterns',
+  ],
+  spatial: [
+    'index',
+    'transit-and-navigation',
+    'geofencing',
+    'solar-offset',
+    'use-cases-and-patterns',
+  ],
+  dialects: [
+    'index',
+    'migration-and-compatibility',
+    'token-specification',
+    'use-cases-and-patterns',
+  ],
+  batch: [
+    'index',
+    'worker-architecture',
+    'use-cases-and-patterns',
+  ],
+  sync: [
+    'index',
+    'atomic-architecture',
+    'use-cases-and-patterns',
+  ],
+  snap: [
+    'index',
+    'use-cases-and-patterns',
+  ],
 };
 
 function getPluginGroupName(pluginId) {
   const customNames = {
-    ai: 'AI Plugin (@magmacomputing/tempo-plugin-ai)',
-    geo: 'Geo Plugin (@magmacomputing/tempo-plugin-geo)',
-    celestial: 'Celestial Plugin (@magmacomputing/tempo-plugin-celestial)',
+    ai: 'AI Plugin',
+    geo: 'Geo Plugin',
+    celestial: 'Celestial Plugin',
+    ntp: 'NTP Plugin',
   };
   if (customNames[pluginId]) return customNames[pluginId];
   const capitalized = pluginId.charAt(0).toUpperCase() + pluginId.slice(1);
-  return `${capitalized} Plugin (@magmacomputing/tempo-plugin-${pluginId})`;
+  return `${capitalized} Plugin`;
 }
 
 // 3. Generate dynamic multi-sidebar structure for /doc/9-plugins/
@@ -222,7 +277,7 @@ for (const [pluginId, items] of harvestedByPlugin.entries()) {
     multiPagePlugins.push({
       pluginId,
       text: getPluginGroupName(pluginId),
-      collapsed: false,
+      collapsed: true,
       items: sortedItems.map(item => ({
         text: item.basename === 'index' ? 'Overview' : item.title,
         link: item.link
@@ -259,7 +314,7 @@ singlePagePlugins.sort((a, b) => a.text.localeCompare(b.text));
 if (singlePagePlugins.length > 0) {
   sidebar.push({
     text: 'Single-Feature Community Plugins',
-    collapsed: false,
+    collapsed: true,
     items: singlePagePlugins
   });
 }
