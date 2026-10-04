@@ -91,10 +91,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `definePlugin` now returns a **`PluginFactory<T, Opts>`** — a callable hybrid that carries all plugin properties as a plain object _and_ can be invoked as a factory to attach colocated options. This eliminates the previous "action-at-a-distance" pattern where plugin options were wired via a disconnected `pluginOptions` dictionary using a magic string key.
   - **Pattern 1 — Factory Closure** (Vite / Rollup model): `TickerPlugin({ interval: 1000 })` — invoke the plugin as a factory directly inside the `plugins` array. Call-site options are stashed on the returned descriptor and injected into `install(Tempo, resolvedOptions)` at registration time.
   - **Pattern 2 — Tuple Syntax**: `[GeoPlugin, { timeout: 5000 }]` — pair any plugin (including third-party plugins not built with `definePlugin`) with its options in a 2-element tuple. The engine detects and unpacks `[Plugin, OptionsObject]` tuples before flattening nested arrays so options objects are never misinterpreted as nested plugin arrays.
-  - **Bare Registration Unchanged**: `plugins: [AstroTerm]` continues to work identically — zero breaking changes.
+  - **Bare Registration Unchanged**: `plugins: [CelestialPlugin]` continues to work identically — zero breaking changes.
   - **Options Precedence** (lowest → highest): `config.pluginOptions[name]` → trailing shared options → call-site colocated options. Resolved options are automatically synced back into `state.config.pluginOptions[name]` and passed directly to `plugin.install(Tempo, resolvedOptions)`.
   - **`Tempo.create` Sandbox Support**: `Tempo.create({ plugins: [...] })` now correctly installs colocated-options plugins using the same desugaring pipeline, enabling full Pattern 1 / Pattern 2 support in isolated test sandboxes.
-  - **Exported Options Types**: `TickerPluginOptions`, `GeoPluginOptions`, and `AstroTermOptions` are now exported from their respective plugin packages, providing full IDE intellisense and type-checking inside `TickerPlugin({ ... })` factory calls.
+  - **Exported Options Types**: `TickerPluginOptions`, `GeoPluginOptions`, and `CelestialPluginOptions` are now exported from their respective plugin packages, providing full IDE intellisense and type-checking inside `TickerPlugin({ ... })` factory calls.
 - **`Intl.LocaleInfo` & Regional Calendar Context (`t.intl`, `Tempo.intl`, `localeInfo`)**:
   - Added `intl` accessor on `Tempo` instances (`t.intl`) and statically (`Tempo.intl`) exposing frozen, memoized regional metadata (`firstDay`, `weekend`, `region`, `script`, `hourCycle`, `direction`, `numberingSystem`, `timeZones`) via `getLI` from `@magmacomputing/library` with zero per-instance allocations.
   - Added opt-in `localeInfo: boolean` configuration flag (`Tempo.init({ localeInfo: true })` or per-instance options), activating culturally authentic calendar arithmetic while strictly preserving Tempo's ISO 8601 baseline by default.
@@ -145,7 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Dynamic Namespace & Spatial Layout Format Tokens (`{namespace.key}`)**:
-  - Generalized token resolution in `t.format()` to dynamically interpolate any active plugin namespace (`t.finance`, `t.astro`, `t.term`) or custom property container attached to the `Tempo` instance.
+  - Generalized token resolution in `t.format()` to dynamically interpolate any active plugin namespace (`t.finance`, `t.term`) or custom property container attached to the `Tempo` instance.
   - Dedicated spatial formatting: `{geo.city}`, `{geo.country}`, `{geo.sphere}`, `{geo.elevation}`, `{geo.timezone}`, and custom location metadata (e.g. `{geo.venue}`).
   - Full compatibility with format modifiers: e.g. `{geo.country:upper}`, `{geo.city:title}`, `{finance.taxYear}`.
   - Graceful fallback: Safely resolves missing properties in known contexts (like `geo`) to `''` (empty string) while leaving unhandled tokens intact.
@@ -332,7 +332,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Documentation Architecture**: Architectural deep-dives (Localized Parsing, Slick Mutations, Custom Tokens) have been extracted from the Cookbook into specialized Core Concepts guides (e.g. `tempo.parse.md`, `tempo.mutate.md`, `tempo.format.md`) to provide a punchier onboarding experience.
-- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinanceNamespace` and `AstroTerm`).
+- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinanceNamespace` and `CelestialPlugin`).
 - **Getter Documentation**: Created `tempo.getters.md` as the definitive, educational conceptual guide for utilizing Tempo's zero-cost evaluation getters.
 
 ### Fixed
@@ -345,7 +345,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Documentation Architecture**: Relocated `tempo.registry.md` and `tempo.layout.md` from Core Concepts to Extending Tempo to better reflect their advanced, extensibility-focused usage patterns.
-- **README Updates**: Added `AstroPlugin` initialization examples, an "Ultra Lightweight" architecture bullet, and restructured the ecosystem markdown table for cleaner VitePress rendering.
+- **README Updates**: Added `CelestialPlugin` initialization examples, an "Ultra Lightweight" architecture bullet, and restructured the ecosystem markdown table for cleaner VitePress rendering.
 
 ### Fixed
 - **Format Leading Zeros**: Fixed a data-corruption bug in `Tempo.format()` where numeric-looking tokens (e.g., `{dd}`, `{mm}`) were implicitly cast to numbers, stripping their leading zeros. The `.format()` method now strictly adheres to a string-only return contract, ensuring zero-padded tokens retain their exact formatting. Removed `NumericPattern` and `BigIntPattern` complexity and simplified internal casting logic.
@@ -372,7 +372,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Auto-Meridiem Spacing**: Implemented the `:space` modifier for the `{h12}` formatting token (e.g., `{h12:space:dots}`). This enables typographically correct spacing before automatically injected meridiems (e.g., `"10:30 a.m."`).
 
 ### Changed
-- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinanceNamespace` and `AstroTerm`).
+- **Documentation Alignment**: Cleaned up `tempo.config.md` to remove deprecated module references, perfectly aligning examples with the `tempo-workspace` ecosystem (`FinanceNamespace` and `CelestialPlugin`).
 - **Getter Documentation**: Created `tempo.getters.md` as the definitive, educational conceptual guide for utilizing Tempo's zero-cost evaluation getters.
 
 ### Fixed
@@ -442,7 +442,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Minified Global Bundles**: The build pipeline now natively produces highly optimized, minified IIFE bundles (`*.min.js`) for both Tempo Core and all Community Plugins, significantly reducing payload size for developers using CDN `<script>` tags.
-- **Unified Global Namespace**: Re-architected the browser-global export strategy. Both the core library and all `<script>` tag plugins now elegantly attach to a single, collision-free `window.Magma` namespace (e.g., `window.Magma.Tempo` and `window.Magma.plugins.astro`), dramatically improving developer experience and eliminating global variable pollution.
+- **Unified Global Namespace**: Re-architected the browser-global export strategy. Both the core library and all `<script>` tag plugins now elegantly attach to a single, collision-free `window.Magma` namespace (e.g., `window.Magma.Tempo` and `window.Magma.plugins.celestial`), dramatically improving developer experience and eliminating global variable pollution.
 - **Timezone Formatting Modifiers**: The `{tz}` token now natively supports localized timezone name and offset formats via lowercase modifiers (e.g., `{tz:z}`, `{tz:zzzz}`). This allows developers to format timezones exactly as needed without relying on raw ID strings.
 
 ### Fixed

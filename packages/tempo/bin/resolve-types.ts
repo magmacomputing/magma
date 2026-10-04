@@ -71,7 +71,15 @@ function findInLibSrc(targetFileName: string): string {
 
 	const targetDts = targetFileName.replace(/\.js$/, '.d.ts');
 
-	// Search subdirectories FIRST in LIB_SRC_DIR (e.g. primitives/, runtime/, etc.)
+	if (fs.existsSync(path.join(LIB_SRC_DIR, targetDts))) {
+		const norm = targetFileName.replace(/\\/g, '/');
+		libFileCache.set(targetFileName, norm);
+		return norm;
+	}
+
+	const baseName = path.basename(targetDts);
+
+	// Search subdirectories in LIB_SRC_DIR (e.g. primitives/, runtime/, etc.)
 	function search(dir: string, baseDir: string): string | null {
 		const entries = fs.readdirSync(dir, { withFileTypes: true });
 		for (const entry of entries) {
@@ -79,7 +87,7 @@ function findInLibSrc(targetFileName: string): string {
 			if (entry.isDirectory()) {
 				const found = search(full, baseDir);
 				if (found) return found;
-			} else if (entry.name === targetDts && dir !== baseDir) {
+			} else if (entry.name === baseName && dir !== baseDir) {
 				return path.relative(baseDir, full).replace(/\.d\.ts$/, '.js').replace(/\\/g, '/');
 			}
 		}
@@ -90,11 +98,6 @@ function findInLibSrc(targetFileName: string): string {
 	if (subPath) {
 		libFileCache.set(targetFileName, subPath);
 		return subPath;
-	}
-
-	if (fs.existsSync(path.join(LIB_SRC_DIR, targetDts))) {
-		libFileCache.set(targetFileName, targetFileName);
-		return targetFileName;
 	}
 
 	libFileCache.set(targetFileName, targetFileName);
@@ -165,27 +168,17 @@ function walk(dir: string) {
  */
 function rewrite(filePath: string) {
 	const content = fs.readFileSync(filePath, 'utf8');
-	const relToDist = path.relative(DIST_DIR, filePath);
-	const depth = relToDist.split(path.sep).length - 1;
-	const isInsideLib = relToDist.startsWith(`lib${path.sep}`);
-
-	let replacement: string;
-	if (isInsideLib) {
-		// If inside lib/, #library/ becomes ./
-		replacement = './';
-	} else {
-		// If at root (or elsewhere), #library/ becomes ./lib/ (with relative prefix)
-		let prefix = '';
-		for (let i = 0; i < depth; i++) prefix += '../';
-		replacement = `${prefix || './'}lib/`;
-	}
 
 	const updatedContent = content
 		.replace(/#library\/([^"')]+\.js)/g, (_, libPath) => {
-			const actualPath = isInsideLib ? libPath : findInLibSrc(libPath);
-			return `${replacement}${actualPath}`;
+			const actualSubPath = findInLibSrc(libPath);
+			const targetDistPath = path.join('lib', actualSubPath);
+			return resolveRelativeImport(filePath, targetDistPath);
 		})
-		.replace(/#library(['"])/g, (_, quote) => `${replacement}index.js${quote}`)
+		.replace(/(['"])#library\1/g, (_, quote) => {
+			const rel = resolveRelativeImport(filePath, 'lib/index.js');
+			return `${quote}${rel}${quote}`;
+		})
 		.replace(/(['"])#tempo\/([^"')]+)\1/g, (match, quote, subPath) => {
 			const fullAlias = `#tempo/${subPath}`;
 			const targetDistPath = findTempoTarget(fullAlias);

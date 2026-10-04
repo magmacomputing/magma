@@ -31,7 +31,7 @@ export interface TempoExtractedEvent {
  */
 export interface TempoAiExtractResult extends TempoBaseAiResult {
 	/** Array of extracted events and temporal entities */
-	events: TempoExtractedEvent[];
+	events: readonly TempoExtractedEvent[];
 }
 
 /**

@@ -14,7 +14,7 @@ export interface TempoAiDiffResult extends TempoBaseAiResult {
 	/** Total business working days (excluding weekends and matching holidays) between start and end */
 	businessDays?: number | undefined;
 	/** List of holiday dates (YYYY-MM-DD) encountered within the interval */
-	holidays?: string[] | undefined;
+	holidays?: readonly string[] | undefined;
 }
 
 /**

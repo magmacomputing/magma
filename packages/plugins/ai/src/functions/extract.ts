@@ -132,7 +132,7 @@ async function extractSingleInput(
 						...sanitizeInspectAiMeta(obj, isProd),
 					}));
 
-					return secure(cachedResult);
+					return secure(cachedResult) as TempoAiExtractResult;
 				}
 			}
 		} catch (err: any) {
@@ -302,7 +302,7 @@ ${region ? `- Region Context: ${region}\n` : ''}${categories.length > 0 ? `- Fil
 		...sanitizeInspectAiMeta(obj, isProd),
 	}));
 
-	return secure(finalResult);
+	return secure(finalResult) as TempoAiExtractResult;
 }
 
 /**
