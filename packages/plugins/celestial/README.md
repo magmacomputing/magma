@@ -16,6 +16,7 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 ## Features
 
+- **Astronomical Seasons & Solar Events**: Calculates precise astronomical equinoxes (Vernal, Autumnal) and solstices (Summer, Winter) with sub-minute precision, hemisphere awareness (`sphere: 'north' | 'south'`), and standard Tempo terms (`t.term.astro`, `t.term.equinox`, `t.term.solstice`, `t.term.astronomy`).
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
 - **Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and explicit `latitude`/`longitude` for given coordinates.
 - **Lunar Phase & Ephemeris**: Calculates 8 discrete lunar phase states (`new-moon`, `waxing-crescent`, etc.), illumination 0.0–1.0 fraction, age in days, hemisphere-aware emoji indicators, and location-aware `moonrise` and `moonset` events.
@@ -83,6 +84,12 @@ import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 Tempo.use(CelestialPlugin);
 
 const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
+
+// --- Astronomical Seasons & Solar Events ---
+console.log(t.term.astro);               // 'Summer' (or 'Winter' if sphere: 'south')
+console.log(t.term.astronomy.season);    // 'Summer'
+console.log(t.term.astronomy.event);     // 'Solstice'
+console.log(t.term.solstice);            // 'Summer'
 
 // --- Solar Day State & Phase Querying ---
 console.log(t.term.sun);                 // 'daylight'

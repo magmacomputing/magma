@@ -712,7 +712,6 @@
 			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@latest",
 			"@magmacomputing/tempo-fns": "https://esm.sh/@magmacomputing/tempo-fns@latest",
 			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@latest",
-			"@magmacomputing/tempo-plugin-astro": "https://esm.sh/@magmacomputing/tempo-plugin-astro@latest",
 			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch@latest",
 			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@latest",
 			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@latest",
@@ -1009,7 +1008,7 @@
 					<div class="card-header">
 						<div class="card-title-group">
 							<span class="card-title purple">3. Astronomical & Celestial Ephemeris</span>
-							<span class="badge badge-purple">@tempo-plugin-astro & celestial</span>
+							<span class="badge badge-purple">@tempo-plugin-celestial</span>
 						</div>
 						<span style="font-size: 0.75rem; color: var(--text-muted);">Deterministic Calculations</span>
 					</div>
@@ -1137,7 +1136,6 @@
 		if (!globalThis.Temporal) globalThis.Temporal = Temporal;
 
 		import { Tempo } from '@magmacomputing/tempo';
-		import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
 		import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
 		import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 		import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
@@ -1447,12 +1445,10 @@ console.log('Relative Phrase:', t.since(target, { unit: 'days', numeric: 'auto' 
 				// Plugins TypeScript Snippet
 				outputCode.textContent = `import { Tempo } from '@magmacomputing/tempo';
 import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
-import { AstroPlugin } from '@magmacomputing/tempo-plugin-astro';
 import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
 // Register official plugins
 Tempo.use(GeoPlugin);
-Tempo.use(AstroPlugin);
 Tempo.use(CelestialPlugin);
 
 // Initialize with Geolocation (${activeGeo.city})

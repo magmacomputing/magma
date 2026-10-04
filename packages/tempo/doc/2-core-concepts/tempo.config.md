@@ -29,14 +29,14 @@ In bundled frontend environments (like Vite or Webpack), you can still maintain 
 ```typescript
 // tempo.config.ts
 import { defineConfig } from '@magmacomputing/tempo';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
 
 export default defineConfig({
   timeZone: 'Australia/Sydney',        // Set your baseline timezone
   extends: './tempo-base.config.jsonc',// Inherit local base config
   plugins: [
-    AstroTerm,                         // 1. Executable plugin or term
+    CelestialPlugin,                   // 1. Executable plugin or term
     TickerPlugin,                      // 2. Plugin singleton (or factory closure)
   ],
   pluginOptions: {

@@ -2,33 +2,6 @@ import { Tempo } from '@magmacomputing/tempo';
 import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
-declare module '@magmacomputing/tempo' {
-	interface TempoTermRegistry {
-		astro: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-		equinox: 'Vernal' | 'Autumnal';
-		solstice: 'Summer' | 'Winter';
-		astronomy: {
-			key: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-			strict: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-			season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
-			sphere: Tempo.COMPASS;
-			event: 'Equinox' | 'Solstice';
-			group: 'astronomy';
-			year: number;
-			month: number;
-			day: number;
-			hour: number;
-			minute: number;
-			second: number;
-			millisecond: number;
-			microsecond: number;
-			nanosecond: number;
-			start: Tempo;
-			end: Tempo;
-		};
-	}
-}
-
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
 type ASTRO = ValueOf<typeof ASTRO>;
 
@@ -195,6 +168,3 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 		};
 	},
 });
-
-export const AstroPlugin = [AstroTerm];
-export default AstroPlugin;

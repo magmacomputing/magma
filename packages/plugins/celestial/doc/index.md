@@ -22,9 +22,10 @@ npm install @magmacomputing/tempo-plugin-celestial
 
 Explore detailed guides on specific celestial capabilities:
 
+- **[Astronomical Seasons, Solstices & Equinoxes](./astro.md)**: Solar quarters, equinoxes, solstices, hemisphere-aware seasonal labels (`t.term.astro`, `t.term.equinox`, `t.term.solstice`), and sub-minute Meeus ephemeris boundaries.
 - **[Solar Day Cycles & Ephemeris](./solar.md)**: Twilight bands (`civil`, `nautical`, `astronomical`), atmospheric elevation dip correction, exact apparent solar noon (`solar.noon`), and Local Apparent Solar Time (`solar.solarTime`).
 - **[Lunar Ephemeris, Topocentric Ephemeris & Eclipses](./lunar.md)**: 8 synodic lunar phases, illumination ratio, lunar age, hemisphere-aware emojis, topocentric horizon events (`moonrise`/`moonset`), meridian transits (`transit`), real-time sky position (`altitude`/`azimuth`), crescent tilt (`crescentTiltDeg`), orbital distance (`isSupermoon`/`isMicromoon`), and local solar/lunar eclipse detection (`eclipse`/`obscuration`).
-- **[Astronomical Tidal Mechanics](./tides.md)**: Syzygy, quadrature, and perigee calculations (`spring`, `neap`, `king` tides), solar-lunar alignment angles, and 745-minute tidal cycles.
+- **[Astronomical Tidal Mechanics](./tidal.md)**: Syzygy, quadrature, and perigee calculations (`spring`, `neap`, `king` tides), solar-lunar alignment angles, and 745-minute tidal cycles.
 - **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Photovoltaic microgrid inverter modes, greenhouse DLI supplemental lighting, maritime keel clearance windows, and golden hour drone flight scheduling.
 
 ---

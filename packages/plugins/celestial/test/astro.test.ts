@@ -1,13 +1,13 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { AstroPlugin } from '../src/index.js';
+import { CelestialPlugin, AstroTerm } from '../src/index.js';
 
-describe('Astro Plugin (Astronomical Seasons & Events)', () => {
+describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => {
 	beforeEach(() => {
 		Tempo.init();
-		Tempo.use(AstroPlugin);
+		Tempo.use(CelestialPlugin);
 	});
 
-	it('should register "astro" and "astronomy" terms via AstroPlugin', () => {
+	it('should register "astro" and "astronomy" terms via CelestialPlugin', () => {
 		const tempo = new Tempo('2026-06-21T12:00:00Z', { sphere: 'north' });
 		expect(tempo.term.astro).toBeDefined();
 		expect(tempo.term.astronomy).toBeDefined();
@@ -39,5 +39,14 @@ describe('Astro Plugin (Astronomical Seasons & Events)', () => {
 		const springSouth = new Tempo('2026-10-15T12:00:00Z', { sphere: 'south' });
 		expect(springSouth.term.astro).toBe('Vernal');
 		expect(springSouth.term.astronomy.season).toBe('Spring');
+	});
+
+	it('should allow standalone use of AstroTerm', () => {
+		Tempo.init();
+		Tempo.use(AstroTerm);
+		const tempo = new Tempo('2026-06-21T12:00:00Z', { sphere: 'north' });
+		expect(tempo.term.astro).toBe('Summer');
+		expect(tempo.term.equinox).toBeDefined();
+		expect(tempo.term.solstice).toBe('Summer');
 	});
 });

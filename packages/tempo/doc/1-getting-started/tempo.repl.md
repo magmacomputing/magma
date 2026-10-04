@@ -56,7 +56,6 @@ An instant scratchpad for testing custom algorithms, experimental plugin imports
 ### 1. Preloaded Official Plugins
 Both environments pre-register the core Tempo instance along with default official plugins:
 - `@magmacomputing/tempo-plugin-geo`
-- `@magmacomputing/tempo-plugin-astro`
 - `@magmacomputing/tempo-plugin-celestial`
 
 You can immediately access Terms, seasons, and celestial data without import boilerplate:

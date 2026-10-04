@@ -1,7 +1,7 @@
 {
   "name": "@magmacomputing/tempo-plugin-celestial",
   "version": "1.2.0",
-  "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, and astronomical tidal mechanics",
+  "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, astronomical seasons/equinoxes, and tidal mechanics",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -64,6 +64,12 @@
     "twilight",
     "sunrise",
     "sunset",
-    "moon-phase"
+    "moon-phase",
+    "astro",
+    "astronomy",
+    "equinox",
+    "solstice",
+    "seasons",
+    "tides"
   ]
 }

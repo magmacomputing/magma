@@ -4,11 +4,6 @@
  */
 
 export const SUPPORTED_EXTRA_PLUGINS = {
-	"astro": {
-		name: "@magmacomputing/tempo-plugin-astro",
-		version: "2.4.1",
-		loader: () => import("@magmacomputing/tempo-plugin-astro").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-astro" + "@2.4.1"))
-	},
 	"celestial": {
 		name: "@magmacomputing/tempo-plugin-celestial",
 		version: "1.2.0",
