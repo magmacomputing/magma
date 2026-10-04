@@ -6,6 +6,7 @@
  */
 export {
 	default as enums,
+	Enum,
 	STATE,
 	DEFAULTS,
 	REGISTRIES,

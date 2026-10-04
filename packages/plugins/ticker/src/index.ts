@@ -1,6 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
 import {
-	enums, definePlugin, attachStatics,
+	enums, Enum, definePlugin, attachStatics,
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
@@ -227,7 +227,7 @@ class TickerInstance implements Ticker.Descriptor {
 		if (cb) this.#reactive.on('data', (t) => cb(t, () => this.stop()));
 
 		for (const [key, val] of Object.entries(rest))
-			if (isDefined(val) && (key.startsWith('#') || enums.DURATIONS.has(key) || enums.ELEMENT.has(key)))
+			if (isDefined(val) && (key.startsWith('#') || Enum.has(enums.DURATIONS, key) || Enum.has(enums.ELEMENT, key)))
 				this.#payload[key] = val;
 
 		const isSeed = isDefined(rawOptions.seed);

@@ -81,26 +81,35 @@ import { COMPASS, MONTH, WEEKDAY } from '@magmacomputing/tempo/enums';
 console.log('compass keys: ', COMPASS.keys());
 ```
 
-### Built-in Query, Iteration, and Lookup Methods
+### Static-First Reflection Suite (`Enum.*`)
 
-Because `enumify` attaches a rich prototype, consumers can iterate through, validate, and query the enum structure easily. These are operations that are painfully clunky with standard TypeScript `enums`.
+In modern Tempo, enum reflection is performed using the **`Enum.*` static helper suite**, mirroring ECMAScript's standard `Object.hasOwn` and `Object.keys`:
 
 ```typescript
-// Iterating over properties
-const days = Tempo.WEEKDAY.keys();                  // ['All', 'Mon', 'Tue', 'Wed', ...]
-const entries = Tempo.WEEKDAY.entries();            // [['All', 0], ['Mon', 1], ...]
-const count = Tempo.WEEKDAY.count();                // 8
+import { Enum } from '@magmacomputing/tempo/enums';
+// or: import { Enum } from '@magmacomputing/tempo/library';
+
+// Iterating over properties (Type-safe & collision-proof)
+const days = Enum.keys(Tempo.WEEKDAY);                  // readonly ('All' | 'Mon' | 'Tue' | ...)[]
+const values = Enum.values(Tempo.WEEKDAY);              // readonly (0 | 1 | 2 | ...)[]
+const entries = Enum.entries(Tempo.WEEKDAY);            // readonly (readonly [key, value])[]
+const count = Enum.count(Tempo.WEEKDAY);                // 8
 
 // Validation
-if (Tempo.SEASON.has('Spring')) { ... }             // true if 'Spring' is a key
-if (Tempo.SEASON.has(Tempo.SEASON.Spring)) { ... }  // true if 'Spring' is a key (using the enum value)
-if (Tempo.SEASON.includes('spring')) { ... }        // true if 'spring' is a value
+if (Enum.has(Tempo.SEASON, 'Spring')) { ... }           // true if 'Spring' is a key
+if (Enum.hasOwn(Tempo.SEASON, 'Spring')) { ... }        // true if 'Spring' is a direct own key
+if (Enum.includes(Tempo.SEASON, 'spring')) { ... }      // true if 'spring' is a value
 
 // Reverse lookups! Get the Key Name from the Value
-const keyName = Tempo.MONTH.keyOf(2);               // 'Feb'
+const keyName = Enum.keyOf(Tempo.MONTH, 2);             // 'Feb'
 
-// Array manipulation built right in
-const customStrings = Tempo.WEEKDAY.map(([key, val]) => `${key} is day ${val}`);
+// Inversion & Aliasing support (last-key-wins)
+const byCode = Enum.invert(Tempo.SEASON);               // { summer: 'Summer', ... }
+
+// Native iteration
+for (const [key, val] of Tempo.WEEKDAY) {
+  console.log(key, val);
+}
 ```
 
 ## 3. Creating Custom Enums
@@ -110,35 +119,37 @@ You can utilize the same `enumify` engine for your own application logic by impo
 ### Basic Custom Enum
 
 ```typescript
-import { enumify } from '@magmacomputing/tempo/library';
+import { enumify, Enum } from '@magmacomputing/tempo/library';
 
 // 1. Define your Enum
 export const STATUS = enumify(['Pending', 'Active', 'Resolved', 'Archived']);
 
-// 2. Use the built-in methods
-const allKeys = STATUS.keys();          // ['Pending', 'Active', 'Resolved', 'Archived']
-const isActive = STATUS.has('Active');  // true
-const value = STATUS.Resolved;          // 2
+// 2. Use the static reflection helpers
+const allKeys = Enum.keys(STATUS);           // ['Pending', 'Active', 'Resolved', 'Archived']
+const isActive = Enum.has(STATUS, 'Active'); // true
+const value = STATUS.Resolved;               // 2
 ```
 
-### Extending Enums via Prototypal Inheritance (`.extend()`)
+### Extending Enums via Prototypal Inheritance (`Enum.extend()`)
 
 A standout capability of `enumify` is that enums are **immutable yet extendable**.
 
 Developers typically assume that freezing an object (`Object.freeze`) prevents adding fields. However, `enumify` achieves non-destructive extensibility through JavaScript prototype delegation:
 
 ```typescript
-import { enumify } from '@magmacomputing/tempo/library';
+import { enumify, Enum } from '@magmacomputing/tempo/library';
 
 // Base enum (frozen and immutable)
 export const BASE_ROLE = enumify(['Viewer', 'Editor']);
 
 // Extend with additional roles
-export const ADMIN_ROLE = BASE_ROLE.extend(['Admin', 'SuperAdmin']);
+export const ADMIN_ROLE = Enum.extend(BASE_ROLE, ['Admin', 'SuperAdmin']);
 
-console.log(ADMIN_ROLE.keys());        // ['Viewer', 'Editor', 'Admin', 'SuperAdmin']
-console.log(ADMIN_ROLE.count());       // 4
-console.log(ADMIN_ROLE.has('Viewer')); // true (inherited from BASE_ROLE)
+console.log(Enum.keys(ADMIN_ROLE));             // ['Viewer', 'Editor', 'Admin', 'SuperAdmin']
+console.log(Enum.count(ADMIN_ROLE));            // 4
+console.log(Enum.has(ADMIN_ROLE, 'Viewer'));    // true (inherited from BASE_ROLE)
+console.log(Enum.hasOwn(ADMIN_ROLE, 'Viewer')); // false (inherited, not an own property)
+console.log(Enum.hasOwn(ADMIN_ROLE, 'Admin'));  // true (direct own property on ADMIN_ROLE)
 ```
 
 #### How Prototypal Inheritance Works Here:

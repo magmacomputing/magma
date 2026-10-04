@@ -1,5 +1,5 @@
 import { pad, WeakCache } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { enums, Enum } from '@magmacomputing/tempo/support';
 
 type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 
@@ -40,11 +40,11 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => pad(z.month, 2));
 				break;
 			case 'B':
-				parts.push((z) => enums.MONTHS.keyOf(z.month as any) ?? String(z.month));
+				parts.push((z) => Enum.keyOf(enums.MONTHS, z.month) ?? String(z.month));
 				break;
 			case 'b':
 			case 'h':
-				parts.push((z) => enums.MONTH.keyOf(z.month as any) ?? String(z.month));
+				parts.push((z) => Enum.keyOf(enums.MONTH, z.month) ?? String(z.month));
 				break;
 			case 'd':
 				parts.push((z) => pad(z.day, 2));
@@ -85,10 +85,10 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => (z.hour < 12 ? 'am' : 'pm'));
 				break;
 			case 'A':
-				parts.push((z) => enums.WEEKDAYS.keyOf(z.dayOfWeek as any) ?? String(z.dayOfWeek));
+				parts.push((z) => Enum.keyOf(enums.WEEKDAYS, z.dayOfWeek) ?? String(z.dayOfWeek));
 				break;
 			case 'a':
-				parts.push((z) => enums.WEEKDAY.keyOf(z.dayOfWeek as any) ?? String(z.dayOfWeek));
+				parts.push((z) => Enum.keyOf(enums.WEEKDAY, z.dayOfWeek) ?? String(z.dayOfWeek));
 				break;
 			case 'w':
 				parts.push((z) => String(z.dayOfWeek === 7 ? 0 : z.dayOfWeek));
@@ -252,7 +252,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 /** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonth(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return enums.MONTH.get(cap) ?? enums.MONTHS.get(cap) ?? enums.MONTH.get(cap.slice(0, 3));
+	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
 /**

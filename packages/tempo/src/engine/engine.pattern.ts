@@ -9,7 +9,7 @@ import { ownEntries, ownKeys } from '#library/primitive.library.js';
 import { Match, Snippet, Layout } from '../support/support.default.js';
 import { getSymbol, hasOwn, logWarn, logError } from '../support/support.util.js';
 import { Token } from '../support/support.symbol.js';
-import enums from '../support/support.enum.js';
+import enums, { Enum } from '../support/support.enum.js';
 import type * as t from '../tempo.type.js';
 
 const BRACES_REGEX = new RegExp(Match.braces, 'g');
@@ -127,8 +127,8 @@ export class PatternCompiler {
 
 		// 1. ensure numeric snippets are current
 		if (enums?.NUMBER) {
-			const keys = enums.NUMBER.keys().map(w => Match.escape(w));
-			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a, b) => b.length - a.length).join('|')})`);
+			const keys = (Enum.keys(enums.NUMBER) as string[]).map((w: string) => Match.escape(w));
+			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a: string, b: string) => b.length - a.length).join('|')})`);
 
 			snippet[Token.nbr] = nbr;
 

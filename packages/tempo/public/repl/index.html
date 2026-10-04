@@ -1259,7 +1259,7 @@ return t.iso;`
 					try {
 						statusText.textContent = `Loading ${targetPlugin.name}...`;
 						const mod = await targetPlugin.loader();
-						const pluginObj = Object.values(mod).find(v => typeof v === 'object' && v !== null && 'name' in v && 'install' in v);
+						const pluginObj = Object.values(mod).find(v => (typeof v === 'object' || typeof v === 'function') && v !== null && 'name' in v && 'install' in v);
 						if (pluginObj) Tempo.use(pluginObj);
 					} catch (e) {
 						console.warn(`Plugin ${pluginParam} dynamic load:`, e);

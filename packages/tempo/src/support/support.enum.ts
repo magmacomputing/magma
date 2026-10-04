@@ -308,4 +308,7 @@ export default {
 	PARSE,
 	MONTH_DAY,
 	LOCALE,
+	Enum,
 }
+
+export { Enum } from '#library/enumerate.library.js';

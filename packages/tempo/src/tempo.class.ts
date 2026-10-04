@@ -34,7 +34,7 @@ import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
 
 import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, Enum, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
@@ -482,18 +482,15 @@ export class Tempo {
 	/** @internal */
 	static [$buildGuard](targetState?: Internal.State) {
 		const state = targetState ?? this[$Internal]();
-		// Note: We MUST use Object.keys() here instead of enums.XXX.keys() because this static guard 
-		// executes during module initialization. Circular dependencies mean the enumify methods 
-		// (like .keys()) may not be fully attached to the prototype yet!
 		const wordsList = [
-			...Object.keys(enums.NUMBER),
-			...Object.keys(enums.WEEKDAY),
-			...Object.keys(enums.WEEKDAYS),
-			...Object.keys(enums.MONTH),
-			...Object.keys(enums.MONTHS),
-			...Object.keys(enums.DURATION),
-			...Object.keys(enums.DURATIONS),
-			...Object.keys(enums.TIMEZONE),
+			...Enum.keys(enums.NUMBER),
+			...Enum.keys(enums.WEEKDAY),
+			...Enum.keys(enums.WEEKDAYS),
+			...Enum.keys(enums.MONTH),
+			...Enum.keys(enums.MONTHS),
+			...Enum.keys(enums.DURATION),
+			...Enum.keys(enums.DURATIONS),
+			...Enum.keys(enums.TIMEZONE),
 			...(state.aliasEngine?.getAliases(undefined, true).map((a: any) => a.name) ?? []),
 			...ownKeys(state.parse.ignore),
 			...ownKeys(state.parse.snippet),
@@ -847,7 +844,7 @@ export class Tempo {
 								const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
 								if (type) {
 									const aliases: [string, any][] = [];
-									const monthKeys = Tempo.MONTH.keys();
+									const monthKeys = Enum.keys(Tempo.MONTH);
 									config.ranges.forEach(r => {
 										if (r.key) {
 											let val: string | undefined;
@@ -1305,7 +1302,7 @@ export class Tempo {
 
 		// Create an object that only contains CONFIG-specific defaults as its prototype,
 		// preventing parse-related keys (like planner, monthDay) from leaking into the config state.
-		const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
+		const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => Enum.has(enums.CONFIG, key)));
 		const out = Object.create(configDefaults);
 
 		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor', 'result');
@@ -2210,7 +2207,7 @@ export class Tempo {
 			const record = { ...cast<Record<string, unknown>>(tempo) };
 			let hasMapped = false;
 			for (const [k, v] of Object.entries(record)) {
-				const resolved = enums.ELEMENT.has(k) ? `${enums.ELEMENT[k as t.Element]}s` : undefined;
+				const resolved = Enum.has(enums.ELEMENT, k) ? `${enums.ELEMENT[k as t.Element]}s` : undefined;
 				if (resolved) {
 					record[resolved] = v;
 					delete record[k];
@@ -2230,15 +2227,15 @@ export class Tempo {
 		if (!isPlainObject(arg)) return false;
 
 		const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
-		if (keys.some(key => enums.MUTATION.has(key)))
+		if (keys.some(key => Enum.has(enums.MUTATION, key)))
 			return false;
 
 		// 2. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
-		if (keys.some(key => (enums.ZONED_DATE_TIME.has(key) && !enums.CONFIG.has(key)) || enums.DURATIONS.has(key)))
+		if (keys.some(key => (Enum.has(enums.ZONED_DATE_TIME, key) && !Enum.has(enums.CONFIG, key)) || Enum.has(enums.DURATIONS, key)))
 			return false;
 
 		// 3. If it contains any recognized Config or Parse keys, it's definitely an options object
-		if (keys.some(key => enums.CONFIG.has(key) || enums.PARSE.has(key)))
+		if (keys.some(key => Enum.has(enums.CONFIG, key) || Enum.has(enums.PARSE, key)))
 			return true;
 
 		// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object

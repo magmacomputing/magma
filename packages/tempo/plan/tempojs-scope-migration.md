@@ -147,3 +147,67 @@ To avoid immediately breaking existing v4.x projects upon release of v5.0.0:
 - [ ] Update VitePress theme headers and installation snippets (`npm install @tempojs/tempo`).
 - [ ] Create stub bridge packages for `@magmacomputing/*` v5.0.0 re-exports.
 - [ ] Tag `v5.0.0` and publish with `npm publish --access public`.
+
+---
+
+## 6. Strategic Brand Collision Appraisal: `@formkit/tempo` & Market Positioning
+
+### 6.1 The Competitive Landscape & Developer Confusion
+A critical dimension of transitioning the brand to `@tempojs` is the existence and popularity of **`@formkit/tempo`** (by FormKit / Justin Schroeder).
+
+> [!WARNING]
+> **High Market & Search Collision Risk**: Claiming the exact single-word product name (`Tempo`) in the exact same domain (JavaScript / TypeScript Date & Time utilities) creates substantial discovery friction and developer confusion.
+
+#### Friction Points:
+1. **Search & AI Mindshare**: Searching for *"tempo date library"*, *"tempo tz"*, or querying LLMs (Copilot, ChatGPT, Claude) for "Tempo date examples" heavily biases toward `@formkit/tempo` due to its existing npm download volume, blog posts, and documentation indexing.
+2. **Ambiguity on Lineage / Provenance**: Developers encountering `@tempojs/tempo` or `@tempo-ts/*` will naturally wonder:
+   - *"Is this v2 of FormKit Tempo?"*
+   - *"Is this an official spin-off or a conflicting fork?"*
+3. **Mental Model Collision**:
+   - **`@formkit/tempo`**: Built around legacy native `Date` + Intl formatting helpers. It positions itself as a lightweight `date-fns`/`dayjs` alternative.
+   - **This Ecosystem (`Tempo`)**: Built around ECMAScript **`Temporal`**, providing rich fluent object wrappers, comprehensive polyfill integrations, and an extensive domain plugin architecture (Astro, Celestial, Geo, Spatial, AI).
+
+---
+
+### 6.2 Legal & npm Dispute Assessment
+
+#### Can `@formkit` force a name change or initiate legal action?
+* **Civil Trademark Risk (Low to Medium)**: Unless FormKit Inc. (or their parent entity) holds a registered, defensible trademark for the single word mark "Tempo" in class IC 009/042 (software/developer utilities), full civil litigation over open-source naming is uncommon and cost-prohibitive.
+* **npm Dispute Policy (Low Risk for Scoped Packages)**:
+  - npm's dispute resolution focuses on trademark infringement, brand impersonation, and name squatting.
+  - Distinct scoped packages (`@tempojs/*`, `@tempo-ts/*`, or `@tempo-temporal/*`) do not violate npm policy simply by sharing a common English word ("Tempo"), provided there is no malicious misrepresentation or intent to deceive consumers into believing it is FormKit's product.
+* **Public Perception & Community Goodwill**: Even without legal threats, open-source maintainers and developer communities often push back when a second project adopts an identical identity in the same domain.
+
+---
+
+### 6.3 Technical & Conceptual Comparison
+
+| Dimension | `@formkit/tempo` | This Project (`Tempo`) |
+| :--- | :--- | :--- |
+| **Core Foundation** | Native JavaScript `Date` | Modern ECMAScript **`Temporal`** architecture |
+| **Architectural Model** | Functional helpers (`format()`, `addDay()`, `diff()`) | Rich fluent class (`Tempo`) + Functional bundle (`@tempojs/fns`) |
+| **Scope & Domain Plugins** | General date/time formatting | Extensible engine: AI parsing, Celestial, Geo, Ticker, Holidays |
+| **Target Audience** | Web apps wanting a lighter Day.js / date-fns replacement | Modern TypeScript apps transitioning to native `Temporal` |
+
+---
+
+### 6.4 Strategic Paths Forward & Branding Options
+
+Before committing irrevocably to `@tempojs`, evaluate these strategic alternatives:
+
+#### Path A: Anchor to the `Temporal` Lineage (Strong Differentiation)
+Adopt a scope or compound brand that explicitly communicates the **Temporal** standard (e.g., **`@tempo-temporal/*`**, **`@tempo-ts/*`**, or **`@chronotempo/*`**).
+* **Pros**: Eliminates ambiguity instantly; captures high-intent organic search traffic specifically targeting the Temporal proposal and future ECMAScript standards.
+* **Cons**: Shifts away from the standalone single-word "Tempo" identity.
+
+#### Path B: Claim `@tempojs` with Explicit Positioning & Proactive Disclaimers
+Acquire `@tempojs` (or `@tempo-ts`), maintain the `Tempo` name, but make the Temporal positioning explicit in docs, tagline, and README:
+> *"Tempo is a modern ECMAScript Temporal-native framework. (Not affiliated with @formkit/tempo)."*
+* **Pros**: Preserves all existing architectural documentation and class names (`import { Tempo }`).
+* **Cons**: Ongoing SEO split and occasional developer confusion on forums and issue trackers.
+
+#### Path C: Retain the Magma Umbrella Scope (`@magmacomputing/tempo` or `@magma-tempo/*`)
+Keep publishing under the organization namespace while emphasizing the product brand on the docs site (`tempo.magma.dev` or `tempojs.dev`).
+* **Pros**: Zero migration risk, no dispute process required, clear corporate provenance.
+* **Cons**: Slightly longer package import strings.
+

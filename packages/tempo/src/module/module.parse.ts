@@ -18,7 +18,7 @@ import { getRange, getTermRange } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Token, Snippet } from '#tempo/support';
+import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet } from '#tempo/support';
 import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
@@ -151,7 +151,7 @@ function compileBracedPattern(fmt: string): RegExp {
 /** Resolves a localized full or abbreviated English month name to its month number. */
 function resolveMonthNum(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return enums.MONTH.get(cap) ?? enums.MONTHS.get(cap) ?? enums.MONTH.get(cap.slice(0, 3));
+	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
 /** Parses input with a native braced mask, using the supplied date and calendar defaults. */

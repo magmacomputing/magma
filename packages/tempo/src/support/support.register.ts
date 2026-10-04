@@ -60,6 +60,7 @@ export function registryReset() {
 		});
 
 		if (target) clearCache(target);
+		if (REGISTRIES[name]) clearCache(REGISTRIES[name]);
 		clearCache(state);
 	});
 
@@ -119,5 +120,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	merge(target, data, state);
 
 	clearCache(target);
+	if (registry) clearCache(registry);
+	if (state) clearCache(state);
 }
 
