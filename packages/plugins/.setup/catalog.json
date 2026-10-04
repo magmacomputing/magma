@@ -2,7 +2,7 @@
   {
     "id": "celestial",
     "name": "Celestial Plugin",
-    "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, and astronomical tidal mechanics",
+    "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, and astronomical seasons / tidal mechanics",
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
