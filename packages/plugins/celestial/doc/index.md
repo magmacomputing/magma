@@ -54,7 +54,7 @@ Tidal state resolution and synodic lunar phases rely on deterministic celestial 
 
 ::: tip Coordinates, Sphere & Timezone Resolution
 - **`sphere` Derivation**: Setting `{ geo: { lat, lng } }` automatically computes the observer's hemisphere (`'north'`, `'south'`, or `'equator'`).
-- **`timeZone` Requirement**: Geographic coordinates (`lat`, `lng`) calculate the exact physical UTC moments of astronomical events, but **do not** auto-derive political timezone boundaries in core Tempo. Always supply an explicit `timeZone` (e.g. `'America/New_York'`, `'UTC'`, or `{ geo: { lat, lng, timezone } }`) to ensure local day and night ranges project deterministically across different host environments and CI runners.
+- **`timeZone` Requirement**: Geographic coordinates (`lat`, `lng`) calculate the exact physical UTC moments of astronomical events, but **do not** auto-derive political timezone boundaries in core Tempo. Always supply an explicit `timeZone` (e.g. `'America/New_York'` or `'UTC'`) to ensure local day and night ranges project deterministically across different host environments and CI runners.
 :::
 
 ---
@@ -71,6 +71,7 @@ Tempo.use(CelestialPlugin);
 
 // Provide geographic coordinates (e.g. New York City)
 const t = new Tempo('2026-06-21T12:00:00Z', {
+  timeZone: 'America/New_York',
   geo: { lat: 40.7128, lng: -74.006 }
 });
 

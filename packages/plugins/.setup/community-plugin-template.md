@@ -125,7 +125,7 @@ And a root `tsconfig.json` that outputs type declarations:
 
 2. **Bundled DTS Pattern (`dts: true`)**:
    - For complex, multi-directory plugins with extensive internal module structures (e.g., `@magmacomputing/tempo-plugin-ai` with `src/core/`, `src/functions/`, `src/types/`), you can specify `dts: true` in `tsup.config.ts` to bundle all types into a single rolled-up `dist/index.d.ts`.
-   - When using `dts: true`, set your build script to `"build": "tsup && tsc"` (or `"build": "tsup && tsc --noEmit --emitDeclarationOnly false"` if running non-emitting type verification) so that `tsc` performs type validation while `tsup` bundles the complete `dist/index.d.ts`.
+   - When using `dts: true`, set your build script to `"build": "tsup && tsc --noEmit --emitDeclarationOnly false"` so that `tsc` performs type validation without overwriting `tsup`'s bundled declaration output.
    - **Immutability / Proxy Typing Note**: When returning payloads wrapped with `secure()`, preserve `secure()`'s deep-readonly public result type rather than casting back to a mutable type. Model return structures with explicit `readonly` modifiers (e.g., `readonly events: readonly TempoExtractedEvent[]` where nested fields such as `TempoExtractedEvent.label` remain `readonly`) and model `Tempo` instances directly so nested fields remain deeply immutable and type-safe.
 
 ## 4. Test Configuration (`test/tsconfig.json`)
