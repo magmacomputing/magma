@@ -2,6 +2,13 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
+## [2.6.1] - 2026-10-06
+
+### Fixed
+- **Standardized Diagnostic Logging & Error Boundaries**:
+  - Routed error messages in catch mode through [`logError`](../../tempo/src/plugin/plugin.sdk.ts) from `@magmacomputing/tempo/plugin/sdk`.
+  - Added support for `{ silent: true }` configuration to suppress expected error output during tests and headless tasks.
+
 ## [2.6.0] - 2026-10-02
 
 ### Added

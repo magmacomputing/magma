@@ -176,14 +176,23 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(t.term.lunar.azimuth).toBeNull();
 	});
 
-	it('emits developer warning when geo is missing and debug >= 1', () => {
+	it('emits developer warning when geo is missing', () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-		const t = new Tempo('2026-06-21T12:00:00Z', { debug: 1 });
+		const t = new Tempo('2026-06-21T12:00:00Z');
 		
 		expect(t.term.sun).toBeNull();
 		expect(warnSpy).toHaveBeenCalledWith(
 			expect.stringContaining("CelestialPlugin: Valid 'geo' coordinates")
 		);
+		warnSpy.mockRestore();
+	});
+
+	it('suppresses developer warning when silent is true', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const t = new Tempo('2026-06-21T12:00:00Z', { silent: true });
+		
+		expect(t.term.sun).toBeNull();
+		expect(warnSpy).not.toHaveBeenCalled();
 		warnSpy.mockRestore();
 	});
 });

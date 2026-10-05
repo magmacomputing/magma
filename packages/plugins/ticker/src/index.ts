@@ -4,7 +4,7 @@ import {
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
-	isUndefined, Finalizer, Reactive, cast,
+	isUndefined, Finalizer, Reactive, cast, logError,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -216,9 +216,7 @@ class TickerInstance implements Ticker.Descriptor {
 		if (isDefined(cronOption)) {
 			if (!isCronString(cronOption)) {
 				this.#hasInvalidSchedule = true;
-				const err = new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`);
-				if (!this.#isCatch) throw err;
-				console.error(err.message);
+				logError(new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`), { catch: this.#isCatch, ...this.#options });
 			} else {
 				this.#cron = cronOption;
 			}
@@ -235,11 +233,8 @@ class TickerInstance implements Ticker.Descriptor {
 		const isCron = isDefined(this.#cron);
 		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
-		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb) {
-			const err = new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`);
-			if (!this.#isCatch) throw err;
-			console.error(err.message);
-		}
+		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb)
+			logError(new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`), { catch: this.#isCatch, ...this.#options });
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 
@@ -275,14 +270,10 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 		if (!this.#next.isValid) {
 			this.stop();
-			const err = new Error(`Invalid Ticker seed: ${String(this.#next)}`);
-			if (!this.#next.config?.catch) throw err;
-			console.error(err.message);
+			logError(new Error(`Invalid Ticker seed: ${String(this.#next)}`), this.#next.config);
 		} else if (this.#until && !this.#until.isValid) {
 			this.stop();
-			const err = new Error(`Invalid Ticker boundary: ${String(this.#until)}`);
-			if (!this.#next.config?.catch) throw err;
-			console.error(err.message);
+			logError(new Error(`Invalid Ticker boundary: ${String(this.#until)}`), this.#next.config);
 		} else {
 			try {
 				if (this.#cron || this.#rrule) {
@@ -316,8 +307,7 @@ class TickerInstance implements Ticker.Descriptor {
 			} catch (e: any) {
 				this.stop();
 				const msg = `Invalid Ticker payload resolution for ${JSON.stringify(this.#payload)}`;
-				if (!this.#next.config?.catch) throw new Error(msg);
-				console.error(msg, e);
+				logError(new Error(msg), this.#next.config);
 				queueMicrotask(() => this.#catchListeners.forEach(l => l(this.#next, () => this.stop())));
 				this.#isForward = true;
 				this.#isInstant = false;

@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2026-10-06
+
+### Fixed
+- **Standardized Diagnostic Logging & Error Boundaries**:
+  - Routed error messages in catch mode through [`logError`](../../tempo/src/plugin/plugin.sdk.ts) from `@magmacomputing/tempo/plugin/sdk`.
+  - Added support for `{ silent: true }` configuration to suppress expected error output during tests and headless tasks.
+
 ## [1.4.0] - 2026-09-18
 
 ### Added

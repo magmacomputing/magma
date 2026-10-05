@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { getLunarPhase } from '@magmacomputing/tempo-fns';
 
 import { isNumber, isReference, isArray, isDefined } from '@magmacomputing/tempo/library';
-import { WeakCache } from '@magmacomputing/tempo/plugin/sdk';
+import { WeakCache, logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { LunarPhaseResult } from './index.js';
 
 const LUNAR_PHASE_CACHE = new WeakCache<string, ReturnType<typeof getLunarPhase>>();
@@ -54,8 +54,8 @@ export function getCelestialCoordinates(t: Tempo, anchor?: any): {
 
 	const sphere = refTempo.sphere as 'north' | 'south' | undefined;
 
-	if (!hasGeo && ((refTempo as any).config?.debug ?? 0) >= 1)
-		console.warn("[Tempo Warning] CelestialPlugin: Valid 'geo' coordinates (latitude: -90..90, longitude: -180..180) were not provided; geo-dependent properties evaluate to null.");
+	if (!hasGeo)
+		logWarn("CelestialPlugin: Valid 'geo' coordinates (latitude: -90..90, longitude: -180..180) were not provided; geo-dependent properties evaluate to null.", (refTempo as any).config);
 
 	return { refTempo, lat: latVal, lng: lngVal, hasGeo, geo, timeZone, ...(sphere ? { sphere } : {}) };
 }

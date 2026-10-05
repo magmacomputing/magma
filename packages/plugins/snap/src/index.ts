@@ -1,4 +1,4 @@
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, type TempoPlugin, logError } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 type SnapKey = 
@@ -38,24 +38,16 @@ export const SnapPlugin: TempoPlugin = definePlugin({
 			const providedKeys = (Object.keys(opts) as (SnapKey | 'direction')[]).filter(k => k !== 'direction' && opts[k as keyof SnapOptions] !== undefined) as SnapKey[];
 
 			if (providedKeys.length > 1) {
-				const err = new Error(`Snap options can only contain a single time component. Found: ${providedKeys.join(', ')}`);
-				if (this.config?.catch) {
-					console.error(`[Tempo] Error: ${err.message}`);
-					return this;
-				}
-				throw err;
+				logError(new Error(`Snap options can only contain a single time component. Found: ${providedKeys.join(', ')}`), this.config);
+				return this;
 			}
 
 			const key = providedKeys[0];
 			let step = opts[key as keyof SnapOptions] as number;
 
 			if (!Number.isFinite(step) || step === 0) {
-				const err = new Error(`Snap step cannot be zero or non-finite.`);
-				if (this.config?.catch) {
-					console.error(`[Tempo] Error: ${err.message}`);
-					return this;
-				}
-				throw err;
+				logError(new Error(`Snap step cannot be zero or non-finite.`), this.config);
+				return this;
 			}
 
 			step = Math.abs(step);
@@ -143,12 +135,8 @@ export const SnapPlugin: TempoPlugin = definePlugin({
 				}
 
 				default: {
-					const err = new Error(`Invalid snap unit: '${key}'. Only time components (hours, minutes, seconds, milliseconds, microseconds, nanoseconds) are supported. Date components are not allowed.`);
-					if (this.config?.catch) {
-						console.error(`[Tempo] Error: ${err.message}`);
-						return this;
-					}
-					throw err;
+					logError(new Error(`Invalid snap unit: '${key}'. Only time components (hours, minutes, seconds, milliseconds, microseconds, nanoseconds) are supported. Date components are not allowed.`), this.config);
+					return this;
 				}
 			}
 
