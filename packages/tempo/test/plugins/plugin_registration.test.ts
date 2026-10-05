@@ -1,5 +1,6 @@
 import { Tempo } from '#tempo';
 import { definePlugin } from '#tempo/plugin/plugin.util.js';
+import { $Internal } from '#tempo/support';
 
 const DummyPlugin = definePlugin({
 	name: 'DummyPlugin',
@@ -23,6 +24,12 @@ describe('Plugin Registration / Initialization', () => {
 	});
 
 	test('Dynamic plugin registration does not throw when state or pluginsDb is non-extensible', () => {
+		// Explicitly freeze the internal plugins array to simulate external deep-freeze
+		const state = (Tempo as any)[$Internal]?.();
+		expect(Array.isArray(state?.pluginsDb?.plugins)).toBe(true);
+		const originalPlugins = state.pluginsDb.plugins;
+		Object.freeze(originalPlugins);
+
 		const DynamicTestPlugin = definePlugin({
 			name: 'DynamicTestPlugin',
 			install(TempoClass: any) {
@@ -30,14 +37,12 @@ describe('Plugin Registration / Initialization', () => {
 			}
 		});
 
-		// Explicitly freeze the internal arrays to simulate external deep-freeze
-		const rt = (Tempo as any)[Symbol.for('$LibraryInternal')]?.() ?? {};
-		if (rt.pluginsDb?.plugins) Object.freeze(rt.pluginsDb.plugins);
-
 		expect(() => {
 			Tempo.use(DynamicTestPlugin);
 		}).not.toThrow();
 
 		expect((Tempo as any).dynamicRegistered).toBe(true);
+		expect(state.pluginsDb.plugins).not.toBe(originalPlugins);
+		expect(state.pluginsDb.plugins.some((p: any) => p.name === 'DynamicTestPlugin')).toBe(true);
 	});
 });
