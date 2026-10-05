@@ -37,9 +37,19 @@ export type {
 /**
  * Extracts and validates temporal events from one text using the resolved calendar context.
  *
+ * Uses a qualifying cached result or queries providers and caches the result when enabled.
+ * Malformed cache payloads fall through to providers; cache adapter failures are caught.
+ * Events with invalid starts or date-parsing exceptions are skipped, so the event list may be empty.
+ *
  * @param text - Source text to scan for events
- * @param options - Anchor, locale, provider, category, and cache settings
- * @returns Structured events with resolved Tempo dates and AI metadata
+ * @param options - Anchor, locale, provider, category, and cache settings. The default anchor
+ * is the current time rounded down to the minute; categories guide the provider prompt.
+ * @returns An immutable result containing events with resolved Tempo dates and AI metadata
+ * @throws TempoAiError for invalid text, anchor, or confidence threshold; missing or invalid
+ * provider configuration; an invalid execution mode; failed provider execution; or result
+ * confidence below the required threshold. Provider and response-validation errors propagate
+ * when the execution strategy cannot select a result.
+ * @throws Errors from evaluating context or anchor callbacks propagate unchanged.
  */
 async function extractSingleInput(
 	text: string,

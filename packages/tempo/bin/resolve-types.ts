@@ -63,8 +63,13 @@ const libFileCache = new Map<string, string>();
 /**
  * Resolves a library declaration filename to its generated JavaScript path.
  *
- * @param targetFileName - The JavaScript filename to locate in the library source directory
- * @returns The corresponding nested JavaScript path, or `targetFileName` when no nested match exists
+ * Prefers an exact declaration path under the library source directory, then searches
+ * subdirectories by basename. Results, including unmatched paths, are cached.
+ *
+ * @param targetFileName - JavaScript filename or subpath relative to the library source directory
+ * @returns The matched JavaScript path relative to the library source directory with forward
+ * slashes, or the unchanged `targetFileName` when no declaration matches
+ * @throws Filesystem errors if a directory cannot be read during the fallback search
  */
 function findInLibSrc(targetFileName: string): string {
 	if (libFileCache.has(targetFileName)) return libFileCache.get(targetFileName)!;
@@ -80,6 +85,14 @@ function findInLibSrc(targetFileName: string): string {
 	const baseName = path.basename(targetDts);
 
 	// Search subdirectories in LIB_SRC_DIR (e.g. primitives/, runtime/, etc.)
+	/**
+	 * Finds the first nested declaration matching the requested basename.
+	 *
+	 * @param dir - Directory to search recursively
+	 * @param baseDir - Root excluded from matches and used to make the result relative
+	 * @returns The relative JavaScript path with forward slashes, or `null` if no match exists
+	 * @throws Filesystem errors if a searched directory cannot be read
+	 */
 	function search(dir: string, baseDir: string): string | null {
 		const entries = fs.readdirSync(dir, { withFileTypes: true });
 		for (const entry of entries) {
@@ -164,7 +177,12 @@ function walk(dir: string) {
 /**
  * Rewrites library and Tempo alias imports in a declaration file to relative paths.
  *
+ * Resolves `#library/*.js` references against library declarations and quoted bare
+ * `#library` and `#tempo` aliases to their distribution entry points. Quoted `#tempo/`
+ * subpaths use the Tempo alias mapping. Writes the file only when its content changes.
+ *
  * @param filePath - Path to the declaration file to update
+ * @throws Filesystem errors from reading or writing the file or searching library declarations
  */
 function rewrite(filePath: string) {
 	const content = fs.readFileSync(filePath, 'utf8');
