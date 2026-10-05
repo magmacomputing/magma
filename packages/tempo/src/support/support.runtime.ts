@@ -1,3 +1,4 @@
+import { isText } from '#library/assertion.library.js';
 import { markExtensible } from '#library/symbol.library.js';
 import { sym } from './support.symbol.js';
 import type { Plugin } from '../plugin/plugin.type.js';
@@ -79,28 +80,10 @@ export class TempoRuntime {
 	 * Replaces existing terms with the same key to support HMR and test module cache resets.
 	 */
 	addTerm(state: Internal.State, term: TermPlugin): void {
-		if (!term || typeof term.key !== 'string') return;
-		if (!state.pluginsDb) state.pluginsDb = { terms: [], plugins: [] };
-		if (!state.pluginsDb.terms) state.pluginsDb.terms = [];
-		markExtensible(state.pluginsDb);
-		markExtensible(state.pluginsDb.terms);
-
-		const idx = state.pluginsDb.terms.findIndex(t => t.key === term.key);
-		if (idx >= 0) {
-			if (Object.isExtensible(state.pluginsDb.terms)) {
-				state.pluginsDb.terms[idx] = term;
-			} else {
-				const nextTerms = [...state.pluginsDb.terms];
-				nextTerms[idx] = term;
-				state.pluginsDb.terms = markExtensible(nextTerms);
-			}
-		} else {
-			if (Object.isExtensible(state.pluginsDb.terms)) {
-				state.pluginsDb.terms.push(term);
-			} else {
-				state.pluginsDb.terms = markExtensible([...state.pluginsDb.terms, term]);
-			}
-		}
+		if (!term || !isText(term.key)) return;
+		const terms = state.pluginsDb?.terms ?? [];
+		const idx = terms.findIndex(t => t?.key === term.key);
+		upsertRegistryItem(state, 'terms', idx, term);
 	}
 
 	/**
@@ -110,30 +93,12 @@ export class TempoRuntime {
 	 */
 	addPlugin(state: Internal.State, plugin: any): void {
 		if (!plugin) return;
-		if (!state.pluginsDb) state.pluginsDb = { terms: [], plugins: [] };
-		if (!state.pluginsDb.plugins) state.pluginsDb.plugins = [];
-		markExtensible(state.pluginsDb);
-		markExtensible(state.pluginsDb.plugins);
-
-		if (plugin.name) {
-			const idx = state.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
-			if (idx >= 0) {
-				if (Object.isExtensible(state.pluginsDb.plugins)) {
-					state.pluginsDb.plugins[idx] = plugin;
-				} else {
-					const nextPlugins = [...state.pluginsDb.plugins];
-					nextPlugins[idx] = plugin;
-					state.pluginsDb.plugins = markExtensible(nextPlugins);
-				}
-				return;
-			}
-		}
-		if (!state.pluginsDb.plugins.includes(plugin)) {
-			if (Object.isExtensible(state.pluginsDb.plugins)) {
-				state.pluginsDb.plugins.push(plugin);
-			} else {
-				state.pluginsDb.plugins = markExtensible([...state.pluginsDb.plugins, plugin]);
-			}
+		const plugins = state.pluginsDb?.plugins ?? [];
+		const idx = isText(plugin.name) ? plugins.findIndex(p => p?.name === plugin.name) : -1;
+		if (idx >= 0) {
+			upsertRegistryItem(state, 'plugins', idx, plugin);
+		} else if (!plugins.includes(plugin)) {
+			upsertRegistryItem(state, 'plugins', -1, plugin);
 		}
 	}
 
@@ -162,6 +127,46 @@ export class TempoRuntime {
 	 */
 	static createScoped(): TempoRuntime {
 		return new TempoRuntime();
+	}
+}
+
+/**
+ * Safely inserts or replaces an item in state.pluginsDb[key], respecting object
+ * and array extensibility with copy-on-write semantics.
+ */
+function upsertRegistryItem<K extends 'terms' | 'plugins'>(
+	state: Internal.State,
+	key: K,
+	matchIndex: number,
+	item: any
+): void {
+	if (!state.pluginsDb) state.pluginsDb = { terms: [], plugins: [] };
+	if (!state.pluginsDb[key]) state.pluginsDb[key] = [] as any;
+	markExtensible(state.pluginsDb);
+	markExtensible(state.pluginsDb[key]);
+
+	const list = state.pluginsDb[key] as any[];
+	if (Object.isExtensible(list)) {
+		if (matchIndex >= 0) {
+			list[matchIndex] = item;
+		} else {
+			list.push(item);
+		}
+	} else {
+		const nextList = markExtensible([...list]);
+		if (matchIndex >= 0) {
+			nextList[matchIndex] = item;
+		} else {
+			nextList.push(item);
+		}
+		if (Object.isExtensible(state.pluginsDb)) {
+			state.pluginsDb[key] = nextList as any;
+		} else {
+			state.pluginsDb = markExtensible({
+				...state.pluginsDb,
+				[key]: nextList,
+			});
+		}
 	}
 }
 
