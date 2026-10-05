@@ -21,4 +21,23 @@ describe('Plugin Registration / Initialization', () => {
 		// 3. Verify it's STILL installed (init() should have re-extended from $Plugins)
 		expect((Tempo as any).dummy).toBe(true);
 	});
+
+	test('Dynamic plugin registration does not throw when state or pluginsDb is non-extensible', () => {
+		const DynamicTestPlugin = definePlugin({
+			name: 'DynamicTestPlugin',
+			install(TempoClass: any) {
+				TempoClass.dynamicRegistered = true;
+			}
+		});
+
+		// Explicitly freeze the internal arrays to simulate external deep-freeze
+		const rt = (Tempo as any)[Symbol.for('$LibraryInternal')]?.() ?? {};
+		if (rt.pluginsDb?.plugins) Object.freeze(rt.pluginsDb.plugins);
+
+		expect(() => {
+			Tempo.use(DynamicTestPlugin);
+		}).not.toThrow();
+
+		expect((Tempo as any).dynamicRegistered).toBe(true);
+	});
 });

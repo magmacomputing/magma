@@ -3,7 +3,7 @@ import { enumify, Enum } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, isEnglish } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
-import { markConfig } from '#library/symbol.library.js';
+import { markConfig, markExtensible } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
 import { isString, isObject, isPlainObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
@@ -74,10 +74,20 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	}
 
 	const { timeZone, calendar } = getDateTimeFormat();
+
+	const pluginsDb = baseState ? {
+		terms: [...baseState.pluginsDb.terms],
+		plugins: [...baseState.pluginsDb.plugins]
+	} : { terms: [], plugins: [] };
+
+	markExtensible(pluginsDb);
+	markExtensible(pluginsDb.terms);
+	markExtensible(pluginsDb.plugins);
+
 	const state = (baseState ? Object.create(baseState) : {
 		config: {},
 		parse: {},
-		pluginsDb: { terms: [], plugins: [] },
+		pluginsDb,
 		userProvidedKeys: new Set<string>()
 	}) as t.Internal.State;
 
@@ -88,10 +98,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		state.parse = Object.create(baseState.parse);
 		state.userProvidedKeys = new Set(baseState.userProvidedKeys);
 		state.installed = new ScopedSet(runtime.installed);	// sandbox: delegates has() to global, isolates add()
-		state.pluginsDb = {
-			terms: [...baseState.pluginsDb.terms],
-			plugins: [...baseState.pluginsDb.plugins]
-		};
+		state.pluginsDb = pluginsDb;
 	}
 
 	state.options = options;

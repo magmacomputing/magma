@@ -1,4 +1,4 @@
-# Plan: `@tempojs` npm Scope Acquisition & v5.0.0 Migration Strategy
+# Plan: `@tempo-dev` npm Scope Adoption & v5.0.0 Migration Strategy
 
 ## 1. Executive Summary & Value Proposition
 
@@ -7,246 +7,158 @@ Currently, the Tempo ecosystem is published under the corporate organization sco
 - `@magmacomputing/tempo-fns`
 - `@magmacomputing/tempo-plugin-*` (13+ plugins)
 
-### Why Transition to `@tempojs` in v5.0.0?
-1. **Developer Experience (DX) & Brand Recognition**: `@tempojs/tempo` and `@tempojs/plugin-ai` are significantly more memorable, concise, and standard within modern open-source ecosystems (following patterns like `@vuejs/*`, `@sveltejs/*`, `@fastify/*`, `@trpc/*`).
-2. **Community Adoption & GitHub Appeal**: Developer trust increases when a library is packaged under a dedicated product namespace rather than an enterprise umbrella scope.
-3. **Clean Version Boundary (v5.0.0)**: Package name changes represent breaking changes for consumer imports, making the upcoming major release (`v5.0.0`) the ideal milestone.
+### Why Transition to `@tempo-dev` in v5.0.0?
+1. **Developer Experience (DX) & Modern Branding**: Adopting the **`@tempo-dev`** scope (aligned with a `tempo.dev` domain identity) reflects modern, developer-first ecosystem standards (mirroring top-tier tools like `@sst-dev`, `@payload-dev`, and `@livekit-dev`).
+2. **Zero Brand & Search Collision**: Completely sidesteps market and SEO confusion with `@formkit/tempo` (which relies on legacy `Date` helpers) by establishing a distinct, future-looking Temporal API identity.
+3. **Clean Non-Stuttering Architecture (Pattern 1)**: By using `@tempo-dev/core` as the anchor package with modern subpath exports (`@tempo-dev/core/parse`, `@tempo-dev/core/format`), we eliminate import path repetition (`@tempojs/tempo`) while providing single-package atomic versioning.
+4. **Clean Major Version Boundary (v5.0.0)**: Package name changes represent breaking changes for consumer imports, making the upcoming major release (`v5.0.0`) the ideal milestone.
+
+> [!NOTE]
+> **Abandonment of `@tempojs` Scope**: While outreach was previously initiated to the owner of the dormant `@tempojs` npm namespace, this path has been officially abandoned in favor of the cleaner, collision-free, and modern `@tempo-dev` scope.
 
 ---
 
-## 2. Step-by-Step Guide: Acquiring the `@tempojs` Scope on npm
+## 2. npm Organization Setup & Domain Alignment
 
-### Step 1: Status of `@tempojs` & Alternatives
-- **Current Status**: `@tempojs` is currently registered by an existing product/account created ~3 years ago.
+### Step 1: Claim `@tempo-dev` on npm
+- Register the **`@tempo-dev`** organization on npm directly under the organization administrator account.
+- Configure team permissions, 2FA, and automated GitHub Actions publishing tokens (`NPM_TOKEN`).
 
-#### Alternative Scope Candidates:
-If `@tempojs` cannot be acquired, here are the strongest modern npm scope alternatives:
-
-1. **`@tempo-ts`** *(Preferred over `@tempots` to avoid phonetic misreading as "tem-pots")*
-   - Pattern: `@tempo-ts/tempo` (or `@tempo-ts/core`), `@tempo-ts/plugin-ai`, `@tempo-ts/fns`
-   - Precedent: Clean hyphenated TypeScript ecosystem branding (`@tempo-ts/*`).
-2. **`@tempo-js`**
-   - Pattern: `@tempo-js/tempo`, `@tempo-js/plugin-ai`, `@tempo-js/fns`
-   - Direct equivalent to `@tempojs`.
-3. **`@tempodev`**
-   - Pattern: `@tempodev/tempo`, `@tempodev/plugin-ai`, `@tempodev/fns`
-   - Aligns with modern developer tooling and domain name `tempodev.io` / `tempodev.com`.
-4. **`@magma-tempo`**
-   - Pattern: `@magma-tempo/tempo`, `@magma-tempo/plugin-ai`, `@magma-tempo/fns`
-   - Cleaner product sub-brand under Magma Computing.
-
-### Step 2: Acquisition / Dispute Process (Accepted npm Practice)
-
-npm's official [Dispute Resolution Policy](https://docs.npmjs.com/policies/disputes) requires a **two-phase outreach process**:
-
-1. **Phase 1: Direct Outreach to the Current Owner (Required)**
-   - **Locate Owner Contact**: Check `npm info @tempojs/server` for publisher email, or visit the GitHub repository / profile linked to the package.
-   - **Friendly Outreach Email**: Send a polite email inquiring if they are still maintaining the `@tempojs` namespace or would be willing to transfer/add you as an owner or organization admin.
-   - **Document Outreach**: Keep a timestamped copy of the sent email (and any GitHub issue/discussion links).
-
-#### Sample Outreach Email:
-```text
-Subject: Inquiring about the @tempojs npm scope / organization
-
-Hi Andrew,
-
-Hope you're doing well!
-
-I came across your work on Bebop and the @tempojs packages on npm. I’m the maintainer of Tempo (https://github.com/magmacomputing/magma), a TypeScript date/time and Temporal API ecosystem currently published under @magmacomputing/tempo.
-
-As we plan our upcoming v5.0.0 release, we are looking to publish our ecosystem under a dedicated open-source scope. I noticed the @tempojs scope on npm has been dormant for a few years, and I wanted to reach out to see if you have any ongoing or future plans for that namespace?
-
-If you are no longer using the @tempojs scope, would you be open to transferring it (or adding my npm user as an admin/owner)? My npm username is: [YOUR_NPM_USERNAME]
-
-If you still have plans for it or prefer to keep it, no worries at all! Just wanted to check with you first.
-
-Thanks so much for your time and all your contributions to the open-source community!
-
-Best regards,
-Michael
-[Your Contact / GitHub Link]
-```
-
-2. **Phase 2: Wait 4 Weeks for Response**
-   - npm requires giving the current owner a **4-week (28-day) window** to reply.
-   - *Best Case*: The developer agrees and transfers the package/org directly via the npm dashboard or `npm owner add <username> <package>`.
-
-3. **Phase 3: File npm Support Dispute Ticket (If Unresponsive or Bounced)**
-   - If 4 weeks pass with no response, or if the maintainer's email bounces:
-     - Submit a ticket via [npm Support](https://www.npmjs.com/support) choosing **"Dispute / Name Claim"**.
-     - Provide:
-       - Target scope: `@tempojs`.
-       - Package evidence: `v0.0.12` abandoned for ~3 years, zero active development.
-       - Proof of outreach: Attach copy of the email sent 4 weeks ago showing no reply.
-       - Link to active project: `https://github.com/magmacomputing/magma`.
-   - npm support will attempt to contact the owner directly; if still unresponsive within their grace period, npm will reassign the abandoned scope.
-
-### Step 3: Align GitHub & Domain Assets (Recommended)
-- **GitHub Organization**: Check availability of `github.com/tempots` or `github.com/tempojs`.
-- **Domain Name**: Consider claiming `tempots.dev`, `tempodev.io`, or `tempojs.dev`.
+### Step 2: Align Domain & Repository Assets
+- **Documentation Domain**: Target `tempo.dev` (or `tempodev.io`) for the VitePress documentation and interactive playground.
+- **GitHub Organization**: Establish `github.com/tempo-dev` (or maintain within `github.com/magmacomputing/magma`).
 
 ---
 
-## 3. Ecosystem Naming Architecture for v5.0.0
+## 3. Ecosystem Architecture & Package Mapping for v5.0.0
 
-| Current Scope (`@magmacomputing/*`) | Target v5.0.0 Scope (`@tempojs/*`) | Description |
+The v5.0.0 release implements **Pattern 1 (`@tempo-dev/core` with Subpath Exports)** alongside modular satellite packages:
+
+| Current Scope (`@magmacomputing/*`) | Target v5.0.0 Package (`@tempo-dev/*`) | Architecture & Subpaths |
 | :--- | :--- | :--- |
-| `@magmacomputing/tempo` | `@tempojs/tempo` (or `@tempojs/core`) | Core Tempo date-time engine |
-| `@magmacomputing/tempo-fns` | `@tempojs/fns` | Zero-dependency functional date math & celestial utilities |
-| `@magmacomputing/tempo-plugin-ai` | `@tempojs/plugin-ai` | AI calendar reasoning & smart parsing |
-| `@magmacomputing/tempo-plugin-holidays` | `@tempojs/plugin-holidays` | Regional public holidays & business days |
-| `@magmacomputing/tempo-plugin-spatial` | `@tempojs/plugin-spatial` | Geofencing, bearing, & velocity |
-| `@magmacomputing/tempo-plugin-celestial` | `@tempojs/plugin-celestial` | Sun/Moon ephemeris & tide calculations |
-| `@magmacomputing/tempo-plugin-dialects` | `@tempojs/plugin-dialects` | Moment/Dayjs/Python format compatibility |
-| `@magmacomputing/tempo-plugin-*` | `@tempojs/plugin-*` | Remaining official plugins |
+| `@magmacomputing/tempo` | **`@tempo-dev/core`** | Main fluent engine (`.`) with tree-shakeable subpath exports (`./parse`, `./format`, `./mutate`, `./duration`, `./library`, `./plugin/sdk`) |
+| `@magmacomputing/tempo-fns` | **`@tempo-dev/fns`** | Standalone functional date math & celestial calculations |
+| `@magmacomputing/tempo-plugin-ai` | **`@tempo-dev/plugin-ai`** | AI calendar reasoning & smart extraction |
+| `@magmacomputing/tempo-plugin-celestial` | **`@tempo-dev/plugin-celestial`** | Sun/Moon ephemeris, solar events, & tidal predictions |
+| `@magmacomputing/tempo-plugin-holidays` | **`@tempo-dev/plugin-holidays`** | Regional public holidays & business day scheduling |
+| `@magmacomputing/tempo-plugin-geo` | **`@tempo-dev/plugin-geo`** | Reverse geocoding & timezone resolution |
+| `@magmacomputing/tempo-plugin-spatial` | **`@tempo-dev/plugin-spatial`** | Geofencing, spatial distance, bearing, & velocity |
+| `@magmacomputing/tempo-plugin-dialects` | **`@tempo-dev/plugin-dialects`** | Moment/Dayjs/Python format compatibility |
+| `@magmacomputing/tempo-plugin-sync` | **`@tempo-dev/plugin-sync`** | High-precision atomic clock & drift correction |
+| `@magmacomputing/tempo-plugin-ticker` | **`@tempo-dev/plugin-ticker`** | Reactive time ticker & pulse triggers |
+| `@magmacomputing/tempo-plugin-batch` | **`@tempo-dev/plugin-batch`** | High-throughput web worker batch processing |
+| `@magmacomputing/tempo-plugin-finance` | **`@tempo-dev/plugin-finance`** | Financial quarters, fiscal calendars, & trading days |
+| `@magmacomputing/tempo-plugin-ntp` | **`@tempo-dev/plugin-ntp`** | Network Time Protocol socket client |
+| `@magmacomputing/tempo-plugin-snap` | **`@tempo-dev/plugin-snap`** | Snap-to-grid rounding & quantization |
 
 ---
 
-## 4. Consumer Impact & Migration Workflow
+## 4. Consumer Developer Experience (DX)
 
-### How Consumers Will Import in v5.0.0:
+### Subpath Exports on `@tempo-dev/core`
+Consumers install a single package (`@tempo-dev/core`) and import either the full fluent class or tree-shakeable individual functions:
+
 ```typescript
-// Core Engine
-import { Tempo } from '@tempojs/tempo';
+// 1. Full Fluent Class
+import { Tempo } from '@tempo-dev/core';
 
-// Official Plugins
-import { AIPlugin } from '@tempojs/plugin-ai';
-import { HolidaysPlugin } from '@tempojs/plugin-holidays';
+// 2. Tree-shakeable Subpaths (Zero release overhead; bundled in @tempo-dev/core)
+import { parse } from '@tempo-dev/core/parse';
+import { format } from '@tempo-dev/core/format';
+import { mutate } from '@tempo-dev/core/mutate';
 
-// Functional Utilities
-import { isWeekend, daysInMonth, getLunarPhase } from '@tempojs/fns';
+// 3. Functional Utility Helpers (Standalone package)
+import { isWeekend, daysInMonth, getLunarPhase } from '@tempo-dev/fns';
+
+// 4. Domain Plugins
+import { CelestialPlugin } from '@tempo-dev/plugin-celestial';
+import { AIPlugin } from '@tempo-dev/plugin-ai';
+
+Tempo.use(CelestialPlugin);
 ```
 
-### Seamless Backward-Compatibility Strategy (Zero-Disruption Transition)
-To avoid immediately breaking existing v4.x projects upon release of v5.0.0:
-
-1. **Publish Bridge Stubs under `@magmacomputing/*`**:
-   - For v5.0.0, continue publishing lightweight wrapper packages under `@magmacomputing/tempo` and `@magmacomputing/tempo-plugin-*`.
-   - The wrapper simply re-exports everything from `@tempojs/*`:
-     ```typescript
-     // @magmacomputing/tempo index.ts
-     export * from '@tempojs/tempo';
-     export { Tempo as default } from '@tempojs/tempo';
-     ```
-2. **Issue Deprecation Notices**:
-   - Mark `@magmacomputing/tempo` on npm:
-     ```bash
-     npm deprecate @magmacomputing/tempo "Package moved to @tempojs/tempo. Please update your dependencies."
-     ```
-   - This allows consumers to upgrade to v5.0.0 without changing package names immediately, then migrate their `import` statements at their convenience.
-
----
-
-## 5. Monorepo Execution Checklist (For v5.0.0 Release)
-
-- [ ] Claim npm organization `@tempojs`.
-- [ ] Configure npm access token with publishing rights to `@tempojs`.
-- [ ] Update `package.json` in `packages/tempo` and `packages/plugins/*` to `@tempojs/*`.
-- [ ] Update workspace cross-dependencies (`packages/*/package.json`).
-- [ ] Update documentation examples across `packages/tempo/doc/` and `README.md`.
-- [ ] Update VitePress theme headers and installation snippets (`npm install @tempojs/tempo`).
-- [ ] Create stub bridge packages for `@magmacomputing/*` v5.0.0 re-exports.
-- [ ] Tag `v5.0.0` and publish with `npm publish --access public`.
-
----
-
-## 6. Strategic Brand Collision Appraisal: `@formkit/tempo` & Market Positioning
-
-### 6.1 The Competitive Landscape & Developer Confusion
-A critical dimension of transitioning the brand to `@tempojs` is the existence and popularity of **`@formkit/tempo`** (by FormKit / Justin Schroeder).
-
-> [!WARNING]
-> **High Market & Search Collision Risk**: Claiming the exact single-word product name (`Tempo`) in the exact same domain (JavaScript / TypeScript Date & Time utilities) creates substantial discovery friction and developer confusion.
-
-#### Friction Points:
-1. **Search & AI Mindshare**: Searching for *"tempo date library"*, *"tempo tz"*, or querying LLMs (Copilot, ChatGPT, Claude) for "Tempo date examples" heavily biases toward `@formkit/tempo` due to its existing npm download volume, blog posts, and documentation indexing.
-2. **Ambiguity on Lineage / Provenance**: Developers encountering `@tempojs/tempo` or `@tempo-ts/*` will naturally wonder:
-   - *"Is this v2 of FormKit Tempo?"*
-   - *"Is this an official spin-off or a conflicting fork?"*
-3. **Mental Model Collision**:
-   - **`@formkit/tempo`**: Built around legacy native `Date` + Intl formatting helpers. It positions itself as a lightweight `date-fns`/`dayjs` alternative.
-   - **This Ecosystem (`Tempo`)**: Built around ECMAScript **`Temporal`**, providing rich fluent object wrappers, comprehensive polyfill integrations, and an extensive domain plugin architecture (Astro, Celestial, Geo, Spatial, AI).
-
----
-
-### 6.2 Legal & npm Dispute Assessment
-
-#### Can `@formkit` force a name change or initiate legal action?
-* **Civil Trademark Risk (Low to Medium)**: Unless FormKit Inc. (or their parent entity) holds a registered, defensible trademark for the single word mark "Tempo" in class IC 009/042 (software/developer utilities), full civil litigation over open-source naming is uncommon and cost-prohibitive.
-* **npm Dispute Policy (Low Risk for Scoped Packages)**:
-  - npm's dispute resolution focuses on trademark infringement, brand impersonation, and name squatting.
-  - Distinct scoped packages (`@tempojs/*`, `@tempo-ts/*`, or `@tempo-temporal/*`) do not violate npm policy simply by sharing a common English word ("Tempo"), provided there is no malicious misrepresentation or intent to deceive consumers into believing it is FormKit's product.
-* **Public Perception & Community Goodwill**: Even without legal threats, open-source maintainers and developer communities often push back when a second project adopts an identical identity in the same domain.
-
----
-
-### 6.3 Technical & Conceptual Comparison
-
-| Dimension | `@formkit/tempo` | This Project (`Tempo`) |
-| :--- | :--- | :--- |
-| **Core Foundation** | Native JavaScript `Date` | Modern ECMAScript **`Temporal`** architecture |
-| **Architectural Model** | Functional helpers (`format()`, `addDay()`, `diff()`) | Rich fluent class (`Tempo`) + Functional bundle (`@tempojs/fns`) |
-| **Scope & Domain Plugins** | General date/time formatting | Extensible engine: AI parsing, Celestial, Geo, Ticker, Holidays |
-| **Target Audience** | Web apps wanting a lighter Day.js / date-fns replacement | Modern TypeScript apps transitioning to native `Temporal` |
-
----
-
-### 6.4 Strategic Paths Forward & Branding Options
-
-Before committing irrevocably to `@tempojs`, evaluate these strategic alternatives:
-
-#### Path A: Anchor to the `Temporal` Lineage (Strong Differentiation)
-Adopt a scope or compound brand that explicitly communicates the **Temporal** standard (e.g., **`@tempo-temporal/*`**, **`@tempo-ts/*`**, or **`@chronotempo/*`**).
-* **Pros**: Eliminates ambiguity instantly; captures high-intent organic search traffic specifically targeting the Temporal proposal and future ECMAScript standards.
-* **Cons**: Shifts away from the standalone single-word "Tempo" identity.
-
-#### Path B: Claim `@tempojs` with Explicit Positioning & Proactive Disclaimers
-Acquire `@tempojs` (or `@tempo-ts`), maintain the `Tempo` name, but make the Temporal positioning explicit in docs, tagline, and README:
-> *"Tempo is a modern ECMAScript Temporal-native framework. (Not affiliated with @formkit/tempo)."*
-* **Pros**: Preserves all existing architectural documentation and class names (`import { Tempo }`).
-* **Cons**: Ongoing SEO split and occasional developer confusion on forums and issue trackers.
-
-#### Path C: Retain the Magma Umbrella Scope (`@magmacomputing/tempo` or `@magma-tempo/*`)
-Keep publishing under the organization namespace while emphasizing the product brand on the docs site (`tempo.magma.dev` or `tempojs.dev`).
-* **Pros**: Zero migration risk, no dispute process required, clear corporate provenance.
-* **Cons**: Slightly longer package import strings.
-
-#### Path D: Adopt a Developer-First Scope (`@tempo-dev/*`)
-Adopt the `@tempo-dev` scope aligned with a `tempo.dev` domain identity.
-* **Pros**: 100% developer-targeted branding; completely eliminates name collisions with `@formkit/tempo`; mirrors top-tier dev ecosystems (e.g. `@sst-dev`, `@payload-dev`, `@livekit-dev`).
-* **Cons**: Requires migration of existing published packages for v5.0.0.
-
----
-
-### 6.5 Scoped Package Architecture & Subpath Exports Mapping
-
-In modern npm ecosystems, scopes require the `@<scope>/<package-name>` structure. Below is the architectural mapping for v5.0.0 imports utilizing subpath exports:
-
-| Use Case | Recommended Import Path | Package Architecture |
-| :--- | :--- | :--- |
-| **Full Fluent Engine** | `import { Tempo } from '@tempo-dev/tempo'` | Root export of `@tempo-dev/tempo` (`.`) |
-| **Tree-shakeable Parser** | `import { parse } from '@tempo-dev/tempo/parse'` | Subpath export on `@tempo-dev/tempo` (`./parse`) |
-| **Tree-shakeable Formatter**| `import { format } from '@tempo-dev/tempo/format'` | Subpath export on `@tempo-dev/tempo` (`./format`) |
-| **Tree-shakeable Mutator** | `import { mutate } from '@tempo-dev/tempo/mutate'` | Subpath export on `@tempo-dev/tempo` (`./mutate`) |
-| **Bare Minimal Core** | `import { TempoCore } from '@tempo-dev/tempo/core'` | Subpath export on `@tempo-dev/tempo` (`./core`) |
-| **Functional Helpers** | `import { isWeekend, daysInMonth } from '@tempo-dev/fns'` | Standalone package `@tempo-dev/fns` |
-| **Domain Plugins** | `import { CelestialPlugin } from '@tempo-dev/plugin-celestial'` | Modular plugin packages `@tempo-dev/plugin-*` |
-
-#### Example `package.json` Subpath Configuration (`@tempo-dev/tempo`):
+#### Example `package.json` Subpath Configuration (`@tempo-dev/core`):
 ```json
 {
-  "name": "@tempo-dev/tempo",
+  "name": "@tempo-dev/core",
+  "version": "5.0.0",
   "exports": {
-    ".": "./dist/tempo.index.js",
-    "./core": "./dist/core.index.js",
-    "./parse": "./dist/module/module.parse.js",
-    "./format": "./dist/module/module.format.js",
-    "./mutate": "./dist/module/module.mutate.js",
-    "./duration": "./dist/module/module.duration.js",
-    "./library": "./dist/library.index.js",
-    "./plugin/sdk": "./dist/plugin/plugin.sdk.js"
+    ".": {
+      "types": "./dist/tempo.index.d.ts",
+      "import": "./dist/tempo.index.js"
+    },
+    "./parse": {
+      "types": "./dist/module/module.parse.d.ts",
+      "import": "./dist/module/module.parse.js"
+    },
+    "./format": {
+      "types": "./dist/module/module.format.d.ts",
+      "import": "./dist/module/module.format.js"
+    },
+    "./mutate": {
+      "types": "./dist/module/module.mutate.d.ts",
+      "import": "./dist/module/module.mutate.js"
+    },
+    "./duration": {
+      "types": "./dist/module/module.duration.d.ts",
+      "import": "./dist/module/module.duration.js"
+    },
+    "./library": {
+      "types": "./dist/library.index.d.ts",
+      "import": "./dist/library.index.js"
+    },
+    "./plugin/sdk": {
+      "types": "./dist/plugin/plugin.sdk.d.ts",
+      "import": "./dist/plugin/plugin.sdk.js"
+    }
   }
 }
 ```
 
+---
 
+## 5. Seamless Backward-Compatibility Strategy
+
+To avoid breaking existing v4.x projects upon release of v5.0.0:
+
+1. **Publish Bridge Stubs under `@magmacomputing/*`**:
+   - For v5.0.0, publish lightweight wrapper packages under `@magmacomputing/tempo` and `@magmacomputing/tempo-plugin-*`.
+   - The wrapper re-exports from `@tempo-dev/*`:
+     ```typescript
+     // @magmacomputing/tempo index.ts
+     export * from '@tempo-dev/core';
+     export { Tempo as default } from '@tempo-dev/core';
+     ```
+2. **Issue Deprecation Notices**:
+   - Mark `@magmacomputing/tempo` on npm:
+     ```bash
+     npm deprecate @magmacomputing/tempo "Package moved to @tempo-dev/core. Please update your dependencies."
+     ```
+
+---
+
+## 6. Monorepo Execution Checklist (For v5.0.0 Release)
+
+- [ ] Claim npm organization `@tempo-dev`.
+- [ ] Configure GitHub Secrets with `NPM_TOKEN` granting publish access to `@tempo-dev`.
+- [ ] Update `package.json` in `packages/tempo` to name `"@tempo-dev/core"`.
+- [ ] Configure `exports` in `packages/tempo/package.json` for subpaths (`./parse`, `./format`, etc.).
+- [ ] Update `package.json` in `packages/functions` to `"@tempo-dev/fns"`.
+- [ ] Update `package.json` in `packages/plugins/*` to `"@tempo-dev/plugin-*"`.
+- [ ] Update documentation examples across `packages/tempo/doc/` and `README.md`.
+- [ ] Update VitePress theme headers and installation snippets (`npm install @tempo-dev/core`).
+- [ ] Create stub bridge packages for `@magmacomputing/*` v5.0.0 re-exports.
+- [ ] Run full test matrix across Node 22, 24, and 26.
+- [ ] Tag `v5.0.0` and publish with `npm publish --access public --workspaces`.
+
+---
+
+## 7. Strategic Differentiation Summary
+
+| Dimension | `@formkit/tempo` | `@tempo-dev/core` (Tempo) |
+| :--- | :--- | :--- |
+| **Foundational Standard** | Legacy JavaScript `Date` | Modern ECMAScript **`Temporal`** architecture |
+| **API Philosophy** | Functional helper library | Rich fluent class (`Tempo`) + Subpaths + Functional bundle (`@tempo-dev/fns`) |
+| **Architecture** | Single-purpose date formatting | Extensible engine: AI, Celestial, Geo, Spatial, Ticker, Holidays |
+| **Target Audience** | Day.js / date-fns migration projects | Future-proof TypeScript applications transitioning to native `Temporal` |
+| **Ecosystem Identity** | Component within FormKit forms | Independent developer platform (`tempo.dev` / `@tempo-dev`) |
