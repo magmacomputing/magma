@@ -530,12 +530,15 @@ export type SecureObject<T> = { readonly [K in keyof T]: Secure<T[K]> }
 
 type LooseString = (string & {})
 type LooseProperty = (PropertyKey & {})
+type LooseSymbolPrimitive = (symbol & {})
 
 // https://www.youtube.com/watch?v=lraHlXpuhKs&t=43s
 /** Loose union */
 export type LooseUnion<T> = T | LooseString
 /** Loose property key */
 export type LooseKey<K extends PropertyKey = string> = K | LooseProperty
+/** Loose symbol supporting union autocompletion while accepting any symbol */
+export type LooseSymbol<S extends symbol = symbol> = S | LooseSymbolPrimitive
 // /** Loose auto-complete */
 // export type LooseRecord<T extends Property<any>> = Partial<T> & Record<PropertyKey, any>
 

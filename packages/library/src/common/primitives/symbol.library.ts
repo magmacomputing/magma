@@ -30,6 +30,35 @@ export const sym = {
 	$Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register, $SerializerRegistry, $Identity, $Mutable, $Unwrapped
 } as const;
 
+import type { LooseSymbol, ValueOf } from '#library/type.library.js';
+
+/**
+ * Union of all global symbols managed by the library registry.
+ */
+export type LibrarySymbol = ValueOf<typeof sym>
+
+/**
+ * @internal
+ * Attaches or updates a non-enumerable global symbol on an object if extensible and not already marked with the same value.
+ *
+ * @param obj - The target object to mark
+ * @param symbol - The symbol identifier to attach
+ * @param value - Optional payload or boolean marker (default: true)
+ * @returns The target object
+ * @example
+ * ```ts
+ * markSymbol(target, sym.$Extensible);
+ * ```
+ */
+export function markSymbol<T extends object>(obj: T, symbol: LooseSymbol<LibrarySymbol>, value: any = true): T {
+	if (obj !== null && (typeof obj === 'object' || typeof obj === 'function') && typeof symbol === 'symbol' && !(symbol in obj && (obj as any)[symbol] === value) && Object.isExtensible(obj)) {
+		try {
+			Object.defineProperty(obj, symbol, { value, enumerable: false, writable: true, configurable: true });
+		} catch { }
+	}
+	return obj;
+}
+
 /**
  * Identifies and marks an object as a logging configuration object using a global symbol.
  * This allows the library to securely differentiate configs from regular objects.
@@ -41,9 +70,17 @@ export const sym = {
  * const cfg = markConfig({ level: 'debug' });
  * ```
  */
-export function markConfig<T extends object>(obj: T): T {
-	if (!(obj as any)[sym.$LogConfig] && Object.isExtensible(obj))
-		Object.defineProperty(obj, sym.$LogConfig, { value: true, enumerable: false, writable: true, configurable: true });
+export const markConfig = <T extends object>(obj: T): T => markSymbol(obj, sym.$LogConfig);
 
-	return obj;
-}
+/**
+ * Marks an object as explicitly extensible using a global symbol to exempt it from recursive deep-freezing.
+ *
+ * @param obj - The object to mark
+ * @returns The marked object
+ * @example
+ * ```ts
+ * const registry = markExtensible([]);
+ * ```
+ */
+export const markExtensible = <T extends object>(obj: T): T => markSymbol(obj, sym.$Extensible);
+

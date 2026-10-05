@@ -1,3 +1,5 @@
+import { isText } from '#library/assertion.library.js';
+import { markExtensible } from '#library/symbol.library.js';
 import { sym } from './support.symbol.js';
 import type { Plugin } from '../plugin/plugin.type.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
@@ -28,7 +30,11 @@ import type { Internal } from '../tempo.type.js';
  * `TempoRuntime.createScoped()` returns a fresh, isolated runtime that is *not* stored on `globalThis`, enabling clean test isolation without globalThis manipulation.  **Note**: Scoped runtimes are currently an experimental internal feature and are not yet fully threaded through all core utilities.  Scoped runtimes are not pinned to `globalThis`, lack the `defineProperty` descriptor protections of the primary instance, and instead rely solely on the lexical reference returned (contrasting with the hardened `getRuntime()` and `globalThis[$Bridge]` behavior). Implementation examples of this test-scoping pattern can be found in [plugin_registration.test.ts](../test/plugin_registration.test.ts) and [duration.core.test.ts](../test/duration.core.test.ts).
  */
 export class TempoRuntime {
-	constructor() { (this as any)[sym.$RuntimeBrand] = true; }
+	constructor() {
+		(this as any)[sym.$RuntimeBrand] = true;
+		markExtensible(this);
+		markExtensible(this.extensions);
+	}
 
 	/** raw extension-plugin storage array — consumed by REGISTRY */
 	readonly extensions: (Plugin | TermPlugin | any)[] = [];
@@ -74,10 +80,10 @@ export class TempoRuntime {
 	 * Replaces existing terms with the same key to support HMR and test module cache resets.
 	 */
 	addTerm(state: Internal.State, term: TermPlugin): void {
-		if (!term || typeof term.key !== 'string') return;
-		const idx = state.pluginsDb.terms.findIndex(t => t.key === term.key);
-		if (idx >= 0) state.pluginsDb.terms[idx] = term;
-		else state.pluginsDb.terms.push(term);
+		if (!term || !isText(term.key)) return;
+		const terms = state.pluginsDb?.terms ?? [];
+		const idx = terms.findIndex(t => t?.key === term.key);
+		upsertRegistryItem(state, 'terms', idx, term);
 	}
 
 	/**
@@ -87,15 +93,13 @@ export class TempoRuntime {
 	 */
 	addPlugin(state: Internal.State, plugin: any): void {
 		if (!plugin) return;
-		if (plugin.name) {
-			const idx = state.pluginsDb.plugins.findIndex(p => p.name === plugin.name);
-			if (idx >= 0) {
-				state.pluginsDb.plugins[idx] = plugin;
-				return;
-			}
+		const plugins = state.pluginsDb?.plugins ?? [];
+		const idx = isText(plugin.name) ? plugins.findIndex(p => p?.name === plugin.name) : -1;
+		if (idx >= 0) {
+			upsertRegistryItem(state, 'plugins', idx, plugin);
+		} else if (!plugins.includes(plugin)) {
+			upsertRegistryItem(state, 'plugins', -1, plugin);
 		}
-		if (!state.pluginsDb.plugins.includes(plugin))
-			state.pluginsDb.plugins.push(plugin);
 	}
 
 	/**
@@ -104,8 +108,14 @@ export class TempoRuntime {
 	 */
 	addExtension(extension: any): void {
 		if (!extension) return;
-		if (!this.extensions.includes(extension))
-			this.extensions.push(extension);
+		markExtensible(this.extensions);
+		if (!this.extensions.includes(extension)) {
+			if (Object.isExtensible(this.extensions)) {
+				this.extensions.push(extension);
+			} else {
+				(this as any).extensions = markExtensible([...this.extensions, extension]);
+			}
+		}
 	}
 
 	// ─── Factory helpers ──────────────────────────────────────────────────────
@@ -117,6 +127,46 @@ export class TempoRuntime {
 	 */
 	static createScoped(): TempoRuntime {
 		return new TempoRuntime();
+	}
+}
+
+/**
+ * Safely inserts or replaces an item in state.pluginsDb[key], respecting object
+ * and array extensibility with copy-on-write semantics.
+ */
+function upsertRegistryItem<K extends 'terms' | 'plugins'>(
+	state: Internal.State,
+	key: K,
+	matchIndex: number,
+	item: any
+): void {
+	if (!state.pluginsDb) state.pluginsDb = { terms: [], plugins: [] };
+	if (!state.pluginsDb[key]) state.pluginsDb[key] = [] as any;
+	markExtensible(state.pluginsDb);
+	markExtensible(state.pluginsDb[key]);
+
+	const list = state.pluginsDb[key] as any[];
+	if (Object.isExtensible(list)) {
+		if (matchIndex >= 0) {
+			list[matchIndex] = item;
+		} else {
+			list.push(item);
+		}
+	} else {
+		const nextList = markExtensible([...list]);
+		if (matchIndex >= 0) {
+			nextList[matchIndex] = item;
+		} else {
+			nextList.push(item);
+		}
+		if (Object.isExtensible(state.pluginsDb)) {
+			state.pluginsDb[key] = nextList as any;
+		} else {
+			state.pluginsDb = markExtensible({
+				...state.pluginsDb,
+				[key]: nextList,
+			});
+		}
 	}
 }
 

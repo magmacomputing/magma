@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.1] - 2026-10-05
+
+### Fixed & Hardened
+- **Dynamic Plugin Registry & Extensibility Protection**:
+  - Centralized `markExtensible` in `#library/symbol.library.js` to protect internal registries (`pluginsDb`, `pluginsDb.terms`, `pluginsDb.plugins`, and `runtime.extensions`) with `sym.$Extensible`, preventing recursive freezing utilities (`deepFreeze` / `proxify`) from locking runtime state.
+  - Added copy-on-write fallbacks in `TempoRuntime` (`addPlugin`, `addTerm`, `addExtension`) to ensure dynamic `import()` and late-loaded plugins (such as in interactive REPL environments) register reliably without throwing `TypeError: Cannot add property, object is not extensible`.
+
 ## [4.5.0] - 2026-10-02
 
 ### Architecture & Internationalization
