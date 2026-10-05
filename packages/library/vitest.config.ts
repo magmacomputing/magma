@@ -25,10 +25,7 @@ export default defineConfig({
     slowTestThreshold: 2_000,
     include: ['test/**/*.{test,spec}.ts'],
     exclude: ['**/node_modules/**', 'dist/**'],
-    setupFiles: [
-      resolve(__dirname, '../tempo/bin/temporal-polyfill.ts'),
-      resolve(__dirname, '../tempo/test/support/setup.console-spy.ts'),
-    ],
+    setupFiles: [resolve(__dirname, './test/setup.ts')],
   },
   resolve: {
     alias: isDist ? [
