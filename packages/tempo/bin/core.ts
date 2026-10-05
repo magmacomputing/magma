@@ -1,3 +1,4 @@
+import './suppress-warnings.js';
 import { Tempo, enums } from '#tempo/core';
 import { stringify, objectify, enumify, getType, Pledge } from '#library';
 

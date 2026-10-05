@@ -1,3 +1,4 @@
+import './suppress-warnings.js';
 import { parse } from '#tempo/parse';
 
 // Pre-load core symbols (parse) to the global scope

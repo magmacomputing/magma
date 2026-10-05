@@ -1,3 +1,4 @@
+import '../../tempo/bin/suppress-warnings.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import repl from 'node:repl';
