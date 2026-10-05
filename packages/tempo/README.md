@@ -64,6 +64,8 @@ bun add @magmacomputing/tempo           # bun
 deno add npm:@magmacomputing/tempo      # deno
 ```
 
+> **Runtime Support**: Requires Node.js `>= 20.0.0` (Recommended: **Node 24 LTS** or **Node >= 26.10.0** with full native `Temporal` support).
+
 <details>
 <summary><b>🌐 Browser & Native Environments</b></summary>
 

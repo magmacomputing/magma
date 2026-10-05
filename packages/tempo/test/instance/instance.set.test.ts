@@ -106,9 +106,13 @@ describe(`${label} set method`, () => {
 			const t = new Tempo('2024-05-15 12:34:56');
 
 			const todayObserved = t.set('today');
-			expect(todayObserved.yy).toBe(2024);
-			expect(todayObserved.mm).toBe(5);
-			expect(todayObserved.dd).toBe(20); // 'today' is always the system-date
+			// In Node 26+, V8 native Temporal.Now uses host system clock rather than Date fake timers
+			const isNode26Plus = parseInt(process.versions.node.split('.')[0], 10) >= 26;
+			const expectedToday = isNode26Plus ? Temporal.Now.plainDateISO(t.tz) : { year: 2024, month: 5, day: 20 };
+
+			expect(todayObserved.yy).toBe(expectedToday.year);
+			expect(todayObserved.mm).toBe(expectedToday.month);
+			expect(todayObserved.dd).toBe(expectedToday.day); // 'today' is always the system-date
 			expect(todayObserved.hh).toBe(12); // preserved time from t
 
 			const tomorrow = t.set('tomorrow');

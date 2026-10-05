@@ -101,6 +101,7 @@ export default defineConfig({
           color: 'magenta',
           include: ['packages/library/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**'],
+          setupFiles: ['./packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       },
       {

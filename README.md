@@ -17,11 +17,15 @@ All technical documentation has been moved into the respective package directori
 
 - **Tempo Docs**: [packages/tempo/doc/](./packages/tempo/doc/)
 - **Visual Assets**: [packages/tempo/img/](./packages/tempo/img/)
-- **Project & Architecture Docs**: [doc/](./doc/)
+## ⚙️ Environment & Prerequisites
+
+- **Node.js**: Requires `node >= 20.0.0` (Recommended: **Node.js 24 LTS** or **Node.js >= 26.10.0**).
+  - An [`.nvmrc`](./.nvmrc) and [`.node-version`](./.node-version) are provided to pin to `26.10.0`.
+  - *Note*: If evaluating Node 26, ensure you are running `v26.10.0+` (earlier development builds such as `<= 26.4.0` contain an incomplete V8 `Temporal` implementation).
 
 ## 💖 Community & Support
 
-For commercial support, architectural consulting, or custom plugin development, please visit our [Commercial Services](./packages/tempo/doc/8-project-and-support/commercial.md) guide or contact us at `hello@magmacomputing.com.au`.
+For commercial support, architectural consulting, or custom plugin development, please visit our [Commercial Services](./packages/tempo/doc/8-project-and-support/commercial.md) guide or contact us at `tempo@magmacomputing.com.au`.
 
 ---
 
