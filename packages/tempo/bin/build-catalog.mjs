@@ -64,3 +64,4 @@ if (!fs.existsSync(targetDir)) {
 
 fs.writeFileSync(targetCatalogPath, JSON.stringify(catalog, null, 2) + '\n');
 console.log(`Successfully generated VitePress catalog JSON with live local versions (${catalog.length} plugins).`);
+

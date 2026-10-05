@@ -786,16 +786,23 @@
 					<div class="select-wrap">
 						<select id="presetSelect" title="Load Snippet Preset">
 							<option value="quickstart">Preset: Quick Start (Core)</option>
+							<option value="weekend">Preset: Weekend Check (Cookbook)</option>
+							<option value="quarters">Preset: Fiscal Quarters & Math (Core)</option>
+							<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
 							<option value="spatial">Preset: Spatial & Navigation (GIS, Haversine, Transit)</option>
 							<option value="geo">Preset: Live Geolocation & Providers (Geo)</option>
+							<option value="holidays">Preset: Regional Public Holidays & SLA Business Days</option>
 							<option value="dialects">Preset: Dialects (Luxon, strftime, Moment)</option>
-							<option value="weekend">Preset: Weekend Check (Cookbook)</option>
-							<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
-							<option value="quarters">Preset: Fiscal Quarters & Math</option>
+							<option value="celestial">Preset: Celestial Solar & Lunar Ephemeris</option>
+							<option value="astro">Preset: Astronomical Seasons & Solstices</option>
+							<option value="finance">Preset: Fiscal & Financial Math</option>
+							<option value="snap">Preset: Time Snapping & Quantization</option>
+							<option value="batch">Preset: Parallel Bulk Mutation</option>
+							<option value="sync">Preset: Cross-Thread Time Sync</option>
+							<option value="ntp">Preset: Network Time Sync & Drift (NTP)</option>
+							<option value="ticker">Preset: Continuous Temporal Ticker</option>
 							<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
 							<option value="ai">Preset: AI Semantic Parsing & Scheduling</option>
-							<option value="holidays">Preset: Regional Public Holidays & SLA Business Days</option>
-							<option value="ntp">Preset: Network Time Sync & Drift (NTP)</option>
 						</select>
 					</div>
 
@@ -872,295 +879,7 @@
 	</div>
 
 	<script type="module">
-		const SNIPPETS = {
-			quickstart: `// ⚡ Quick Start with Tempo
-const t = new Tempo('now');
-
-console.log('ISO 8601 String:', t.iso);
-console.log('Formatted:', t.format('{wkd}, {mon} {dd}, {yyyy} at {h12}:{mi} [{tz}]'));
-console.log('Days until next Friday:', t.until('next Friday').format());
-
-// Return value displays in the top Result card:
-return t.format('{yyyy}-{mm}-{dd}');`,
-
-			spatial: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@magmacomputing/tempo-plugin-spatial)
-const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
-Tempo.use(SpatialPlugin);
-
-const sydney = { lat: -33.8688, lng: 151.2093 };
-const london = { lat: 51.5074, lng: -0.1278 };
-
-// 1. Haversine Distance & Initial Bearing
-const distKm = Tempo.spatial.distance(sydney, london, 'km');
-const heading = Tempo.spatial.bearing(sydney, london);
-console.log('Distance Sydney -> London:', distKm.toFixed(1), 'km');
-console.log('Compass Heading:', heading.toFixed(1) + '°');
-
-// 2. Geographic Midpoint
-const mid = Tempo.spatial.midpoint(sydney, london);
-console.log('Great-Circle Midpoint:', \`\${mid.latitude.toFixed(2)}°, \${mid.longitude.toFixed(2)}° (\${mid.sphere})\`);
-
-// 3. Impossible Travel Anomaly Detection
-const loginSydney = new Tempo('2026-03-31T08:00:00Z', { geo: sydney });
-const loginLondon = new Tempo('2026-03-31T09:30:00Z', { geo: london }); // 1.5h later
-const speed = loginSydney.spatialVelocity(loginLondon);
-const isAnomaly = Tempo.spatial.isImpossibleTravel(loginSydney, loginLondon);
-
-console.log('Transit Velocity:', speed.toFixed(1), 'km/h');
-console.log('Impossible Travel Alert?', isAnomaly);
-
-return \`Sydney -> London: \${distKm.toFixed(0)} km (Midpoint: \${mid.latitude.toFixed(1)}°, \${mid.longitude.toFixed(1)}°)\`;`,
-
-			geo: `// 🌍 Live Geolocation & Pluggable Providers (@magmacomputing/tempo-plugin-geo)
-// Note: In browser sandbox, resolves browser GPS or IP-based coordinates
-
-const lookup = await Tempo.geo.lookup({ reverse: true });
-console.log('Detected City:', lookup.city ?? 'Local City', ',', lookup.country ?? 'Local Country');
-console.log('Coordinates:', lookup.lat, lookup.lng);
-
-// Attach coordinates to a Tempo instance:
-const localTime = new Tempo('now', { geo: lookup });
-console.log('Astronomical Season:', localTime.term.szn);
-console.log('Moon Phase:', localTime.term.lunar.phase);
-
-// Reverse Geocoding to place details:
-const place = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
-console.log('Reverse Geocoded Place:', place.city, place.country);
-
-return \`Located at \${lookup.city ?? 'Local City'} (\${lookup.lat?.toFixed(2)}°, \${lookup.lng?.toFixed(2)}°)\`;`,
-
-			holidays: `// 🏖️ Regional Public Holidays & SLA Business Days (@magmacomputing/tempo-plugin-holidays)
-const { HolidaysPlugin } = await import('@magmacomputing/tempo-plugin-holidays');
-Tempo.use(HolidaysPlugin);
-
-// 1. Evaluate holiday by country or instance geo metadata
-const christmas = new Tempo('2026-12-25', { geo: { country: 'US' } });
-console.log('Is Christmas Day holiday in US?', christmas.holidays.isHoliday());
-console.log('Holiday Name:', christmas.holidays.name);
-console.log('Is Business Day?', christmas.holidays.isBusinessDay());
-
-// 2. Next & previous business day arithmetic
-const nextWorkDay = christmas.holidays.nextBusinessDay();
-console.log('Next Business Day after Christmas:', nextWorkDay.format('{www}, {dd} {mon} {yyyy}'));
-
-// 3. Add N working business days
-const deadline = christmas.holidays.addBusinessDays(5);
-console.log('5 Business Days later:', deadline.format('{www}, {dd} {mon} {yyyy}'));
-
-// 4. SLA Working Hours calculation
-const ticketOpened = new Tempo('2026-01-23 15:00:00', { geo: { country: 'AU' } });
-const ticketResolved = new Tempo('2026-01-27 11:00:00', { geo: { country: 'AU' } });
-const hours = ticketOpened.holidays.workingHoursUntil(ticketResolved);
-console.log('SLA Working Hours (9am-5pm window):', hours, 'hours');
-
-return \`Christmas: \${christmas.holidays.name} (Next work day: \${nextWorkDay.format('{www}, {dd} {mon}')})\`;`,
-
-			dialects: `// 🌐 External Dialect Formatting & Parsing
-// Dynamic import of @magmacomputing/tempo-plugin-dialects
-const { DialectsPlugin, DIALECT } = await import('@magmacomputing/tempo-plugin-dialects');
-Tempo.use(DialectsPlugin);
-
-const t = new Tempo('2026-10-24T15:30:45');
-
-// 1. Luxon-style toFormat & LDML
-console.log('Luxon drop-in .toFormat():', t.toFormat('dd LLL yyyy, HH:mm'));
-console.log('Dialect namespace LDML:', t.dialects.ldml('yyyy/MM/dd HH:mm'));
-
-// 2. POSIX strftime
-console.log('strftime .strftime():', t.dialects.strftime('%Y-%m-%d %H:%M:%S'));
-console.log('strftime auto-detect:', t.format('%A, %B %d %Y (%I:%M %p)', { dialect: DIALECT.Strftime }));
-
-// 3. Dialect Parsing via Tempo.fromFormat()
-const parsed = Tempo.fromFormat('24/10/2026 15:30', 'dd/MM/yyyy HH:mm');
-console.log('Parsed ISO:', parsed.iso);
-
-return t.toFormat('dd LLL yyyy (HH:mm:ss)');`,
-
-			weekend: `// 🗓️ Weekend Checking (from Tempo Cookbook)
-const today = new Tempo();
-console.log('Today:', today.format('{www}, {dd} {mon}'));
-console.log('ISO Day of Week (1..7):', today.dow);
-
-// 1. Simple ISO check (Sat = 6, Sun = 7)
-const isIsoWeekend = today.dow >= 6;
-console.log('Is ISO Weekend?', isIsoWeekend);
-
-// 2. Locale-Aware check using t.intl.weekend
-const us = new Tempo({ locale: 'en-US' });
-const sa = new Tempo({ locale: 'ar-SA' });
-
-console.log('en-US Weekend Days:', us.intl.weekend); // [6, 7] (Saturday, Sunday)
-console.log('ar-SA Weekend Days:', sa.intl.weekend); // [5, 6] (Friday, Saturday)
-
-return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.weekend.includes(today.dow)}\`;`,
-
-			astro: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-celestial)
-const sydney = new Tempo('2026-07-01', { sphere: 'south' });
-const london = new Tempo('2026-07-01', { sphere: 'north' });
-
-console.log('Sydney in July:', sydney.term.astro, '-> Season:', sydney.term.szn);
-console.log('London in July:', london.term.astro, '-> Season:', london.term.szn);
-
-const equinox = new Tempo('2026-03-20', { sphere: 'north' });
-console.log('March 20 Equinox:', equinox.term.equinox);
-
-return \`Sydney: \${sydney.term.szn} | London: \${london.term.szn}\`;`,
-
-			celestial: `// 🌙 Celestial Solar & Lunar Ephemeris Demo (@magmacomputing/tempo-plugin-celestial)
-const now = new Tempo();
-console.log('Moon Phase:', now.term.lunar.phase);
-console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
-console.log('Is King Tide?', now.term.tides.isKingTide);
-
-return \`Phase: \${now.term.lunar.phase} (\${(now.term.lunar.illumination * 100).toFixed(0)}% illuminated)\`;`,
-
-			batch: `// ⚡ Parallel Bulk Mutation Demo (@magmacomputing/tempo-plugin-batch)
-const { BatchPlugin } = await import('@magmacomputing/tempo-plugin-batch');
-Tempo.use(BatchPlugin);
-
-const timestamps = [1700000000000, 1700086400000, 1700172800000];
-console.log('Original timestamps count:', timestamps.length);
-
-const mutated = await Tempo.batch(timestamps, { weeks: 1 });
-console.log('Mutated +1 week timestamps:', mutated);
-
-return \`Batch processed \${mutated.length} timestamps successfully!\`;`,
-
-			finance: `// 💼 Fiscal & Financial Math Demo (@magmacomputing/tempo-plugin-finance)
-const { FinanceNamespace } = await import('@magmacomputing/tempo-plugin-finance');
-Tempo.use(FinanceNamespace);
-
-const t = new Tempo('2026-07-15');
-console.log('Fiscal Quarter:', t.finance.fiscalQuarter);
-console.log('Tax Year:', t.finance.taxYear);
-console.log('Is Fiscal Year Start?', t.finance.isFiscalYearStart());
-
-return \`Fiscal Q\${t.finance.fiscalQuarter} (Tax Year \${t.finance.taxYear})\`;`,
-
-			snap: `// ⏱️ Time Snapping & Quantization Demo (@magmacomputing/tempo-plugin-snap)
-const { SnapPlugin } = await import('@magmacomputing/tempo-plugin-snap');
-Tempo.use(SnapPlugin);
-
-const t = new Tempo('2026-06-01T14:08:23Z');
-console.log('Original time:', t.format('{hh}:{mi}:{ss}'));
-
-// Snap to nearest 15-minute block
-const snapped15m = t.snap();
-console.log('Snapped (15m):', snapped15m.format('{hh}:{mi}:{ss}'));
-
-// Snap to 1-hour interval upward
-const snapHourUp = t.snap({ hh: 1, direction: 'up' });
-console.log('Snapped Up (1h):', snapHourUp.format('{hh}:{mi}:{ss}'));
-
-return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
-
-			sync: `// 🔄 Cross-Thread Time Sync Demo (@magmacomputing/tempo-plugin-sync)
-const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
-Tempo.use(SyncPlugin);
-
-Tempo.sync.startClock({ interval: 1 });
-try {
-  const buffer = Tempo.sync.getBuffer();
-  console.log('Clock buffer byte length:', buffer.byteLength);
-
-  const nowMs = Tempo.sync.now(buffer);
-  console.log('High-precision current epoch ms:', nowMs);
-
-  return \`Sync read successful (Epoch: \${nowMs})\`;
-} finally {
-  Tempo.sync.stopClock();
-}`,
-
-			ntp: `// 🌐 Network Time Sync & Drift Calibration (@magmacomputing/tempo-plugin-ntp)
-const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
-Tempo.use(NtpPlugin);
-
-console.log('Calibrating clock with remote time source...');
-const sample = await Tempo.ntp.sync('https://worldtimeapi.org/api/timezone/Etc/UTC');
-
-console.log('Sync Result: Offset', sample.offsetMs, 'ms (Uncertainty: ±' + sample.uncertaintyMs + 'ms, Samples: ' + sample.sampleCount + ')');
-console.log('Calibrated Tempo:', Tempo.ntp.now().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'));
-
-return \`Calibrated! Offset: \${Tempo.ntp.offset}ms | Local: \${new Tempo().format('{hh}:{mi}:{ss}.{ms}')} vs NTP: \${Tempo.ntp.now().format('{hh}:{mi}:{ss}.{ms}')}\`;`,
-
-			ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
-const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
-Tempo.use(TickerPlugin);
-
-console.log('Starting 1-second cadence ticker...');
-let count = 0;
-const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
-  count++;
-  console.log(\`Tick #\${count}:\`, t.format('{hh}:{mi}:{ss}'));
-  if (count >= 3) {
-    console.log('Ticker stopped after 3 ticks.');
-    stop();
-  }
-});
-
-return 'Ticker started (executes in console stream)';`,
-
-			seasons: `// 🌍 Hemispheric Seasons & Lunar Phases
-// Tempo terms are hemisphere-aware based on geo coordinates or sphere setting:
-const sydney = new Tempo('2026-07-01', { sphere: 'south' });
-const london = new Tempo('2026-07-01', { sphere: 'north' });
-
-console.log('Sydney in July:', sydney.term.szn); // "Winter"
-console.log('London in July:', london.term.szn); // "Summer"
-
-// Celestial Plugin (Lunar Phase):
-const now = new Tempo();
-console.log('Moon Phase:', now.term.lunar.phase);
-console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
-
-return \`Current Lunar Phase: \${now.term.lunar.phase}\`;`,
-
-			quarters: `// 💼 Fiscal Quarters and Tempo Math
-const t = new Tempo('2026-02-15', { sphere: 'north' });
-
-console.log('Quarter Key:', t.term.qtr); // "Q1"
-console.log('Quarter Label:', t.term.quarter.label); // "First Quarter"
-console.log('Quarter Start:', t.term.quarter.start.format('{yyyy}-{mm}-{dd}'));
-console.log('Quarter End:', t.term.quarter.end.format('{yyyy}-{mm}-{dd}'));
-
-// Chainable Semantic Term Mutation:
-const nextQtr = t.add({ '#quarter': 1 });
-console.log('Next Quarter (Key):', nextQtr.term.qtr); // "Q2"
-console.log('Next Quarter (Label):', nextQtr.term.quarter.label); // "Second Quarter"
-
-return nextQtr.format('Next quarter: {#quarter}');`,
-
-			dynamic: `// 📦 Dynamic Plugin Loading via native ESM
-console.log('Dynamically importing @magmacomputing/tempo-plugin-ticker...');
-const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
-
-// Register the dynamically imported plugin
-Tempo.use(TickerPlugin);
-
-console.log('TickerPlugin loaded and active!');
-return 'Dynamic import successful!';`,
-
-			ai: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
-const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
-Tempo.use(AiPlugin);
-
-// Quick-start trial provider (or configure BYOK: Tempo.ai.init({ provider: 'groq', apiKey: '...' }))
-await Tempo.ai.init({ provider: 'tempo', debug: true });
-
-// Parse complex cultural/relative calendar expression:
-const t = await Tempo.ai.parse("The Friday before Melbourne Cup next year");
-
-console.log('📅 Parsed:   ', t.format('{www}, {yyyy}-{mmm}-{dd}'));
-console.log('🧠 Reasoning:', t.ai?.reasoning);
-console.log('🎯 Provider: ', t.ai?.provider, \`(confidence: \${t.ai?.confidence})\`);
-
-if (t.ai?.limits?.remainingRequests !== undefined) {
-  const resetStr = t.ai.limits.resetAt ? t.ai.limits.resetAt.format('{hh}:{mi}:{ss}') : 'in 1h';
-  console.log('⏱️ Quota:    ', \`\${t.ai.limits.remainingRequests} req remaining (resets at \${resetStr})\`);
-}
-
-return t.iso;`
-		};
+		import { SNIPPETS } from './snippets.manifest.js';
 
 		const LOGO_TEMPO = `<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8" style="width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));">
 			<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
@@ -1462,12 +1181,23 @@ return t.iso;`
 				codeEditor.value = SNIPPETS[key];
 				updateLineNumbers();
 				updateEmbedFullLink();
+				clearConsole();
 				if (key === 'ai') {
 					autorunToggle.checked = false;
 					if (embedAutorunToggle) embedAutorunToggle.checked = false;
+					resultBox.className = 'result-box';
+					resultBox.style.color = 'var(--text-dim)';
+					resultBox.textContent = '⚡ Auto-run paused for AI to conserve quota. Press ▶ Run (Ctrl+Enter) to evaluate with live LLM.';
+					evalTimeEl.textContent = '0.0 ms';
+					if (quotaBadge) quotaBadge.style.display = 'none';
 				} else {
 					autorunToggle.checked = true;
 					if (embedAutorunToggle) embedAutorunToggle.checked = true;
+					resultBox.className = 'result-box';
+					resultBox.style.color = 'inherit';
+					resultBox.textContent = 'Evaluating...';
+					evalTimeEl.textContent = '0.0 ms';
+					if (quotaBadge) quotaBadge.style.display = 'none';
 				}
 				if (autoRun && isReady && autorunToggle.checked) executeCode();
 			}

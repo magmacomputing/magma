@@ -107,3 +107,4 @@ ${manifestEntries}
 	fs.writeFileSync(replManifestPath, manifestContent);
 	console.log(`Successfully generated REPL manifest at ${replManifestPath}`);
 }
+

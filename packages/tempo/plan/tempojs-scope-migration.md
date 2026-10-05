@@ -165,7 +165,7 @@ To avoid breaking existing v4.x projects upon release of v5.0.0:
 
 ---
 
-## 8. Node.js Engine Support & Testing Matrix
+## 8.Version 5.0.0 Considerations
 
 ### 8.1 Node.js LTS Lifecycle & Compatibility Policy
 - **OpenJS Foundation Release Cadence**: Even-numbered Node.js releases follow a 30-month lifecycle (Current $\to$ Active LTS $\to$ Maintenance LTS).
@@ -186,4 +186,8 @@ To avoid breaking existing v4.x projects upon release of v5.0.0:
    - **Node 26**: Recommended as `latest` / canary to catch engine changes early.
 3. **v5.0.0 Target Baseline**:
    - For the **v5.0.0** `@tempo-dev` release, bump `engines.node` to `">=22.0.0"` and sunset Node 20 testing, aligning the modern scope with current LTS standards and Temporal runtime enhancements.
+
+### 8.3 Producing separate versions of user-docs
+
+Should we have a user-doc switch to display version 5 vs verion 4 of Tempo ?
 
