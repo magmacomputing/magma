@@ -1,12 +1,16 @@
 import { Tempo } from '#tempo';
 
 describe('Era Parsing Engine', () => {
+	// Dual matchers supporting legacy @js-temporal/polyfill (Node < 26) and native TC39 Temporal (Node 26+)
+	const eraBCE = /^(?:bce|gregory-inverse)$/i;
+	const eraCE = /^(?:ce|gregory)$/i;
+
 	test('parses year and era (trailing BC)', () => {
 		const t = new Tempo('200 BC');
 		expect(t.yy).toBe(-199);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(1);
-		expect(t.era).toMatch(/gregory-inverse/i);
+		expect(t.era).toMatch(eraBCE);
 	});
 
 	test('parses year and era (leading BC)', () => {
@@ -14,13 +18,13 @@ describe('Era Parsing Engine', () => {
 		expect(t.yy).toBe(-199);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(1);
-		expect(t.era).toMatch(/gregory-inverse/i);
+		expect(t.era).toMatch(eraBCE);
 	});
 
 	test('parses year and era (trailing BCE)', () => {
 		const t = new Tempo('200 BCE');
 		expect(t.yy).toBe(-199);
-		expect(t.era).toMatch(/gregory-inverse/i);
+		expect(t.era).toMatch(eraBCE);
 	});
 
 	test('parses year and era (trailing AD)', () => {
@@ -28,25 +32,25 @@ describe('Era Parsing Engine', () => {
 		expect(t.yy).toBe(1);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(1);
-		expect(t.era).toMatch(/gregory/i); // depending on how era getter is implemented
+		expect(t.era).toMatch(eraCE);
 	});
 
 	test('parses year and era (trailing b.c.)', () => {
 		const t = new Tempo('200 b.c.');
 		expect(t.yy).toBe(-199);
-		expect(t.era).toMatch(/gregory-inverse/i);
+		expect(t.era).toMatch(eraBCE);
 	});
 
 	test('parses year and era (trailing a.d.)', () => {
 		const t = new Tempo('1 a.d.');
 		expect(t.yy).toBe(1);
-		expect(t.era).toMatch(/gregory/i);
+		expect(t.era).toMatch(eraCE);
 	});
 
 	test('parses year and era (trailing CE)', () => {
 		const t = new Tempo('2026 CE');
 		expect(t.yy).toBe(2026);
-		expect(t.era).toMatch(/gregory/i);
+		expect(t.era).toMatch(eraCE);
 	});
 
 	test('parses 1 BC as Astronomical Year 0', () => {
@@ -59,7 +63,7 @@ describe('Era Parsing Engine', () => {
 		expect(t.yy).toBe(-43);
 		expect(t.mm).toBe(3);
 		expect(t.dd).toBe(15);
-		expect(t.era).toMatch(/gregory-inverse/i);
+		expect(t.era).toMatch(eraBCE);
 	});
 
 	test('implicit defaults assume CE when omitted', () => {

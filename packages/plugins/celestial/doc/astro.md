@@ -45,6 +45,11 @@ const winterSouth = new Tempo('2026-07-15', { sphere: 'south' });
 console.log(winterSouth.term.astro);             // 'Summer' (astronomy quarter key)
 console.log(winterSouth.term.astronomy.season);  // 'Winter' (actual hemisphere season)
 console.log(winterSouth.term.astronomy.event);   // 'Solstice'
+
+// 3. Automatic sphere derivation via geographic coordinates
+const sydney = new Tempo('2026-07-15', { geo: { lat: -33.8688, lng: 151.2093 } });
+console.log(sydney.sphere);                      // 'south' (auto-derived from negative latitude)
+console.log(sydney.term.astronomy.season);       // 'Winter'
 ```
 
 ---

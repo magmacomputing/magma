@@ -21,8 +21,8 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   > [!NOTE]
   > **Do not include `"src"` in `"files"`**. The build step (`tsup && tsc`) generates all production artifacts, source maps, and declaration types into `dist/`. Publishing `"src"` adds unnecessary weight to the npm package tarball without providing runtime or typing benefits.
 - **Dependencies (`peerDependencies` vs `devDependencies`)**:
-  - `peerDependencies`: Always declare `@magmacomputing/tempo` as a peer dependency (e.g. `"^4.4.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
-  - `devDependencies`: Include `@magmacomputing/tempo` under `devDependencies` so the plugin can resolve imports, compile TypeScript types, and execute local unit tests without bundling Tempo into production dependencies.
+  - `peerDependencies`: Always declare `@magmacomputing/tempo` as a peer dependency (e.g. `"^4.5.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
+  - `devDependencies`: **Must** include `@magmacomputing/tempo` under `devDependencies` (e.g. `"^4.5.0"` matching the peer dependency version). This ensures that local TypeScript compilation (`tsc`) and bundling resolve all Tempo core types and ambient declarations during monorepo builds. Do **not** declare `@magmacomputing/library` directly; access shared library helpers and types via `@magmacomputing/tempo/library` or `@magmacomputing/tempo/plugin/sdk`.
   - `dependencies`: Community plugins should keep production `dependencies` as lean as possible (or empty) to minimize supply-chain surface area.
 - **PublishConfig**: Configure public npm publishing:
   ```json
@@ -59,7 +59,7 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   ]
   ```
 - **Scripts**: 
-  - Ensure `"build": "tsup && tsc"` is present.
+  - Standard build: `"build": "tsup && tsc"`.
   - Include the prepublish safeguard: `"prepublishOnly": "tempo-cli prepublish"`.
   - Include the correct test script: `"test": "vitest run -c ../vitest.shared.ts"`.
 - **Keywords**: Ensure relevant keywords are present (`tempo`, `tempo-plugin`, `magmacomputing`, `temporal`, `plugin`, etc.).
@@ -86,7 +86,7 @@ To ensure standard monorepo builds, include a `tsup.config.ts` that extends the 
 
 ```typescript
 import { defineConfig } from 'tsup';
-import { sharedConfig } from '../tsup.shared.ts';
+import { sharedConfig } from '../tsup.shared.js';
 
 export default defineConfig({
 	...sharedConfig,
@@ -106,7 +106,9 @@ And a root `tsconfig.json` that outputs type declarations:
     "outDir": "./dist",
     "rootDir": "./src",
     "declaration": true,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "types": ["node"],
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src"
@@ -114,7 +116,19 @@ And a root `tsconfig.json` that outputs type declarations:
 }
 ```
 
-## 3. Test Configuration (`test/tsconfig.json`)
+### Type Declaration (`.d.ts`) Strategies
+
+1. **Standard Pattern (Recommended for Most Plugins)**:
+   - Keep `dts` omitted (or `false`) in `tsup.config.ts`.
+   - Set `"build": "tsup && tsc"`.
+   - `tsup` compiles and bundles the JavaScript artifacts (`ESM` + `IIFE`), and `tsc` emits declaration files directly into `dist/` based on `tsconfig.json`. This is fast, robust, and used across almost all Tempo community plugins.
+
+2. **Bundled DTS Pattern (`dts: true`)**:
+   - For complex, multi-directory plugins with extensive internal module structures (e.g., `@magmacomputing/tempo-plugin-ai` with `src/core/`, `src/functions/`, `src/types/`), you can specify `dts: true` in `tsup.config.ts` to bundle all types into a single rolled-up `dist/index.d.ts`.
+   - When using `dts: true`, set your build script to `"build": "tsup && tsc --noEmit --emitDeclarationOnly false"` so that `tsc` performs type validation without overwriting `tsup`'s bundled declaration output.
+   - **Immutability / Proxy Typing Note**: When returning payloads wrapped with `secure()`, preserve `secure()`'s deep-readonly public result type rather than casting back to a mutable type. Model return structures with explicit `readonly` modifiers (e.g., `readonly events: readonly TempoExtractedEvent[]` where nested fields such as `TempoExtractedEvent.label` remain `readonly`) and model `Tempo` instances directly so nested fields remain deeply immutable and type-safe.
+
+## 4. Test Configuration (`test/tsconfig.json`)
 
 To ensure your tests are properly type-checked in isolation, create a `test/tsconfig.json` file that extends the root test configuration:
 
@@ -135,7 +149,7 @@ To ensure your tests are properly type-checked in isolation, create a `test/tsco
 > **Automatic Monorepo Vitest Resolution**:
 > All `@magmacomputing/tempo-plugin-*` packages are dynamically resolved from source (`packages/plugins/<name>/src/index.ts`) via global wildcard aliases in `vitest.shared.ts` and `vitest.config.mts`. You do **not** need to manually edit any Vitest configuration files when creating a new plugin.
 
-## 4. Documentation Architecture (`README.md` & `doc/`)
+## 5. Documentation Architecture (`README.md` & `doc/`)
 
 Community plugins follow a structured, modular documentation model designed to provide quick developer onboarding while offering comprehensive architectural depth for mission-critical deployments.
 
@@ -278,7 +292,7 @@ To maintain complete visual and design consistency across READMEs, documentation
 >
 > **No `file://` Reference Links**: Never use absolute local `file://` links in `README.md`, `doc/index.md`, or notes. These links break when VitePress compiles documentation for GitHub Pages and will not resolve for users on npm or GitHub. Always use standard relative links (e.g., `../[section]/[file].md` or `/doc/9-plugins/[name].index`) or public HTTPS URLs.
 
-## 5. Source Code (`src/index.ts`)
+## 6. Source Code (`src/index.ts`)
 
 - Rely strictly on open core extensions (`definePlugin`, `defineTerm`, `defineNamespace`).
 - While optional, it is highly recommended to provide a short `description` when using `defineTerm` (e.g., `description: 'My custom term'`) so it appears in the `Tempo.terms` registry.
@@ -303,7 +317,7 @@ To maintain complete visual and design consistency across READMEs, documentation
 >    *Rationale*: This protects the host class from monkey-patching, accidental mutation, and tampering, while ensuring compatibility with Tempo's internal `@Immutable` and `@Securable` engines.
 > 3. **Fluent Immutable Instance Methods**: Instance methods attached to `Tempo.prototype` must adhere to Tempo's immutable design principles. Methods should return a **new** enriched or transformed `Tempo` instance (e.g., `return new TempoClass(this, { ... })`) rather than mutating `this` in place.
 
-## 6. TypeScript Documentation (TSDoc)
+## 7. TypeScript Documentation (TSDoc)
 
 All exported components (functions, interfaces, classes, and types) must be properly documented using the standard Magma TSDoc format. This ensures rich intellisense tooltips for developers utilizing the plugin.
 
@@ -325,7 +339,7 @@ All exported components (functions, interfaces, classes, and types) must be prop
 export function myExportedFunction(input: string): string { ... }
 ```
 
-## 7. Monorepo & CI Configuration
+## 8. Monorepo & CI Configuration
 
 ### A. Update Monorepo Lockfile (`package-lock.json`)
 
@@ -415,7 +429,7 @@ When introducing or retiring a plugin, register it across the browser REPL playg
    - Remove its entries from import maps in `index.html` and `showcase.html`.
    - Prune preset references from `CatalogList.vue`, `PluginRepl.vue`, and `index.html`.
 
-## 8. Initial Release & Trusted Publisher Configuration (OIDC & Provenance)
+## 9. Initial Release & Trusted Publisher Configuration (OIDC & Provenance)
 
 NPM Trusted Publishing (OIDC) requires that a package **already exists** on the npm registry before its access settings can be configured. Therefore, introducing a new plugin involves a one-time bootstrap step followed by configuring automated CI releases:
 

@@ -117,12 +117,16 @@
         "link": "/doc/9-plugins/celestial.lunar"
       },
       {
-        "text": "Astronomical Tidal Mechanics & Coastal Predictions",
-        "link": "/doc/9-plugins/celestial.tides"
-      },
-      {
         "text": "Production Use Cases & Architectural Patterns",
         "link": "/doc/9-plugins/celestial.use-cases-and-patterns"
+      },
+      {
+        "text": "Astronomical Seasons, Solstices & Equinoxes",
+        "link": "/doc/9-plugins/celestial.astro"
+      },
+      {
+        "text": "Astronomical Tidal Mechanics & Coastal Predictions",
+        "link": "/doc/9-plugins/celestial.tidal"
       }
     ]
   },
@@ -306,10 +310,6 @@
     "text": "Single-Feature Community Plugins",
     "collapsed": true,
     "items": [
-      {
-        "text": "Astro (Seasons & Solstices)",
-        "link": "/doc/9-plugins/astro.index"
-      },
       {
         "text": "Finance (Fiscal & Business)",
         "link": "/doc/9-plugins/finance.index"

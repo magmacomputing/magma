@@ -107,7 +107,7 @@ describe('Colocated Plugin Options & Factories', () => {
 	});
 
 	test('Pattern 1 with Term Plugins: Callable Term Factory', () => {
-		const AstroTerm = defineTerm({
+		const CustomTerm = defineTerm({
 			key: 'colocatedAstro',
 			scope: 'colocatedAstro',
 			description: 'Astronomical seasons test term',
@@ -116,7 +116,7 @@ describe('Colocated Plugin Options & Factories', () => {
 			},
 		});
 
-		Tempo.use(AstroTerm({ sphere: 'south', precision: 'high' }));
+		Tempo.use(CustomTerm({ sphere: 'south', precision: 'high' }));
 
 		expect(Tempo.config.pluginOptions?.colocatedAstro?.sphere).toBe('south');
 		expect(Tempo.config.pluginOptions?.colocatedAstro?.precision).toBe('high');

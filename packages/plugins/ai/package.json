@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "*"
+    "@magmacomputing/tempo": "^4.5.0"
   },
   "keywords": [
     "tempo",

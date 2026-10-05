@@ -12,17 +12,17 @@ export type TempoEventType = 'event' | 'deadline' | 'reminder' | 'point' | 'inte
  */
 export interface TempoExtractedEvent {
 	/** Human-readable event title or description */
-	label: string;
+	readonly label: string;
 	/** Start date-time of the event as a native Tempo instance */
-	start: Tempo;
+	readonly start: Tempo;
 	/** Optional end date-time of the event as a native Tempo instance */
-	end?: Tempo | undefined;
+	readonly end?: Tempo | undefined;
 	/** Entity category classification */
-	type: TempoEventType;
+	readonly type: TempoEventType;
 	/** The exact text snippet/substring extracted from the source input */
-	rawText?: string | undefined;
+	readonly rawText?: string | undefined;
 	/** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */
-	confidence: number;
+	readonly confidence: number;
 }
 
 /**
@@ -31,7 +31,7 @@ export interface TempoExtractedEvent {
  */
 export interface TempoAiExtractResult extends TempoBaseAiResult {
 	/** Array of extracted events and temporal entities */
-	events: TempoExtractedEvent[];
+	events: readonly TempoExtractedEvent[];
 }
 
 /**

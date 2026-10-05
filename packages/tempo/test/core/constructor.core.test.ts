@@ -29,7 +29,7 @@ describe('Tempo Core', () => {
 		describe("mode: 'strict'", () => {
 			it('should throw immediately on invalid TimeZone', () => {
 				// Even with a valid-looking date, 'strict' forces immediate validation of all options
-				expect(() => new Tempo('2024-01-01', { mode: Tempo.MODE.Strict, timeZone: 'Invalid/Zone' })).toThrow(/Tempo: Unrecognized time zone Invalid\/Zone/);
+				expect(() => new Tempo('2024-01-01', { mode: Tempo.MODE.Strict, timeZone: 'Invalid/Zone' })).toThrow(/(?:Tempo: Unrecognized time zone Invalid\/Zone|Temporal error: Not a valid time zone string)/i);
 			});
 		});
 

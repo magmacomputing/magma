@@ -19,10 +19,6 @@ on:
         description: 'tempo-plugin-ai'
         type: boolean
         default: false
-      plugin_astro:
-        description: 'tempo-plugin-astro'
-        type: boolean
-        default: false
       plugin_batch:
         description: 'tempo-plugin-batch'
         type: boolean
@@ -91,7 +87,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
@@ -108,7 +104,6 @@ jobs:
           INPUT_TEMPO: ${{ inputs.tempo }}
           INPUT_TEMPO_FNS: ${{ inputs.tempo_fns }}
           INPUT_PLUGIN_AI: ${{ inputs.plugin_ai }}
-          INPUT_PLUGIN_ASTRO: ${{ inputs.plugin_astro }}
           INPUT_PLUGIN_BATCH: ${{ inputs.plugin_batch }}
           INPUT_PLUGIN_CELESTIAL: ${{ inputs.plugin_celestial }}
           INPUT_PLUGIN_DIALECTS: ${{ inputs.plugin_dialects }}
@@ -128,7 +123,6 @@ jobs:
             PKGS=(
               "@magmacomputing/tempo"
               "@magmacomputing/tempo-fns"
-              "@magmacomputing/tempo-plugin-astro"
               "@magmacomputing/tempo-plugin-celestial"
               "@magmacomputing/tempo-plugin-ai"
               "@magmacomputing/tempo-plugin-batch"
@@ -146,7 +140,6 @@ jobs:
             [ "$INPUT_TEMPO" = "true" ] && PKGS+=("@magmacomputing/tempo")
             [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("@magmacomputing/tempo-fns")
             [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ai")
-            [ "$INPUT_PLUGIN_ASTRO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-astro")
             [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
             [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-celestial")
             [ "$INPUT_PLUGIN_DIALECTS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-dialects")

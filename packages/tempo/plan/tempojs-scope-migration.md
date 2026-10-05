@@ -211,3 +211,42 @@ Keep publishing under the organization namespace while emphasizing the product b
 * **Pros**: Zero migration risk, no dispute process required, clear corporate provenance.
 * **Cons**: Slightly longer package import strings.
 
+#### Path D: Adopt a Developer-First Scope (`@tempo-dev/*`)
+Adopt the `@tempo-dev` scope aligned with a `tempo.dev` domain identity.
+* **Pros**: 100% developer-targeted branding; completely eliminates name collisions with `@formkit/tempo`; mirrors top-tier dev ecosystems (e.g. `@sst-dev`, `@payload-dev`, `@livekit-dev`).
+* **Cons**: Requires migration of existing published packages for v5.0.0.
+
+---
+
+### 6.5 Scoped Package Architecture & Subpath Exports Mapping
+
+In modern npm ecosystems, scopes require the `@<scope>/<package-name>` structure. Below is the architectural mapping for v5.0.0 imports utilizing subpath exports:
+
+| Use Case | Recommended Import Path | Package Architecture |
+| :--- | :--- | :--- |
+| **Full Fluent Engine** | `import { Tempo } from '@tempo-dev/tempo'` | Root export of `@tempo-dev/tempo` (`.`) |
+| **Tree-shakeable Parser** | `import { parse } from '@tempo-dev/tempo/parse'` | Subpath export on `@tempo-dev/tempo` (`./parse`) |
+| **Tree-shakeable Formatter**| `import { format } from '@tempo-dev/tempo/format'` | Subpath export on `@tempo-dev/tempo` (`./format`) |
+| **Tree-shakeable Mutator** | `import { mutate } from '@tempo-dev/tempo/mutate'` | Subpath export on `@tempo-dev/tempo` (`./mutate`) |
+| **Bare Minimal Core** | `import { TempoCore } from '@tempo-dev/tempo/core'` | Subpath export on `@tempo-dev/tempo` (`./core`) |
+| **Functional Helpers** | `import { isWeekend, daysInMonth } from '@tempo-dev/fns'` | Standalone package `@tempo-dev/fns` |
+| **Domain Plugins** | `import { CelestialPlugin } from '@tempo-dev/plugin-celestial'` | Modular plugin packages `@tempo-dev/plugin-*` |
+
+#### Example `package.json` Subpath Configuration (`@tempo-dev/tempo`):
+```json
+{
+  "name": "@tempo-dev/tempo",
+  "exports": {
+    ".": "./dist/tempo.index.js",
+    "./core": "./dist/core.index.js",
+    "./parse": "./dist/module/module.parse.js",
+    "./format": "./dist/module/module.format.js",
+    "./mutate": "./dist/module/module.mutate.js",
+    "./duration": "./dist/module/module.duration.js",
+    "./library": "./dist/library.index.js",
+    "./plugin/sdk": "./dist/plugin/plugin.sdk.js"
+  }
+}
+```
+
+

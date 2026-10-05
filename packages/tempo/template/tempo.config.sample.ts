@@ -40,7 +40,7 @@ export default defineConfig({
 	plugins: [
 		// Pattern 0 — Bare registration (default options, backward-compatible):
 		// FinanceNamespace,
-		// AstroTerm,
+		// CelestialPlugin,
 		// TickerPlugin,
 
 		// Pattern 1 — Factory closure (colocated options, Vite/Rollup style):

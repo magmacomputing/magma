@@ -11,7 +11,7 @@ In the Tempo ecosystem, a **Plugin** is the universal overarching term for any f
 ## Naming Convention Standard
 To provide a consistent and intuitive developer experience, the exported symbol of your plugin should use a suffix that directly matches the factory used to construct it. This makes it instantly obvious to consumers how the extension will attach to the Tempo core:
 - Built with `definePlugin` ➡️ **`[Name]Plugin`** (e.g., `TickerPlugin`)
-- Built with `defineTerm` ➡️ **`[Name]Term`** (e.g., `AstroTerm`)
+- Built with `defineTerm` ➡️ **`[Name]Term`** (e.g., `FiscalTerm`)
 - Built with `defineNamespace` ➡️ **`[Name]Namespace`** (e.g., `FinanceNamespace`)
 
 *(Note: The `Module` suffix and `defineModule` factory are strictly reserved for Tempo's core internal injection APIs like `ParseModule` and should not be used by external plugins.)*

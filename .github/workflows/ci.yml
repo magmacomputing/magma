@@ -17,16 +17,21 @@ permissions:
 
 jobs:
   library:
-    name: Library Tests
+    name: Library Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24', '26']
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (${{ matrix.node-version }})
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
@@ -34,17 +39,22 @@ jobs:
         run: npm test --workspace=@magmacomputing/library
 
   tempo:
-    name: Standard Tests
+    name: Standard Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: library
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24', '26']
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (${{ matrix.node-version }})
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
@@ -53,38 +63,48 @@ jobs:
         working-directory: packages/tempo
 
   plugins:
-    name: Plugin Tests
+    name: Plugin Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: tempo
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24', '26']
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (${{ matrix.node-version }})
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
       - name: Build Core
         run: npm run build:tempo
       - name: Run plugin tests
-        run: npm test --if-present --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-astro --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker --workspace=@magmacomputing/tempo-plugin-ai
+        run: npm test --if-present --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-celestial --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker --workspace=@magmacomputing/tempo-plugin-ai
         working-directory: packages/plugins
 
   functions:
-    name: Functions Tests
+    name: Functions Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: tempo
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['22', '24', '26']
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (${{ matrix.node-version }})
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
@@ -92,3 +112,17 @@ jobs:
         run: npm run build:tempo
       - name: Run functions tests
         run: npm test --workspace=@magmacomputing/tempo-fns
+
+  standard-tests-gate:
+    name: Standard Tests
+    runs-on: ubuntu-latest
+    needs: [library, tempo, plugins, functions]
+    if: always()
+    steps:
+      - name: Verify all matrix runs passed
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "One or more matrix test suites failed."
+            exit 1
+          fi
+          echo "All Node matrix test suites passed successfully!"

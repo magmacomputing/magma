@@ -38,7 +38,7 @@
     }
   },
   "include": [
-    "**/*.test.ts"
+    "**/*.ts"
   ],
   "references": [
     {

@@ -17,10 +17,10 @@ All official and community plugins are 100% open source under the MIT license an
 Tempo plugins are published as scoped packages on the standard npm registry (`npmjs.com`). Install plugins using your package manager of choice:
 
 ```bash
-npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro  # npm
-pnpm add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # pnpm
-yarn add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro     # yarn
-bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-astro      # bun
+npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial  # npm
+pnpm add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial     # pnpm
+yarn add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial     # yarn
+bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial      # bun
 ```
 
 ---
@@ -51,9 +51,9 @@ Register plugins dynamically at runtime using `Tempo.extend()`:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-astro';
+import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
-Tempo.extend(AstroTerm);
+Tempo.extend(CelestialPlugin);
 
 const t = new Tempo('2026-03-20', { sphere: 'north' });
 console.log(t.term.astro); // Discovers equinoxes and astronomical seasons
@@ -71,13 +71,13 @@ When using pre-bundled scripts directly in HTML via `<script>` tags, plugins att
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.min.js"></script>
 
 <!-- 2. Plugin Script -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-astro@2/dist/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.global.min.js"></script>
 
 <script>
   const { Tempo, plugins } = Magma;
 
   // Register the plugin
-  Tempo.extend(plugins.astro);
+  Tempo.extend(plugins.celestial);
 
   const t = new Tempo('next friday');
   console.log(t.toString());

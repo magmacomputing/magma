@@ -100,7 +100,8 @@ export default defineConfig({
           name: 'Library',
           color: 'magenta',
           include: ['packages/library/test/**/*.{test,spec}.ts'],
-          exclude: ['**/node_modules/**'],
+          exclude: ['**/node_modules/**', '**/dist/**'],
+          setupFiles: ['./packages/library/test/setup.ts'],
         } as any
       },
       {

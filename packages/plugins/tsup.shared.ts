@@ -13,7 +13,7 @@ if (fs.existsSync(pkgPath)) {
 	const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 	if (pkg.name) {
 		const shortName = pkg.name.split('/').at(-1) || 'unknown';
-		// Convert 'tempo-plugin-astro' to 'astro' to avoid invalid JavaScript identifiers (hyphens)
+		// Convert 'tempo-plugin-celestial' to 'celestial' to avoid invalid JavaScript identifiers (hyphens)
 		pkgName = shortName.replace('tempo-plugin-', '');
 	}
 }

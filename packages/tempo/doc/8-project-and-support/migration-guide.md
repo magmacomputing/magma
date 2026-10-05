@@ -65,7 +65,7 @@ Tempo v4.1.0 introduces cascading configuration inheritance (`extends`), a dedic
 In v4.1.0, configuration, plugin registration, and runtime options have been cleanly separated:
 
 - **Configuration Inheritance (`extends`)**: The `extends` option in `Tempo.init()` or `tempo.config.json` is strictly reserved for cascading configuration inheritance via local file paths or `file://` URLs (mirroring `tsconfig.json` and ESLint conventions): `extends: './tempo-base.json'`.
-- **Plugin Registration (`plugins`)**: Pass executable plugins, terms, and modules into `plugins: [TickerPlugin, AstroTerm]`.
+- **Plugin Registration (`plugins`)**: Pass executable plugins, terms, and modules into `plugins: [TickerPlugin, CelestialPlugin]`.
 - **Plugin Configuration Slot (`pluginOptions`)**: Pass runtime configuration defaults for plugins into `pluginOptions: { ticker: { interval: 500 } }`. The 'plugins' key as a JSON of plugin-configuration settings has been migrated to `pluginOptions` so as not to overload the `plugins` key (which registers Plugin instances / Terms / Modules / Namespaces).
 - **Imperative Registration (`Tempo.use`)**: Use the standard `Tempo.use(Plugin)` static method to register plugins, terms, or modules at runtime. `Tempo.extend()` is `@deprecated Use Tempo.use(...) instead.`.
 
@@ -74,7 +74,7 @@ In v4.1.0, configuration, plugin registration, and runtime options have been cle
 // ✅ v4.1.0: Clean Separation
 Tempo.init({
   extends: './tempo-base.json',                                     // Configuration inheritance
-  plugins: [TickerPlugin, AstroTerm],                               // Feature & Term registration
+  plugins: [TickerPlugin, CelestialPlugin],                         // Feature & Term registration
   pluginOptions: {                                                  // Plugin runtime options
     ticker: { interval: 500 }
   }
@@ -93,7 +93,7 @@ In v4.1.0, `Tempo.create()` introduces deterministic resource cleanup via TC39 E
 - **Scoped Callback Mode**: Run isolated operations without leaking sandbox state to the global scope:
   ```typescript
   const season = Tempo.create((sb) => {
-    sb.use(AstroPlugin);
+    sb.use(CelestialPlugin);
     return sb('2026-06-21').term.astronomy.season;
   }); // sandbox automatically disposed upon completion
   ```

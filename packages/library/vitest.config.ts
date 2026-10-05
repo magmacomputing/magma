@@ -23,9 +23,9 @@ export default defineConfig({
     pool: 'forks',
     maxWorkers: 2,
     slowTestThreshold: 2_000,
-    environment: 'node',
     include: ['test/**/*.{test,spec}.ts'],
-    setupFiles: [resolve(__dirname, '../tempo/bin/temporal-polyfill.ts')],
+    exclude: ['**/node_modules/**', 'dist/**'],
+    setupFiles: [resolve(__dirname, './test/setup.ts')],
   },
   resolve: {
     alias: isDist ? [
