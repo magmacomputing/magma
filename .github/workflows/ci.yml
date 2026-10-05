@@ -17,16 +17,28 @@ permissions:
 
 jobs:
   library:
-    name: Library Tests
+    name: Library Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ${{ github.event_name == 'pull_request' && fromJSON('["pinned"]') || fromJSON('["22", "24", "26"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (from .node-version)
+        if: matrix.node-version == 'pinned'
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - name: Setup Node (${{ matrix.node-version }})
+        if: matrix.node-version != 'pinned'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
@@ -34,17 +46,29 @@ jobs:
         run: npm test --workspace=@magmacomputing/library
 
   tempo:
-    name: Standard Tests
+    name: Standard Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: library
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ${{ github.event_name == 'pull_request' && fromJSON('["pinned"]') || fromJSON('["22", "24", "26"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (from .node-version)
+        if: matrix.node-version == 'pinned'
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - name: Setup Node (${{ matrix.node-version }})
+        if: matrix.node-version != 'pinned'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
@@ -53,17 +77,29 @@ jobs:
         working-directory: packages/tempo
 
   plugins:
-    name: Plugin Tests
+    name: Plugin Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: tempo
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ${{ github.event_name == 'pull_request' && fromJSON('["pinned"]') || fromJSON('["22", "24", "26"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (from .node-version)
+        if: matrix.node-version == 'pinned'
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - name: Setup Node (${{ matrix.node-version }})
+        if: matrix.node-version != 'pinned'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
@@ -74,17 +110,29 @@ jobs:
         working-directory: packages/plugins
 
   functions:
-    name: Functions Tests
+    name: Functions Tests (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: tempo
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ${{ github.event_name == 'pull_request' && fromJSON('["pinned"]') || fromJSON('["22", "24", "26"]') }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - name: Setup Node (from .node-version)
+        if: matrix.node-version == 'pinned'
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: '.node-version'
+          cache: 'npm'
+      - name: Setup Node (${{ matrix.node-version }})
+        if: matrix.node-version != 'pinned'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
