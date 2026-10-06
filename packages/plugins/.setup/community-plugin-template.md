@@ -316,6 +316,24 @@ To maintain complete visual and design consistency across READMEs, documentation
 >    ```
 >    *Rationale*: This protects the host class from monkey-patching, accidental mutation, and tampering, while ensuring compatibility with Tempo's internal `@Immutable` and `@Securable` engines.
 > 3. **Fluent Immutable Instance Methods**: Instance methods attached to `Tempo.prototype` must adhere to Tempo's immutable design principles. Methods should return a **new** enriched or transformed `Tempo` instance (e.g., `return new TempoClass(this, { ... })`) rather than mutating `this` in place.
+> 4. **Standardized Logging & Diagnostic Output (`logWarn`, `logError`, `logDebug`)**: Plugins must **never** write directly to native `console.log`, `console.warn`, or `console.error`. Instead, import standard logging hooks from `@magmacomputing/tempo/plugin/sdk`:
+>    ```typescript
+>    import { logWarn, logError, logDebug } from '@magmacomputing/tempo/plugin/sdk';
+>    ```
+>    When logging diagnostic warnings, non-fatal operational errors, or debug details from within plugin methods or callbacks, pass the active `Tempo` instance configuration (`(t as any)?.config` or `(this as any)?.config`) as the second argument:
+>    ```typescript
+>    // Non-fatal operational warnings (e.g. missing coordinates, fallback triggers)
+>    logWarn("CelestialPlugin: Valid 'geo' coordinates were not provided.", config);
+>
+>    // Background task / callback failures (e.g. interval ticker failures, async rejections)
+>    logError(err, config);
+>
+>    // Verbose diagnostics (only shown when config.debug is enabled)
+>    logDebug(`[NTP] Packet received: offset=${offset}ms`, config);
+>    ```
+>    *Rationale*: Routing log output through Tempo's unified SDK log hooks guarantees that user runtime configurations (such as `{ silent: true }` to suppress console noise in CI/REPLs, custom logger delegates, or debug verbosity levels) are universally honored across all plugins.
+>    
+>    *Error Control Flow (`catch: false` vs `catch: true`)*: `logError(err, config)` automatically throws `err` when `config.catch` is `false` (default) and swallows it gracefully when `config.catch` is `true`. Plugin authors do **not** need manual `if (!config.catch) throw err;` boilerplate—invoking `logError(new Error('...'), this.config)` handles both throwing and logging automatically.
 
 ## 7. TypeScript Documentation (TSDoc)
 

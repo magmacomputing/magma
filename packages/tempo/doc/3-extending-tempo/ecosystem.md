@@ -2,7 +2,7 @@
 
 # Plugin Ecosystem
 
-Tempo's functionality can be easily extended through community and premium plugins. Because of Tempo's unique core architecture, plugins add exactly 0 bytes to the bundle size of developers who do not use them.
+Tempo's functionality can be easily extended through community plugins. Because of Tempo's unique core architecture, plugins add exactly 0 bytes to the bundle size of developers who do not use them.
 
 Browse the live catalog below to discover extensions for scheduling, calendar math, astronomical events, and more.
 

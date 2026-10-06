@@ -6,7 +6,7 @@
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
-    "version": "1.2.0"
+    "version": "1.2.1"
   },
   {
     "id": "batch",
@@ -33,7 +33,7 @@
     "packageName": "@magmacomputing/tempo-plugin-snap",
     "plan": "community",
     "status": "active",
-    "version": "1.4.0"
+    "version": "1.4.1"
   },
   {
     "id": "sync",
@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.6.0"
+    "version": "2.6.1"
   },
   {
     "id": "geo",

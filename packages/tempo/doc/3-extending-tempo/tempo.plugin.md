@@ -131,6 +131,19 @@ if (errorCondition) {
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
+### 5. Unified Logging Hooks (`logWarn`, `logError`, `logDebug`)
+Plugins should avoid invoking raw `console.warn`, `console.error`, or `console.log` directly. Instead, import and use the standard logging hooks exported by `@magmacomputing/tempo/plugin/sdk`:
+
+```typescript
+import { logWarn, logError, logDebug } from '@magmacomputing/tempo/plugin/sdk';
+
+// Log operational warnings or errors while passing instance config
+logWarn("MyPlugin: Missing optional coordinate parameters.", this?.config);
+logError(err, this?.config);
+```
+
+Passing the instance configuration allows Tempo's logging subsystem to automatically respect `{ silent: true }`, custom logger delegates, and debug verbosity levels. Additionally, `logError(err, this?.config)` automatically throws the error when `config.catch` is `false` (the default) and swallows it gracefully when `catch: true`, eliminating the need for manual `if (!config.catch) throw` checks.
+
 ## Alternative: Standalone Functions (`tempo-fns`)
 
 The JavaScript ecosystem is divided between two architectural preferences: **Chained Fluent APIs** (like Tempo Plugins) and **Pure Standalone Functions** (for aggressive tree-shaking).

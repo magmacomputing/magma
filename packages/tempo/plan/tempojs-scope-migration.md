@@ -162,3 +162,32 @@ To avoid breaking existing v4.x projects upon release of v5.0.0:
 | **Architecture** | Single-purpose date formatting | Extensible engine: AI, Celestial, Geo, Spatial, Ticker, Holidays |
 | **Target Audience** | Day.js / date-fns migration projects | Future-proof TypeScript applications transitioning to native `Temporal` |
 | **Ecosystem Identity** | Component within FormKit forms | Independent developer platform (`tempo.dev` / `@tempo-dev`) |
+
+---
+
+## 8.Version 5.0.0 Considerations
+
+### 8.1 Node.js LTS Lifecycle & Compatibility Policy
+- **OpenJS Foundation Release Cadence**: Even-numbered Node.js releases follow a 30-month lifecycle (Current $\to$ Active LTS $\to$ Maintenance LTS).
+- **SemVer Major Bump Boundary**: Dropping support for an older Node runtime is a breaking change scheduled specifically for the **v5.0.0** release.
+
+### 8.2 Testing Matrix Across Node Versions
+1. **Current `engines` Contract (v4.x)**:
+   The root `package.json` specifies:
+   ```json
+   "engines": {
+     "node": ">=20.0.0"
+   }
+   ```
+2. **Recommended CI Matrix**:
+   - **Node 20**: Maintained in CI matrix for the `v4.x` series to support enterprise environments and CI runners.
+   - **Node 22**: Essential (Active / Maintenance LTS).
+   - **Node 24**: Essential (Active LTS).
+   - **Node 26**: Recommended as `latest` / canary to catch engine changes early.
+3. **v5.0.0 Target Baseline**:
+   - For the **v5.0.0** `@tempo-dev` release, bump `engines.node` to `">=22.0.0"` and sunset Node 20 testing, aligning the modern scope with current LTS standards and Temporal runtime enhancements.
+
+### 8.3 Producing separate versions of user-docs
+
+Should we have a user-doc switch to display version 5 vs verion 4 of Tempo ?
+
