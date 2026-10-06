@@ -210,20 +210,37 @@ console.log('Snapped Up (1h):', snapHourUp.format('{hh}:{mi}:{ss}'));
 return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
 
 	batch: `// ⚡ Parallel Bulk Mutation Demo (@magmacomputing/tempo-plugin-batch)
-const { BatchPlugin } = await import('@magmacomputing/tempo-plugin-batch');
-Tempo.use(BatchPlugin);
-
+// Note: @magmacomputing/tempo-plugin-batch uses Node.js worker_threads for multi-threaded processing.
 const timestamps = [1700000000000, 1700086400000, 1700172800000];
 console.log('Original timestamps count:', timestamps.length);
 
-const mutated = await Tempo.batch(timestamps, { weeks: 1 });
-console.log('Mutated +1 week timestamps:', mutated);
+let mutated;
+const isNode = typeof process !== 'undefined' && Boolean(process.versions?.node);
 
+if (isNode) {
+  const { BatchPlugin } = await import('@magmacomputing/tempo-plugin-batch');
+  Tempo.use(BatchPlugin);
+  mutated = await Tempo.batch(timestamps, '+1w');
+} else {
+  console.info('Running browser fallback (BatchPlugin worker_threads requires Node.js).');
+  mutated = timestamps.map(ts => new Tempo(ts).add({ weeks: 1 }).epoch.ms);
+}
+
+console.log('Mutated +1 week timestamps:', mutated);
 return \`Batch processed \${mutated.length} timestamps successfully!\`;`,
 
 	sync: `// 🔄 Cross-Thread Time Sync Demo (@magmacomputing/tempo-plugin-sync)
 const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
 Tempo.use(SyncPlugin);
+
+// SharedArrayBuffer requires Cross-Origin Isolation (COOP/COEP) in browsers:
+// Cross-Origin-Opener-Policy: same-origin
+// Cross-Origin-Embedder-Policy: require-corp
+if (typeof SharedArrayBuffer === 'undefined') {
+  console.warn('SharedArrayBuffer is unavailable in this environment.');
+  console.info('To enable in browsers, serve with COOP/COEP cross-origin isolation headers.');
+  return 'SharedArrayBuffer unavailable (requires cross-origin isolation or Node.js)';
+}
 
 Tempo.sync.startClock({ interval: 1 });
 try {
