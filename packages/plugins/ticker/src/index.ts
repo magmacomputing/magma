@@ -216,7 +216,7 @@ class TickerInstance implements Ticker.Descriptor {
 		if (isDefined(cronOption)) {
 			if (!isCronString(cronOption)) {
 				this.#hasInvalidSchedule = true;
-				logError(new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`), { catch: this.#isCatch, ...this.#options });
+				logError(new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`), { ...this.#options, catch: this.#isCatch });
 			} else {
 				this.#cron = cronOption;
 			}
@@ -234,7 +234,7 @@ class TickerInstance implements Ticker.Descriptor {
 		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
 		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb)
-			logError(new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`), { catch: this.#isCatch, ...this.#options });
+			logError(new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`), { ...this.#options, catch: this.#isCatch });
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 

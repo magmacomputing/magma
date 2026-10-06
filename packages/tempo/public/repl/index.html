@@ -1170,10 +1170,10 @@
 			if (pluginParam && SNIPPETS[pluginParam]) {
 				if (presetSelect) presetSelect.value = pluginParam;
 				loadPreset(pluginParam, false);
-				return true;
+				return autorunToggle.checked;
 			}
 			loadPreset('quickstart', false);
-			return true;
+			return autorunToggle.checked;
 		}
 
 		function loadPreset(key, autoRun = false) {
