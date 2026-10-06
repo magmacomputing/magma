@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { SNIPPETS as DEFAULT_SNIPPETS } from '../../../public/repl/snippets.manifest.js';
+import { SNIPPETS as DEFAULT_SNIPPETS } from '../data/snippets.manifest.js';
 
 const props = withDefaults(
   defineProps<{

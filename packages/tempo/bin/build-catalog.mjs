@@ -65,3 +65,11 @@ if (!fs.existsSync(targetDir)) {
 fs.writeFileSync(targetCatalogPath, JSON.stringify(catalog, null, 2) + '\n');
 console.log(`Successfully generated VitePress catalog JSON with live local versions (${catalog.length} plugins).`);
 
+// Sync snippets manifest to public/repl for standalone REPL runtime access
+const sourceSnippetsPath = path.resolve(targetDir, 'snippets.manifest.js');
+const targetReplSnippetsPath = path.resolve(__dirname, '../public/repl/snippets.manifest.js');
+if (fs.existsSync(sourceSnippetsPath)) {
+	fs.copyFileSync(sourceSnippetsPath, targetReplSnippetsPath);
+	console.log(`Synchronized snippets manifest to ${targetReplSnippetsPath}`);
+}
+
