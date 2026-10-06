@@ -170,8 +170,7 @@ const rawReasoning = result.reasoning;
 > **Attention: Trial Gateway Telemetry Notice**
 > The public Tempo trial evaluation gateway (`provider: 'tempo'`) collects pseudonymous telemetry regarding sandbox usage (latency, error rates, model performance, token counts, and HMAC-SHA-256 salted IP hashes).
 > This information is used to diagnose parsing failures, tune prompt schemas, and shape the plugin roadmap.
-> For developers requiring strict zero retention or zero external logging, route requests through your own backend proxy (Tier 2) or direct BYOK provider keys (Tier 3) as detailed in our documentation:
-> [https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html](https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html)
+> For developers requiring strict zero retention or zero external logging, route requests through your own backend proxy (Tier 2) or direct BYOK provider keys (Tier 3) as detailed in our [Configuration & Onboarding Guide](./onboarding.md).
 
 * **Prompt Engineering & Diagnostics**: Natural language date expressions and model completion responses sent to the free trial gateway may be recorded in diagnostic telemetry records (when payload capture is enabled) to diagnose parsing edge cases, detect hallucinations, and tune temporal context prompts.
 * **Pseudonymous IP Hashing**: Client IP addresses are hashed using HMAC-SHA-256 with a secure server-side salt prior to storage; the gateway stores this HMAC-derived pseudonymous IP identifier, while raw IP addresses are not stored.

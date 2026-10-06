@@ -54,8 +54,7 @@ console.log(dt.format());
 > The public Tempo trial evaluation gateway (`provider: 'tempo'`) collects pseudonymous, de-identified telemetry regarding sandbox usage (latency, error rates, model performance, token counts, and HMAC-SHA-256 salted IP hashes) to shape the plugin roadmap and improve parsing schemas.
 >
 > If you require strict zero data retention or do not wish to participate in trial sandbox diagnostics, configure your own secure backend proxy (Tier 2) or direct BYOK provider credentials (Tier 3).
-> Learn more in our Security & Privacy guide:
-> [https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html](https://magmacomputing.github.io/magma/doc/9-plugins/ai.security.html)
+> Learn more in our [Security & Privacy Guide](./security.md).
 >
 > **Trial Rate Limits**: The free sandbox enforces an IP rate limit of **20 requests/hour**. When exceeded, Tempo AI raises a descriptive `TempoAiError(429)` guiding you to Tier 2 or Tier 3. To continually improve prompt accuracy and diagnose parsing edge cases, queries sent through the free sandbox are scrubbed of credentials and personal identifiers and stored for up to 30 days. Do not submit sensitive personal information through the trial sandbox.
 

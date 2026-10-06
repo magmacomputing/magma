@@ -29,9 +29,9 @@ export default withMermaid(defineConfig({
     },
     nav: [
       { text: 'Guide', link: '/README' },
-      { text: 'REPL', link: '/repl/index.html', target: '_self' },
-      { text: 'API Reference', link: '/api/index.html', target: '_self' },
-      { text: 'Library API', link: '/api/library/index.html', target: '_self' },
+      { text: 'REPL', link: '/repl/index.html', target: '_blank' },
+      { text: 'API Reference', link: '/api/index.html', target: '_blank' },
+      { text: 'Library API', link: '/api/library/index.html', target: '_blank' },
       { text: 'Functions', link: 'https://magmacomputing.github.io/magma/functions/' }
     ],
     sidebar: {
@@ -134,6 +134,39 @@ export default withMermaid(defineConfig({
   markdown: {
     math: true,
     config: (md) => {
+      // Rewrite absolute magma documentation links to internal routes before link rendering
+      md.core.ruler.after('inline', 'rewrite-magma-doc-links', (state) => {
+        for (const token of state.tokens) {
+          if (token.type === 'inline' && token.children) {
+            for (const child of token.children) {
+              if (child.type === 'link_open') {
+                const hrefIndex = child.attrIndex('href');
+                if (hrefIndex >= 0) {
+                  const href = child.attrs![hrefIndex][1];
+                  const prefix = 'https://magmacomputing.github.io/magma';
+                  if (href.startsWith(prefix)) {
+                    const pathPart = href.slice(prefix.length);
+                    if (!pathPart || pathPart === '/') {
+                      child.attrs![hrefIndex][1] = '/README.md';
+                    } else if (pathPart.startsWith('/doc/')) {
+                      const hashMatch = pathPart.match(/^([^#?]+?)(?:\.html)?([#?].*)?$/);
+                      if (hashMatch) {
+                        child.attrs![hrefIndex][1] = `${hashMatch[1]}.md${hashMatch[2] || ''}`;
+                      }
+                    } else if (pathPart.startsWith('/README')) {
+                      const hashMatch = pathPart.match(/^([^#?]+?)(?:\.html)?([#?].*)?$/);
+                      if (hashMatch) {
+                        child.attrs![hrefIndex][1] = `/README.md${hashMatch[2] || ''}`;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+
       // Dynamically rewrite source links to the harvested plugin documents
       const defaultRender = md.renderer.rules.link_open || function (tokens, idx, options, env, self) {
         return self.renderToken(tokens, idx, options);
@@ -161,6 +194,22 @@ export default withMermaid(defineConfig({
     }
   },
   vite: {
+    server: {
+      cors: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, PUT, POST, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      }
+    },
+    preview: {
+      cors: true,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, PUT, POST, DELETE, PATCH, OPTIONS',
+        'Access-Control-Allow-Headers': '*',
+      }
+    },
     build: {
       target: 'esnext',
       chunkSizeWarningLimit: 2000
