@@ -1,13 +1,14 @@
 {
   "version": "1.1",
-  "updatedAt": "2026-08-18T00:00:00Z",
+  "updatedAt": "2026-10-07T00:00:00Z",
   "providers": {
     "groq": {
       "url": "https://api.groq.com/openai/v1/chat/completions",
       "models": {
-        "default": "openai/gpt-oss-20b",
-        "fast": "openai/gpt-oss-20b",
-        "large": "openai/gpt-oss-120b"
+        "default": "openai/gpt-oss-120b",
+        "fast": "openai/gpt-oss-120b",
+        "large": "openai/gpt-oss-120b",
+        "reasoning": "openai/gpt-oss-120b"
       },
       "tokenParam": "max_tokens"
     },
@@ -42,8 +43,9 @@
       "url": "https://tempo.magmacomputing.com.au/api/ai/tempo",
       "models": {
         "default": "openai/gpt-oss-120b",
-        "fast": "openai/gpt-oss-20b",
-        "large": "openai/gpt-oss-120b"
+        "fast": "openai/gpt-oss-120b",
+        "large": "openai/gpt-oss-120b",
+        "reasoning": "openai/gpt-oss-120b"
       },
       "tokenParam": "max_tokens",
       "key": "tempo-public-sandbox-token"

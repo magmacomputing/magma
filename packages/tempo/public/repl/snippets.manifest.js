@@ -1,11 +1,25 @@
 /**
+ * AUTO-GENERATED ASSET — DO NOT EDIT DIRECTLY.
+ * Source: packages/tempo/.vitepress/theme/data/snippets.manifest.js
+ * Synchronized by: node bin/build-catalog.mjs
+ */
+/**
  * Tempo Central Snippets & REPL Presets
  * Single Source of Truth for documentation live REPLs and the playground.
+ *
+ * @typedef {Object} SnippetPreset
+ * @property {string} label - Display label for preset dropdown menus
+ * @property {string} code - Executable JavaScript snippet code
+ * @property {boolean} [autoRun] - Set false to disable auto-running on keypress (e.g. AI token quota conservation)
+ * @property {string} [plugin] - Plugin package this preset demonstrates (omit for core, non-plugin presets)
  */
 
+/** @type {Record<string, SnippetPreset>} */
 export const SNIPPETS = {
 	// ── 1. Core & Non-Plugin Features (Cookbook & Foundations) ───────────────
-	quickstart: `// ⚡ Quick Start with Tempo
+	quickstart: {
+		label: 'Preset: Quick Start (Core)',
+		code: `// ⚡ Quick Start with Tempo
 const t = new Tempo('now');
 
 console.log('ISO 8601 String:', t.iso);
@@ -14,8 +28,11 @@ console.log('Days until next Friday:', t.until('next Friday').format());
 
 // Return value displays in the top Result card:
 return t.format('{yyyy}-{mmm}-{dd}');`,
+	},
 
-	weekend: `// 🗓️ Weekend Checking (from Tempo Cookbook)
+	weekend: {
+		label: 'Preset: Weekend Check (Cookbook)',
+		code: `// 🗓️ Weekend Checking (from Tempo Cookbook)
 const today = new Tempo();
 console.log('Today:', today.format('{www}, {dd} {mon}'));
 console.log('ISO Day of Week (1..7):', today.dow);
@@ -32,8 +49,11 @@ console.log('en-US Weekend Days:', JSON.stringify(us.intl.weekend)); // [6, 7] (
 console.log('ar-SA Weekend Days:', JSON.stringify(sa.intl.weekend)); // [5, 6] (Friday, Saturday)
 
 return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.weekend.includes(today.dow)}\`;`,
+	},
 
-	quarters: `// 💼 Fiscal Quarters and Tempo Math
+	quarters: {
+		label: 'Preset: Fiscal Quarters & Math (Core)',
+		code: `// 💼 Fiscal Quarters and Tempo Math
 const t = new Tempo('2026-02-15', { sphere: 'north' });
 
 console.log('Quarter Key:', t.term.qtr); // "Q1"
@@ -47,8 +67,12 @@ console.log('Next Quarter (Key):', nextQtr.term.qtr); // "Q2"
 console.log('Next Quarter (Label):', nextQtr.term.quarter.label); // "Second Quarter"
 
 return nextQtr.format('Next quarter: {#quarter}');`,
+	},
 
-	seasons: `// 🌍 Hemispheric Seasons & Lunar Phases
+	seasons: {
+		label: 'Preset: Seasons & Lunar Phases (Celestial)',
+		plugin: 'celestial',
+		code: `// 🌍 Hemispheric Seasons & Lunar Phases
 // Tempo terms are hemisphere-aware based on geo coordinates or sphere setting:
 const sydney = new Tempo('2026-07-01', { sphere: 'south' });
 const london = new Tempo('2026-07-01', { sphere: 'north' });
@@ -62,9 +86,13 @@ console.log('Moon Phase:', now.term.lunar.phase, now.term.lunar.emoji);
 console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
 
 return \`Current Lunar Phase: \${now.term.lunar.phase}\`;`,
+	},
 
 	// ── 2. Official Plugins & Ecosystem Extensions ───────────────────────────
-	spatial: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@magmacomputing/tempo-plugin-spatial)
+	spatial: {
+		label: 'Preset: Spatial & Navigation (GIS, Haversine, Transit)',
+		plugin: 'spatial',
+		code: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@magmacomputing/tempo-plugin-spatial)
 const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
 Tempo.use(SpatialPlugin);
 
@@ -91,8 +119,12 @@ console.log('Transit Velocity:', speed.toFixed(1), 'km/h');
 console.log('Impossible Travel Alert?', isAnomaly);
 
 return \`Sydney -> London: \${distKm.toFixed(0)} km (Midpoint: \${mid.latitude.toFixed(1)}°, \${mid.longitude.toFixed(1)}°)\`;`,
+	},
 
-	geo: `// 🌍 Live Geolocation & Pluggable Providers (@magmacomputing/tempo-plugin-geo)
+	geo: {
+		label: 'Preset: Live Geolocation & Providers (Geo)',
+		plugin: 'geo',
+		code: `// 🌍 Live Geolocation & Pluggable Providers (@magmacomputing/tempo-plugin-geo)
 // Note: In browser sandbox, resolves browser GPS or IP-based coordinates
 
 const lookup = await Tempo.geo.lookup({ reverse: true });
@@ -109,8 +141,12 @@ const place = await Tempo.geo.reverse({ lat: -33.8688, lng: 151.2093 });
 console.log('Reverse Geocoded Place:', place.city, place.country);
 
 return \`Located at \${lookup.city ?? 'Local City'} (\${lookup.lat?.toFixed(2)}°, \${lookup.lng?.toFixed(2)}°)\`;`,
+	},
 
-	holidays: `// 🏖️ Regional Public Holidays & SLA Business Days (@magmacomputing/tempo-plugin-holidays)
+	holidays: {
+		label: 'Preset: Regional Public Holidays & SLA Business Days',
+		plugin: 'holidays',
+		code: `// 🏖️ Regional Public Holidays & SLA Business Days (@magmacomputing/tempo-plugin-holidays)
 const { HolidaysPlugin } = await import('@magmacomputing/tempo-plugin-holidays');
 Tempo.use(HolidaysPlugin);
 
@@ -135,8 +171,12 @@ const hours = ticketOpened.holidays.workingHoursUntil(ticketResolved);
 console.log('SLA Working Hours (9am-5pm window):', hours, 'hours');
 
 return \`Christmas: \${christmas.holidays.name} (Next work day: \${nextWorkDay.format('{www}, {dd} {mon}')})\`;`,
+	},
 
-	dialects: `// 🌐 External Dialect Formatting & Parsing
+	dialects: {
+		label: 'Preset: Dialects (Luxon, strftime, Moment)',
+		plugin: 'dialects',
+		code: `// 🌐 External Dialect Formatting & Parsing
 // Dynamic import of @magmacomputing/tempo-plugin-dialects
 const { DialectsPlugin, DIALECT } = await import('@magmacomputing/tempo-plugin-dialects');
 Tempo.use(DialectsPlugin);
@@ -160,16 +200,24 @@ const parsed = Tempo.fromFormats('24/10/2026 15:30', [
 console.log('Parsed ISO (multi-candidate):', parsed.iso);
 
 return t.toFormat('dd LLL yyyy (HH:mm:ss)');`,
+	},
 
-	celestial: `// 🌙 Celestial Solar & Lunar Ephemeris Demo (@magmacomputing/tempo-plugin-celestial)
+	celestial: {
+		label: 'Preset: Celestial Solar & Lunar Ephemeris',
+		plugin: 'celestial',
+		code: `// 🌙 Celestial Solar & Lunar Ephemeris Demo (@magmacomputing/tempo-plugin-celestial)
 const now = new Tempo();
 console.log('Moon Phase:', now.term.lunar.phase);
 console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
 console.log('Is King Tide?', now.term.tides.isKingTide);
 
 return \`Phase: \${now.term.lunar.phase} (\${(now.term.lunar.illumination * 100).toFixed(0)}% illuminated)\`;`,
+	},
 
-	astro: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-celestial)
+	astro: {
+		label: 'Preset: Astronomical Seasons & Solstices',
+		plugin: 'celestial',
+		code: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-celestial)
 const sydney = new Tempo('2026-07-01', { sphere: 'south' });
 const london = new Tempo('2026-07-01', { sphere: 'north' });
 
@@ -180,8 +228,12 @@ const equinox = new Tempo('2026-03-20', { sphere: 'north' });
 console.log('March 20 Equinox:', equinox.term.equinox);
 
 return \`Sydney: \${sydney.term.szn} | London: \${london.term.szn}\`;`,
+	},
 
-	finance: `// 💼 Fiscal & Financial Math Demo (@magmacomputing/tempo-plugin-finance)
+	finance: {
+		label: 'Preset: Fiscal & Financial Math',
+		plugin: 'finance',
+		code: `// 💼 Fiscal & Financial Math Demo (@magmacomputing/tempo-plugin-finance)
 const { FinanceNamespace } = await import('@magmacomputing/tempo-plugin-finance');
 Tempo.use(FinanceNamespace);
 
@@ -191,8 +243,12 @@ console.log('Tax Year:', t.finance.taxYear);
 console.log('Is Fiscal Year Start?', t.finance.isFiscalYearStart());
 
 return \`Fiscal Q\${t.finance.fiscalQuarter} (Tax Year \${t.finance.taxYear})\`;`,
+	},
 
-	snap: `// ⏱️ Time Snapping & Quantization Demo (@magmacomputing/tempo-plugin-snap)
+	snap: {
+		label: 'Preset: Time Snapping & Quantization',
+		plugin: 'snap',
+		code: `// ⏱️ Time Snapping & Quantization Demo (@magmacomputing/tempo-plugin-snap)
 const { SnapPlugin } = await import('@magmacomputing/tempo-plugin-snap');
 Tempo.use(SnapPlugin);
 
@@ -208,8 +264,12 @@ const snapHourUp = t.snap({ hh: 1, direction: 'up' });
 console.log('Snapped Up (1h):', snapHourUp.format('{hh}:{mi}:{ss}'));
 
 return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
+	},
 
-	batch: `// ⚡ Parallel Bulk Mutation Demo (@magmacomputing/tempo-plugin-batch)
+	batch: {
+		label: 'Preset: Parallel Bulk Mutation',
+		plugin: 'batch',
+		code: `// ⚡ Parallel Bulk Mutation Demo (@magmacomputing/tempo-plugin-batch)
 // Note: @magmacomputing/tempo-plugin-batch uses Node.js worker_threads for multi-threaded processing.
 const timestamps = [1700000000000, 1700086400000, 1700172800000];
 console.log('Original timestamps count:', timestamps.length);
@@ -228,8 +288,12 @@ if (isNode) {
 
 console.log('Mutated +1 week timestamps:', mutated);
 return \`Batch processed \${mutated.length} timestamps successfully!\`;`,
+	},
 
-	sync: `// 🔄 Cross-Thread Time Sync Demo (@magmacomputing/tempo-plugin-sync)
+	sync: {
+		label: 'Preset: Cross-Thread Time Sync',
+		plugin: 'sync',
+		code: `// 🔄 Cross-Thread Time Sync Demo (@magmacomputing/tempo-plugin-sync)
 const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
 Tempo.use(SyncPlugin);
 
@@ -254,8 +318,12 @@ try {
 } finally {
   Tempo.sync.stopClock();
 }`,
+	},
 
-	ntp: `// 🌐 Network Time Sync & Drift Calibration (@magmacomputing/tempo-plugin-ntp)
+	ntp: {
+		label: 'Preset: Network Time Sync & Drift (NTP)',
+		plugin: 'ntp',
+		code: `// 🌐 Network Time Sync & Drift Calibration (@magmacomputing/tempo-plugin-ntp)
 const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
 Tempo.use(NtpPlugin);
 
@@ -266,8 +334,12 @@ console.log('Sync Result: Offset', sample.offsetMs, 'ms (Uncertainty: ±' + samp
 console.log('Calibrated Tempo:', Tempo.ntp.now().format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}'));
 
 return \`Calibrated! Offset: \${Tempo.ntp.offset}ms | Local: \${new Tempo().format('{hh}:{mi}:{ss}.{ms}')} vs NTP: \${Tempo.ntp.now().format('{hh}:{mi}:{ss}.{ms}')}\`;`,
+	},
 
-	ticker: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
+	ticker: {
+		label: 'Preset: Continuous Temporal Ticker',
+		plugin: 'ticker',
+		code: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
 const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
 Tempo.use(TickerPlugin);
 
@@ -283,8 +355,12 @@ const ticker = Tempo.ticker({ seconds: 1 }, (t, stop) => {
 });
 
 return 'Ticker started (executes in console stream)';`,
+	},
 
-	dynamic: `// 📦 Dynamic Plugin Loading via native ESM
+	dynamic: {
+		label: 'Preset: Dynamic Plugin (ESM import)',
+		plugin: 'ticker',
+		code: `// 📦 Dynamic Plugin Loading via native ESM
 console.log('Dynamically importing @magmacomputing/tempo-plugin-ticker...');
 const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
 
@@ -293,8 +369,13 @@ Tempo.use(TickerPlugin);
 
 console.log('TickerPlugin loaded and active!');
 return 'Dynamic import successful!';`,
+	},
 
-	ai: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
+	ai: {
+		label: 'Preset: AI Semantic Parsing & Scheduling',
+		plugin: 'ai',
+		autoRun: false,
+		code: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
 const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
 Tempo.use(AiPlugin);
 
@@ -314,7 +395,8 @@ if (t.ai?.limits?.remainingRequests !== undefined) {
   console.log('⏱️ Quota:    ', \`\${t.ai.limits.remainingRequests} req remaining (resets at \${resetStr})\`);
 }
 
-return t.iso;`
+return t.iso;`,
+	},
 };
 
 export default SNIPPETS;

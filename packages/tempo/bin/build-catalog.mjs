@@ -69,7 +69,12 @@ console.log(`Successfully generated VitePress catalog JSON with live local versi
 const sourceSnippetsPath = path.resolve(targetDir, 'snippets.manifest.js');
 const targetReplSnippetsPath = path.resolve(__dirname, '../public/repl/snippets.manifest.js');
 if (fs.existsSync(sourceSnippetsPath)) {
-	fs.copyFileSync(sourceSnippetsPath, targetReplSnippetsPath);
+	const rawContent = fs.readFileSync(sourceSnippetsPath, 'utf8');
+	const banner = `/**\n * AUTO-GENERATED ASSET — DO NOT EDIT DIRECTLY.\n * Source: packages/tempo/.vitepress/theme/data/snippets.manifest.js\n * Synchronized by: node bin/build-catalog.mjs\n */\n`;
+	const content = rawContent.startsWith('/**\n * AUTO-GENERATED')
+		? rawContent
+		: banner + rawContent;
+	fs.writeFileSync(targetReplSnippetsPath, content, 'utf8');
 	console.log(`Synchronized snippets manifest to ${targetReplSnippetsPath}`);
 }
 

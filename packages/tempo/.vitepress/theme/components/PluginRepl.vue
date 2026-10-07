@@ -20,7 +20,8 @@ const isActive = ref(false);
 
 const activeSnippet = computed(() => {
   if (props.snippet && props.snippet.trim().length > 0) return props.snippet.trim();
-  return (DEFAULT_SNIPPETS as Record<string, string>)[props.plugin] ?? `// ⚡ Interactive Demo for ${props.plugin}\nconst t = new Tempo();\nconsole.log(t.format('{yyyy}-{mm}-{dd}'));\nreturn t.iso;`;
+  const entry = (DEFAULT_SNIPPETS as Record<string, { code: string }>)[props.plugin];
+  return entry?.code ?? `// ⚡ Interactive Demo for ${props.plugin}\nconst t = new Tempo();\nconsole.log(t.format('{yyyy}-{mm}-{dd}'));\nreturn t.iso;`;
 });
 
 const iframeSrc = computed(() => {

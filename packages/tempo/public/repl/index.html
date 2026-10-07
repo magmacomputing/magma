@@ -784,31 +784,12 @@
 			<div class="controls">
 				<div class="controls-left">
 					<div class="select-wrap">
-						<select id="presetSelect" title="Load Snippet Preset">
-							<option value="quickstart">Preset: Quick Start (Core)</option>
-							<option value="weekend">Preset: Weekend Check (Cookbook)</option>
-							<option value="quarters">Preset: Fiscal Quarters & Math (Core)</option>
-							<option value="seasons">Preset: Seasons & Moon (Astro/Geo)</option>
-							<option value="spatial">Preset: Spatial & Navigation (GIS, Haversine, Transit)</option>
-							<option value="geo">Preset: Live Geolocation & Providers (Geo)</option>
-							<option value="holidays">Preset: Regional Public Holidays & SLA Business Days</option>
-							<option value="dialects">Preset: Dialects (Luxon, strftime, Moment)</option>
-							<option value="celestial">Preset: Celestial Solar & Lunar Ephemeris</option>
-							<option value="astro">Preset: Astronomical Seasons & Solstices</option>
-							<option value="finance">Preset: Fiscal & Financial Math</option>
-							<option value="snap">Preset: Time Snapping & Quantization</option>
-							<option value="batch">Preset: Parallel Bulk Mutation</option>
-							<option value="sync">Preset: Cross-Thread Time Sync</option>
-							<option value="ntp">Preset: Network Time Sync & Drift (NTP)</option>
-							<option value="ticker">Preset: Continuous Temporal Ticker</option>
-							<option value="dynamic">Preset: Dynamic Plugin (ESM import)</option>
-							<option value="ai">Preset: AI Semantic Parsing & Scheduling</option>
-						</select>
+						<select id="presetSelect" title="Load Snippet Preset"></select>
 					</div>
 
 					<div class="setup-pill" title="Pre-configured environment with official plugins registered">
 						<span class="icon">⚙️</span>
-						<span>Setup: Default (Astro + Geo + Celestial)</span>
+						<span>Setup: Default (Core + Geo + Celestial)</span>
 					</div>
 				</div>
 
@@ -907,7 +888,10 @@
 		const urlParams = new URLSearchParams(window.location.search);
 		const isEmbed = urlParams.get('embed') === 'true' || urlParams.get('mode') === 'mini';
 		const pluginParam = urlParams.get('plugin') || urlParams.get('preset');
-		const isPluginMode = Boolean(pluginParam && pluginParam !== 'quickstart' && pluginParam !== 'weekend');
+		const activeSnippetMeta = SNIPPETS[pluginParam];
+		// A known preset is a plugin demo only if it names a plugin; an unknown key is treated as a plugin name.
+		const pluginName = activeSnippetMeta ? activeSnippetMeta.plugin : pluginParam;
+		const isPluginMode = Boolean(pluginName);
 
 		const embedLogoContainer = document.getElementById('embedLogoContainer');
 		const brandLogoContainer = document.getElementById('brandLogoContainer');
@@ -918,12 +902,14 @@
 			document.body.classList.add('is-embedded');
 			const embedTitle = document.getElementById('embedTitle');
 			if (embedTitle && pluginParam) {
-				embedTitle.textContent = `Tempo + @magmacomputing/tempo-plugin-${pluginParam}`;
+				embedTitle.textContent = isPluginMode
+					? `Tempo + @magmacomputing/tempo-plugin-${pluginName}`
+					: `Tempo REPL · ${activeSnippetMeta.label}`;
 			}
-		} else if (pluginParam) {
+		} else if (isPluginMode) {
 			const headerBadge = document.getElementById('headerBadge');
 			if (headerBadge)
-				headerBadge.textContent = `@magmacomputing/tempo-plugin-${pluginParam}`;
+				headerBadge.textContent = `@magmacomputing/tempo-plugin-${pluginName}`;
 		}
 
 		const codeEditor = document.getElementById('codeEditor');
@@ -943,6 +929,11 @@
 		const embedRunBtn = document.getElementById('embedRunBtn');
 		const embedAutorunToggle = document.getElementById('embedAutorunToggle');
 		const embedOpenFullBtn = document.getElementById('embedOpenFullBtn');
+
+		// Dynamically populate preset dropdown options from snippets manifest single source of truth
+		presetSelect.replaceChildren(
+			...Object.entries(SNIPPETS).map(([key, { label }]) => new Option(label, key))
+		);
 
 		let logs = [];
 		let autorunTimer = null;
@@ -1163,7 +1154,7 @@
 					codeEditor.value = decodeURIComponent(atob(encoded));
 					updateLineNumbers();
 					updateEmbedFullLink();
-					if (pluginParam === 'ai' || codeEditor.value.includes('tempo-plugin-ai') || codeEditor.value.includes('Tempo.ai')) {
+					if (activeSnippetMeta?.autoRun === false || codeEditor.value.includes('tempo-plugin-ai') || codeEditor.value.includes('Tempo.ai')) {
 						autorunToggle.checked = false;
 						if (embedAutorunToggle) embedAutorunToggle.checked = false;
 						return false;
@@ -1173,8 +1164,8 @@
 					// Fallback if hash invalid
 				}
 			}
-			if (pluginParam && SNIPPETS[pluginParam]) {
-				if (presetSelect) presetSelect.value = pluginParam;
+			if (activeSnippetMeta) {
+				presetSelect.value = pluginParam;
 				loadPreset(pluginParam, false);
 				return autorunToggle.checked;
 			}
@@ -1182,30 +1173,25 @@
 			return autorunToggle.checked;
 		}
 
-		function loadPreset(key, autoRun = false) {
-			if (SNIPPETS[key]) {
-				codeEditor.value = SNIPPETS[key];
+		function loadPreset(key, runNow = false) {
+			const preset = SNIPPETS[key];
+			if (preset) {
+				codeEditor.value = preset.code;
 				updateLineNumbers();
 				updateEmbedFullLink();
 				clearConsole();
-				if (key === 'ai') {
-					autorunToggle.checked = false;
-					if (embedAutorunToggle) embedAutorunToggle.checked = false;
-					resultBox.className = 'result-box';
-					resultBox.style.color = 'var(--text-dim)';
-					resultBox.textContent = '⚡ Auto-run paused for AI to conserve quota. Press ▶ Run (Ctrl+Enter) to evaluate with live LLM.';
-					evalTimeEl.textContent = '0.0 ms';
-					if (quotaBadge) quotaBadge.style.display = 'none';
-				} else {
-					autorunToggle.checked = true;
-					if (embedAutorunToggle) embedAutorunToggle.checked = true;
-					resultBox.className = 'result-box';
-					resultBox.style.color = 'inherit';
-					resultBox.textContent = 'Evaluating...';
-					evalTimeEl.textContent = '0.0 ms';
-					if (quotaBadge) quotaBadge.style.display = 'none';
-				}
-				if (autoRun && isReady && autorunToggle.checked) executeCode();
+				// Unified auto‑run handling
+				const autoRunEnabled = preset.autoRun !== false;
+				autorunToggle.checked = autoRunEnabled;
+				if (embedAutorunToggle) embedAutorunToggle.checked = autoRunEnabled;
+				resultBox.className = 'result-box';
+				resultBox.style.color = autoRunEnabled ? 'inherit' : 'var(--text-dim)';
+				resultBox.textContent = autoRunEnabled
+					? 'Evaluating...'
+					: `⚡ Auto-run paused for ${key}. Press ▶ Run (Ctrl+Enter) to evaluate.`;
+				evalTimeEl.textContent = '0.0 ms';
+				if (quotaBadge) quotaBadge.style.display = 'none';
+				if (runNow && isReady && autorunToggle.checked) executeCode();
 			}
 		}
 
