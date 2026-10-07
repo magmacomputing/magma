@@ -200,6 +200,14 @@ export const isPledge = <P = any>(obj: unknown): obj is GetType<'Pledge', P> => 
 export const isExtensible = (obj: any): obj is any => isDefined(obj?.[sym.$Extensible]);
 export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
 
+/** Type guard to check if a value is an AbortSignal (cross-realm safe) */
+export const isAbortSignal = (obj: unknown): obj is AbortSignal =>
+	isReference(obj) && 'aborted' in obj && isCallable((obj as AbortSignal).addEventListener);
+
+/** Type guard to check if a value is an AbortController */
+export const isAbortController = (obj: unknown): obj is AbortController =>
+	isReference(obj) && 'signal' in obj && isCallable((obj as AbortController).abort);
+
 /**
  * Checks if a value is effectively empty.
  * Returns true for nullish values, empty objects, empty strings, NaN, empty arrays,

@@ -262,6 +262,15 @@ describe('common/runtime/reactive.class', () => {
 		expect(sub.closed).toBe(true);
 	});
 
+	it('safely handles ReactiveSubscription with null-object defaults when cleanup/signal are omitted', () => {
+		const stream = new Reactive<number>();
+		const sample = stream.on('data', () => {});
+		const sub = new (sample.constructor as any)();
+		expect(sub.closed).toBe(false);
+		expect(() => sub.unsubscribe()).not.toThrow();
+		expect(sub.closed).toBe(true);
+	});
+
 	it('detaches listener automatically when AbortSignal triggers in .on() options', () => {
 		const stream = new Reactive<string>();
 		const controller = new AbortController();

@@ -1,7 +1,8 @@
 import { StringTag } from '#library/decorator.library.js';
-import { isFunction, isObject, isString } from '#library/assertion.library.js';
+import { isCallable, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
 import { Pledge } from './pledge.class.js';
 import { Finalizer } from './finalizer.class.js';
+import { onAbort, NOOP } from './aborter.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -17,22 +18,12 @@ declare module '#library/type.library.js' {
 @StringTag('Reactive.Subscription')
 class ReactiveSubscription implements Disposable {
 	#closed = false;
-	readonly #cleanup: () => void;
-	readonly #abortListener?: (() => void) | undefined;
-	readonly #signal?: AbortSignal | undefined;
+	#cleanup: () => void = NOOP;
+	#unbind: () => void = NOOP;
 
-	constructor(cleanup: () => void, signal?: AbortSignal) {
-		this.#cleanup = cleanup;
-		this.#signal = signal;
-
-		if (signal) {
-			if (signal.aborted) {
-				this.unsubscribe();
-			} else {
-				this.#abortListener = () => this.unsubscribe();
-				signal.addEventListener('abort', this.#abortListener, { once: true });
-			}
-		}
+	constructor(cleanup?: () => void, signal?: AbortSignal) {
+		if (isCallable(cleanup)) this.#cleanup = cleanup;
+		this.#unbind = onAbort(signal, () => this.unsubscribe());
 	}
 
 	/** Whether the subscription has been detached */
@@ -44,9 +35,7 @@ class ReactiveSubscription implements Disposable {
 	unsubscribe(): void {
 		if (this.#closed) return;
 		this.#closed = true;
-		if (this.#signal && this.#abortListener)
-			this.#signal.removeEventListener('abort', this.#abortListener);
-
+		this.#unbind();
 		this.#cleanup();
 	}
 
@@ -186,7 +175,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	constructor(arg?: Reactive.Options<T> | string) {
 		const opts: Reactive.Options<T> = isObject(arg) ? arg : isString(arg) ? { tag: arg } : {};
 		this.#tag = opts.tag;
-		this.#bufferSize = typeof opts.bufferSize === 'number' && opts.bufferSize >= 0 ? opts.bufferSize : Infinity;
+		this.#bufferSize = isNumber(opts.bufferSize) && opts.bufferSize >= 0 ? opts.bufferSize : Infinity;
 		this.#catch = Boolean(opts.catch);
 		this.#stopCallback = () => this.complete();
 
@@ -540,17 +529,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			notifierCleanups = [];
 		});
 
-		if (notifier instanceof AbortSignal) {
-			if (notifier.aborted) {
-				stop();
-			} else {
-				const abortHandler = () => stop();
-				notifier.addEventListener('abort', abortHandler, { once: true });
-				notifierCleanups.push(() => notifier.removeEventListener('abort', abortHandler));
-			}
-		} else if (notifier != null && typeof (notifier as any).then === 'function') {
+		if (isAbortSignal(notifier)) {
+			notifierCleanups.push(onAbort(notifier, stop));
+		} else if (isPromise(notifier) || (isDefined(notifier) && isFunction((notifier as any).then))) {
 			(notifier as Promise<unknown>).then(stop, stop);
-		} else if (notifier != null && typeof (notifier as any).on === 'function') {
+		} else if (isDefined(notifier) && isFunction((notifier as any).on)) {
 			const trigger = notifier as Reactive<unknown>;
 			const subTriggerData = trigger.on('data', stop, { once: true });
 			const subTriggerEnd = trigger.on('end', stop, { once: true });
@@ -647,7 +630,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	): Reactive<V> {
 		const stream = new Reactive<V>(options);
 
-		if (source && typeof (source as any)[Symbol.asyncIterator] === 'function') {
+		if (isDefined(source) && isFunction((source as any)[Symbol.asyncIterator])) {
 			(async () => {
 				try {
 					for await (const item of source as AsyncIterable<V>) {
@@ -660,7 +643,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 					stream.complete();
 				}
 			})();
-		} else if (source && typeof (source as any)[Symbol.iterator] === 'function') {
+		} else if (isDefined(source) && isFunction((source as any)[Symbol.iterator])) {
 			try {
 				for (const item of source as Iterable<V>) {
 					if (!stream.state.active) break;
@@ -671,7 +654,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 				stream.error(err instanceof Error ? err : new Error(String(err)));
 				stream.complete();
 			}
-		} else if (source && isFunction((source as any).then)) {
+		} else if (isPromise(source) || (isDefined(source) && isFunction((source as any).then))) {
 			(source as Promise<V>)
 				.then((val) => {
 					stream.push(val);

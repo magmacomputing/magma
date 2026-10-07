@@ -20,4 +20,5 @@ export * from './filestore.library.js';
 export * from './weakcache.class.js';
 export * from './finalizer.class.js';
 export * from './reactive.class.js';
+export * from './aborter.library.js';
 

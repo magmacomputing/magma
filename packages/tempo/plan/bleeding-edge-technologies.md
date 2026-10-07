@@ -21,12 +21,14 @@ To maintain architectural integrity across heterogeneous runtimes, candidate tec
 Tempo already leverages several cutting-edge platform primitives:
 - **`WeakCache` (`WeakRef` & `Finalizer`)**: Universal weak-value object and regular expression memoization with automatic GC pruning in `packages/library/src/common/runtime/weakcache.class.ts`.
 - **`Finalizer` (`finalizer.class`)**: Safe Garbage Collection finalization hook wrapper around `FinalizationRegistry` with self-guarding idempotent execution in `packages/library/src/common/runtime/finalizer.class.ts`.
-- **Ticker & AtomicClock Auto-Finalization**: GC-backed zombie timer prevention and resource cleanup in `@magmacomputing/tempo-plugin-ticker` (v2.5.1) and `@magmacomputing/tempo-plugin-sync` (v1.1.1).
+- **`Reactive<T>` Push/Pull Stream Engine (`reactive.class`)**: Bidirectional asynchronous stream primitive unifying push-based event listeners (`.on('data')`), pull-based async iteration (`.pull()`, `for await`), $O(1)$ multicast fan-out (`.cast()`), composable `.until(signal)` cancellation, and explicit resource management (`using sub = stream.on(...)`) with leak-proof GC safety in `packages/library/src/common/runtime/reactive.class.ts`.
+- **Ticker & AtomicClock Auto-Finalization & Stream Delegation**: GC-backed zombie timer prevention, weak-reference lifecycle tracking, and reactive stream delegation in `@magmacomputing/tempo-plugin-ticker` (v2.5.2) and `@magmacomputing/tempo-plugin-sync` (v1.1.1).
 - **Atomic Cross-Thread Synchronization**: Lock-free nanosecond time synchronization across Web Workers and `worker_threads` via `SharedArrayBuffer` & `Atomics` in `@magmacomputing/tempo-plugin-sync` (v1.1.1).
 - **Pledge GC Lifecycle Safety**: Zero-boilerplate finalization safety for unhandled/abandoned promises in `packages/library/src/common/runtime/pledge.class.ts`.
 - **`Intl.DurationFormat` (`getDF`)**: Memoized duration formatting via native `Intl.DurationFormat` in `packages/library/src/common/runtime/international.library.ts`.
 - **`Intl.Locale` Week Info (`getLI`)**: Native retrieval of `firstDay` and `weekend` definitions via `getLI` in `packages/library/src/common/runtime/international.library.ts` without external calendar data tables (aligning with finalized ECMA-402 Intl.Locale info specifications).
-- **Explicit Resource Management**: Full support for TC39 `using` and `await using` (`Symbol.dispose`, `Symbol.asyncDispose`) across `Ticker`, `AtomicClock`, and `Pledge`.
+- **`Aborter` & `AbortSignal` Utilities (`aborter.library.ts`)**: Universal, tree-shakeable cancellation primitives providing disposable `Aborter` (`using aborter = new Aborter()`), safe unbind lifecycle listener binding (`onAbort(signal, cb)`), composite signals (`anySignal`), timeout signals (`timeoutSignal`), and cross-realm type guards (`isAbortSignal`, `isAbortController`) in `packages/library/src/common/runtime/aborter.library.ts`.
+- **Explicit Resource Management**: Full support for TC39 `using` and `await using` (`Symbol.dispose`, `Symbol.asyncDispose`) across `Aborter`, `Reactive`, `Ticker`, `AtomicClock`, and `Pledge`.
 - **Temporal Polyfill / TC39 Temporal Integration**: Foundation built on ISO 8601 calendar, exact nanosecond epochs, and timezone offsets.
 
 ---
@@ -62,13 +64,14 @@ Tempo already leverages several cutting-edge platform primitives:
 
 ### C. Automatic Ticker, Sync & Stream Finalization (`Finalizer` / `FinalizationRegistry`)
 **Target**: *`@magmacomputing/tempo-plugin-ticker` & `@magmacomputing/tempo-plugin-sync`*  
-**Status**: **Delivered (Ticker v2.5.1, Sync v1.1.1, Library v4.4.3)**
+**Status**: **Delivered (Ticker v2.5.2, Sync v1.1.1, Library v4.4.4, Tempo v4.4.4)**
 
 * **The Problem**: If a developer instantiates an active ticker or event stream without calling `.stop()` or using `using`, active timer handles (`setInterval` / `setTimeout`) remain alive as orphaned zombie processes in the event loop.
 * **The Solution**:
   - Registered active `Ticker` and `AtomicClock` handles with `Finalizer.register` (`finalizer.class.ts`).
   - When user code drops all references to the handle without explicitly stopping it, the Garbage Collector triggers the finalizer to automatically clear underlying timers.
   - Active registry `ACTIVE_TICKERS` holds `WeakRef<Ticker.Instance>`, ensuring `Tempo.tickers` queries live instances without pinning unreferenced tickers into memory.
+  - Upgraded Ticker engine (`v2.5.2`) to delegate internal queuing, push/pull iteration, and multicasting directly to `Reactive<Tempo>`, with automatic timer cleanup when callbacks trigger `stop()`.
 * **Cross-Platform Caveats & Ethos Alignment**:
   - Fully universal across Node.js, Deno, Bun, and all modern browsers (ES2021+ `FinalizationRegistry` & `WeakRef`).
 
@@ -101,7 +104,7 @@ Tempo already leverages several cutting-edge platform primitives:
 * **Cross-Platform Caveats & Ethos Alignment**:
   - **Early TC39 Stage 1**: Specification is evolving with no native engine implementation in V8, SpiderMonkey, or JSC. Polyfills add non-trivial bundle weight.
   - **Framework Fragmentation**: Frameworks use incompatible reactive graph schedulers.
-  - **Architectural Fit**: **Hold off**. Tempo already provides universal, zero-dependency async reactivity across all runtimes via `Symbol.asyncIterator` (`for await`), `Symbol.dispose`, and standard event subscriptions (`ticker.on('tick')`). Re-evaluate when TC39 Signals reaches Stage 3.
+  - **Architectural Fit**: **Hold off**. Tempo delivers universal, zero-dependency async reactivity across all runtimes via `Reactive<T>` (`Symbol.asyncIterator`, `Symbol.dispose`, `.on()`, `.pull()`, `.cast()`, and `.until()`) in `#library` and the Plugin SDK. Re-evaluate TC39 Signals when the specification reaches Stage 3.
 
 ---
 
@@ -137,11 +140,13 @@ Tempo already leverages several cutting-edge platform primitives:
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **`WeakCache` Memoization** | Core `#library` / Tempo Core | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered (v4.4.3)** |
 | **`Finalizer` GC Hooks** | Core `#library` (`finalizer.class.ts`) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered (v4.4.3)** |
-| **Ticker & AtomicClock Finalization** | Ticker (v2.5.1) & Sync (v1.1.1) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered** |
+| **`Reactive<T>` Stream Engine** | Core `#library` (`reactive.class.ts`) / Plugin SDK | Universal (ES2022+) | Medium | **Universal Isomorphic** | **Delivered (v4.4.4 / Ticker v2.5.2)** |
+| **`Aborter` & Signal Utilities** | Core `#library` (`aborter.library.ts`) / Plugin SDK | Universal (ES2022+) | Low | **Universal Isomorphic** | **Delivered (v4.4.4)** |
+| **Ticker & AtomicClock Finalization** | Ticker (v2.5.2) & Sync (v1.1.1) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered** |
 | **Pledge GC Safety** | Core `#library` (`pledge.class.ts`) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered (v4.4.3)** |
 | **Atomic Cross-Thread Sync** | `@magmacomputing/tempo-plugin-sync` | Browser / Node.js (Workers) | Medium | **Universal Isomorphic** (Workers & Threads) | **Delivered (v1.1.1)** |
 | **Web Locks Leader Tab** | `@magmacomputing/tempo-plugin-tabsync` | Browser (Modern) | Medium | **Plugin-Only** (Browser Multi-Tab) | High (Multi-tab efficiency) |
 | **`scheduler.postTask()`** | Core Ticker | Chrome/Edge/Deno (Polyfillable) | Low | **Cross-Platform Adapter Required** | High (Render-aligned pacing) |
 | **Network Clock Drift** | `@magmacomputing/tempo-plugin-ntp` | Universal (via HTTP `Date`) | Low | **Universal Baseline** (HTTP HEAD / Date) | High (Financial/auction precision) |
-| **TC39 Signals** | `@magmacomputing/tempo-plugin-signals` | Early TC39 Stage 1 | High | **Hold Off** (Rely on AsyncIterable/Events) | Low ROI until Stage 3 |
+| **TC39 Signals** | `@magmacomputing/tempo-plugin-signals` | Early TC39 Stage 1 | High | **Hold Off** (Rely on `Reactive<T>` / AsyncIterable) | Low ROI until Stage 3 |
 | **Screen Wake Lock** | Ticker / Countdown Option | Browser (Mobile/Desktop) | Low | **Progressive Enhancement** (Silent No-Op) | Medium (Presentation/Kiosk DX) |

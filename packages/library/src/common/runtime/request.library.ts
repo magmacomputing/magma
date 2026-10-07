@@ -1,4 +1,5 @@
-import { isNumber, isDefined, isFunction } from '#library/assertion.library.js';
+import { isNumber, isDefined, isFunction, isAbortSignal } from '#library/assertion.library.js';
+import { timeoutSignal } from './aborter.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds
@@ -117,9 +118,7 @@ const readBoundedBody = async (res: Response, maxBytes: number): Promise<string>
 export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {
 	const signallingInit = {
 		...init,
-		signal: init.signal
-			? AbortSignal.any([init.signal, AbortSignal.timeout(config.timeout ?? TWO_SECONDS)])
-			: AbortSignal.timeout(config.timeout ?? TWO_SECONDS)
+		signal: timeoutSignal(config.timeout ?? TWO_SECONDS, isAbortSignal(init.signal) ? init.signal : undefined)
 	};
 
 	return fetch(url, signallingInit)													// caller will handle the 'catch' if error
@@ -206,7 +205,7 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
  * ```
  */
 export const fetchHead = (url: string | URL) => {
-	const signal = AbortSignal.timeout(TWO_SECONDS);
+	const signal = timeoutSignal(TWO_SECONDS);
 	const init = { method: METHOD.Head, signal }							// only interested in verifying that url responds
 
 	return fetch(url, init)																		// caller will handle the 'catch' if error
