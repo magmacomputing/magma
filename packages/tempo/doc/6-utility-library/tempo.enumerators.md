@@ -76,9 +76,9 @@ const monthIndex = MONTH.Feb;
 Import individual enumerators directly:
 
 ```typescript
-import { COMPASS, MONTH, WEEKDAY } from '@magmacomputing/tempo/enums';
+import { COMPASS, MONTH, WEEKDAY, Enum } from '@magmacomputing/tempo/enums';
 
-console.log('compass keys: ', COMPASS.keys());
+console.log('compass keys: ', Enum.keys(COMPASS));
 ```
 
 ### Static-First Reflection Suite (`Enum.*`)

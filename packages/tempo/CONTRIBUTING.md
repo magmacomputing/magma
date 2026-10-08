@@ -34,9 +34,8 @@ We use **Vitest** for our test suite. All new features or bug fixes must include
 
 - **Run all tests**: `npm run test`
 - **Run distribution tests**: `npm run test:dist` (Tests the compiled `dist/` bundles)
-- **Run browser compatibility tests**: `npm run test:browser` (Requires Chrome/Chromium for headless WebdriverIO execution)
-- **Watch mode**: `npm run dev`
-- **Coverage**: `npm run coverage`
+- **Run CI environment tests**: `npm run test:ci` (Runs with fixed timezone `America/New_York`)
+- **Interactive Watch mode**: `npx vitest`
 
 > [!IMPORTANT]
 > **Zero State Contamination**: Tests must be idempotent. If your test modifies a global registry (e.g., `Tempo.use`), ensure you use the `using` keyword or manually call `Tempo[Symbol.dispose]()` to reset the engine for the next test.

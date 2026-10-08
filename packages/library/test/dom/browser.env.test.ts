@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { WebStore } from '../../src/browser/webstore.class.js';
 import { alert, prompt, confirm } from '../../src/browser/window.library.js';
 import { onAbort, anySignal, timeoutSignal, Aborter } from '../../src/common/runtime/aborter.library.js';

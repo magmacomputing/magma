@@ -10,11 +10,11 @@ This document serves as an index summarizing these core library features.
 
 <br>
 
-## 1. Enumerators (`enumify`)
+## 1. Enumerators (`enumify`, `Enum.*`)
 
 Tempo uses a custom utility called `enumify` to create heavily-protected, iterable enum-like objects instead of relying on native TypeScript enums.
 
-This allows for structural typing, easy iteration (`.keys()`, `.values()`), and runtime safety without the overhead or compilation quirks of standard TS Enums.
+This allows for structural typing, easy type-safe iteration via static reflection helpers (`Enum.keys()`, `Enum.values()`), and runtime safety without the overhead or compilation quirks of standard TS Enums.
 
 It is heavily used internally for concepts like `Weekdays`, `Months`, `Compass cardinal points` and `Meteorological Seasons`.
 
