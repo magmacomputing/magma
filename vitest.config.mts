@@ -100,6 +100,17 @@ export default defineConfig({
           name: 'Library',
           color: 'magenta',
           include: ['packages/library/test/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**', '**/dist/**', '**/test/dom/**'],
+          setupFiles: ['./packages/library/test/setup.ts'],
+        } as any
+      },
+      {
+        extends: './packages/tempo/vitest.config.ts',
+        test: {
+          name: 'Browser: DOM',
+          color: 'blue',
+          environment: 'happy-dom',
+          include: ['packages/library/test/dom/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**', '**/dist/**'],
           setupFiles: ['./packages/library/test/setup.ts'],
         } as any
