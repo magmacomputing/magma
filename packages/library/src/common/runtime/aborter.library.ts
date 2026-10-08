@@ -29,7 +29,7 @@ export class Aborter extends AbortController implements Disposable {
 }
 
 /** Immutable shared noop function for null-object teardown patterns */
-export const NOOP: () => void = Object.freeze(() => {});
+export const NOOP: () => void = Object.freeze(() => { });
 
 /**
  * Safely binds an abort callback to an AbortSignal.
@@ -55,6 +55,42 @@ export function onAbort(signal: AbortSignal | undefined, callback: () => void): 
 }
 
 /**
+ * Combines multiple AbortSignals into a single composite signal using a cross-realm and duck-type safe controller.
+ * Automatically filters out undefined or non-signal values and propagates the abort reason.
+ *
+ * @param signals - Array of AbortSignals (or undefined values)
+ * @returns A composite AbortSignal
+ */
+export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal {
+	const valid = signals.filter(isAbortSignal);
+	if (valid.length === 0) return new AbortController().signal;
+	if (valid.length === 1) return valid[0]!;
+
+	for (const sig of valid) {
+		if (sig.aborted) {
+			const controller = new AbortController();
+			controller.abort(sig.reason);
+			return controller.signal;
+		}
+	}
+
+	const controller = new AbortController();
+	const unbinds: (() => void)[] = [];
+	const trigger = (reason?: any) => {
+		for (const unbind of unbinds) unbind();
+		unbinds.length = 0;
+		if (!controller.signal.aborted)
+			controller.abort(reason);
+	};
+
+	for (const sig of valid) {
+		unbinds.push(onAbort(sig, () => trigger(sig.reason)));
+	}
+
+	return controller.signal;
+}
+
+/**
  * Creates an AbortSignal with a timeout in milliseconds, optionally composed with an existing parent signal.
  *
  * @param ms - Timeout duration in milliseconds
@@ -64,19 +100,5 @@ export function onAbort(signal: AbortSignal | undefined, callback: () => void): 
 export function timeoutSignal(ms: number, parentSignal?: AbortSignal): AbortSignal {
 	const timeout = isNumber(ms) && ms >= 0 ? ms : 0;
 	const timeoutSig = AbortSignal.timeout(timeout);
-	return isAbortSignal(parentSignal) ? AbortSignal.any([parentSignal, timeoutSig]) : timeoutSig;
-}
-
-/**
- * Combines multiple AbortSignals into a single composite signal using `AbortSignal.any`.
- * Automatically filters out undefined or non-signal values.
- *
- * @param signals - Array of AbortSignals (or undefined values)
- * @returns A composite AbortSignal
- */
-export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal {
-	const valid = signals.filter(isAbortSignal);
-	if (valid.length === 0) return new AbortController().signal;
-	if (valid.length === 1) return valid[0]!;
-	return AbortSignal.any(valid);
+	return isAbortSignal(parentSignal) ? anySignal(parentSignal, timeoutSig) : timeoutSig;
 }

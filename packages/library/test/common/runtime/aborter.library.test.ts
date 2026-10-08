@@ -173,7 +173,7 @@ describe('Aborter & Signal Utilities', () => {
 			expect(composite).toBe(controller.signal);
 		});
 
-		it('combines multiple signals and aborts if any signal aborts', () => {
+		it('combines multiple signals and aborts if any signal aborts with correct reason', () => {
 			const ac1 = new AbortController();
 			const ac2 = new AbortController();
 			const composite = anySignal(ac1.signal, ac2.signal);
@@ -181,6 +181,40 @@ describe('Aborter & Signal Utilities', () => {
 
 			ac2.abort('ac2 fired');
 			expect(composite.aborted).toBe(true);
+			expect(composite.reason).toBe('ac2 fired');
+		});
+
+		it('works seamlessly with duck-typed / cross-realm signals', () => {
+			let abortListener: (() => void) | undefined;
+			const duckSignal: AbortSignal = {
+				aborted: false,
+				reason: undefined,
+				addEventListener: (_event: string, listener: any) => {
+					abortListener = listener;
+				},
+				removeEventListener: vi.fn()
+			} as any;
+
+			const nativeAc = new AbortController();
+			const composite = anySignal(duckSignal, nativeAc.signal);
+			expect(composite.aborted).toBe(false);
+
+			(duckSignal as any).aborted = true;
+			(duckSignal as any).reason = 'duck-aborted';
+			abortListener?.();
+
+			expect(composite.aborted).toBe(true);
+			expect(composite.reason).toBe('duck-aborted');
+		});
+
+		it('immediately returns aborted signal when one of multiple signals is already aborted', () => {
+			const preAborted = new AbortController();
+			preAborted.abort('pre-reason');
+			const live = new AbortController();
+
+			const composite = anySignal(live.signal, preAborted.signal);
+			expect(composite.aborted).toBe(true);
+			expect(composite.reason).toBe('pre-reason');
 		});
 	});
 });
