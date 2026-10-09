@@ -64,29 +64,14 @@ export function onAbort(signal: AbortSignal | undefined, callback: () => void): 
  */
 export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal {
 	const valid = signals.filter(isAbortSignal);
-	if (valid.length === 0) {
-		const sig = new AbortController().signal as any;
-		sig.cleanup = NOOP;
-		sig[Symbol.dispose] = NOOP;
-		return sig;
-	}
-	if (valid.length === 1) {
-		const sig = valid[0]! as any;
-		if (!sig.cleanup) {
-			sig.cleanup = NOOP;
-			sig[Symbol.dispose] = NOOP;
-		}
-		return sig;
-	}
+	if (valid.length === 0) return new AbortController().signal;
+	if (valid.length === 1) return valid[0]!;
 
 	for (const sig of valid) {
 		if (sig.aborted) {
 			const controller = new AbortController();
 			controller.abort(sig.reason);
-			const abortedSig = controller.signal as any;
-			abortedSig.cleanup = NOOP;
-			abortedSig[Symbol.dispose] = NOOP;
-			return abortedSig;
+			return controller.signal;
 		}
 	}
 
@@ -123,14 +108,7 @@ export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal 
 export function timeoutSignal(ms: number, parentSignal?: AbortSignal): AbortSignal {
 	const timeout = isNumber(ms) && ms >= 0 ? ms : 0;
 	const timeoutSig = AbortSignal.timeout(timeout);
-	if (!isAbortSignal(parentSignal)) {
-		const sig = timeoutSig as any;
-		if (!sig.cleanup) {
-			sig.cleanup = NOOP;
-			sig[Symbol.dispose] = NOOP;
-		}
-		return sig;
-	}
+	if (!isAbortSignal(parentSignal)) return timeoutSig;
 	return anySignal(parentSignal, timeoutSig);
 }
 

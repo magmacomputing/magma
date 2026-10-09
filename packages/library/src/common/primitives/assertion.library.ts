@@ -202,7 +202,10 @@ export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
 
 /** Type guard to check if a value is an AbortSignal (cross-realm safe) */
 export const isAbortSignal = (obj: unknown): obj is AbortSignal =>
-	isReference(obj) && 'aborted' in obj && isCallable((obj as AbortSignal).addEventListener);
+	isReference(obj) &&
+	'aborted' in obj &&
+	isCallable((obj as AbortSignal).addEventListener) &&
+	isCallable((obj as AbortSignal).removeEventListener);
 
 /** Type guard to check if a value is an AbortController */
 export const isAbortController = (obj: unknown): obj is AbortController =>

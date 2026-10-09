@@ -8,6 +8,7 @@ import {
 	cleanupSignal,
 	NOOP,
 } from '#library/aborter.library.js';
+import { isCallable } from '#library/assertion.library.js';
 
 describe('Aborter & Signal Utilities', () => {
 	describe('Aborter class (Disposable AbortController)', () => {
@@ -64,7 +65,9 @@ describe('Aborter & Signal Utilities', () => {
 			expect(isAbortSignal(AbortSignal.timeout(100))).toBe(true);
 
 			// Duck typed
-			expect(isAbortSignal({ aborted: false, addEventListener: () => { } })).toBe(true);
+			expect(isAbortSignal({ aborted: false, addEventListener: () => { }, removeEventListener: () => { } })).toBe(true);
+			expect(isAbortSignal({ aborted: false, addEventListener: () => { } })).toBe(false);
+			expect(isAbortSignal({ aborted: false, removeEventListener: () => { } })).toBe(false);
 
 			// Invalid values
 			expect(isAbortSignal(null)).toBe(false);
@@ -218,12 +221,25 @@ describe('Aborter & Signal Utilities', () => {
 			expect(composite.reason).toBe('pre-reason');
 		});
 
+		it('returns single signal unchanged without assigning cleanup properties', () => {
+			const controller = new AbortController();
+			const originalSignal = controller.signal as any;
+			const result = anySignal(originalSignal) as any;
+
+			expect(result).toBe(originalSignal);
+			expect(result.cleanup).toBeUndefined();
+			expect(result[Symbol.dispose]).toBeUndefined();
+
+			// cleanupSignal on single signal is safe no-op
+			expect(() => cleanupSignal(result)).not.toThrow();
+		});
+
 		it('releases listeners on parent signals when cleanup or cleanupSignal is invoked', () => {
 			const parent = new AbortController();
 			const removeEventListenerSpy = vi.spyOn(parent.signal, 'removeEventListener');
 
 			const composite = anySignal(parent.signal, new AbortController().signal) as any;
-			expect(typeof composite.cleanup).toBe('function');
+			expect(isCallable(composite.cleanup)).toBe(true);
 
 			composite.cleanup();
 			expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
@@ -240,6 +256,12 @@ describe('Aborter & Signal Utilities', () => {
 			cleanupSignal(signal);
 
 			expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
+		});
+
+		it('timeoutSignal without parent signal is returned unchanged and cleanupSignal is a safe no-op', () => {
+			const signal = timeoutSignal(5000) as any;
+			expect(signal.cleanup).toBeUndefined();
+			expect(() => cleanupSignal(signal)).not.toThrow();
 		});
 	});
 });
