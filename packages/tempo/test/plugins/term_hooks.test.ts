@@ -69,6 +69,37 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(ordinalCalls[0].groups.term).toBe('#sprint.4');
 	});
 
+	it('should support written ordinals in [TermHook.ordinal] and return undefined when unresolvable', () => {
+		const SprintTerm = defineTerm({
+			key: 'sprintdoc',
+			scope: 'sprintdoc',
+			description: 'Sprint cycle term with written ordinal support',
+			define() {
+				return undefined;
+			},
+			[TermHook.ordinal](groups: Record<string, string>, anchor: any) {
+				const ordMap: Record<string, number> = {
+					first: 1, second: 2, third: 3, fourth: 4, fifth: 5, last: 14
+				};
+				const dayOffset = parseInt(groups.ord, 10) || ordMap[groups.ord?.toLowerCase()];
+				if (!dayOffset) return undefined;
+				return anchor.add({ days: dayOffset - 1 });
+			}
+		});
+
+		Tempo.use(SprintTerm);
+
+		const anchor = new Tempo('2026-03-01T00:00:00Z');
+		const tSecond = Tempo.from('second day of #sprintdoc.1', { anchor });
+		expect(tSecond.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-02');
+
+		const tLast = Tempo.from('last day of #sprintdoc.1', { anchor });
+		expect(tLast.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-14');
+
+		const t3rd = Tempo.from('3rd day of #sprintdoc.1', { anchor });
+		expect(t3rd.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-03');
+	});
+
 	it('should dispatch [TermHook.step] on add() and sub() dictionary mutations', () => {
 		const stepCalls: any[] = [];
 		const SteppableTerm = defineTerm({
@@ -101,10 +132,19 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		const shorthandAdded = t.add('#block.+2');
 		expect(shorthandAdded.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-29');
 
-		expect(stepCalls.length).toBe(3);
+		// add/sub via no-modifier range forms (derives step from caller offset)
+		const noModAdded = t.add({ '#block.1': 3 });
+		expect(noModAdded.format('{yyyy}-{mm}-{dd}')).toBe('2026-02-12');
+
+		const noModSubbed = t.sub({ '#block.2': 2 });
+		expect(noModSubbed.format('{yyyy}-{mm}-{dd}')).toBe('2025-12-04');
+
+		expect(stepCalls.length).toBe(5);
 		expect(stepCalls[0]).toEqual({ unit: '#block', count: 2 });
 		expect(stepCalls[1]).toEqual({ unit: '#block', count: -1 });
 		expect(stepCalls[2]).toEqual({ unit: '#block.+2', count: 2 });
+		expect(stepCalls[3]).toEqual({ unit: '#block.1', count: 3 });
+		expect(stepCalls[4]).toEqual({ unit: '#block.2', count: -2 });
 	});
 
 	it('should dispatch [TermHook.bound] on set() boundary snapping', () => {

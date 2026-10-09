@@ -366,7 +366,11 @@ export const SprintTerm = defineTerm({
   // 2. Ordinal: Handle ordinal offsets
   [TermHook.ordinal](groups, anchor) {
     // e.g. "3rd day of #sprint.current"
-    const dayOffset = parseInt(groups.ord, 10) || 1;
+    const ordMap: Record<string, number> = {
+      first: 1, second: 2, third: 3, fourth: 4, fifth: 5, last: 14
+    };
+    const dayOffset = parseInt(groups.ord, 10) || ordMap[groups.ord?.toLowerCase()];
+    if (!dayOffset) return undefined;
     return anchor.add({ days: dayOffset - 1 });
   },
 

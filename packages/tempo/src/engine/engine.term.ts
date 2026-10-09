@@ -200,7 +200,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 	// 0a. Term Lifecycle Hook: [TermHook.step]
 	if (RELATIVE_MUTATIONS.has(mutate as RelativeMutation) && isFunction((termObj as any)[TermHook.step])) {
-		const baseCount = (rangePart && (hasNbr || mod))
+		const baseCount = (rangePart && mod)
 			? (isBackwardShift(mod) ? -nbr : nbr)
 			: (isNumeric(offset) ? Number(offset) : 1);
 		const stepCount = (SUB_MUTATIONS.has(mutate as SubMutation) ? -1 : 1) * baseCount;
