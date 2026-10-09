@@ -9,6 +9,7 @@ import {
 	NOOP,
 } from '#library/aborter.library.js';
 import { isCallable } from '#library/assertion.library.js';
+import { TIMEOUT_MAX } from '#library/number.library.js';
 
 describe('Aborter & Signal Utilities', () => {
 	describe('Aborter class (Disposable AbortController)', () => {
@@ -149,9 +150,53 @@ describe('Aborter & Signal Utilities', () => {
 			expect(signal.aborted).toBe(true);
 		});
 
-		it('handles negative or invalid timeout ms gracefully', () => {
-			const signal = timeoutSignal(-10);
-			expect(isAbortSignal(signal)).toBe(true);
+		it('rounds fractional timeout delays and caps oversized delays at MAX_TIMEOUT', () => {
+			const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+
+			timeoutSignal(1.6);
+			expect(timeoutSpy).toHaveBeenCalledWith(2);
+
+			timeoutSignal(1.2);
+			expect(timeoutSpy).toHaveBeenCalledWith(1);
+
+			timeoutSignal(0.4);
+			expect(timeoutSpy).toHaveBeenCalledWith(0);
+
+			timeoutSignal(10_000_000_000);
+			expect(timeoutSpy).toHaveBeenCalledWith(TIMEOUT_MAX);
+
+			timeoutSignal(Infinity);
+			expect(timeoutSpy).toHaveBeenCalledWith(TIMEOUT_MAX);
+
+			timeoutSpy.mockRestore();
+		});
+
+		it('preserves zero for invalid or negative durations', () => {
+			const timeoutSpy = vi.spyOn(AbortSignal, 'timeout');
+
+			timeoutSignal(-10);
+			expect(timeoutSpy).toHaveBeenCalledWith(0);
+
+			timeoutSignal(NaN as any);
+			expect(timeoutSpy).toHaveBeenCalledWith(0);
+
+			timeoutSignal(undefined as any);
+			expect(timeoutSpy).toHaveBeenCalledWith(0);
+
+			timeoutSpy.mockRestore();
+		});
+
+		it('verifies abort timing for fractional and oversized inputs', async () => {
+			const fractionalSignal = timeoutSignal(19.6); // rounds to 20ms
+			const cappedSignal = timeoutSignal(10_000_000_000); // capped at TIMEOUT_MAX
+
+			expect(fractionalSignal.aborted).toBe(false);
+			expect(cappedSignal.aborted).toBe(false);
+
+			await new Promise((r) => setTimeout(r, 40));
+
+			expect(fractionalSignal.aborted).toBe(true);
+			expect(cappedSignal.aborted).toBe(false);
 		});
 
 		it('combines with a parent signal and aborts if parent aborts first', () => {

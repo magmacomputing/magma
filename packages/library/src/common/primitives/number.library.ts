@@ -2,6 +2,11 @@ import { asArray, asNumber, ifNumeric } from '#library/coercion.library.js';
 import type { TValues } from '#library/type.library.js';
 
 /**
+ * Maximum 32-bit signed integer timer delay supported by Node.js and the HTML timer specification (2^31 - 1).
+ */
+export const TIMEOUT_MAX = 2 ** 31 - 1;
+
+/**
  * Converts a number or array of numbers into a contiguous hexadecimal string.
  * Flattens nested arrays and filters out non-integers.
  * 
