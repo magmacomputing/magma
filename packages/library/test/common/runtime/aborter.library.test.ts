@@ -5,6 +5,7 @@ import {
 	onAbort,
 	timeoutSignal,
 	anySignal,
+	cleanupSignal,
 	NOOP,
 } from '#library/aborter.library.js';
 
@@ -215,6 +216,30 @@ describe('Aborter & Signal Utilities', () => {
 			const composite = anySignal(live.signal, preAborted.signal);
 			expect(composite.aborted).toBe(true);
 			expect(composite.reason).toBe('pre-reason');
+		});
+
+		it('releases listeners on parent signals when cleanup or cleanupSignal is invoked', () => {
+			const parent = new AbortController();
+			const removeEventListenerSpy = vi.spyOn(parent.signal, 'removeEventListener');
+
+			const composite = anySignal(parent.signal, new AbortController().signal) as any;
+			expect(typeof composite.cleanup).toBe('function');
+
+			composite.cleanup();
+			expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
+
+			// Repeated cleanup is idempotent
+			expect(() => cleanupSignal(composite)).not.toThrow();
+		});
+
+		it('timeoutSignal releases listener on parent signal when cleanupSignal is invoked', () => {
+			const parent = new AbortController();
+			const removeEventListenerSpy = vi.spyOn(parent.signal, 'removeEventListener');
+
+			const signal = timeoutSignal(5000, parent.signal);
+			cleanupSignal(signal);
+
+			expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
 		});
 	});
 });

@@ -1,5 +1,5 @@
 import { isNumber, isDefined, isFunction, isAbortSignal } from '#library/assertion.library.js';
-import { timeoutSignal } from './aborter.library.js';
+import { timeoutSignal, cleanupSignal } from './aborter.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
 const TWO_SECONDS = 2_000;																	// default time-out for requests, in milliseconds
@@ -116,9 +116,10 @@ const readBoundedBody = async (res: Response, maxBytes: number): Promise<string>
  * ```
  */
 export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, config = {} as Config) => {
+	const signal = timeoutSignal(config.timeout ?? TWO_SECONDS, isAbortSignal(init.signal) ? init.signal : undefined);
 	const signallingInit = {
 		...init,
-		signal: timeoutSignal(config.timeout ?? TWO_SECONDS, isAbortSignal(init.signal) ? init.signal : undefined)
+		signal
 	};
 
 	return fetch(url, signallingInit)													// caller will handle the 'catch' if error
@@ -191,6 +192,9 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 
 			throw new HttpError(res.status, res.statusText, errorBody);	// fetch not successful
 		})
+		.finally(() => {
+			cleanupSignal(signal);
+		});
 }
 
 /**
@@ -215,4 +219,7 @@ export const fetchHead = (url: string | URL) => {
 
 			throw new HttpError(status, statusText, null);				// fetch not successful
 		})
+		.finally(() => {
+			cleanupSignal(signal);
+		});
 }

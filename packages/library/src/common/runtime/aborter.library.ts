@@ -57,28 +57,47 @@ export function onAbort(signal: AbortSignal | undefined, callback: () => void): 
 /**
  * Combines multiple AbortSignals into a single composite signal using a cross-realm and duck-type safe controller.
  * Automatically filters out undefined or non-signal values and propagates the abort reason.
+ * The returned signal provides a `cleanup()` method to detach listeners from parent signals early.
  *
  * @param signals - Array of AbortSignals (or undefined values)
- * @returns A composite AbortSignal
+ * @returns A composite AbortSignal with a cleanup teardown method
  */
 export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal {
 	const valid = signals.filter(isAbortSignal);
-	if (valid.length === 0) return new AbortController().signal;
-	if (valid.length === 1) return valid[0]!;
+	if (valid.length === 0) {
+		const sig = new AbortController().signal as any;
+		sig.cleanup = NOOP;
+		sig[Symbol.dispose] = NOOP;
+		return sig;
+	}
+	if (valid.length === 1) {
+		const sig = valid[0]! as any;
+		if (!sig.cleanup) {
+			sig.cleanup = NOOP;
+			sig[Symbol.dispose] = NOOP;
+		}
+		return sig;
+	}
 
 	for (const sig of valid) {
 		if (sig.aborted) {
 			const controller = new AbortController();
 			controller.abort(sig.reason);
-			return controller.signal;
+			const abortedSig = controller.signal as any;
+			abortedSig.cleanup = NOOP;
+			abortedSig[Symbol.dispose] = NOOP;
+			return abortedSig;
 		}
 	}
 
 	const controller = new AbortController();
 	const unbinds: (() => void)[] = [];
-	const trigger = (reason?: any) => {
+	const cleanup = () => {
 		for (const unbind of unbinds) unbind();
 		unbinds.length = 0;
+	};
+	const trigger = (reason?: any) => {
+		cleanup();
 		if (!controller.signal.aborted)
 			controller.abort(reason);
 	};
@@ -87,11 +106,15 @@ export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal 
 		unbinds.push(onAbort(sig, () => trigger(sig.reason)));
 	}
 
-	return controller.signal;
+	const composite = controller.signal as any;
+	composite.cleanup = cleanup;
+	composite[Symbol.dispose] = cleanup;
+	return composite;
 }
 
 /**
  * Creates an AbortSignal with a timeout in milliseconds, optionally composed with an existing parent signal.
+ * The returned signal provides a `cleanup()` method to detach listeners from the parent signal early.
  *
  * @param ms - Timeout duration in milliseconds
  * @param parentSignal - Optional parent AbortSignal to combine with the timeout
@@ -100,5 +123,27 @@ export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal 
 export function timeoutSignal(ms: number, parentSignal?: AbortSignal): AbortSignal {
 	const timeout = isNumber(ms) && ms >= 0 ? ms : 0;
 	const timeoutSig = AbortSignal.timeout(timeout);
-	return isAbortSignal(parentSignal) ? anySignal(parentSignal, timeoutSig) : timeoutSig;
+	if (!isAbortSignal(parentSignal)) {
+		const sig = timeoutSig as any;
+		if (!sig.cleanup) {
+			sig.cleanup = NOOP;
+			sig[Symbol.dispose] = NOOP;
+		}
+		return sig;
+	}
+	return anySignal(parentSignal, timeoutSig);
+}
+
+/**
+ * Safely releases a composed signal or timeout signal by unbinding its listeners from any parent signals.
+ *
+ * @param signal - The AbortSignal to clean up
+ */
+export function cleanupSignal(signal?: any): void {
+	if (!signal) return;
+	if (isCallable(signal.cleanup)) {
+		signal.cleanup();
+	} else if (isCallable(signal[Symbol.dispose])) {
+		signal[Symbol.dispose]();
+	}
 }
