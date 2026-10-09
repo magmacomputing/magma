@@ -30,12 +30,48 @@ export default withMermaid(defineConfig({
     nav: [
       { text: 'Guide', link: '/README' },
       { text: 'REPL', link: '/repl/index.html', target: '_blank' },
-      { text: 'API Reference', link: '/api/index.html', target: '_blank' },
-      { text: 'Library API', link: '/api/library/index.html', target: '_blank' },
-      { text: 'Functions', link: 'https://magmacomputing.github.io/magma/functions/' }
+      {
+        text: 'API Reference',
+        items: [
+          {
+            text: 'Tempo APIs',
+            items: [
+              { text: 'Tempo Core API (TypeDoc) ↗', link: '/api/index.html', target: '_blank' },
+              { text: 'Standalone Functions ↗', link: 'https://magmacomputing.github.io/magma/functions/' }
+            ]
+          },
+          {
+            text: 'Utility Library',
+            items: [
+              { text: 'Utility Library Guides', link: '/doc/6-utility-library/tempo.library' },
+              { text: 'Utility API (TypeDoc) ↗', link: '/api/library/index.html', target: '_blank' }
+            ]
+          }
+        ]
+      }
     ],
     sidebar: {
       '/doc/9-plugins/': pluginsSidebar,
+      '/doc/6-utility-library/': [
+        {
+          text: 'Utility Library',
+          items: [
+            { text: '← Back to Guide', link: '/README' },
+            { text: 'Library Overview', link: '/doc/6-utility-library/tempo.library' },
+            { text: 'Enumerators (enumify)', link: '/doc/6-utility-library/tempo.enumerators' },
+            { text: 'Serializers (stringify / objectify)', link: '/doc/6-utility-library/tempo.serializers' },
+            { text: 'Reactive Streams (Reactive<T>)', link: '/doc/6-utility-library/tempo.reactive' },
+            { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
+          ]
+        },
+        {
+          text: 'TypeDoc Reference',
+          items: [
+            { text: 'Library API (TypeDoc) ↗', link: '/api/library/index.html', target: '_blank' },
+            { text: 'Tempo Core API (TypeDoc) ↗', link: '/api/index.html', target: '_blank' }
+          ]
+        }
+      ],
       '/': [
         {
           text: 'Getting Started',
@@ -91,16 +127,6 @@ export default withMermaid(defineConfig({
             { text: 'Soft Freeze Strategy', link: '/doc/5-architecture-and-internals/soft_freeze_strategy' },
             { text: 'Lazy Evaluation', link: '/doc/5-architecture-and-internals/lazy-evaluation-pattern' },
             { text: 'Performance Benchmarks', link: '/doc/5-architecture-and-internals/tempo.benchmarks' }
-          ]
-        },
-        {
-          text: 'Utility Library',
-          items: [
-            { text: 'Library Overview', link: '/doc/6-utility-library/tempo.library' },
-            { text: 'Enumerators', link: '/doc/6-utility-library/tempo.enumerators' },
-            { text: 'Serializers', link: '/doc/6-utility-library/tempo.serializers' },
-            { text: 'Reactive Streams', link: '/doc/6-utility-library/tempo.reactive' },
-            { text: 'Advanced Promises (Pledge)', link: '/doc/6-utility-library/tempo.pledge' }
           ]
         },
         {

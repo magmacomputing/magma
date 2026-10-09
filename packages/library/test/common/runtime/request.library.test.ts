@@ -180,6 +180,35 @@ describe('request.library', () => {
 			);
 			expect(result).toEqual({ valid: true });
 		});
+
+		it('should release listeners from caller-provided signal after request settles', async () => {
+			const callerController = new AbortController();
+			const removeEventListenerSpy = vi.spyOn(callerController.signal, 'removeEventListener');
+
+			mockFetch.mockResolvedValueOnce({
+				ok: true,
+				headers: new Headers({ 'Content-Type': 'application/json' }),
+				json: async () => ({ status: 'done' })
+			} as unknown as Response);
+
+			await fetchRequest('https://example.com/clean', { signal: callerController.signal });
+			expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
+		});
+
+		it('should release listeners from caller-provided signal even when request throws HttpError', async () => {
+			const callerController = new AbortController();
+			const removeEventListenerSpy = vi.spyOn(callerController.signal, 'removeEventListener');
+
+			mockFetch.mockResolvedValueOnce({
+				ok: false,
+				status: 500,
+				statusText: 'Server Error',
+				text: async () => 'Internal Error'
+			} as unknown as Response);
+
+			await expect(fetchRequest('https://example.com/fail', { signal: callerController.signal })).rejects.toThrow();
+			expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
+		});
 	});
 
 	describe('fetchHead', () => {

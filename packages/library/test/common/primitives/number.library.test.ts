@@ -1,6 +1,13 @@
-import { toHex, suffix, split, fix, asTime } from '#library/number.library.js';
+import { toHex, suffix, split, fix, asTime, TIMEOUT_MAX } from '#library/number.library.js';
 
 describe('Number Library', () => {
+	describe('TIMEOUT_MAX', () => {
+		it('should equal 2^31 - 1', () => {
+			expect(TIMEOUT_MAX).toBe(2_147_483_647);
+			expect(TIMEOUT_MAX).toBe(2 ** 31 - 1);
+		});
+	});
+
 	describe('toHex', () => {
 		it('should convert numbers to hex strings', () => {
 			expect(toHex([255, 16])).toBe('ff10');

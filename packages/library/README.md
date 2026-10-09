@@ -82,11 +82,11 @@ const restored = objectify(json); // Fully restored types!
 
 ## 📚 Documentation
 
-For deep dives into specific APIs, please refer to the internal documentation:
+For deep dives into specific APIs, explore the generated module reference or the user guides:
 
-- **Common Utilities**: [packages/library/doc/common/](./doc/common/)
-- **Browser-Specific**: [packages/library/doc/browser/](./doc/browser/)
-- **Server/Node.js**: [packages/library/doc/server/](./doc/server/)
+- **Common Utilities**: [Common API Reference](https://magmacomputing.github.io/magma/api/library/modules/common.index.html) · [User Guide](https://magmacomputing.github.io/magma/doc/6-utility-library/tempo.library.html) · [GitHub Source](https://github.com/magmacomputing/magma/tree/main/packages/library/doc/common/)
+- **Browser-Specific**: [Browser API Reference](https://magmacomputing.github.io/magma/api/library/modules/browser.index.html) · [GitHub Source](https://github.com/magmacomputing/magma/tree/main/packages/library/doc/browser/)
+- **Server/Node.js**: [Server API Reference](https://magmacomputing.github.io/magma/api/library/modules/server.index.html) · [GitHub Source](https://github.com/magmacomputing/magma/tree/main/packages/library/doc/server/)
 
 ---
 
