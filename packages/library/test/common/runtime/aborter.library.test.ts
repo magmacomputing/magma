@@ -263,5 +263,13 @@ describe('Aborter & Signal Utilities', () => {
 			expect(signal.cleanup).toBeUndefined();
 			expect(() => cleanupSignal(signal)).not.toThrow();
 		});
+
+		it('handles fractional, negative, and oversized timeout delays safely without throwing', () => {
+			expect(() => timeoutSignal(1.5)).not.toThrow();
+			expect(() => timeoutSignal(-10)).not.toThrow();
+			expect(() => timeoutSignal(2_147_483_648)).not.toThrow();
+			expect(() => timeoutSignal(NaN as any)).not.toThrow();
+			expect(() => timeoutSignal(Infinity as any)).not.toThrow();
+		});
 	});
 });

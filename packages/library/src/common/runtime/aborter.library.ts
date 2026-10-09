@@ -97,6 +97,8 @@ export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal 
 	return composite;
 }
 
+const MAX_TIMEOUT = 2_147_483_647; // 2^31 - 1 (Node.js max 32-bit signed timer delay)
+
 /**
  * Creates an AbortSignal with a timeout in milliseconds, optionally composed with an existing parent signal.
  * The returned signal provides a `cleanup()` method to detach listeners from the parent signal early.
@@ -106,7 +108,7 @@ export function anySignal(...signals: (AbortSignal | undefined)[]): AbortSignal 
  * @returns An AbortSignal that aborts when either the timeout expires or the parent signal aborts
  */
 export function timeoutSignal(ms: number, parentSignal?: AbortSignal): AbortSignal {
-	const timeout = isNumber(ms) && ms >= 0 ? ms : 0;
+	const timeout = Number.isInteger(ms) && ms >= 0 && ms <= MAX_TIMEOUT ? ms : 0;
 	const timeoutSig = AbortSignal.timeout(timeout);
 	if (!isAbortSignal(parentSignal)) return timeoutSig;
 	return anySignal(parentSignal, timeoutSig);
