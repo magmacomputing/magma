@@ -35,7 +35,7 @@ export {
 
 export { markConfig, markExtensible, markSymbol } from '#library/symbol.library.js';
 export { BoundedCache } from '#library/cache.class.js';
-export { sym, isTempo, Token, TermError, type TempoBrand } from './support.symbol.js';
+export { sym, isTempo, Token, TermError, TermHook, type TempoBrand } from './support.symbol.js';
 export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $LogConfig, $Discover } from './support.symbol.js';
 export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
 export { getRuntime, resetRuntime, TempoRuntime } from './support.runtime.js';

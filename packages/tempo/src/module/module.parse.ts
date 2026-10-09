@@ -14,11 +14,11 @@ import { selectLayoutPatterns } from '../engine/engine.planner.js';
 import { compose } from '../engine/engine.composer.js';
 import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js';
 
-import { getRange, getTermRange } from '../plugin/term/term.util.js';
+import { getRange, getTermRange, findTermPlugin } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
-import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
+import type { Range, ResolvedRange, TermParseContext } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet } from '#tempo/support';
+import { sym, isTempo, TermError, TermHook, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet } from '#tempo/support';
 import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
@@ -441,10 +441,46 @@ const _ParseEngine = {
 		if (isZonedDateTime(value))
 			return { type: 'Temporal.ZonedDateTime', value }
 
-		if (isString(value) && value.startsWith('#')) {
-			const res = resolveTermValue(TempoClass, state as any, value, dateTime);
-			if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res }
-			return { type: 'Void', value: undefined as any }
+		if (isString(value) && value.includes('#')) {
+			const hashIdx = value.indexOf('#');
+			const termId = value.slice(hashIdx + 1).split(/[\s./]/)[0];
+			const termObj = findTermPlugin(termId, state);
+			if (termObj) {
+				const ctx: TermParseContext = {
+					anchor: isZonedDateTime(dateTime) ? new TempoClass(dateTime, state.config) : undefined,
+					timeZone: state.config?.timeZone,
+					calendar: state.config?.calendar,
+					locale: state.config?.locale
+				};
+
+				// 1. TermHook.parse: Explicit #term string expression
+				if (value.startsWith('#') && isFunction((termObj as any)[TermHook.parse])) {
+					const hooked = (termObj as any)[TermHook.parse](value, ctx);
+					if (hooked) {
+						const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
+						if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt };
+					}
+				}
+
+				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
+				if (isFunction((termObj as any)[TermHook.ordinal])) {
+					const ordMatch = value.match(/(?<ord>\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last)\s+(?:day\s+of\s+)?(?<term>#[\w.]+)/i);
+					if (ordMatch?.groups) {
+						const anchorTempo = ctx.anchor ?? new TempoClass(dateTime, state.config);
+						const hooked = (termObj as any)[TermHook.ordinal](ordMatch.groups, anchorTempo);
+						if (hooked) {
+							const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
+							if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt };
+						}
+					}
+				}
+			}
+
+			if (value.startsWith('#')) {
+				const res = resolveTermValue(TempoClass, state as any, value, dateTime);
+				if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res };
+				return { type: 'Void', value: undefined as any };
+			}
 		}
 
 		if (isString(value)) {

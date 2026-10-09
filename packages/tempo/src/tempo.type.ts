@@ -136,9 +136,9 @@ export interface Options extends Partial<Internal.BaseOptions> {
 
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
-export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element
-export type Units = Plural<DateTimeUnit>;
-export type BaseDuration = Record<Units, number>;
+export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element | `#${string}`
+export type Units = Plural<DateTimeUnit>
+export type BaseDuration = Record<Units, number>
 /**
  * # FlexibleDuration
  * A distributive mapped type over {@link Units} which requires at least one duration key 

@@ -317,6 +317,93 @@ To enable this, your plugin can optionally provide a **`resolve(anchor)`** metho
 
 When the core engine needs to mathematically "step" through boundaries across multiple years, it repeatedly calls your `resolve` method with different `anchor` dates (e.g., shifting the year forward) to discover future/past boundaries seamlessly!
 
+## 🪝 Term Lifecycle Hooks Protocol
+
+Starting in **v4.6.0**, Term plugins can participate directly in Tempo's core parsing, arithmetic, boundary snapping, difference calculation, and formatting pipelines via well-known symbols.
+
+Instead of overriding core methods or monkey-patching regex tables, term plugins implement protocol hooks using well-known symbols (`Symbol.for`), exported under `TermHook`:
+
+```typescript
+import { defineTerm, TermHook, type TermParseContext, type Tempo } from '@magmacomputing/tempo';
+```
+
+### The 6 Lifecycle Hooks
+
+| Hook Symbol | Method Signature | Engine Trigger |
+|---|---|---|
+| `[TermHook.parse]` | `(input: string, context?: TermParseContext) => Tempo \| Temporal.ZonedDateTime \| undefined` | Explicit `#term` natural string input (e.g. `new Tempo('#fiscal.q1')`) |
+| `[TermHook.ordinal]` | `(groups: Record<string, string>, anchor: Tempo) => Tempo \| Temporal.ZonedDateTime \| undefined` | Anchored ordinal expressions (e.g. `Tempo.from('3rd day of #sprint.2', { anchor })`) |
+| `[TermHook.step]` | `(unit: string, count: number, tempo: Tempo) => Tempo \| undefined` | Stepping arithmetic via dictionary syntax: `t.add({ '#term': n })`, `t.sub({ '#term': n })` |
+| `[TermHook.diff]` | `(other: Tempo, unit: string, tempo: Tempo) => number \| undefined` | Difference calculation: `t1.until(t2, '#term')`, `t1.since(t2, '#term')` |
+| `[TermHook.bound]` | `(boundary: 'start' \| 'mid' \| 'end', unit: string, tempo: Tempo) => Tempo \| undefined` | Range boundary snapping: `t.set({ '#term': 'start' })`, `t.set('#term.mid')` |
+| `[TermHook.format]` | `(token: string, tempo: Tempo) => string \| undefined` | Custom token formatting: `t.format('{#academic}')`, `t.format('{#academic:upper}')` |
+
+### Complete Hook Example
+
+```typescript
+import { defineTerm, TermHook } from '@magmacomputing/tempo';
+
+export const SprintTerm = defineTerm({
+  key: 'sprint',
+  scope: 'sprint',
+  description: 'Two-week development sprint cycle',
+  define() {
+    return {
+      key: 'sprint.1',
+      start: this.set({ hour: 0, minute: 0, second: 0, millisecond: 0 }),
+      end: this.add({ days: 14 })
+    };
+  },
+
+  // 1. Parse: Resolve custom #sprint expressions
+  [TermHook.parse](input, ctx) {
+    if (input === '#sprint.current') {
+      return (ctx?.anchor ?? this).set({ day: 1 });
+    }
+    return undefined;
+  },
+
+  // 2. Ordinal: Handle ordinal offsets
+  [TermHook.ordinal](groups, anchor) {
+    // e.g. "3rd day of #sprint.current"
+    const dayOffset = parseInt(groups.ord, 10) || 1;
+    return anchor.add({ days: dayOffset - 1 });
+  },
+
+  // 3. Step: add/sub sprint blocks
+  [TermHook.step](unit, count, tempo) {
+    return tempo.add({ days: count * 14 });
+  },
+
+  // 4. Bound: Snap to sprint start/end
+  [TermHook.bound](boundary, unit, tempo) {
+    if (boundary === 'start') return tempo.set({ hour: 9, minute: 0, second: 0, millisecond: 0 });
+    if (boundary === 'end') return tempo.add({ days: 14 }).set({ hour: 17, minute: 0, second: 0, millisecond: 0 });
+    return undefined;
+  },
+
+  // 5. Diff: Sprints between two dates
+  [TermHook.diff](other, unit, tempo) {
+    const diffDays = other.until(tempo, 'days');
+    return Math.floor(Math.abs(diffDays) / 14);
+  },
+
+  // 6. Format: Custom sprint format token
+  [TermHook.format](token, tempo) {
+    if (token === '#sprint') {
+      return `Sprint-${Math.ceil(tempo.dayOfYear / 14)}`;
+    }
+    return undefined;
+  }
+});
+```
+
+### Zero-Overhead Guarantee
+
+All lifecycle hooks are strictly isolated behind the `#` domain term sigil:
+- Calls to standard ISO date parsing (e.g. `new Tempo('2026-10-09')`), core unit arithmetic (e.g. `t.add({ months: 1 })`), and standard formatting (`t.format('{yyyy}-{mm}-{dd}')`) bypass hook lookups entirely with 0ns overhead.
+- Existing terms that do not implement lifecycle hooks continue to use default range-based dispatching without interruption.
+
 ## 🛠️ Developer Guide: Best Practices
 
 To ensure a custom `Term` plugin integrates fully with Tempo, follow these guidelines:

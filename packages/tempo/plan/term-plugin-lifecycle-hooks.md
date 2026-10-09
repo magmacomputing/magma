@@ -235,3 +235,17 @@ export const QuarterTerm = defineTerm({
        - `[TermHook.bound]` with `t.set({ '#mock': 'start' })`
        - `[TermHook.format]` with `t.format('{#mockToken}')`
      - Cross-module symbol identity verification (`Symbol.for`).
+
+---
+
+## 8. Phase 1 Implementation Status (Completed)
+
+- [x] **Branch**: `feature/term-lifecycle-hooks` (based on `feature/evaluate`).
+- [x] **Symbols & Types**: All 6 well-known symbols (`TermHook`) using `Symbol.for('magmacomputing/tempo/term/...')` exported from `term.type.ts`, `term.index.ts`, and core `tempo.index.ts`.
+- [x] **Engine Dispatch Slots**:
+  - `parse` & `ordinal`: Integrated into `_ParseEngine.conform` in [`module.parse.ts`](file:///home/michael/Project/magma/packages/tempo/src/module/module.parse.ts).
+  - `step` & `bound`: Integrated into `resolveTermMutation` in [`engine.term.ts`](file:///home/michael/Project/magma/packages/tempo/src/engine/engine.term.ts) and [`module.mutate.ts`](file:///home/michael/Project/magma/packages/tempo/src/module/module.mutate.ts).
+  - `diff`: Integrated into `until()` and `since()` in [`module.duration.ts`](file:///home/michael/Project/magma/packages/tempo/src/module/module.duration.ts).
+  - `format`: Integrated into token formatting in [`module.format.ts`](file:///home/michael/Project/magma/packages/tempo/src/module/module.format.ts).
+- [x] **Unit Tests**: Full test suite added in [`packages/tempo/test/plugins/term_hooks.test.ts`](file:///home/michael/Project/magma/packages/tempo/test/plugins/term_hooks.test.ts) covering all 6 hooks, symbol identity, fallbacks, and zero regression against existing terms.
+- [x] **Full Test Suite & Builds**: 104 test files (777 tests) passing; `npm run build` and VitePress documentation build passing cleanly.

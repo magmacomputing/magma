@@ -81,7 +81,10 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 		if (isDefined(args)) {
 			// 1. Shorthand String
 			if (isString(args) && args.startsWith('#')) {
-				const resolveType = (type === 'add' || type === 'subtract') ? type : 'start';
+				const sub = args.slice(1).split('.')[1];
+				const resolveType = (type === 'add' || type === 'subtract')
+					? type
+					: (sub === 'mid' || sub === 'end' ? sub : 'start');
 				const res = resolveTermMutation((this.constructor as any), this, resolveType, args, ((type === 'add' || type === 'subtract') ? 1 : args), zdt);
 				if (res === null) state.errored = true;
 				else zdt = res;
