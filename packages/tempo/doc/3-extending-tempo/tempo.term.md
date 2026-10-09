@@ -384,8 +384,8 @@ export const SprintTerm = defineTerm({
 
   // 5. Diff: Sprints between two dates
   [TermHook.diff](other, unit, tempo) {
-    const diffDays = other.until(tempo, 'days');
-    return Math.floor(Math.abs(diffDays) / 14);
+    const diffDays = tempo.until(other, 'days');
+    return Math.trunc(diffDays / 14);
   },
 
   // 6. Format: Custom sprint format token

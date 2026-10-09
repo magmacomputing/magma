@@ -190,8 +190,8 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	const [offsetTz] = getTemporalIds(offsetZdt);
 
 	// Term Lifecycle Hook: [TermHook.diff]
-	if (isString(unit) && (unit.startsWith('#') || isDefined(findTermPlugin(unit, (this as any)[sym.$Internal]?.())))) {
-		const termPart = unit.startsWith('#') ? unit.slice(1).split('.')[0] : unit.split('.')[0];
+	if (isString(unit) && unit.startsWith('#')) {
+		const [termPart] = unit.slice(1).split('.');
 		const termObj = findTermPlugin(termPart, (this as any)[sym.$Internal]?.());
 		if (termObj && isFunction((termObj as any)[TermHook.diff])) {
 			const targetTempo = isTempo(offset) ? offset : new (this.constructor as any)(offsetZdt, (this as any).config);

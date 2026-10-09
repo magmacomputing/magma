@@ -311,7 +311,7 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
 - `this.set(input)`: Reset the context to a specific date/time.
 - `this.add(duration)`: Add a Temporal-style duration (e.g. 'P1D').
 - `this.toNow()`: Align context with current system time.
-- `this.toDateTime()`: Resolve the context to a `Temporal.ZonedDateTime`.
+- `this.zdt` (or `this.toDateTime()`): Resolve the context to a `Temporal.ZonedDateTime`.
 - `this.yy` / `this.mm` / `this.dd`: Access current date components.
 - `this.hh` / `this.mi` / `this.ss`: Access current time components.
 - `this.tz` / `this.cal` / `this.locale` / `this.sphere` / `this.config`: Access instance metadata.
@@ -322,7 +322,7 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
     return this.set('2026-05-20').add({ hours: 1 }); // Resolves to 2026-05-20T01:00:00
 },
 'bedtime': function() {
-    return this.set('22:00').toDateTime();
+    return this.set('22:00').zdt; // or .toDateTime()
 }
 ```
 

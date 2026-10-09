@@ -380,8 +380,11 @@ const _ParseEngine = {
 
 			const hasExplicitTzOption = hasOwn(state.options, 'timeZone');
 			const effectiveTz = hasExplicitTzOption ? targetTz : (timeZone ?? targetTz);
-			if (isZonedDateTime(dateTime) && !state.errored)
+			if (isZonedDateTime(dateTime) && !state.errored) {
 				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);
+				if (!hasExplicitTzOption && timeZone && state.config)
+					state.config.timeZone = effectiveTz;
+			}
 
 			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
 				const formatOpt = evaluate(state.options?.format ?? state.config?.format);
@@ -446,8 +449,19 @@ const _ParseEngine = {
 			const termId = value.slice(hashIdx + 1).split(/[\s./]/)[0];
 			const termObj = findTermPlugin(termId, state);
 			if (termObj) {
+				let memoAnchor: any;
+				const getAnchor = () => {
+					if (memoAnchor !== undefined) return memoAnchor;
+					try {
+						memoAnchor = (TempoClass && isZonedDateTime(dateTime)) ? new TempoClass(dateTime, state.config) : undefined;
+					} catch {
+						memoAnchor = undefined;
+					}
+					return memoAnchor;
+				};
+
 				const ctx: TermParseContext = {
-					anchor: isZonedDateTime(dateTime) ? new TempoClass(dateTime, state.config) : undefined,
+					get anchor() { return getAnchor(); },
 					timeZone: state.config?.timeZone,
 					calendar: state.config?.calendar,
 					locale: state.config?.locale
@@ -458,19 +472,23 @@ const _ParseEngine = {
 					const hooked = (termObj as any)[TermHook.parse](value, ctx);
 					if (hooked) {
 						const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
-						if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt };
+						if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt, zone: hookedZdt.timeZoneId };
 					}
 				}
 
 				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
-					const ordMatch = value.match(/(?<ord>\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last)\s+(?:day\s+of\s+)?(?<term>#[\w.]+)/i);
-					if (ordMatch?.groups) {
-						const anchorTempo = ctx.anchor ?? new TempoClass(dateTime, state.config);
-						const hooked = (termObj as any)[TermHook.ordinal](ordMatch.groups, anchorTempo);
-						if (hooked) {
-							const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
-							if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt };
+					const ordMatch = value.match(/^\s*(?<ord>\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last)\s+(?:day\s+of\s+)?(?<term>#[\w.]+)\s*$/i);
+					if (ordMatch?.groups?.term) {
+						const [ordTermId] = ordMatch.groups.term.slice(1).split('.');
+						const targetTermObj = findTermPlugin(ordTermId, state);
+						if (targetTermObj === termObj) {
+							const anchorTempo = ctx.anchor ?? getAnchor();
+							const hooked = (termObj as any)[TermHook.ordinal](ordMatch.groups, anchorTempo);
+							if (hooked) {
+								const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
+								if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt, zone: hookedZdt.timeZoneId };
+							}
 						}
 					}
 				}
@@ -478,7 +496,7 @@ const _ParseEngine = {
 
 			if (value.startsWith('#')) {
 				const res = resolveTermValue(TempoClass, state as any, value, dateTime);
-				if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res };
+				if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res, zone: res.timeZoneId };
 				return { type: 'Void', value: undefined as any };
 			}
 		}

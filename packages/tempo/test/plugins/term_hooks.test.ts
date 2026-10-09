@@ -97,9 +97,14 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		const subbed = added.sub({ '#block': 1 });
 		expect(subbed.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-15');
 
-		expect(stepCalls.length).toBe(2);
+		// add via shorthand string syntax
+		const shorthandAdded = t.add('#block.+2');
+		expect(shorthandAdded.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-29');
+
+		expect(stepCalls.length).toBe(3);
 		expect(stepCalls[0]).toEqual({ unit: '#block', count: 2 });
 		expect(stepCalls[1]).toEqual({ unit: '#block', count: -1 });
+		expect(stepCalls[2]).toEqual({ unit: '#block.+2', count: 2 });
 	});
 
 	it('should dispatch [TermHook.bound] on set() boundary snapping', () => {

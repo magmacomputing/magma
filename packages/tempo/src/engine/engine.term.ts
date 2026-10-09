@@ -134,6 +134,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	// Slick Shorthand Parsing (e.g. #qtr.>2, #zodiac.<)
 	let mod: string | undefined;
 	let nbr = 1;
+	let hasNbr = false;
 	let rKey = rangePart;
 	let numericOnly = false;
 
@@ -161,7 +162,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		const { groups } = (slick || {}) as any;
 		if (groups) {
 			const hasMod = isDefined(groups.sh_mod);
-			const hasNbr = isNumeric(groups.sh_nbr);
+			hasNbr = isNumeric(groups.sh_nbr);
 			mod = hasMod ? groups.sh_mod : undefined;
 
 			if (mod && state.config.registry?.modifiers)
@@ -199,7 +200,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 	// 0a. Term Lifecycle Hook: [TermHook.step]
 	if (RELATIVE_MUTATIONS.has(mutate as RelativeMutation) && isFunction((termObj as any)[TermHook.step])) {
-		const stepCount = (SUB_MUTATIONS.has(mutate as SubMutation) ? -1 : 1) * (isNumeric(offset) ? Number(offset) : 1);
+		const baseCount = (rangePart && (hasNbr || mod))
+			? (isBackwardShift(mod) ? -nbr : nbr)
+			: (isNumeric(offset) ? Number(offset) : 1);
+		const stepCount = (SUB_MUTATIONS.has(mutate as SubMutation) ? -1 : 1) * baseCount;
 		const hookRes = (termObj as any)[TermHook.step](unit, stepCount, instance);
 		if (isDefined(hookRes)) {
 			const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
@@ -208,14 +212,16 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	}
 
 	// 0b. Term Lifecycle Hook: [TermHook.bound]
-	const boundTarget = (rangePart === 'start' || rangePart === 'mid' || rangePart === 'end')
-		? rangePart
-		: (ABSOLUTE_MUTATIONS.has(mutate as AbsoluteMutation) ? mutate : undefined);
-	if (boundTarget && isFunction((termObj as any)[TermHook.bound])) {
-		const hookRes = (termObj as any)[TermHook.bound](boundTarget as 'start' | 'mid' | 'end', unit, instance);
-		if (isDefined(hookRes)) {
-			const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
-			if (hookZdt) return hookZdt.withTimeZone(tz).withCalendar(cal);
+	if (!RELATIVE_MUTATIONS.has(mutate as RelativeMutation)) {
+		const boundTarget = (rangePart === 'start' || rangePart === 'mid' || rangePart === 'end')
+			? rangePart
+			: (ABSOLUTE_MUTATIONS.has(mutate as AbsoluteMutation) ? mutate : undefined);
+		if (boundTarget && isFunction((termObj as any)[TermHook.bound])) {
+			const hookRes = (termObj as any)[TermHook.bound](boundTarget as 'start' | 'mid' | 'end', unit, instance);
+			if (isDefined(hookRes)) {
+				const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
+				if (hookZdt) return hookZdt.withTimeZone(tz).withCalendar(cal);
+			}
 		}
 	}
 
