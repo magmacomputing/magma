@@ -120,6 +120,26 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(capturedGroups).toBeDefined();
 		expect(capturedGroups.ord).toBe('penultimate');
 		expect(capturedGroups.value).toBe(-2);
+
+		// Case-insensitive matching with differently-cased configured ordinals
+		let mixedGroups: any;
+		const CaseHook = defineTerm({
+			key: 'casehook',
+			scope: 'casehook',
+			define() { return undefined; },
+			[TermHook.ordinal](groups: Record<string, any>, anchor: any) {
+				mixedGroups = groups;
+				return anchor;
+			}
+		});
+		Tempo.use(CaseHook);
+		Tempo.from('PENULTIMATE day of #casehook', {
+			anchor,
+			registry: { ordinals: { Penultimate: -2 } }
+		});
+		expect(mixedGroups).toBeDefined();
+		expect(mixedGroups.ord.toLowerCase()).toBe('penultimate');
+		expect(mixedGroups.value).toBe(-2);
 	});
 
 	it('should dispatch [TermHook.step] on add() and sub() dictionary mutations', () => {

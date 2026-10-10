@@ -68,6 +68,11 @@ on:
         required: false
         type: string
         default: ''
+      tag:
+        description: '🏷️ npm dist-tag (auto | latest | next | legacy)'
+        required: false
+        type: string
+        default: 'auto'
   release:
     types: [published]
 
@@ -200,6 +205,8 @@ jobs:
           npm run build:all
 
       - name: Publish Package(s) with Provenance
+        env:
+          INPUT_TAG: ${{ inputs.tag || 'auto' }}
         run: |
           publish_pkg() {
             local pkg="$1"
@@ -238,8 +245,36 @@ jobs:
               return 0
             fi
 
-            echo "📦 Publishing $pkg@$ver with provenance..."
-            (cd "$(dirname "$pkg_json")" && npm publish --access public --provenance)
+            # Determine npm dist-tag
+            local tag="${INPUT_TAG:-auto}"
+            if [ "$tag" = "auto" ] || [ -z "$tag" ]; then
+              # Auto-detect prereleases (-alpha, -beta, -rc)
+              if [[ "$ver" == *-* ]]; then
+                tag="next"
+              else
+                # Check current 'latest' version on npm
+                local current_latest=""
+                current_latest=$(npm view "$pkg" dist-tags.latest 2>/dev/null || true)
+                local major_current="${current_latest%%.*}"
+                local major_ver="${ver%%.*}"
+
+                # If npm already has a higher major on 'latest' (e.g. v5 vs v4), publish v4 as legacy
+                if [ -n "$major_current" ] && [ "$major_current" -gt "$major_ver" ] 2>/dev/null; then
+                  tag="legacy"
+                else
+                  tag="latest"
+                fi
+              fi
+            fi
+
+            # Validate dist-tag: must be URL-safe and not a semver version or range
+            if ! [[ "$tag" =~ ^[a-zA-Z0-9_.-]+$ ]] || [[ "$tag" =~ ^[vV]?[0-9] ]] || [[ "$tag" =~ ^[\^~<>=] ]]; then
+              echo "❌ Error: Invalid npm dist-tag '$tag'. Dist-tags must contain only [a-zA-Z0-9_.-] and cannot start with a digit, 'v', or semver range symbols."
+              exit 1
+            fi
+
+            echo "📦 Publishing $pkg@$ver with provenance (--tag $tag)..."
+            (cd "$(dirname "$pkg_json")" && npm publish --access public --provenance --tag "$tag")
           }
 
           for pkg in $TARGET_PKGS; do
