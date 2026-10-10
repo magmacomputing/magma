@@ -100,6 +100,28 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(tTenth.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-10');
 	});
 
+	it('should pass resolved local ordinal value to [TermHook.ordinal]', () => {
+		let capturedGroups: any;
+		const HookedTerm = defineTerm({
+			key: 'customhook',
+			scope: 'customhook',
+			define() { return undefined; },
+			[TermHook.ordinal](groups: Record<string, any>, anchor: any) {
+				capturedGroups = groups;
+				return anchor;
+			}
+		});
+		Tempo.use(HookedTerm);
+		const anchor = new Tempo('2026-01-01T00:00:00Z');
+		Tempo.from('penultimate day of #customhook', {
+			anchor,
+			registry: { ordinals: { penultimate: -2 } }
+		});
+		expect(capturedGroups).toBeDefined();
+		expect(capturedGroups.ord).toBe('penultimate');
+		expect(capturedGroups.value).toBe(-2);
+	});
+
 	it('should dispatch [TermHook.step] on add() and sub() dictionary mutations', () => {
 		const stepCalls: any[] = [];
 		const SteppableTerm = defineTerm({

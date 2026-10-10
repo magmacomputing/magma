@@ -332,7 +332,7 @@ import { defineTerm, TermHook, type TermParseContext, type Tempo } from '@magmac
 | Hook Symbol | Method Signature | Engine Trigger |
 |---|---|---|
 | `[TermHook.parse]` | `(input: string, context?: TermParseContext) => Tempo \| Temporal.ZonedDateTime \| undefined` | Explicit `#term` natural string input (e.g. `new Tempo('#fiscal.q1')`) |
-| `[TermHook.ordinal]` | `(groups: Record<string, string>, anchor: Tempo) => Tempo \| Temporal.ZonedDateTime \| undefined` | Anchored ordinal expressions (e.g. `Tempo.from('3rd day of #sprint.2', { anchor })`) |
+| `[TermHook.ordinal]` | `(groups: Record<string, any>, anchor: Tempo, context?: TermParseContext) => Tempo \| Temporal.ZonedDateTime \| undefined` | Anchored ordinal expressions (e.g. `Tempo.from('3rd day of #sprint.2', { anchor })`) |
 | `[TermHook.step]` | `(unit: string, count: number, tempo: Tempo) => Tempo \| undefined` | Stepping arithmetic via dictionary syntax: `t.add({ '#term': n })`, `t.sub({ '#term': n })` |
 | `[TermHook.diff]` | `(other: Tempo, unit: string, tempo: Tempo) => number \| undefined` | Difference calculation: `t1.until(t2, '#term')`, `t1.since(t2, '#term')` |
 | `[TermHook.bound]` | `(boundary: 'start' \| 'mid' \| 'end', unit: string, tempo: Tempo) => Tempo \| undefined` | Range boundary snapping: `t.set({ '#term': 'start' })`, `t.set('#term.mid')` |

@@ -257,9 +257,6 @@ export type ValueOf<T extends Obj> =
 	? T[number]
 	: T[KeyOf<T> & keyof T];
 
-/** Extracts the value types from an object or enum, unwinding loose index signatures */
-export type IndexOf<T extends Obj> = ValueOf<T>;
-
 /** Constructs a correlated tuple union representing a key-value entry pair from an object, enum, or array */
 export type EntryOf<T extends Obj> =
 	T extends Array<any>

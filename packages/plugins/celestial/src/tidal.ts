@@ -88,15 +88,16 @@ export const TidalTerm = defineTerm({
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
 		const scope = getTidalScopeRange(tempo);
 		const high = scope.nextHighTide ?? scope.start;
-		let low = scope.nextLowTide;
-		if (!low) {
-			low = high.add({ minutes: 372.5 });
-		} else if (low.epoch.ms <= high.epoch.ms) {
-			low = low.add({ minutes: 745 });
-		}
+		const nextLow = scope.nextLowTide;
 		if (boundary === 'start') return high;
-		if (boundary === 'end') return low;
+		if (boundary === 'end') return nextLow ?? high.add({ minutes: 372.5 });
 		if (boundary === 'mid') {
+			let low = nextLow;
+			if (!low) {
+				low = high.add({ minutes: 372.5 });
+			} else if (low.epoch.ms <= high.epoch.ms) {
+				low = low.add({ minutes: 745 });
+			}
 			const midMs = Math.round((high.epoch.ms + low.epoch.ms) / 2);
 			return new Tempo(midMs, { timeZone: high.tz, timeStamp: 'ms' });
 		}

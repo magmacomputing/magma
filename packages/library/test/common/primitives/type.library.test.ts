@@ -1,19 +1,17 @@
 import { protoType, getType, cast } from '#library/type.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { looseIndex } from '#library/object.library.js';
-import type { Singular, CountOf, AssertEqual, Cast, KeyOf, ValueOf, IndexOf, EntryOf } from '#library/type.library.js';
+import type { Singular, CountOf, AssertEqual, Cast, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
 
 describe('Type Library (Compile-Time)', () => {
-	it('should correctly resolve KeyOf, ValueOf, IndexOf, and correlated EntryOf', () => {
+	it('should correctly resolve KeyOf, ValueOf, and correlated EntryOf', () => {
 		// Plain non-enum objects
 		type Plain = { a: 1; b: 'hello' };
 		const testPlainKey: AssertEqual<KeyOf<Plain>, 'a' | 'b'> = true;
 		const testPlainVal: AssertEqual<ValueOf<Plain>, 1 | 'hello'> = true;
-		const testPlainIdx: AssertEqual<IndexOf<Plain>, 1 | 'hello'> = true;
 		const testPlainEntry: AssertEqual<EntryOf<Plain>, ['a', 1] | ['b', 'hello']> = true;
 		expect(testPlainKey).toBe(true);
 		expect(testPlainVal).toBe(true);
-		expect(testPlainIdx).toBe(true);
 		expect(testPlainEntry).toBe(true);
 
 		// Plain object with function properties (non-enum)
@@ -31,11 +29,9 @@ describe('Type Library (Compile-Time)', () => {
 		type TestEnum = typeof testEnum;
 		const testEnumKey: AssertEqual<KeyOf<TestEnum>, 'North' | 'South'> = true;
 		const testEnumVal: AssertEqual<ValueOf<TestEnum>, 'north' | 'south'> = true;
-		const testEnumIdx: AssertEqual<IndexOf<TestEnum>, 'north' | 'south'> = true;
 		const testEnumEntry: AssertEqual<EntryOf<TestEnum>, ['North', 'north'] | ['South', 'south']> = true;
 		expect(testEnumKey).toBe(true);
 		expect(testEnumVal).toBe(true);
-		expect(testEnumIdx).toBe(true);
 		expect(testEnumEntry).toBe(true);
 	});
 

@@ -31,7 +31,7 @@ export interface TermLifecycleHooks {
 	[TermHook.parse]?: (input: string, context?: TermParseContext) => Tempo | Temporal.ZonedDateTime | undefined;
 
 	/** Invoked for ordinal offsets anchored to terms (e.g. "3rd day of #qtr.2") */
-	[TermHook.ordinal]?: (groups: Record<string, string>, anchor: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;
+	[TermHook.ordinal]?: (groups: Record<string, any>, anchor: Tempo, context?: TermParseContext) => Tempo | Temporal.ZonedDateTime | undefined;
 
 	/** Stepping arithmetic for t.add({ '#term': n }) or t.sub({ '#term': n }) */
 	[TermHook.step]?: (unit: string, count: number, tempo: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;

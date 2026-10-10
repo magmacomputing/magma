@@ -495,7 +495,14 @@ const _ParseEngine = {
 						const targetTermObj = findTermPlugin(ordTermId, state);
 						if (targetTermObj === termObj) {
 							const anchorTempo = ctx.anchor ?? getAnchor();
-							const hooked = (termObj as any)[TermHook.ordinal](ordMatch.groups, anchorTempo);
+							const ordRaw = ordMatch.groups.ord?.toLowerCase();
+							const numericVal = /^-?\d+/.test(ordRaw) ? parseInt(ordRaw, 10) : undefined;
+							const resolvedVal = localOrdinals[ordRaw] ?? (ordRaw ? (enums.ORDINAL as any)?.[ordRaw] : undefined) ?? numericVal;
+							const matchGroups: Record<string, any> = {
+								...ordMatch.groups,
+								...(isDefined(resolvedVal) ? { value: resolvedVal } : {})
+							};
+							const hooked = (termObj as any)[TermHook.ordinal](matchGroups, anchorTempo, ctx);
 							if (hooked) {
 								const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
 								if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt, zone: hookedZdt.timeZoneId };

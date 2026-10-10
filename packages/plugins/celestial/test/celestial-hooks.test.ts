@@ -140,6 +140,17 @@ describe('CelestialPlugin Lifecycle TermHooks Showcase', () => {
 			// 2nd solstice of 2026 -> Winter Solstice (December ~21)
 			const sol2 = Tempo.from('second day of #solstice', { anchor });
 			expect(sol2.format('{yyyy}-{mm}')).toBe('2026-12');
+
+			// last equinox of 2026 -> Autumnal Equinox (September ~22-23)
+			const eqLast = Tempo.from('last day of #equinox', { anchor });
+			expect(eqLast.format('{yyyy}-{mm}')).toBe('2026-09');
+
+			// penultimate equinox of 2026 -> Vernal Equinox (March ~20) via negative instance-local ordinal
+			const eqPenultimate = Tempo.from('penultimate day of #equinox', {
+				anchor,
+				registry: { ordinals: { penultimate: -2 } }
+			});
+			expect(eqPenultimate.format('{yyyy}-{mm}')).toBe('2026-03');
 		});
 
 		it('should parse explicit astronomical quarter strings via [TermHook.parse]', () => {
