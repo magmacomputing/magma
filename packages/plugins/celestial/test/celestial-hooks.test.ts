@@ -43,6 +43,10 @@ describe('CelestialPlugin Lifecycle TermHooks Showcase', () => {
 
 			expect(diffPlusDays).toBeCloseTo(29.53, 0);
 			expect(diffMinusDays).toBeCloseTo(29.53, 0);
+
+			// Shorthand slick syntax
+			const slickPlus = t.add('#moon');
+			expect(slickPlus.epoch.ms).toBe(plusOne.epoch.ms);
 		});
 
 		it('should compute lunation count differences via [TermHook.diff]', () => {
@@ -95,6 +99,10 @@ describe('CelestialPlugin Lifecycle TermHooks Showcase', () => {
 
 			expect((nextTide.epoch.ms - t.epoch.ms) / 60000).toBe(745);
 			expect((t.epoch.ms - prevTide.epoch.ms) / 60000).toBe(1490);
+
+			// Shorthand slick syntax
+			const slickTide = t.add('#tide');
+			expect(slickTide.epoch.ms).toBe(nextTide.epoch.ms);
 		});
 
 		it('should compute tidal cycle counts via [TermHook.diff]', () => {

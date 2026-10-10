@@ -137,7 +137,7 @@ const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 // Lunar phase navigation & synodic lunation stepping (~29.53 days)
 t.set('#moon.start');            // Snap to start of active lunar phase
 t.set('#moon.end');              // Snap to end of active lunar phase
-t.add({ '#moon': 1 });           // Advance by 1 full synodic lunation
+t.add('#moon');                  // Advance by 1 full synodic lunation (~29.53 days)
 t1.until(t2, '#moon');           // Count elapsed synodic lunations (or t2.since(t1, '#moon'))
 
 // Solar cycle snapping
@@ -151,7 +151,7 @@ t.set('#astro.mid');             // Midpoint of current astronomical season
 t.set('#astro.end');             // End of current astronomical season
 
 // Semidiurnal tidal cycle stepping (745 min) & high/low tide snapping
-t.add({ '#tide': 1 });           // Step by 1 tidal cycle (12h 25m)
+t.add('#tide');                  // Step by 1 tidal cycle (12h 25m)
 t.set('#tide.start');            // Snap to next high tide
 t.set('#tide.end');              // Snap to next low tide
 t1.until(t2, '#tide');           // Count elapsed tidal cycles
@@ -167,9 +167,9 @@ Tempo.from('#equinox.vernal', { anchor });  // Vernal equinox for anchor year
 Tempo.from('#solstice.summer', { anchor }); // Summer solstice for anchor year
 
 // Natural language astronomical ordinals
-Tempo.from('1st equinox of 2026');
-Tempo.from('2nd solstice of #year');
-Tempo.from('last equinox');
+Tempo.from('1st day of #equinox', { anchor });
+Tempo.from('2nd day of #solstice', { anchor });
+Tempo.from('last day of #equinox', { anchor });
 ```
 
 ### 3. Dynamic Format Token Interpolation (`[TermHook.format]`)
@@ -178,7 +178,7 @@ Tempo.from('last equinox');
 t.format('Current Moon: {#moon.emoji} {#moon.phase} ({#moon.illumination})');
 // => "Current Moon: 🌔 Waxing Gibbous (78%)"
 
-t.format('Sun: {#solar.phase} | Elev: {#solar.elevation}° | Azimuth: {#solar.azimuth}°');
+t.format('Sun: {#solar.phase} | Elev: {#solar.elevation} | Azimuth: {#solar.azimuth}');
 // => "Sun: Daylight | Elev: 42.5° | Azimuth: 180.2°"
 
 t.format('Tide: {#tide.state} | Season: {#astro.season}');

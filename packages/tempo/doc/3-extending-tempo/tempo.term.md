@@ -341,7 +341,7 @@ import { defineTerm, TermHook, type TermParseContext, type Tempo } from '@magmac
 ### Complete Hook Example
 
 ```typescript
-import { defineTerm, TermHook } from '@magmacomputing/tempo';
+import { Tempo, defineTerm, TermHook } from '@magmacomputing/tempo';
 
 export const SprintTerm = defineTerm({
   key: 'sprint',

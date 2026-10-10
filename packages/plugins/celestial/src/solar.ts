@@ -234,7 +234,9 @@ export const SolarTerm = defineTerm({
 		if (lower.startsWith('#sun.') || lower.startsWith('#solar.')) {
 			const sub = lower.split('.')[1];
 			const anchor = context?.anchor;
-			const coords = getCelestialCoordinates(anchor ?? new Tempo(undefined, context?.config ?? {}), anchor);
+			const geo = context?.geo ?? context?.config?.geo;
+			const target = anchor ? (anchor.geo ? anchor : (geo ? new Tempo(anchor, { ...anchor.config, geo }) : anchor)) : new Tempo(undefined, { ...(context?.config ?? {}), ...(geo ? { geo } : {}) });
+			const coords = getCelestialCoordinates(target, anchor);
 			if (!coords.hasGeo) return undefined;
 			const scope = getSolarScopeRange(coords.refTempo, anchor);
 

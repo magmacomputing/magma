@@ -206,7 +206,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 
 			if (quarter) {
 				const moment = calculateAstroMoment(year, quarter, timeZone);
-				return new Tempo(moment.epoch.ms, { timeZone, ...(sphere ? { sphere } : {}) });
+				return new Tempo(moment.epoch.ms, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
 			}
 		}
 		return undefined;
@@ -219,7 +219,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 			if (boundary === 'end') return scope.end.sub({ nanoseconds: 1 });
 			if (boundary === 'mid') {
 				const midMs = Math.round((scope.start.epoch.ms + scope.end.epoch.ms) / 2);
-				return new Tempo(midMs, { timeZone: scope.start.tz, ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
+				return new Tempo(midMs, { timeZone: scope.start.tz, timeStamp: 'ms', ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
 			}
 		}
 		return undefined;

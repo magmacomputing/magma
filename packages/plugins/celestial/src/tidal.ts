@@ -87,9 +87,19 @@ export const TidalTerm = defineTerm({
 
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
 		const scope = getTidalScopeRange(tempo);
-		if (boundary === 'start') return scope.nextHighTide ?? scope.start;
-		if (boundary === 'mid') return scope.nextLowTide ?? tempo.add({ minutes: 372.5 });
-		if (boundary === 'end') return scope.end;
+		const high = scope.nextHighTide ?? scope.start;
+		let low = scope.nextLowTide;
+		if (!low) {
+			low = high.add({ minutes: 372.5 });
+		} else if (low.epoch.ms <= high.epoch.ms) {
+			low = low.add({ minutes: 745 });
+		}
+		if (boundary === 'start') return high;
+		if (boundary === 'end') return low;
+		if (boundary === 'mid') {
+			const midMs = Math.round((high.epoch.ms + low.epoch.ms) / 2);
+			return new Tempo(midMs, { timeZone: high.tz, timeStamp: 'ms' });
+		}
 		return undefined;
 	},
 

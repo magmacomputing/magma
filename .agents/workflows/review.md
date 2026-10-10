@@ -38,7 +38,7 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews in a 
 6. **Final Verification**:
    - Run the monorepo build and test suites:
      ```bash
-     npm test
+     npm run build:all && npm test
      ```
    - Ensure `git status` reflects only intended, clean changes.
    - Report a summary of resolved findings and confirm the branch is clean and ready for a GitHub Pull Request.

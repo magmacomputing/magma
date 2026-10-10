@@ -165,17 +165,17 @@ export const LunarTerm = defineTerm({
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
 		const scope = getLunarScopeRange(tempo);
 		if (boundary === 'start') return scope.start;
-		if (boundary === 'end') return scope.end;
+		if (boundary === 'end') return scope.end.sub({ nanoseconds: 1 });
 		if (boundary === 'mid') {
 			const midMs = Math.round((scope.start.epoch.ms + scope.end.epoch.ms) / 2);
-			return new Tempo(midMs, { timeZone: scope.start.tz, ...(scope.start.sphere ? { sphere: scope.start.sphere } : {}) });
+			return new Tempo(midMs, { timeZone: scope.start.tz, timeStamp: 'ms', ...(scope.start.sphere ? { sphere: scope.start.sphere } : {}) });
 		}
 		return undefined;
 	},
 
 	[TermHook.step](_unit: string, count: number, tempo: Tempo) {
 		const targetMs = Math.round(tempo.epoch.ms + count * SYNODIC_MONTH_MS);
-		return new Tempo(targetMs, { timeZone: tempo.tz, ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
+		return new Tempo(targetMs, { timeZone: tempo.tz, timeStamp: 'ms', ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
 	},
 
 	[TermHook.diff](other: Tempo, _unit: string, tempo: Tempo) {

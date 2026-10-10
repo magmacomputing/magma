@@ -43,10 +43,10 @@
     "@magmacomputing/tempo-fns": "^1.2.0"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.5.0"
+    "@magmacomputing/tempo": "^4.6.0"
   },
   "devDependencies": {
-    "@magmacomputing/tempo": "^4.5.0"
+    "@magmacomputing/tempo": "^4.6.0"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-celestial",

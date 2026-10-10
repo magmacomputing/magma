@@ -21,4 +21,4 @@ When invoked with a package argument (e.g. `/bump tempo`, `/bump celestial`, `/b
    - **Strict Rule**: User documentation must **never** mention, reference, or promote "Tempo Premium Plugins" or commercial offerings.
 
 5. **Verification**:
-   - Execute package build and test suites (`npm run build && npm test`) to verify all changes pass without regressions.
+   - Execute package build and test suites (`npm run build:all && npm test`) to verify all changes pass without regressions.

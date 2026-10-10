@@ -97,18 +97,18 @@ console.log(t.term.tides.isKingTide);    // true when Spring Tide aligns with Lu
 // --- Term Lifecycle Hooks ---
 // Snapping & stepping
 t.set('#moon.start');                    // Snap to start of active lunar phase
-t.add({ '#moon': 1 });                   // Step forward by 1 synodic lunation (~29.53 days)
+t.add('#moon');                          // Step forward by 1 synodic lunation (~29.53 days)
 t.set('#solar.start');                   // Snap to sunrise
 t.set('#solar.mid');                     // Snap to solar noon
-t.add({ '#tide': 1 });                   // Step forward by 1 tidal cycle (745 min)
+t.add('#tide');                          // Step forward by 1 tidal cycle (745 min)
 
 // Semantic parsing & ordinals
 const nextSunrise = Tempo.from('#solar.sunrise', { anchor: t });
-const equinox = Tempo.from('1st equinox of 2026');
+const equinox = Tempo.from('1st day of #equinox', { anchor: t });
 
 // Dynamic token formatting
 console.log(t.format('Moon: {#moon.emoji} {#moon.phase} ({#moon.illumination})'));
-console.log(t.format('Sun: {#solar.phase} | Elev: {#solar.elevation}°'));
+console.log(t.format('Sun: {#solar.phase} | Elev: {#solar.elevation}'));
 ```
 
 ### Auto-Installation (Side-Effect Import)

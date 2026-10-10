@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { Enum } from '#tempo/enums';
+import { Enum } from '#tempo/support';
 
 // We use a private test symbol to avoid trampling on globalThis[$Tempo] during tests
 const $TestTempo = Symbol('TestTempoDiscovery');

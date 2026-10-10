@@ -80,7 +80,7 @@ export function resolveNth(str: any): number {
 	const match = low.match(RE_LEADING_DIGITS);
 	if (match) {
 		const val = parseInt(match[1], 10);
-		if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
+		if (Number.isFinite(val)) return val;
 	}
 	return 1;
 }

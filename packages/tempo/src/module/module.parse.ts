@@ -453,7 +453,10 @@ const _ParseEngine = {
 				const getAnchor = () => {
 					if (memoAnchor !== undefined) return memoAnchor;
 					try {
-						memoAnchor = state.options?.anchor ?? (isTempo(dateTime) ? dateTime : ((TempoClass && isZonedDateTime(dateTime)) ? new TempoClass(dateTime, state.config) : undefined));
+						const optAnchor = state.options?.anchor;
+						memoAnchor = isTempo(optAnchor)
+							? optAnchor
+							: (optAnchor && TempoClass ? new TempoClass(optAnchor, state.config) : (isTempo(dateTime) ? dateTime : ((TempoClass && isZonedDateTime(dateTime)) ? new TempoClass(dateTime, state.config) : undefined)));
 					} catch {
 						memoAnchor = undefined;
 					}
@@ -464,7 +467,9 @@ const _ParseEngine = {
 					get anchor() { return getAnchor(); },
 					timeZone: state.config?.timeZone,
 					calendar: state.config?.calendar,
-					locale: state.config?.locale
+					locale: state.config?.locale,
+					geo: (state.options as any)?.geo ?? (state.config as any)?.geo,
+					config: state.config,
 				};
 
 				// 1. TermHook.parse: Explicit #term string expression
@@ -478,7 +483,12 @@ const _ParseEngine = {
 
 				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
-					const ordWords = (Enum.keys(enums.ORDINAL) as string[]).join('|');
+					const localOrdinals = { ...state.config?.registry?.ordinals, ...(state.options as any)?.registry?.ordinals };
+					const allOrdKeys = Array.from(new Set([
+						...(Enum.keys(enums.ORDINAL) as string[]),
+						...Object.keys(localOrdinals)
+					]));
+					const ordWords = allOrdKeys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
 					const ordMatch = value.match(new RegExp(`^\\s*(?<ord>\\d+(?:st|nd|rd|th)?|${ordWords})\\s+(?:day\\s+of\\s+)?(?<term>#[\\w.]+)\\s*$`, 'i'));
 					if (ordMatch?.groups?.term) {
 						const [ordTermId] = ordMatch.groups.term.slice(1).split('.');
