@@ -106,45 +106,64 @@ describe(`${label} COMPASS`, () => {
 
 })
 
-describe(`${label} ELEMENT`, () => {
+describe(`${label} enums`, () => {
 
-  test('ELEMENT keys has entries for standard datetime units', () => {
-    expect(Tempo.ELEMENT.keys()).toContain('yy');
-    expect(Tempo.ELEMENT.keys()).toContain('mm');
-    expect(Tempo.ELEMENT.keys()).toContain('dd');
-  })
-
-  test('ELEMENT values has entries for standard datetime units', () => {
-    expect(Tempo.ELEMENT.values()).toContain('year');
-    expect(Tempo.ELEMENT.values()).toContain('month');
-    expect(Tempo.ELEMENT.values()).toContain('day');
+  test('enums exposes live registry enumerations', () => {
+    expect(Tempo.enums).toBeDefined();
+    expect(Tempo.enums.WEEKDAY).toBe(Tempo.WEEKDAY);
+    expect(Tempo.enums.MONTH).toBe(Tempo.MONTH);
+    expect(Tempo.enums.SEASON).toBe(Tempo.SEASON);
+    expect(Tempo.enums.COMPASS).toBe(Tempo.COMPASS);
+    expect(Tempo.enums.ELEMENT).toBeDefined();
+    expect(Tempo.enums.FORMAT).toBeDefined();
+    expect(Tempo.enums.ORDINAL).toBeDefined();
+    expect(Tempo.enums.NUMBER).toBeDefined();
+    expect(Tempo.enums.TIMEZONE).toBeDefined();
+    expect(Tempo.enums.MODE).toBeDefined();
+    expect(Tempo.enums.CACHE).toBeDefined();
   })
 
 })
 
-describe(`${label} FORMAT`, () => {
+describe(`${label} ELEMENT (via Tempo.enums)`, () => {
+
+  test('ELEMENT keys has entries for standard datetime units', () => {
+    expect(Tempo.enums.ELEMENT.keys()).toContain('yy');
+    expect(Tempo.enums.ELEMENT.keys()).toContain('mm');
+    expect(Tempo.enums.ELEMENT.keys()).toContain('dd');
+  })
+
+  test('ELEMENT values has entries for standard datetime units', () => {
+    expect(Tempo.enums.ELEMENT.values()).toContain('year');
+    expect(Tempo.enums.ELEMENT.values()).toContain('month');
+    expect(Tempo.enums.ELEMENT.values()).toContain('day');
+  })
+
+})
+
+describe(`${label} FORMAT (via Tempo.enums)`, () => {
 
   test('FORMAT is defined and has named format strings', () => {
-    expect(Tempo.FORMAT).toBeDefined();
-    expect(Tempo.FORMAT.keys().length).toBeGreaterThan(0);
+    expect(Tempo.enums.FORMAT).toBeDefined();
+    expect(Tempo.enums.FORMAT.keys().length).toBeGreaterThan(0);
   })
 
   test('FORMAT values are strings', () => {
-    Tempo.FORMAT.keys().forEach((k: string) => {
-      expect(typeof (Tempo.FORMAT as any)[k]).toBe('string');
+    Tempo.enums.FORMAT.keys().forEach((k: string) => {
+      expect(typeof (Tempo.enums.FORMAT as any)[k]).toBe('string');
     })
   })
 
 })
 
-describe(`${label} LIMIT`, () => {
+describe(`${label} LIMIT (via Tempo.enums)`, () => {
 
   test('LIMIT is defined', () => {
-    expect(Tempo.LIMIT).toBeDefined();
+    expect(Tempo.enums.LIMIT).toBeDefined();
   })
 
   test('LIMIT has at least one boundary date', () => {
-    expect(Object.keys(Tempo.LIMIT).length).toBeGreaterThan(0);
+    expect(Object.keys(Tempo.enums.LIMIT).length).toBeGreaterThan(0);
   })
 
 })

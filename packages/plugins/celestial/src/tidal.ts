@@ -1,4 +1,4 @@
-import { defineTerm, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import { getTidalState, TIDAL_PHASE_STATES } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import { isNumber } from '@magmacomputing/tempo/library';
@@ -80,4 +80,30 @@ export const TidalTerm = defineTerm({
 	description: 'Astronomical tidal state, alignment, and perigee factor',
 	phases: TIDAL_PHASE_STATES,
 	...createCelestialTermHandlers(getTidalScopeRange),
+
+	[TermHook.step](_unit: string, count: number, tempo: Tempo) {
+		return tempo.add({ minutes: count * 745 });
+	},
+
+	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
+		const scope = getTidalScopeRange(tempo);
+		if (boundary === 'start') return scope.nextHighTide ?? scope.start;
+		if (boundary === 'mid') return scope.nextLowTide ?? tempo.add({ minutes: 372.5 });
+		if (boundary === 'end') return scope.end;
+		return undefined;
+	},
+
+	[TermHook.diff](other: Tempo, _unit: string, tempo: Tempo) {
+		return Math.round((other.epoch.ms - tempo.epoch.ms) / (745 * 60 * 1000));
+	},
+
+	[TermHook.format](token: string, tempo: Tempo) {
+		const t = token.toLowerCase();
+		if (t === '#tide' || t === '#tides' || t.startsWith('#tide.') || t.startsWith('#tides.')) {
+			const scope = getTidalScopeRange(tempo);
+			if (t === '#tide.state' || t === '#tides.state' || t === '#tide' || t === '#tides') return scope.state;
+			if (t === '#tide.alignment' || t === '#tides.alignment') return `${scope.alignmentDeg}°`;
+		}
+		return undefined;
+	},
 });

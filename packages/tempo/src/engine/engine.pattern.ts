@@ -159,6 +159,12 @@ export class PatternCompiler {
 			snippet[Token.afx] = new RegExp(`((s)? (?<afx>${afxPattern}))?${snippet[Token.sep]?.source || ''}?`, 'i');
 		}
 
+		if (enums?.ORDINAL) {
+			const ordKeys = (Enum.keys(enums.ORDINAL) as string[]).map((w: string) => Match.escape(w));
+			const ordWordPattern = ordKeys.sort((a: string, b: string) => b.length - a.length).join('|');
+			snippet[Token.nth] = new RegExp(`(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|${ordWordPattern})`, 'i');
+		}
+
 		// 2. build ignore pattern
 		const ignores = ownKeys(state.parse.ignore, true);
 

@@ -319,11 +319,13 @@ export type ELEMENT = enums.ELEMENT
 export type TIMEZONE = enums.TIMEZONE
 export type MODE = enums.MODE
 export type NUMBER = enums.Number
+export type ORDINAL = enums.ORDINAL
 
 export type Weekday = enums.Weekday
 export type Month = enums.Month
 export type Element = enums.Element
 export type Number = enums.Number
+export type Ordinal = enums.Ordinal
 export type Mode = enums.MODE
 
 export interface RelativeTime {
@@ -411,6 +413,7 @@ export namespace Internal {
 		/** Event registry for special dates */										events?: Event | RegistryOption<Logic>;
 		/** Period registry for time-of-day aliases */						periods?: Period | RegistryOption<Logic>;
 		/** Number name mappings */																numbers?: Record<string, number>;
+		/** Ordinal name mappings */															ordinals?: Record<string, number>;
 		/** Noise words to ignore during parsing */								ignores?: Ignore;
 	};
 		/** URLs or file paths to inherit configuration from */
@@ -517,6 +520,7 @@ export namespace Internal {
 			tokens?: Readonly<Record<string, TokenEvaluator>>;
 			dialects?: Readonly<Record<string, any>>;
 			numbers?: Readonly<Record<string, number>>;
+			ordinals?: Readonly<Record<string, number>>;
 		}>;
 		/** index-signature */																	readonly [key: string]: any;
 	}
@@ -538,6 +542,7 @@ export namespace Internal {
 			modifiers?: Record<string, string | readonly string[] | string[]>;
 			tokens?: Record<string, TokenEvaluator>;
 			numbers?: Record<string, number>;
+			ordinals?: Record<string, number>;
 		};
 		/** URLs or file paths to inherit configuration from */	extends?: string | readonly string[] | string[];
 		/** internationalization configuration (relativeTime, etc.) */intl?: IntlOptions;

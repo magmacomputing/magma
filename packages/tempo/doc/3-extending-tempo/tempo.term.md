@@ -366,10 +366,8 @@ export const SprintTerm = defineTerm({
   // 2. Ordinal: Handle ordinal offsets
   [TermHook.ordinal](groups, anchor) {
     // e.g. "3rd day of #sprint.current"
-    const ordMap: Record<string, number> = {
-      first: 1, second: 2, third: 3, fourth: 4, fifth: 5, last: 14
-    };
-    const dayOffset = parseInt(groups.ord, 10) || ordMap[groups.ord?.toLowerCase()];
+    const ord = groups.ord?.toLowerCase();
+    const dayOffset = ord === 'last' ? 14 : (parseInt(ord, 10) || Tempo.enums.ORDINAL[ord]);
     if (!dayOffset) return undefined;
     return anchor.add({ days: dayOffset - 1 });
   },

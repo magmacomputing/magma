@@ -453,7 +453,7 @@ const _ParseEngine = {
 				const getAnchor = () => {
 					if (memoAnchor !== undefined) return memoAnchor;
 					try {
-						memoAnchor = (TempoClass && isZonedDateTime(dateTime)) ? new TempoClass(dateTime, state.config) : undefined;
+						memoAnchor = state.options?.anchor ?? (isTempo(dateTime) ? dateTime : ((TempoClass && isZonedDateTime(dateTime)) ? new TempoClass(dateTime, state.config) : undefined));
 					} catch {
 						memoAnchor = undefined;
 					}
@@ -478,7 +478,8 @@ const _ParseEngine = {
 
 				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
-					const ordMatch = value.match(/^\s*(?<ord>\d+(?:st|nd|rd|th)?|first|second|third|fourth|fifth|last)\s+(?:day\s+of\s+)?(?<term>#[\w.]+)\s*$/i);
+					const ordWords = (Enum.keys(enums.ORDINAL) as string[]).join('|');
+					const ordMatch = value.match(new RegExp(`^\\s*(?<ord>\\d+(?:st|nd|rd|th)?|${ordWords})\\s+(?:day\\s+of\\s+)?(?<term>#[\\w.]+)\\s*$`, 'i'));
 					if (ordMatch?.groups?.term) {
 						const [ordTermId] = ordMatch.groups.term.slice(1).split('.');
 						const targetTermObj = findTermPlugin(ordTermId, state);

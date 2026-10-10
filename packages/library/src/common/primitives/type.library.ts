@@ -238,11 +238,33 @@ export type CountOf<T> = SafeCount<T>
 /** Extracts own properties of an object, excluding well-known symbols and ignored keys */
 export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, IgnoreOf<T>>
 /** Extracts the keys of an object type, returning numeric indices for array types or string/symbol keys excluding ignored keys for objects */
-export type KeyOf<T extends Obj> = T extends Array<any> ? number : Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>
+export type KeyOf<T extends Obj> =
+	IsEnumProxy<T> extends true
+	? (T extends { [Symbol.iterator](): IterableIterator<readonly [infer K extends PropertyKey, any]> }
+		? K
+		: Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>)
+	: T extends Array<any>
+	? number
+	: Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>;
+
 /** Extracts the value types from an object or array */
-export type ValueOf<T extends Obj> = T extends Array<any> ? T[number] : T[KeyOf<T>]
-/** Constructs a tuple type representing a key-value entry pair from an object or array */
-export type EntryOf<T extends Obj> = [KeyOf<T>, ValueOf<T>]
+export type ValueOf<T extends Obj> =
+	IsEnumProxy<T> extends true
+	? (T extends { [Symbol.iterator](): IterableIterator<readonly [any, infer V]> }
+		? V
+		: T[KeyOf<T> & keyof T])
+	: T extends Array<any>
+	? T[number]
+	: T[KeyOf<T> & keyof T];
+
+/** Extracts the value types from an object or enum, unwinding loose index signatures */
+export type IndexOf<T extends Obj> = ValueOf<T>;
+
+/** Constructs a correlated tuple union representing a key-value entry pair from an object, enum, or array */
+export type EntryOf<T extends Obj> =
+	T extends Array<any>
+	? [number, T[number]]
+	: { [K in KeyOf<T> & PropertyKey]: [K, T[K & keyof T]] }[KeyOf<T> & PropertyKey];
 
 /** extracts only the Literal string keys (not index signatures) from an object/interface */
 export type LiteralKey<T> = { [K in keyof T]: string extends K ? never : K }[keyof T] & string
@@ -520,8 +542,8 @@ export type Secure<T> = T extends Primitive | Function | Date | RegExp | Error |
 	? T
 	: T extends readonly any[]
 	? number extends T['length']
-		? SecureArray<T[number]>
-		: { readonly [K in keyof T]: Secure<T[K]> }
+	? SecureArray<T[number]>
+	: { readonly [K in keyof T]: Secure<T[K]> }
 	: T extends object
 	? SecureObject<T>
 	: T

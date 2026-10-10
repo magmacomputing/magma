@@ -34,13 +34,13 @@ export interface TermLifecycleHooks {
 	[TermHook.ordinal]?: (groups: Record<string, string>, anchor: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;
 
 	/** Stepping arithmetic for t.add({ '#term': n }) or t.sub({ '#term': n }) */
-	[TermHook.step]?: (unit: string, count: number, tempo: Tempo) => Tempo | undefined;
+	[TermHook.step]?: (unit: string, count: number, tempo: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;
 
 	/** Difference arithmetic for t1.until(t2, '#term') or t1.since(t2, '#term') */
 	[TermHook.diff]?: (other: Tempo, unit: string, tempo: Tempo) => number | undefined;
 
 	/** Boundary snapping for t.set({ '#term': 'start' | 'mid' | 'end' }) */
-	[TermHook.bound]?: (boundary: 'start' | 'mid' | 'end', unit: string, tempo: Tempo) => Tempo | undefined;
+	[TermHook.bound]?: (boundary: 'start' | 'mid' | 'end', unit: string, tempo: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;
 
 	/** Invoked when the format engine encounters a custom term token (e.g. '{#FQ}') */
 	[TermHook.format]?: (token: string, tempo: Tempo) => string | undefined;

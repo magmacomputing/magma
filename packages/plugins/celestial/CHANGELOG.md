@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-10-10
+
+### Added
+- **Complete TermHooks Lifecycle Integration (`TermHook`)**:
+  - Implemented `[TermHook.bound]`, `[TermHook.step]`, `[TermHook.diff]`, and `[TermHook.format]` on `LunarTerm` (`#moon`, `#lunar`) for phase boundary snapping (`t.set('#moon.start' | 'mid' | 'end')`), synodic lunation stepping (~29.53 days, `t.add({ '#moon': 1 })`), lunation span measurements (`t1.until(t2, '#moon')`, `t2.since(t1, '#moon')`), and emoji/phase format tokens (`{#moon.emoji}`, `{#moon.phase}`, `{#moon.illumination}`).
+  - Implemented `[TermHook.bound]`, `[TermHook.parse]`, and `[TermHook.format]` on `SolarTerm` (`#solar`, `#sun`) for diurnal sunrise/noon/sunset snapping (`t.set('#solar.start' | 'mid' | 'end')`), semantic parsing (`#solar.sunrise`, `#solar.sunset`, `#solar.noon`), and solar state format tokens (`{#solar.phase}`, `{#solar.elevation}`, `{#solar.azimuth}`).
+  - Implemented `[TermHook.step]`, `[TermHook.bound]`, `[TermHook.diff]`, and `[TermHook.format]` on `TidalTerm` (`#tide`, `#tides`) for semidiurnal M2 tidal cycle stepping (~745 min, `t.add({ '#tide': 1 })`), high/low tide snapping (`t.set('#tide.start' | 'end')`), tidal span measurements (`t1.until(t2, '#tide')`), and tidal state format tokens (`{#tide.state}`, `{#tide.alignment}`).
+  - Implemented `[TermHook.ordinal]`, `[TermHook.parse]`, `[TermHook.bound]`, and `[TermHook.format]` on `AstroTerm` (`#astro`, `#astronomy`, `#equinox`, `#solstice`) for natural language ordinal queries (`"1st equinox of 2026"`, `"2nd solstice of #year"`, `"last equinox"`), semantic parsing (`#equinox.vernal`, `#solstice.summer`), astronomical season boundary snapping (`t.set('#astro.start' | 'mid' | 'end')`), and season/event format tokens (`{#astro.season}`, `{#astro.event}`).
+
 ## [1.2.1] - 2026-10-06
 
 ### Fixed

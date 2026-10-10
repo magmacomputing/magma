@@ -128,6 +128,63 @@ const nextMoonTempo = t.set(`#lunar.${nextPhaseKey}`);
 
 > ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=celestial)**
 
+## Term Lifecycle Hooks (Showcase)
+
+`CelestialPlugin` showcases Tempo's core `TermHook` lifecycle system across all four terms:
+
+### 1. Stepping, Difference & Boundary Snapping (`[TermHook.step]`, `[TermHook.diff]`, `[TermHook.bound]`)
+```typescript
+// Lunar phase navigation & synodic lunation stepping (~29.53 days)
+t.set('#moon.start');            // Snap to start of active lunar phase
+t.set('#moon.end');              // Snap to end of active lunar phase
+t.add({ '#moon': 1 });           // Advance by 1 full synodic lunation
+t1.until(t2, '#moon');           // Count elapsed synodic lunations (or t2.since(t1, '#moon'))
+
+// Solar cycle snapping
+t.set('#solar.start');           // Snap to local sunrise
+t.set('#solar.mid');             // Snap to local solar noon
+t.set('#solar.end');             // Snap to local sunset
+
+// Astronomical season snapping
+t.set('#astro.start');           // Start of current astronomical season
+t.set('#astro.mid');             // Midpoint of current astronomical season
+t.set('#astro.end');             // End of current astronomical season
+
+// Semidiurnal tidal cycle stepping (745 min) & high/low tide snapping
+t.add({ '#tide': 1 });           // Step by 1 tidal cycle (12h 25m)
+t.set('#tide.start');            // Snap to next high tide
+t.set('#tide.end');              // Snap to next low tide
+t1.until(t2, '#tide');           // Count elapsed tidal cycles
+```
+
+### 2. Semantic Parsing & Natural Language Ordinals (`[TermHook.parse]`, `[TermHook.ordinal]`)
+```typescript
+// Direct solar & astronomical parse targets
+Tempo.from('#solar.sunrise', { anchor });   // Next sunrise from anchor
+Tempo.from('#solar.sunset', { anchor });    // Next sunset from anchor
+Tempo.from('#solar.noon', { anchor });      // Next solar noon from anchor
+Tempo.from('#equinox.vernal', { anchor });  // Vernal equinox for anchor year
+Tempo.from('#solstice.summer', { anchor }); // Summer solstice for anchor year
+
+// Natural language astronomical ordinals
+Tempo.from('1st equinox of 2026');
+Tempo.from('2nd solstice of #year');
+Tempo.from('last equinox');
+```
+
+### 3. Dynamic Format Token Interpolation (`[TermHook.format]`)
+```typescript
+// Format templates resolve contextual celestial tokens
+t.format('Current Moon: {#moon.emoji} {#moon.phase} ({#moon.illumination})');
+// => "Current Moon: 🌔 Waxing Gibbous (78%)"
+
+t.format('Sun: {#solar.phase} | Elev: {#solar.elevation}° | Azimuth: {#solar.azimuth}°');
+// => "Sun: Daylight | Elev: 42.5° | Azimuth: 180.2°"
+
+t.format('Tide: {#tide.state} | Season: {#astro.season}');
+// => "Tide: Spring | Season: Summer"
+```
+
 ## Phase & State Discovery Metadata
 
 `LunarTerm`, `SolarTerm`, and `TidalTerm` expose immutable, frozen array references (`Object.freeze`) containing all valid identifiers for terms resolution:

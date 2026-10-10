@@ -93,6 +93,22 @@ console.log(t.term.tide);                // 'spring', 'neap', or 'normal'
 console.log(t.term.tides.alignmentDeg);  // Solar-lunar alignment angle (0..360°)
 console.log(t.term.tides.isSpringTide);  // true during Syzygy (New or Full Moon)
 console.log(t.term.tides.isKingTide);    // true when Spring Tide aligns with Lunar Perigee
+
+// --- Term Lifecycle Hooks ---
+// Snapping & stepping
+t.set('#moon.start');                    // Snap to start of active lunar phase
+t.add({ '#moon': 1 });                   // Step forward by 1 synodic lunation (~29.53 days)
+t.set('#solar.start');                   // Snap to sunrise
+t.set('#solar.mid');                     // Snap to solar noon
+t.add({ '#tide': 1 });                   // Step forward by 1 tidal cycle (745 min)
+
+// Semantic parsing & ordinals
+const nextSunrise = Tempo.from('#solar.sunrise', { anchor: t });
+const equinox = Tempo.from('1st equinox of 2026');
+
+// Dynamic token formatting
+console.log(t.format('Moon: {#moon.emoji} {#moon.phase} ({#moon.illumination})'));
+console.log(t.format('Sun: {#solar.phase} | Elev: {#solar.elevation}°'));
 ```
 
 ### Auto-Installation (Side-Effect Import)

@@ -1,4 +1,4 @@
-import { defineTerm, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	getSunriseSunset,
 	getSolarPosition,
@@ -215,8 +215,55 @@ export function getSolarScopeRange(t: Tempo, anchor?: any) {
  */
 export const SolarTerm = defineTerm({
 	key: 'sun',
+	aliases: ['solar'],
 	scope: 'solar',
 	description: 'Local solar day cycle and twilight range resolution',
 	phases: SOLAR_PHASE_STATES,
 	...createCelestialTermHandlers(getSolarScopeRange),
+
+	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
+		const scope = getSolarScopeRange(tempo);
+		if (boundary === 'start') return scope.sunrise ?? scope.start;
+		if (boundary === 'end') return scope.sunset ?? scope.end;
+		if (boundary === 'mid') return scope.noon ?? tempo.set({ hour: 12, minute: 0, second: 0, millisecond: 0 });
+		return undefined;
+	},
+
+	[TermHook.parse](input: string, context?: any) {
+		const lower = input.toLowerCase();
+		if (lower.startsWith('#sun.') || lower.startsWith('#solar.')) {
+			const sub = lower.split('.')[1];
+			const anchor = context?.anchor;
+			const coords = getCelestialCoordinates(anchor ?? new Tempo(undefined, context?.config ?? {}), anchor);
+			if (!coords.hasGeo) return undefined;
+			const scope = getSolarScopeRange(coords.refTempo, anchor);
+
+			if (sub === 'sunrise') return scope.sunrise ?? undefined;
+			if (sub === 'sunset') return scope.sunset ?? undefined;
+			if (sub === 'noon') return scope.noon ?? undefined;
+			if (sub === 'nadir') return scope.nadir ?? undefined;
+			if (sub === 'dawn') return scope.civil.sunrise ?? undefined;
+			if (sub === 'dusk') return scope.civil.sunset ?? undefined;
+			if (sub === 'start') return scope.sunrise ?? scope.start;
+			if (sub === 'end') return scope.sunset ?? scope.end;
+			if (sub === 'mid') return scope.noon ?? undefined;
+		}
+		return undefined;
+	},
+
+	[TermHook.format](token: string, tempo: Tempo) {
+		const t = token.toLowerCase();
+		if (t === '#sun' || t === '#solar' || t.startsWith('#sun.') || t.startsWith('#solar.')) {
+			const scope = getSolarScopeRange(tempo);
+			if (t === '#solar.phase' || t === '#sun.phase' || t === '#sun' || t === '#solar') return scope.phase ?? '';
+			if (t === '#solar.key' || t === '#sun.key') return scope.key ?? '';
+			const elev = scope.altitude ?? scope.elevation;
+			if (t === '#solar.elevation' || t === '#sun.elevation' || t === '#solar.altitude' || t === '#sun.altitude') {
+				return elev != null ? `${Math.round(elev * 10) / 10}°` : '';
+			}
+			if (t === '#solar.azimuth' || t === '#sun.azimuth') return scope.azimuth != null ? `${Math.round(scope.azimuth * 10) / 10}°` : '';
+			if (t === '#solar.zenith' || t === '#sun.zenith') return scope.zenith != null ? `${Math.round(scope.zenith * 10) / 10}°` : '';
+		}
+		return undefined;
+	},
 });

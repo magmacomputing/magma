@@ -69,24 +69,20 @@ export function resolveNumber(str: any): t.Number | any {
  * @returns The 1-based position, `-1` for `last`, or `1` when the input is invalid or unspecified
  */
 export function resolveNth(str: any): number {
-	if (!isString(str)) return Number(str) || 1;
-	const low = str.trim().toLowerCase();
-	switch (low) {
-		case 'last': return -1;
-		case 'first': case '1st': return 1;
-		case 'second': case '2nd': return 2;
-		case 'third': case '3rd': return 3;
-		case 'fourth': case '4th': return 4;
-		case 'fifth': case '5th': return 5;
-		default: {
-			const match = low.match(RE_LEADING_DIGITS);
-			if (match) {
-				const val = parseInt(match[1], 10);
-				if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
-			}
-			return 1;
-		}
+	if (!isString(str)) {
+		const num = Number(str);
+		return Number.isFinite(num) ? num : 1;
 	}
+	const low = str.trim().toLowerCase();
+	const ordValue = enums.ORDINAL[low];
+	if (isNumber(ordValue)) return ordValue;
+
+	const match = low.match(RE_LEADING_DIGITS);
+	if (match) {
+		const val = parseInt(match[1], 10);
+		if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
+	}
+	return 1;
 }
 
 /**
@@ -220,10 +216,11 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 	const firstDay = Temporal.PlainDate.from({ year: yy, month: mm, day: 1 });
 	let targetDate: Temporal.PlainDate;
 
-	if (nthVal === -1) {
+	if (nthVal < 0) {
 		const lastDay = firstDay.add({ months: 1 }).subtract({ days: 1 });
 		const daysBack = (lastDay.dayOfWeek - targetWkd + 7) % 7;
-		targetDate = lastDay.subtract({ days: daysBack });
+		const lastWkd = lastDay.subtract({ days: daysBack });
+		targetDate = lastWkd.subtract({ weeks: Math.abs(nthVal) - 1 });
 	} else {
 		const daysUntil = (targetWkd - firstDay.dayOfWeek + 7) % 7;
 		const firstWkd = firstDay.add({ days: daysUntil });
@@ -326,12 +323,15 @@ export function parseOrdinalDate(
 	let targetDate: Temporal.PlainDate | undefined;
 
 	if (untStr === 'day') {
-		if (nthVal === -1) {
+		if (nthVal < 0) {
+			const offsetFromEnd = Math.abs(nthVal) - 1;
 			if (isDefined(targetMonth)) {
 				const firstDay = Temporal.PlainDate.from({ year: targetYear, month: targetMonth, day: 1 });
-				targetDate = firstDay.add({ months: 1 }).subtract({ days: 1 });
+				const lastDay = firstDay.add({ months: 1 }).subtract({ days: 1 });
+				targetDate = lastDay.subtract({ days: offsetFromEnd });
 			} else {
-				targetDate = Temporal.PlainDate.from({ year: targetYear, month: 12, day: 31 });
+				const lastDay = Temporal.PlainDate.from({ year: targetYear, month: 12, day: 31 });
+				targetDate = lastDay.subtract({ days: offsetFromEnd });
 			}
 		} else if (nthVal > 0) {
 			if (isDefined(targetMonth)) {

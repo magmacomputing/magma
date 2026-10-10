@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.6.0] - 2026-10-09
 
 ### Added & Architecture
+- **Unified `Tempo.enums` Namespace & Extensible `ORDINAL` Enum**:
+  - Added `Tempo.enums` static getter consolidating all live enumerators under a single namespace, streamlining the class static surface to retain only core calendar/direction domain getters (`WEEKDAY/S`, `MONTH/S`, `DURATION/S`, `SEASON`, `COMPASS`).
+  - Exported `ORDINAL` enum (`current: 0`, `first: 1` through `tenth: 10`, `last: -1`) from `@magmacomputing/tempo/enums`, accessible via `Tempo.enums.ORDINAL`.
+  - Integrated written ordinal resolution into the lexer and parse engine (`resolveNth` and dynamic `Token.nth` regex patterns), enabling natural expressions like `"first Wednesday of October"` or `"last day of May"`.
+  - Added `registry.ordinals` to `Tempo.init()`, constructor options, and cascading configurations, allowing custom word-to-offset mappings.
+  - Aligned `[TermHook.ordinal]` and `SprintTerm` examples to leverage `Tempo.enums.ORDINAL` for written ordinal offset dispatch.
 - **Term Plugin Lifecycle Hooks Protocol (Phase 1)**:
   - Introduced the well-known symbol lifecycle protocol for domain term plugins, protecting hook names against property collisions and dual-package hazards via `Symbol.for('magmacomputing/tempo/term/...')`.
   - Exported `TermHook` (`parse`, `ordinal`, `step`, `diff`, `bound`, `format`), `TermHookSymbol`, `TermLifecycleHooks`, and `TermParseContext` from `@magmacomputing/tempo` and the Plugin SDK (`@magmacomputing/tempo/plugin/sdk`).

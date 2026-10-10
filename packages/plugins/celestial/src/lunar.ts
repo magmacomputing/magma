@@ -1,4 +1,4 @@
-import { defineTerm, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	getLunarPhaseRange,
 	getMoonriseMoonset,
@@ -27,6 +27,7 @@ export interface LunarPhaseResult {
 	phases: readonly LunarPhaseKey[];
 }
 
+const SYNODIC_MONTH_MS = 29.530588 * 86400 * 1000;
 const LUNAR_PHASE_RANGE_CACHE = new WeakCache<string, { startMs: number; endMs: number }>();
 const MOON_EVENTS_CACHE = new WeakCache<string, ReturnType<typeof getMoonriseMoonset>>();
 const LUNAR_POSITION_CACHE = new WeakCache<string, ReturnType<typeof getLunarPosition>>();
@@ -155,8 +156,43 @@ export function getLunarScopeRange(t: Tempo, anchor?: any) {
  */
 export const LunarTerm = defineTerm({
 	key: 'moon',
+	aliases: ['lunar'],
 	scope: 'lunar',
 	description: 'Lunar phase cycle and range resolution',
 	phases: LUNAR_PHASE_KEYS,
 	...createCelestialTermHandlers(getLunarScopeRange),
+
+	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
+		const scope = getLunarScopeRange(tempo);
+		if (boundary === 'start') return scope.start;
+		if (boundary === 'end') return scope.end;
+		if (boundary === 'mid') {
+			const midMs = Math.round((scope.start.epoch.ms + scope.end.epoch.ms) / 2);
+			return new Tempo(midMs, { timeZone: scope.start.tz, ...(scope.start.sphere ? { sphere: scope.start.sphere } : {}) });
+		}
+		return undefined;
+	},
+
+	[TermHook.step](_unit: string, count: number, tempo: Tempo) {
+		const targetMs = Math.round(tempo.epoch.ms + count * SYNODIC_MONTH_MS);
+		return new Tempo(targetMs, { timeZone: tempo.tz, ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
+	},
+
+	[TermHook.diff](other: Tempo, _unit: string, tempo: Tempo) {
+		return Math.round((other.epoch.ms - tempo.epoch.ms) / SYNODIC_MONTH_MS);
+	},
+
+	[TermHook.format](token: string, tempo: Tempo) {
+		const t = token.toLowerCase();
+		if (t === '#moon' || t === '#lunar' || t.startsWith('#moon.') || t.startsWith('#lunar.')) {
+			const scope = getLunarScopeRange(tempo);
+			if (t === '#moon.emoji' || t === '#lunar.emoji') return scope.emoji ?? '';
+			if (t === '#moon.phase' || t === '#lunar.phase') return scope.phase;
+			if (t === '#moon.key' || t === '#lunar.key') return scope.key;
+			if (t === '#moon.illumination' || t === '#lunar.illumination') return `${Math.round(scope.illumination * 100)}%`;
+			if (t === '#moon.age' || t === '#lunar.age') return `${scope.ageDays}d`;
+			if (t === '#moon' || t === '#lunar') return scope.emoji ? `${scope.emoji} ${scope.phase}` : scope.phase;
+		}
+		return undefined;
+	},
 });

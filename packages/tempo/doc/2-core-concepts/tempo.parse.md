@@ -73,17 +73,25 @@ It correctly resolves both trailing (`200 BC`) and leading (`BC 200`) formats.
 
 ### 📆 Ordinals & Nth Parsing (`"3rd Wednesday of October"`)
 
-Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic $O(1)$ time with zero network overhead.
+Tempo natively supports parsing structured ordinal weekday and ordinal date expressions—using both numeric (`1st`, `2nd`, `3rd`) and written word ordinals (`first`, `second`, `tenth`, `last`, `current`)—in deterministic $O(1)$ time with zero network overhead.
 
 ```typescript
-// Ordinal Weekdays
+// Numeric Ordinal Weekdays
 new Tempo('3rd Wednesday of October');        // 3rd Wed in Oct of anchor/current year
 new Tempo('1st Thursday of November 2026');   // 1st Thursday of November 2026
+
+// Written Ordinal Weekdays (backed by Tempo.enums.ORDINAL)
+new Tempo('first Wednesday of October');      // 1st Wed in Oct
+new Tempo('second Friday of November');       // 2nd Fri in Nov
+new Tempo('last Monday of May');              // Last Mon in May
 
 // Ordinal Dates
 new Tempo('15th day of May');                 // 15th day of May
 new Tempo('1st day of 2026');                 // 1st day of 2026
+new Tempo('last day of the month');           // Last day of anchor/current month
 ```
+
+Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally or per-instance via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })`.
 
 #### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)
 

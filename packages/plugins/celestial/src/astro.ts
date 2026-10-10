@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache } from '@magmacomputing/tempo/plugin/sdk';
+import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
@@ -166,5 +166,77 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 			...keyedScope,
 			strict: scoped.key,
 		};
+	},
+
+	[TermHook.ordinal](groups: Record<string, string>, anchor: Tempo) {
+		const ord = groups.ord?.toLowerCase();
+		const termLower = (groups.term || '').toLowerCase();
+		const year = anchor?.yy ?? new Tempo().yy;
+		const events = getSolarEvents(year);
+
+		const filterType = termLower.includes('equinox')
+			? 'Equinox'
+			: (termLower.includes('solstice') ? 'Solstice' : undefined);
+
+		const matching = filterType ? events.filter(e => e.event === filterType) : [...events];
+		matching.sort((a, b) => a.epochMs - b.epochMs);
+
+		const ordMap = Tempo.enums.ORDINAL as Record<string, number>;
+		const index = ord === 'last' ? matching.length : (parseInt(ord, 10) || ordMap?.[ord]);
+		if (!index || index < 1 || index > matching.length) return undefined;
+
+		const target = matching[index - 1];
+		return new Tempo(target.epochMs, { timeZone: anchor?.tz ?? 'UTC', timeStamp: 'ms', ...(anchor?.sphere ? { sphere: anchor.sphere } : {}) });
+	},
+
+	[TermHook.parse](input: string, context?: any) {
+		const lower = input.toLowerCase();
+		if (lower.startsWith('#astro.') || lower.startsWith('#equinox.') || lower.startsWith('#solstice.')) {
+			const sub = lower.split('.')[1];
+			const year = context?.anchor?.yy ?? context?.anchor?.year ?? new Tempo().yy;
+			const timeZone = context?.anchor?.tz ?? 'UTC';
+			const sphere = context?.anchor?.sphere ?? 'north';
+			const isSouth = sphere === 'south';
+
+			let quarter: ASTRO | undefined;
+			if (sub === 'vernal' || sub === 'spring') quarter = isSouth ? ASTRO.Autumnal : ASTRO.Vernal;
+			else if (sub === 'summer') quarter = isSouth ? ASTRO.Winter : ASTRO.Summer;
+			else if (sub === 'autumnal' || sub === 'autumn') quarter = isSouth ? ASTRO.Vernal : ASTRO.Autumnal;
+			else if (sub === 'winter') quarter = isSouth ? ASTRO.Summer : ASTRO.Winter;
+
+			if (quarter) {
+				const moment = calculateAstroMoment(year, quarter, timeZone);
+				return new Tempo(moment.epoch.ms, { timeZone, ...(sphere ? { sphere } : {}) });
+			}
+		}
+		return undefined;
+	},
+
+	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
+		const scope = AstroTerm.define.call(tempo, false) as any;
+		if (scope?.start && scope?.end) {
+			if (boundary === 'start') return scope.start;
+			if (boundary === 'end') return scope.end.sub({ nanoseconds: 1 });
+			if (boundary === 'mid') {
+				const midMs = Math.round((scope.start.epoch.ms + scope.end.epoch.ms) / 2);
+				return new Tempo(midMs, { timeZone: scope.start.tz, ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
+			}
+		}
+		return undefined;
+	},
+
+	[TermHook.format](token: string, tempo: Tempo) {
+		const t = token.toLowerCase();
+		if (t === '#astro' || t === '#astronomy' || t === '#equinox' || t === '#solstice' || t.startsWith('#astro.')) {
+			const alias = t === '#equinox' ? 'equinox' : (t === '#solstice' ? 'solstice' : undefined);
+			const scope = AstroTerm.define.call(tempo, false, undefined, alias) as any;
+			if (scope) {
+				if (t === '#astro.season') return scope.season;
+				if (t === '#astro.event') return scope.event;
+				if (t === '#astro.key') return scope.key;
+				return `${scope.key} ${scope.event}`;
+			}
+		}
+		return undefined;
 	},
 });

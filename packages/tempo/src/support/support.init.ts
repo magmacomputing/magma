@@ -381,6 +381,12 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						if (state.config?.scope === 'global')
 							registryUpdate('NUMBER', arg.value.numbers);
 					}
+					if (arg.value.ordinals) {
+						const existing = state.config.registry.ordinals ?? {};
+						setProperty(state.config.registry, 'ordinals', { ...existing, ...arg.value.ordinals });
+						if (state.config?.scope === 'global')
+							registryUpdate('ORDINAL', arg.value.ordinals);
+					}
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {
 						snippets: 'snippet',

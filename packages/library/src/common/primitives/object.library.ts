@@ -183,7 +183,7 @@ export function ifDefined<T extends Property<any>>(obj: T) {
 	return ownEntries(obj)
 		.reduce((acc, [key, val]) => {
 			if (isSafeKey(key) && isDefined<any>(val))
-				acc[key] = val;
+				(acc as Record<PropertyKey, any>)[key] = val;
 			return acc as T;
 		}, {} as T)
 }

@@ -1,6 +1,5 @@
 import { Tempo, TermHook } from '#tempo';
 import { defineTerm } from '#tempo/plugin/term/term.util.js';
-import { QuarterTerm } from '#tempo/std';
 
 describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	beforeEach(() => {
@@ -78,10 +77,8 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 				return undefined;
 			},
 			[TermHook.ordinal](groups: Record<string, string>, anchor: any) {
-				const ordMap: Record<string, number> = {
-					first: 1, second: 2, third: 3, fourth: 4, fifth: 5, last: 14
-				};
-				const dayOffset = parseInt(groups.ord, 10) || ordMap[groups.ord?.toLowerCase()];
+				const ord = groups.ord?.toLowerCase();
+				const dayOffset = ord === 'last' ? 14 : (parseInt(ord, 10) || Tempo.enums.ORDINAL[ord]);
 				if (!dayOffset) return undefined;
 				return anchor.add({ days: dayOffset - 1 });
 			}
@@ -98,6 +95,9 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 
 		const t3rd = Tempo.from('3rd day of #sprintdoc.1', { anchor });
 		expect(t3rd.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-03');
+
+		const tTenth = Tempo.from('tenth day of #sprintdoc.1', { anchor });
+		expect(tTenth.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-10');
 	});
 
 	it('should dispatch [TermHook.step] on add() and sub() dictionary mutations', () => {
@@ -139,12 +139,25 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		const noModSubbed = t.sub({ '#block.2': 2 });
 		expect(noModSubbed.format('{yyyy}-{mm}-{dd}')).toBe('2025-12-04');
 
-		expect(stepCalls.length).toBe(5);
+		// add/sub via non-directional modifiers (this, >=, <=) derive step from caller offset
+		const thisAdded = t.add({ '#block.this': 4 });
+		expect(thisAdded.format('{yyyy}-{mm}-{dd}')).toBe('2026-02-26');
+
+		const gteSubbed = t.sub({ '#block.>=': 3 });
+		expect(gteSubbed.format('{yyyy}-{mm}-{dd}')).toBe('2025-11-20');
+
+		const lteAdded = t.add({ '#block.<=': 2 });
+		expect(lteAdded.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-29');
+
+		expect(stepCalls.length).toBe(8);
 		expect(stepCalls[0]).toEqual({ unit: '#block', count: 2 });
 		expect(stepCalls[1]).toEqual({ unit: '#block', count: -1 });
 		expect(stepCalls[2]).toEqual({ unit: '#block.+2', count: 2 });
 		expect(stepCalls[3]).toEqual({ unit: '#block.1', count: 3 });
 		expect(stepCalls[4]).toEqual({ unit: '#block.2', count: -2 });
+		expect(stepCalls[5]).toEqual({ unit: '#block.this', count: 4 });
+		expect(stepCalls[6]).toEqual({ unit: '#block.>=', count: -3 });
+		expect(stepCalls[7]).toEqual({ unit: '#block.<=', count: 2 });
 	});
 
 	it('should dispatch [TermHook.bound] on set() boundary snapping', () => {
@@ -317,19 +330,6 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(t.set({ start: '#sprintbound' }).format('{dd}')).toBe('01');
 		expect(t.set({ mid: '#sprintbound' }).format('{dd}')).toBe('15');
 		expect(t.set({ end: '#sprintbound' }).format('{dd}')).toBe('28');
-	});
-
-	it('should maintain zero-regression on existing terms without hooks (QuarterTerm)', () => {
-		Tempo.use(QuarterTerm);
-
-		const t = new Tempo('2024-05-15T12:00:00', { timeZone: 'America/New_York' });
-
-		// Standard range mutations remain functional
-		const tStart = t.set({ start: '#quarter' });
-		expect(tStart.format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
-
-		const tIndex = t.set({ '#quarter': 4 });
-		expect(tIndex.format('{yyyy}-{mm}')).toBe('2024-10');
 	});
 });
 

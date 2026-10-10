@@ -165,7 +165,7 @@ export function getLargestUnit(list: readonly any[]): string {
 /**
  * @internal Normalize a MonthDay configuration value against a base.
  * @param value The user-supplied value to normalize
- * @param base The base/default value (e.g., Tempo.MONTH_DAY)
+ * @param base The base/default value (e.g., enums.MONTH_DAY)
  */
 export function resolveMonthDay(value: t.MonthDay | boolean | Readonly<t.MonthDay> = {}, base: t.MonthDay): t.MonthDay {
 	const isExplicit = isBoolean(value) || isDefined((value as t.MonthDay).active);
