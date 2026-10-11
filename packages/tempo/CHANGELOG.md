@@ -6,15 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.6.0] - 2026-10-09
+## [4.6.0] - 2026-10-11
 
 ### Added & Architecture
 - **Unified `Tempo.enums` Namespace & Extensible `ORDINAL` Enum**:
-  - Added `Tempo.enums` static getter consolidating all live enumerators under a single namespace, streamlining the class static surface to retain only core calendar/direction domain getters (`WEEKDAY/S`, `MONTH/S`, `DURATION/S`, `SEASON`, `COMPASS`).
+  - Added `Tempo.enums` static getter consolidating all live enumerators under a single namespace, while retaining legacy static getters (`ELEMENT`, `FORMAT`, `NUMBER`, `ORDINAL`, `TIMEZONE`, `MONTH_DAY`, `MODE`, `CACHE`, `LIMIT`) directly on `Tempo` marked as `@deprecated` for 100% backward compatibility.
   - Exported `ORDINAL` enum (`current: 0`, `first: 1` through `tenth: 10`, `last: -1`) from `@magmacomputing/tempo/enums`, accessible via `Tempo.enums.ORDINAL`.
   - Integrated written ordinal resolution into the lexer and parse engine (`resolveNth` and dynamic `Token.nth` regex patterns), enabling natural expressions like `"first Wednesday of October"` or `"last day of May"`.
-  - Added `registry.ordinals` to `Tempo.init()`, constructor options, and cascading configurations, allowing custom word-to-offset mappings.
+  - Added `registry.ordinals` to `Tempo.init()`, constructor options, and cascading configurations, allowing custom word-to-offset mappings without polluting global enum state.
   - Aligned `[TermHook.ordinal]` and `SprintTerm` examples to leverage `Tempo.enums.ORDINAL` for written ordinal offset dispatch.
+- **Dialect Literal Mask Handling (`hasNativeFormatBraces`)**:
+  - Added `hasNativeFormatBraces` to strip dialect-specific escaped literals (`[...]` in Moment/Day.js, `'...'` in LDML/Luxon) before evaluating for native `{token}` masks, ensuring masks containing escaped braces correctly fall back to registered external dialect formatters and parsers.
 - **Term Plugin Lifecycle Hooks Protocol (Phase 1)**:
   - Introduced the well-known symbol lifecycle protocol for domain term plugins, protecting hook names against property collisions and dual-package hazards via `Symbol.for('magmacomputing/tempo/term/...')`.
   - Exported `TermHook` (`parse`, `ordinal`, `step`, `diff`, `bound`, `format`), `TermHookSymbol`, `TermLifecycleHooks`, and `TermParseContext` from `@magmacomputing/tempo` and the Plugin SDK (`@magmacomputing/tempo/plugin/sdk`).
