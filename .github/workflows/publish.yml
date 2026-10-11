@@ -254,15 +254,36 @@ jobs:
               else
                 # Check current 'latest' version on npm
                 local current_latest=""
-                current_latest=$(npm view "$pkg" dist-tags.latest 2>/dev/null || true)
-                local major_current="${current_latest%%.*}"
-                local major_ver="${ver%%.*}"
+                local view_output=""
+                local view_status=0
+                view_output=$(npm view "$pkg" dist-tags.latest 2>&1) || view_status=$?
 
-                # If npm already has a higher major on 'latest' (e.g. v5 vs v4), publish v4 as legacy
-                if [ -n "$major_current" ] && [ "$major_current" -gt "$major_ver" ] 2>/dev/null; then
-                  tag="legacy"
+                if [ $view_status -ne 0 ]; then
+                  if echo "$view_output" | grep -qi "404"; then
+                    # Package not yet published on registry: default initial release to 'latest'
+                    tag="latest"
+                  else
+                    echo "❌ Error: Failed to query npm dist-tags for '$pkg': $view_output"
+                    echo "Please specify an explicit dist-tag in workflow inputs (e.g. 'latest', 'next', 'legacy') to proceed."
+                    exit 1
+                  fi
                 else
-                  tag="latest"
+                  current_latest=$(echo "$view_output" | tr -d '[:space:]')
+                  local major_current="${current_latest%%.*}"
+                  local major_ver="${ver%%.*}"
+
+                  if ! [[ "$major_current" =~ ^[0-9]+$ ]]; then
+                    echo "❌ Error: npm view returned non-numeric major version '$current_latest' for '$pkg'."
+                    echo "Please specify an explicit dist-tag in workflow inputs to proceed."
+                    exit 1
+                  fi
+
+                  # If npm already has a higher major on 'latest' (e.g. v5 vs v4), publish v4 as legacy
+                  if [ "$major_current" -gt "$major_ver" ]; then
+                    tag="legacy"
+                  else
+                    tag="latest"
+                  fi
                 fi
               fi
             fi
