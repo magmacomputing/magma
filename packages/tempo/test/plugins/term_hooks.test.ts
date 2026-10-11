@@ -113,10 +113,11 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		});
 		Tempo.use(HookedTerm);
 		const anchor = new Tempo('2026-01-01T00:00:00Z');
-		Tempo.from('penultimate day of #customhook', {
+		const t = Tempo.from('penultimate day of #customhook', {
 			anchor,
 			registry: { ordinals: { penultimate: -2 } }
 		});
+		expect(t.isValid).toBe(true);
 		expect(capturedGroups).toBeDefined();
 		expect(capturedGroups.ord).toBe('penultimate');
 		expect(capturedGroups.value).toBe(-2);
@@ -133,10 +134,11 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 			}
 		});
 		Tempo.use(CaseHook);
-		Tempo.from('PENULTIMATE day of #casehook', {
+		const tCase = Tempo.from('PENULTIMATE day of #casehook', {
 			anchor,
 			registry: { ordinals: { Penultimate: -2 } }
 		});
+		expect(tCase.isValid).toBe(true);
 		expect(mixedGroups).toBeDefined();
 		expect(mixedGroups.ord.toLowerCase()).toBe('penultimate');
 		expect(mixedGroups.value).toBe(-2);

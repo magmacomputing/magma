@@ -202,5 +202,40 @@ describe('Core Ordinal Offset Parsing', () => {
 				Tempo.init();
 			}
 		});
+
+		it('supports per-instance ordinals in ordinary parsing via constructor options', () => {
+			const t11th = new Tempo('eleventh day of May 2026', {
+				registry: {
+					ordinals: {
+						eleventh: 11,
+					}
+				}
+			});
+			expect(t11th.isValid).toBe(true);
+			expect(t11th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-11');
+
+			const tPenultDay = new Tempo('penultimate day of May 2026', {
+				registry: {
+					ordinals: {
+						penultimate: -2,
+					}
+				}
+			});
+			expect(tPenultDay.isValid).toBe(true);
+			expect(tPenultDay.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-30');
+
+			const tPenultWkd = new Tempo('penultimate Friday of May 2026', {
+				registry: {
+					ordinals: {
+						penultimate: -2,
+					}
+				}
+			});
+			expect(tPenultWkd.isValid).toBe(true);
+			expect(tPenultWkd.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-22');
+
+			// Verify global enums.ORDINAL was not polluted
+			expect((Tempo.enums.ORDINAL as any).eleventh).toBeUndefined();
+		});
 	});
 });

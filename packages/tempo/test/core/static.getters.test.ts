@@ -123,6 +123,18 @@ describe(`${label} enums`, () => {
     expect(Tempo.enums.CACHE).toBeDefined();
   })
 
+  test('restored static getters on Tempo match Tempo.enums for backward compatibility', () => {
+    expect(Tempo.ELEMENT).toBe(Tempo.enums.ELEMENT);
+    expect(Tempo.FORMAT).toBe(Tempo.enums.FORMAT);
+    expect(Tempo.NUMBER).toBe(Tempo.enums.NUMBER);
+    expect(Tempo.ORDINAL).toBe(Tempo.enums.ORDINAL);
+    expect(Tempo.TIMEZONE).toBe(Tempo.enums.TIMEZONE);
+    expect(Tempo.MONTH_DAY).toBe(Tempo.enums.MONTH_DAY);
+    expect(Tempo.MODE).toBe(Tempo.enums.MODE);
+    expect(Tempo.CACHE).toBe(Tempo.enums.CACHE);
+    expect(Tempo.LIMIT).toBe(Tempo.enums.LIMIT);
+  })
+
 })
 
 describe(`${label} ELEMENT (via Tempo.enums)`, () => {

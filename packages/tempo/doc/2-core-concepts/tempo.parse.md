@@ -91,7 +91,7 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 new Tempo('last day of the month');           // Last day of anchor/current month
 ```
 
-Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally or per-instance via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })`.
+Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })` (or `Enum.extend(Tempo.enums.ORDINAL, ...)`) or per-instance via `new Tempo(date, { registry: { ordinals: { eleventh: 11 } } })`.
 
 #### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)
 

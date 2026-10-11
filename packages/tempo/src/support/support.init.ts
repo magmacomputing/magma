@@ -376,16 +376,20 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						setProperty(state.config.registry, 'dialects', { ...existing, ...arg.value.dialects });
 					}
 					if (arg.value.numbers) {
+						(state.config as any).registry ??= {};
 						const existing = state.config.registry.numbers ?? {};
 						setProperty(state.config.registry, 'numbers', { ...existing, ...arg.value.numbers });
 						if (state.config?.scope === 'global')
 							registryUpdate('NUMBER', arg.value.numbers);
+						patternsDirty = true;
 					}
 					if (arg.value.ordinals) {
+						(state.config as any).registry ??= {};
 						const existing = state.config.registry.ordinals ?? {};
 						setProperty(state.config.registry, 'ordinals', { ...existing, ...arg.value.ordinals });
 						if (state.config?.scope === 'global')
 							registryUpdate('ORDINAL', arg.value.ordinals);
+						patternsDirty = true;
 					}
 
 					const parseMap: Record<string, 'snippet' | 'layout' | 'event' | 'period' | 'ignore'> = {

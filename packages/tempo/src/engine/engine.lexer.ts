@@ -66,14 +66,20 @@ export function resolveNumber(str: any): t.Number | any {
  * Resolves an ordinal expression to a numeric position.
  *
  * @param str - An ordinal expression, numeric value, or `last`
+ * @param config - Optional configuration containing custom registry ordinals
  * @returns The 1-based position, `-1` for `last`, or `1` when the input is invalid or unspecified
  */
-export function resolveNth(str: any): number {
+export function resolveNth(str: any, config?: any): number {
 	if (!isString(str)) {
 		const num = Number(str);
 		return Number.isFinite(num) ? num : 1;
 	}
 	const low = str.trim().toLowerCase();
+	if (config?.registry?.ordinals) {
+		for (const [k, v] of Object.entries(config.registry.ordinals)) {
+			if (k.toLowerCase() === low && isNumber(v)) return v as number;
+		}
+	}
 	const ordValue = enums.ORDINAL[low];
 	if (isNumber(ordValue)) return ordValue;
 
@@ -190,7 +196,7 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
  * @returns The resolved date and time, the anchor date and time when the ordinal falls outside the month, or `undefined` when the weekday or date components cannot be resolved.
  */
 export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
-	const nthVal = resolveNth(nthStr);
+	const nthVal = resolveNth(nthStr, config);
 	const weekday = prefix(wkd);
 	const targetWkd = Enum.get(enums.WEEKDAY, weekday) ?? Enum.get(enums.WEEKDAYS, weekday);
 
@@ -315,7 +321,7 @@ export function parseOrdinalDate(
 	year: number,
 	month: number
 ): Temporal.ZonedDateTime | undefined {
-	const nthVal = resolveNth(nthStr);
+	const nthVal = resolveNth(nthStr, config);
 	const untStr = unt ? singular(unt).toLowerCase() : 'day';
 
 	let targetYear = year;

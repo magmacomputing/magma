@@ -112,6 +112,16 @@ export class Tempo {
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
+	/** @deprecated Use Tempo.enums.ELEMENT */								static get ELEMENT() { return enums.ELEMENT }
+	/** @deprecated Use Tempo.enums.FORMAT */									static get FORMAT() { return enums.FORMAT }
+	/** @deprecated Use Tempo.enums.NUMBER */									static get NUMBER() { return enums.NUMBER }
+	/** @deprecated Use Tempo.enums.ORDINAL */								static get ORDINAL() { return enums.ORDINAL }
+	/** @deprecated Use Tempo.enums.TIMEZONE */								static get TIMEZONE() { return enums.TIMEZONE }
+	/** @deprecated Use Tempo.enums.MONTH_DAY */							static get MONTH_DAY() { return enums.MONTH_DAY }
+	/** @deprecated Use Tempo.enums.MODE */										static get MODE() { return enums.MODE }
+	/** @deprecated Use Tempo.enums.CACHE */                  static get CACHE() { return enums.CACHE }
+	/** @deprecated Use Tempo.enums.LIMIT */									static get LIMIT() { return enums.LIMIT }
+
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return _lifecycle.extendDepth > 0 }
 
@@ -478,7 +488,9 @@ export class Tempo {
 		const state = targetState ?? this[$Internal]();
 		const wordsList = [
 			...Enum.keys(enums.NUMBER),
+			...Object.keys(state.config.registry?.numbers ?? {}),
 			...Enum.keys(enums.ORDINAL),
+			...Object.keys(state.config.registry?.ordinals ?? {}),
 			...Enum.keys(enums.WEEKDAY),
 			...Enum.keys(enums.WEEKDAYS),
 			...Enum.keys(enums.MONTH),
