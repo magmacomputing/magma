@@ -403,13 +403,19 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				} else if (token.startsWith('#') && isTempo(obj)) {
 					const termName = token.slice(1).split('.')[0];
 					const plugin = findTermPlugin(termName, (obj.constructor as any)[$Internal]?.());
-					const hookFn = (plugin as any)?.[TermHook.format] ?? ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
-					if (isFunction(hookFn)) {
-						const hookRes = hookFn(token, obj as Tempo);
-						if (isDefined(hookRes)) {
-							res = hookRes;
-							break;
-						}
+					const pluginHook = (plugin as any)?.[TermHook.format];
+					let hookRes: any;
+					if (isFunction(pluginHook))
+						hookRes = pluginHook(token, obj as Tempo);
+
+					if (!isDefined(hookRes)) {
+						const instanceHook = ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
+						if (isFunction(instanceHook))
+							hookRes = instanceHook(token, obj as Tempo);
+					}
+					if (isDefined(hookRes)) {
+						res = hookRes;
+						break;
 					}
 					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
 					res = isObject(termObj)

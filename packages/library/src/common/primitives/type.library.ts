@@ -247,21 +247,21 @@ export type KeyOf<T extends Obj> =
 	? number
 	: Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>;
 
-/** Extracts the value types from an object or array */
-export type ValueOf<T extends Obj> =
+/** Extracts the value types from an object or array (including readonly arrays) */
+export type ValueOf<T extends Obj | readonly any[]> =
 	IsEnumProxy<T> extends true
 	? (T extends { [Symbol.iterator](): IterableIterator<readonly [any, infer V]> }
 		? V
 		: T[KeyOf<T> & keyof T])
-	: T extends Array<any>
+	: T extends readonly any[]
 	? T[number]
 	: T[KeyOf<T> & keyof T];
 
 /** Constructs a correlated tuple union representing a key-value entry pair from an object, enum, or array */
-export type EntryOf<T extends Obj> =
-	T extends Array<any>
+export type EntryOf<T extends Obj | readonly any[]> =
+	T extends readonly any[]
 	? [number, T[number]]
-	: { [K in KeyOf<T> & PropertyKey]: [K, T[K & keyof T]] }[KeyOf<T> & PropertyKey];
+	: { [K in KeyOf<T> & PropertyKey]-?: [K, T[K & keyof T]] }[KeyOf<T> & PropertyKey];
 
 /** extracts only the Literal string keys (not index signatures) from an object/interface */
 export type LiteralKey<T> = { [K in keyof T]: string extends K ? never : K }[keyof T] & string

@@ -240,6 +240,11 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 
 	if (!Number.isFinite(yy) || !Number.isFinite(mm)) return undefined;
 
+	if (nthVal === 0 || Math.abs(nthVal) > 5) {
+		logError(`Ordinal weekday out of bounds for month ${mm}`, config);
+		return dateTime;
+	}
+
 	const firstDay = Temporal.PlainDate.from({ year: yy, month: mm, day: 1 });
 	let targetDate: Temporal.PlainDate;
 
@@ -350,6 +355,12 @@ export function parseOrdinalDate(
 	let targetDate: Temporal.PlainDate | undefined;
 
 	if (untStr === 'day') {
+		const maxDays = isDefined(targetMonth) ? 31 : 366;
+		if (nthVal === 0 || Math.abs(nthVal) > maxDays) {
+			logError(`Ordinal date day ${nthVal} out of bounds for ${isDefined(targetMonth) ? `month ${targetMonth}` : `year ${targetYear}`}`, config);
+			return undefined;
+		}
+
 		if (nthVal < 0) {
 			const offsetFromEnd = Math.abs(nthVal) - 1;
 			if (isDefined(targetMonth)) {

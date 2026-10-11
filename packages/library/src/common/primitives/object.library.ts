@@ -1,6 +1,7 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet, isDate, isRegExp, isSafeKey, isPrimitive } from '#library/assertion.library.js';
 import { getType } from '#library/type.library.js';
+import type { UnsafeKey } from '#library/assertion.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
 const RE_UNQUOTE_PROP = /"([^"]+)":/g;
@@ -179,13 +180,13 @@ export const getMethods = (obj: any, all = false) => {
  * const clean = ifDefined({ a: 1, b: undefined }); // { a: 1 }
  * ```
  */
-export function ifDefined<T extends Property<any>>(obj: T) {
+export function ifDefined<T extends Property<any>>(obj: T): Omit<T, UnsafeKey> {
 	return ownEntries(obj)
 		.reduce((acc, [key, val]) => {
 			if (isSafeKey(key) && isDefined<any>(val))
 				(acc as Record<PropertyKey, any>)[key] = val;
-			return acc as T;
-		}, {} as T)
+			return acc;
+		}, {} as Record<PropertyKey, any>) as Omit<T, UnsafeKey>;
 }
 
 /**

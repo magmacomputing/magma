@@ -9,7 +9,7 @@ import {
 	DAY_MS,
 } from '@magmacomputing/tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
-import { isNumber } from '@magmacomputing/tempo/library';
+import { isNull, isNumber } from '@magmacomputing/tempo/library';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, createCelestialTermHandlers } from './util.js';
 
 export type SolarPhaseState = 'daylight' | 'night' | 'civil-twilight' | 'nautical-twilight' | 'astronomical-twilight';
@@ -261,12 +261,14 @@ export const SolarTerm = defineTerm({
 			const scope = getSolarScopeRange(tempo);
 			if (t === '#solar.phase' || t === '#sun.phase' || t === '#sun' || t === '#solar') return scope.phase ?? '';
 			if (t === '#solar.key' || t === '#sun.key') return scope.key ?? '';
-			const elev = scope.altitude ?? scope.elevation;
-			if (t === '#solar.elevation' || t === '#sun.elevation' || t === '#solar.altitude' || t === '#sun.altitude') {
-				return elev != null ? `${Math.round(elev * 10) / 10}°` : '';
+			if (t === '#solar.altitude' || t === '#sun.altitude') {
+				return !isNull(scope.altitude) ? `${Math.round(scope.altitude * 10) / 10}°` : '';
 			}
-			if (t === '#solar.azimuth' || t === '#sun.azimuth') return scope.azimuth != null ? `${Math.round(scope.azimuth * 10) / 10}°` : '';
-			if (t === '#solar.zenith' || t === '#sun.zenith') return scope.zenith != null ? `${Math.round(scope.zenith * 10) / 10}°` : '';
+			if (t === '#solar.elevation' || t === '#sun.elevation') {
+				return !isNull(scope.elevation) ? `${scope.elevation}m` : '';
+			}
+			if (t === '#solar.azimuth' || t === '#sun.azimuth') return !isNull(scope.azimuth) ? `${Math.round(scope.azimuth * 10) / 10}°` : '';
+			if (t === '#solar.zenith' || t === '#sun.zenith') return !isNull(scope.zenith) ? `${Math.round(scope.zenith * 10) / 10}°` : '';
 		}
 		return undefined;
 	},

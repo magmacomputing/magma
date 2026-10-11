@@ -45,6 +45,16 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 const BRACED_CACHE = new WeakCache<string, RegExp>();
 const RE_SINGLE_WHITESPACE = /\s/;
 const RE_REGEX_ESCAPE_CHAR = /[\\^$*+?.()|[\]{}]/;
+const RE_REGEX_ESCAPE_ALL = /[.*+?^${}()|[\]\\]/g;
+const RE_SIGNED_LEADING_DIGITS = /^-?\d+/;
+
+/** Constructs a regular expression to match ordinal term expressions (e.g. "3rd day of #qtr.2"). */
+function buildOrdinalTermPattern(ordWords?: string): RegExp {
+	const ordPattern = ordWords && ordWords.length > 0
+		? `\\d+(?:st|nd|rd|th)?|${ordWords}`
+		: '\\d+(?:st|nd|rd|th)?';
+	return new RegExp(`^\\s*(?<ord>${ordPattern})\\s+(?:day\\s+of\\s+)?(?<term>#[\\w.]+)\\s*$`, 'i');
+}
 
 /** Compiles a native braced format mask into a cached parsing expression. */
 function compileBracedPattern(fmt: string): RegExp {
@@ -491,16 +501,16 @@ const _ParseEngine = {
 					const allOrdKeys = Array.from(new Set([
 						...(Enum.keys(enums.ORDINAL) as string[]),
 						...Object.keys(localOrdinals)
-					]));
-					const ordWords = allOrdKeys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-					const ordMatch = value.match(new RegExp(`^\\s*(?<ord>\\d+(?:st|nd|rd|th)?|${ordWords})\\s+(?:day\\s+of\\s+)?(?<term>#[\\w.]+)\\s*$`, 'i'));
+					])).filter(Boolean);
+					const ordWords = allOrdKeys.map(k => k.replace(RE_REGEX_ESCAPE_ALL, '\\$&')).join('|');
+					const ordMatch = value.match(buildOrdinalTermPattern(ordWords));
 					if (ordMatch?.groups?.term) {
 						const [ordTermId] = ordMatch.groups.term.slice(1).split('.');
 						const targetTermObj = findTermPlugin(ordTermId, state);
 						if (targetTermObj === termObj) {
 							const anchorTempo = ctx.anchor ?? getAnchor();
 							const ordRaw = ordMatch.groups.ord?.toLowerCase();
-							const numericVal = /^-?\d+/.test(ordRaw) ? parseInt(ordRaw, 10) : undefined;
+							const numericVal = RE_SIGNED_LEADING_DIGITS.test(ordRaw) ? parseInt(ordRaw, 10) : undefined;
 							const resolvedVal = localOrdinals[ordRaw] ?? (ordRaw ? (enums.ORDINAL as any)?.[ordRaw] : undefined) ?? numericVal;
 							const matchGroups: Record<string, any> = {
 								...ordMatch.groups,

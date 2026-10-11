@@ -21,6 +21,11 @@ describe('Type Library (Compile-Time)', () => {
 		expect(testMethodVal).toBe(true);
 		expect(testMethodEntry).toBe(true);
 
+		// Plain object with optional properties
+		type WithOptional = { opt?: string; req: number };
+		const testOptionalEntry: AssertEqual<EntryOf<WithOptional>, ['opt', string | undefined] | ['req', number]> = true;
+		expect(testOptionalEntry).toBe(true);
+
 		// Loose enums: unwinding the loose index signature & extracting correlated entry pairs
 		const testEnum = looseIndex<string, string>()(enumify({
 			North: 'north',
@@ -33,6 +38,13 @@ describe('Type Library (Compile-Time)', () => {
 		expect(testEnumKey).toBe(true);
 		expect(testEnumVal).toBe(true);
 		expect(testEnumEntry).toBe(true);
+
+		// ValueOf & EntryOf on as const tuples
+		const colors = ['red', 'green', 'blue'] as const;
+		const testTupleVal: AssertEqual<ValueOf<typeof colors>, 'red' | 'green' | 'blue'> = true;
+		const testTupleEntry: AssertEqual<EntryOf<typeof colors>, [number, 'red' | 'green' | 'blue']> = true;
+		expect(testTupleVal).toBe(true);
+		expect(testTupleEntry).toBe(true);
 	});
 
 	it('should correctly resolve Singular types at compile-time', () => {

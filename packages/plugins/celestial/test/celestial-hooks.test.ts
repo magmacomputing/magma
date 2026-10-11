@@ -85,9 +85,12 @@ describe('CelestialPlugin Lifecycle TermHooks Showcase', () => {
 
 		it('should format solar state and angles via [TermHook.format]', () => {
 			const t = new Tempo('2026-06-21T12:00:00+01:00[Europe/London]', { geo: geoLondon });
-			const str = t.format('Status: {#solar.phase} | Elevation: {#solar.elevation}');
+			const str = t.format('Status: {#solar.phase} | Altitude: {#solar.altitude}');
 			expect(str).toContain('Status: Daylight');
-			expect(str).toMatch(/Elevation: \d+/);
+			expect(str).toMatch(/Altitude: \d+(\.\d+)?°/);
+
+			const tDenver = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 39.7392, lng: -104.9903, elevation: 1600 } });
+			expect(tDenver.format('Elevation: {#solar.elevation}')).toBe('Elevation: 1600m');
 		});
 	});
 

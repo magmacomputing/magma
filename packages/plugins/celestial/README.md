@@ -178,11 +178,11 @@ Tempo.from('last day of #equinox', { anchor });
 t.format('Current Moon: {#moon.emoji} {#moon.phase} ({#moon.illumination})');
 // => "Current Moon: 🌔 Waxing Gibbous (78%)"
 
-t.format('Sun: {#solar.phase} | Elev: {#solar.elevation} | Azimuth: {#solar.azimuth}');
-// => "Sun: Daylight | Elev: 42.5° | Azimuth: 180.2°"
+t.format('Sun: {#solar.phase} | Alt: {#solar.altitude} | Azimuth: {#solar.azimuth}');
+// => "Sun: Daylight | Alt: 42.5° | Azimuth: 180.2°"
 
 t.format('Tide: {#tide.state} | Season: {#astro.season}');
-// => "Tide: Spring | Season: Summer"
+// => "Tide: spring | Season: Summer"
 ```
 
 ## Phase & State Discovery Metadata
