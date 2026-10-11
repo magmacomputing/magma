@@ -85,9 +85,23 @@ Tempo.use(FormatModule);
 
 > [!TIP]
 > **Format Dialects & Migration**
-> Tempo's formatting engine uses consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
+> Tempo's formatting engine uses explicit curly braces and consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
 >
-> If you are migrating an existing codebase or prefer familiar external formatting standards (such as Luxon, Moment, or POSIX `strftime`), the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin is available.
+> If you are migrating an existing codebase from Moment, Day.js, or Luxon, the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin provides drop-in support for familiar external masks:
+>
+> ```typescript
+> import { Tempo } from '@magmacomputing/tempo';
+> import { DialectsPlugin } from '@magmacomputing/tempo-plugin-dialects';
+>
+> Tempo.use(DialectsPlugin);
+> Tempo.init({ dialect: 'moment' });
+>
+> const t = new Tempo('2026-10-24');
+> t.format('YYYY-MM-DD');        // "2026-10-24" (Moment mask)
+> t.format('{yyyy}-{mm}-{dd}');  // "2026-10-24" (Native Tempo tokens always work)
+> ```
+>
+> For Unicode LDML, POSIX `strftime`, and dual-mode configuration details, see the [Dialects Plugin documentation](/doc/9-plugins/dialects.index).
 
 | Token | Description | Example |
 | :--- | :--- | :--- |

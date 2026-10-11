@@ -259,7 +259,7 @@ jobs:
                 view_output=$(npm view "$pkg" dist-tags.latest 2>&1) || view_status=$?
 
                 if [ $view_status -ne 0 ]; then
-                  if echo "$view_output" | grep -qi "404"; then
+                  if echo "$view_output" | grep -qE "code E404|404 Not Found"; then
                     # Package not yet published on registry: default initial release to 'latest'
                     tag="latest"
                   else

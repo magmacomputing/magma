@@ -220,7 +220,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const isNamedFormat = isString(fmt) && hasOwn(formats, fmt);
 	const dialect = evaluate(options?.dialect ?? config?.dialect);
-	if (dialect && isString(fmt) && !isNamedFormat) {
+	if (dialect && isString(fmt) && !isNamedFormat && !fmt.includes('{')) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
 		const dialectsRegistry = config?.registry?.dialects
 			?? (getRuntime() as any).dialects

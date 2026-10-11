@@ -16,6 +16,10 @@ describe('Dialects Core Modularity & Guardrails', () => {
 		expect(t.toFormat('yyyy-MM-dd')).toBe('2026-10-24');
 		expect(t.dialects.ldml('dd LLL yyyy')).toBe('24 Oct 2026');
 		expect(t.dialects.strftime('%Y-%m-%d')).toBe('2026-10-24');
+
+		// Best of both worlds: braced masks bypass dialect formatting and use native Tempo tokens
+		expect(t.format('{yyyy}-{mm}-{dd}', { dialect: DIALECT.Ldml })).toBe('2026-10-24');
+		expect(t.format('{mmm} {dd}, {yyyy} at {hh}:{mi}', { dialect: 'moment' })).toBe('Oct 24, 2026 at 15:30');
 	});
 
 	it('parses dates on Tempo Core with dialect masks when ParseModule is loaded', () => {
