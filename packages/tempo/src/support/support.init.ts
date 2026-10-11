@@ -376,7 +376,6 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						setProperty(state.config.registry, 'dialects', { ...existing, ...arg.value.dialects });
 					}
 					if (arg.value.numbers) {
-						(state.config as any).registry ??= {};
 						const existing = state.config.registry.numbers ?? {};
 						setProperty(state.config.registry, 'numbers', { ...existing, ...arg.value.numbers });
 						if (state.config?.scope === 'global')
@@ -384,7 +383,6 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						patternsDirty = true;
 					}
 					if (arg.value.ordinals) {
-						(state.config as any).registry ??= {};
 						const existing = state.config.registry.ordinals ?? {};
 						setProperty(state.config.registry, 'ordinals', { ...existing, ...arg.value.ordinals });
 						if (state.config?.scope === 'global')

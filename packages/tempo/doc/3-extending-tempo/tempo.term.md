@@ -395,7 +395,7 @@ export const SprintTerm = defineTerm({
   // 6. Format: Custom sprint format token
   [TermHook.format](token, tempo) {
     if (token === '#sprint') {
-      return `Sprint-${Math.ceil(tempo.dayOfYear / 14)}`;
+      return `Sprint-${Math.ceil(tempo.doy / 14)}`;
     }
     return undefined;
   }

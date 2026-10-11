@@ -1,4 +1,4 @@
-import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isNullish, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
@@ -70,6 +70,7 @@ export function resolveNumber(str: any): t.Number | any {
  * @returns The 1-based position, `-1` for `last`, or `1` when the input is invalid or unspecified
  */
 export function resolveNth(str: any, config?: any): number {
+	if (isNullish(str)) return 1;
 	if (!isString(str)) {
 		const num = Number(str);
 		return Number.isFinite(num) ? num : 1;
