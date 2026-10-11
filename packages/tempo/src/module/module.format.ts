@@ -7,7 +7,7 @@ import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, hasOwn, $Internal, TermHook } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, hasOwn, $Internal, TermHook, hasNativeFormatBraces } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -220,7 +220,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const isNamedFormat = isString(fmt) && hasOwn(formats, fmt);
 	const dialect = evaluate(options?.dialect ?? config?.dialect);
-	if (dialect && isString(fmt) && !isNamedFormat && !fmt.includes('{')) {
+	if (dialect && isString(fmt) && !isNamedFormat && !hasNativeFormatBraces(fmt, dialect)) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
 		const dialectsRegistry = config?.registry?.dialects
 			?? (getRuntime() as any).dialects

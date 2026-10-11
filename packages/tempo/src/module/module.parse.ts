@@ -18,7 +18,7 @@ import { getRange, getTermRange, findTermPlugin } from '../plugin/term/term.util
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange, TermParseContext } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, TermHook, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet } from '#tempo/support';
+import { sym, isTempo, TermError, TermHook, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet, hasNativeFormatBraces } from '#tempo/support';
 import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
@@ -553,10 +553,11 @@ const _ParseEngine = {
 			if (isDefined(formatOpt)) {
 				const formats = asArray(formatOpt);
 				const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
+				const dialect = dialectOpt ?? evaluate(state.options?.dialect ?? state.config?.dialect);
 				for (const fmt of formats) {
 					if (!isString(fmt)) continue;
 					try {
-						const res = fmt.includes('{')
+						const res = hasNativeFormatBraces(fmt, dialect)
 							? parseBracedFormat(trim, fmt, dateTime, tz, cal)
 							: parseDialectFormat(trim, fmt, state, dateTime, tz, cal, dialectOpt);
 						if (isZonedDateTime(res)) {

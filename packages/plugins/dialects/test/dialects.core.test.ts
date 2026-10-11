@@ -20,6 +20,12 @@ describe('Dialects Core Modularity & Guardrails', () => {
 		// Best of both worlds: braced masks bypass dialect formatting and use native Tempo tokens
 		expect(t.format('{yyyy}-{mm}-{dd}', { dialect: DIALECT.Ldml })).toBe('2026-10-24');
 		expect(t.format('{mmm} {dd}, {yyyy} at {hh}:{mi}', { dialect: 'moment' })).toBe('Oct 24, 2026 at 15:30');
+
+		// Bracket-escaped literal braces in Moment/Day.js masks reach the dialect formatter
+		expect(t.format('[{yyyy}] YYYY-MM-DD', { dialect: 'moment' })).toBe('{yyyy} 2026-10-24');
+
+		// Single-quote escaped literal braces in LDML masks reach the dialect formatter
+		expect(t.format("'{yyyy}' yyyy-MM-dd", { dialect: DIALECT.Ldml })).toBe('{yyyy} 2026-10-24');
 	});
 
 	it('parses dates on Tempo Core with dialect masks when ParseModule is loaded', () => {
@@ -28,6 +34,20 @@ describe('Dialects Core Modularity & Guardrails', () => {
 		expect(t.yy).toBe(2026);
 		expect(t.mm).toBe(10);
 		expect(t.dd).toBe(24);
+
+		// Bracket-escaped literal braces in Moment/Day.js reach the dialect parser
+		const tMoment = new Tempo('{yyyy} 2026-10-24', { format: '[{yyyy}] YYYY-MM-DD', dialect: 'moment' });
+		expect(tMoment.isValid).toBe(true);
+		expect(tMoment.yy).toBe(2026);
+		expect(tMoment.mm).toBe(10);
+		expect(tMoment.dd).toBe(24);
+
+		// Single-quote escaped literal braces in LDML reach the dialect parser
+		const tLdml = new Tempo('{yyyy} 2026-10-24', { format: "'{yyyy}' yyyy-MM-dd", dialect: DIALECT.Ldml });
+		expect(tLdml.isValid).toBe(true);
+		expect(tLdml.yy).toBe(2026);
+		expect(tLdml.mm).toBe(10);
+		expect(tLdml.dd).toBe(24);
 	});
 
 	it('supports dynamic function for dialect option in formatting and parsing', () => {

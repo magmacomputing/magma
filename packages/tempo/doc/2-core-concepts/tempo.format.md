@@ -85,7 +85,7 @@ Tempo.use(FormatModule);
 
 > [!TIP]
 > **Format Dialects & Migration**
-> Tempo's formatting engine uses explicit curly braces and consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
+> Tempo's formatting engine uses explicit curly braces and consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common cross-ecosystem pitfalls—such as token confusion between calendar year and ISO week-year (in Unicode LDML `yyyy` is calendar year while `YYYY` is ISO week-year, whereas in Moment and Day.js `YYYY` is calendar year while `GGGG` is ISO week-year).
 >
 > If you are migrating an existing codebase from Moment, Day.js, or Luxon, the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin provides drop-in support for familiar external masks:
 >
