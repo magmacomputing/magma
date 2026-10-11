@@ -232,7 +232,9 @@ export const SolarTerm = defineTerm({
 	[TermHook.parse](input: string, context?: any) {
 		const lower = input.toLowerCase();
 		if (lower.startsWith('#sun.') || lower.startsWith('#solar.')) {
-			const sub = lower.split('.')[1];
+			const parts = lower.split('.');
+			if (parts.length !== 2) return undefined;
+			const sub = parts[1];
 			const anchor = context?.anchor;
 			const geo = context?.geo ?? context?.config?.geo;
 			const target = anchor ? (anchor.geo ? anchor : (geo ? new Tempo(anchor, { ...anchor.config, geo }) : anchor)) : new Tempo(undefined, { ...(context?.config ?? {}), ...(geo ? { geo } : {}) });

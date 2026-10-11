@@ -199,7 +199,9 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	[TermHook.parse](input: string, context?: any) {
 		const lower = input.toLowerCase();
 		if (lower.startsWith('#astro.') || lower.startsWith('#equinox.') || lower.startsWith('#solstice.')) {
-			const [prefix, sub] = lower.slice(1).split('.');
+			const parts = lower.slice(1).split('.');
+			if (parts.length !== 2) return undefined;
+			const [prefix, sub] = parts;
 			const isEquinox = sub === 'vernal' || sub === 'spring' || sub === 'autumnal' || sub === 'autumn';
 			const isSolstice = sub === 'summer' || sub === 'winter';
 			if (prefix === 'equinox' && !isEquinox) return undefined;
