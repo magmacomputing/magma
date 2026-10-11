@@ -260,3 +260,107 @@ The "Slick" engine is a domain-specific mini-language inside Tempo designed for 
 | **Macro Epochs / Timelines** | `src/term/term.timeline.ts` | Geological and cosmological epochs (`#timeline.cenozoic`) are niche domain terms. | Move to community plugin `@tempo-dev/plugin-geology`. |
 | **Complex Bidi Isolation** | `international.library.ts` | Bi-directional text isolation wrapper (`isolateBidi`) for formatting. | Audit whether standard `Intl` options suffice without custom wrappers. |
 
+---
+
+## 7. AI & LLM Context Architecture (`llms.txt` & `llms-full.txt`) Across Multi-Version Builds
+
+### The Risk: Context Contamination & RAG Hallucinations
+When a documentation build hosts both the latest v5 docs at root `/` and archived legacy docs at `/v4/`, naive documentation bundling presents a severe hazard for automated AI tooling:
+1. **Contradictory Paradigm Ingestion**:
+   If the full-text bundle ([`llms-full.txt`](file:///home/michael/Project/magma/packages/tempo/public/llms-full.txt)) recursively merges all Markdown documents across the site, an AI model (in Cursor, VS Code / GitHub Copilot, Antigravity, Claude, or ChatGPT) ingests conflicting rules side-by-side:
+   - **`Tempo.now()`**: Returns a `bigint` nanosecond timestamp in v4 vs. a `Tempo` instance in v5.
+   - **Package Scopes**: `@magmacomputing/tempo` in v4 vs. `@tempo-dev/core` in v5.
+   - **Dialects**: External community plugin `@magmacomputing/tempo-plugin-dialects` in v4 vs. native built-in `Tempo.dialects` / `t.toFormat()` in v5.
+   - **Slick Syntax**: Built-in core grammar (`#qtr.>q1`, `{ mm: '>2' }`) in v4 vs. external `@tempo-dev/plugin-slick` in v5.
+2. **Degraded AI Output Quality**:
+   An AI assistant ingesting mixed-version documentation cannot reliably deduce which paradigm the developer's project targets, leading to subtle bugs, broken imports, and hallucinated hybrid syntax.
+
+---
+
+### Segmented Route Architecture
+
+To maintain crystal-clear context boundaries for AI assistants, the documentation build must provide dedicated, version-segregated files:
+
+```text
+tempo.dev/
+├── llms.txt               <-- v5 AI Index & Quick Reference (Latest)
+├── llms-full.txt          <-- v5 Complete Concatenated Documentation Set
+└── v4/
+    ├── llms.txt           <-- v4 AI Index & Quick Reference (Frozen LTS)
+    └── llms-full.txt      <-- v4 Complete Concatenated Documentation Set (Frozen LTS)
+```
+
+#### 1. Root Files (`/llms.txt` and `/llms-full.txt`)
+* **Target Audience**: New projects and teams upgrading to v5.
+* **Scope**: Exclusively documents v5 syntax, `@tempo-dev/core` imports, `Tempo.now()` as an instance factory, and native format dialects.
+* **Header Metadata**:
+  ```markdown
+  # Tempo: Immutable Date-Time Engine & AI Syntax Rules (v5.x - Latest)
+  > Targeted for @tempo-dev/core v5.x. For legacy v4 documentation, refer to:
+  > https://tempo.dev/v4/llms.txt
+  ```
+* **Links**: All markdown documentation URLs resolve to root paths (e.g. `https://tempo.dev/1-getting-started/...`).
+
+#### 2. Archived Route Files (`/v4/llms.txt` and `/v4/llms-full.txt`)
+* **Target Audience**: Teams maintaining legacy v4 codebases.
+* **Scope**: A frozen snapshot of the final `v4.6.0` documentation, preserving `@magmacomputing/tempo` package names, `bigint` timestamps, and separate dialect plugin instructions.
+* **Prominent Warning Headline & Banner**:
+  Anyone browsing directly to the `/v4/` sub-path—as well as any AI crawler or IDE ingesting `/v4/llms.txt` or `/v4/llms-full.txt` directly—must immediately encounter an unmissable headline and warning banner establishing the legacy context before any API documentation appears:
+  ```markdown
+  # ⚠️ ARCHIVED DOCUMENTATION: Tempo v4.x (v4.6.0 LTS)
+  
+  > [!WARNING]
+  > **YOU ARE VIEWING ARCHIVED DOCUMENTATION FOR TEMPO v4.x (`@magmacomputing/tempo`).**
+  > If you are starting a new project or maintaining modern code, use **Tempo v5.x (`@tempo-dev/core`)**:
+  > - **v5 AI Rules & Index:** https://tempo.dev/llms.txt
+  > - **v5 Full Documentation Context:** https://tempo.dev/llms-full.txt
+  > - **v5 Web Documentation:** https://tempo.dev/
+  >
+  > **Key Breaking Differences in this v4.x Archive:**
+  > 1. `Tempo.now()` returns primitive `bigint` nanoseconds (in v5, `Tempo.now()` returns an immutable `Tempo` instance).
+  > 2. Package namespace is `@magmacomputing/tempo` (in v5, core is `@tempo-dev/core`).
+  > 3. Dialects require the external plugin `@magmacomputing/tempo-plugin-dialects` (built into standard v5).
+  > 4. Slick shorthand syntax (`#qtr.>q1`) is built-in (in v5, extracted to `@tempo-dev/plugin-slick`).
+  ```
+* **Full-Text Bundle Headline (`/v4/llms-full.txt`)**:
+  The concatenated archive must also lead with this banner before concatenating any legacy markdown documents, ensuring RAG chunks at the document root prominently reflect the v4 boundary.
+* **Links**: All markdown documentation URLs in `/v4/` resolve to preserved `/v4/` paths (e.g. `https://tempo.dev/v4/1-getting-started/...`).
+
+---
+
+### Build Pipeline Updates ([`generate-llms-txt.mjs`](file:///home/michael/Project/magma/packages/tempo/bin/generate-llms-txt.mjs))
+
+1. **Path Filtering in Doc Crawlers**:
+   The recursive file collector in [`generate-llms-txt.mjs`](file:///home/michael/Project/magma/packages/tempo/bin/generate-llms-txt.mjs#L11-L23) must filter out archival and internal directories:
+   ```javascript
+   const IGNORED_DIRS = new Set(['v4', 'plan', 'archive', 'drafts']);
+
+   async function getMarkdownFiles(dir) {
+     const entries = await readdir(dir, { withFileTypes: true });
+     let files = [];
+     for (const entry of entries) {
+       if (entry.isDirectory() && !IGNORED_DIRS.has(entry.name)) {
+         files = files.concat(await getMarkdownFiles(join(dir, entry.name)));
+       } else if (entry.isFile() && entry.name.endsWith('.md')) {
+         files.push(join(dir, entry.name));
+       }
+     }
+     return files.sort();
+   }
+   ```
+2. **Archival Snapshot Generation**:
+   - As part of the v5 branching / release cut, the existing `public/llms.txt` and generated `public/llms-full.txt` from `v4.6.0` will be frozen into `public/v4/llms.txt` and `public/v4/llms-full.txt`.
+   - The VitePress build will copy the `/public` directory assets directly into the distribution output root, ensuring `/v4/llms.txt` is served under the `/v4/` route without additional server configuration.
+
+---
+
+### IDE Prompting & Rule Configuration Guidance
+
+Documentation and developer onboarding guides should instruct users on how to configure their AI tooling according to project version:
+
+| Target Version | Recommended Ingestion URL | IDE Rule / Prompt Snippet |
+| :--- | :--- | :--- |
+| **Tempo v5.x (Latest)** | `https://tempo.dev/llms.txt` | `@https://tempo.dev/llms.txt Use modern Tempo v5 syntax with @tempo-dev/core` |
+| **Tempo v4.x (Legacy LTS)** | `https://tempo.dev/v4/llms.txt` | `@https://tempo.dev/v4/llms.txt Use legacy Tempo v4 syntax with @magmacomputing/tempo` |
+
+
