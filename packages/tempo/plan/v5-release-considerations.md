@@ -152,3 +152,111 @@ GitHub Pages deploys a single build artifact per repository. If pushes to `maint
 3. **Domain Isolation (`tempo.dev`):**
    - As `@tempo-dev` matures, `tempo.dev` will serve the primary v5 documentation and interactive playground, while `magmacomputing.github.io/magma/` can continue serving the legacy v4 docs or redirect seamlessly.
 
+---
+
+## 5. Dialects Engine Native Inclusion (`src/plugin/dialect/`)
+
+### Strategic Context
+Rather than requiring developers to discover and install a separate community plugin (`@magmacomputing/tempo-plugin-dialects`), Tempo v5 will bundle the formatting and parsing dialects engine directly into the standard Tempo package.
+
+This provides instant, drop-in compatibility for migrating codebases from **Moment.js, Day.js, Luxon, date-fns, and POSIX `strftime`**, advancing Tempo's core mission of "Humanizing Temporal" with zero onboarding friction.
+
+### Architectural Location: `src/plugin/dialect/`
+To maintain a clean internal project structure and avoid top-level `src/` directory clutter, the dialect engine will live alongside other built-in plugin subsystems under `src/plugin/` (aligning with `src/plugin/term/` and `src/plugin/extend/`):
+
+```
+packages/tempo/src/plugin/dialect/
+├── dialect.constants.ts       # DIALECT and DIALECT_ALIAS enums
+├── dialect.type.ts            # DialectsStaticNamespace, DialectsInstanceNamespace types
+├── dialect.registry.ts        # formatWithDialect, parseWithDialect, translateMomentToLdml
+├── compiler/
+│   ├── ldml.compiler.ts       # Unicode LDML layout compiler & cache
+│   ├── strftime.compiler.ts   # POSIX strftime formatter and parser
+│   └── explain.ts             # .explain() token breakdown and migration assistant
+├── shims/
+│   └── luxon.shim.ts          # t.toFormat() and Tempo.fromFormat() convenience shims
+├── dialect.plugin.ts          # DialectsPlugin definition
+└── dialect.index.ts           # Public exports
+```
+
+### Full vs. Core Modularity
+* **Standard Tempo (`tempo.index.ts`)**: Auto-registers `DialectsPlugin` on startup alongside `StandardTerms`, `FormatModule`, and `ParseModule`. Setting `Tempo.init({ dialect: 'moment' })` works instantly with zero manual plugin wiring.
+* **Tempo Core (`core.index.ts`)**: Dialects remains completely **unregistered** in `@magmacomputing/tempo/core` (or `@tempo-dev/core`), preserving zero-overhead and tree-shakeability for minimalist applications and library authors.
+
+### Package Exports & Type Augmentation
+* **Subpath Exports (`package.json`)**:
+  ```json
+  "./dialect": {
+    "types": "./dist/plugin/dialect/dialect.index.d.ts",
+    "import": "./dist/plugin/dialect/dialect.index.js",
+    "default": "./dist/plugin/dialect/dialect.index.js"
+  }
+  ```
+* **Type Declaration Merging (`tempo.type.ts`)**:
+  - `Tempo.dialects` attached to `TempoStatic`.
+  - `t.dialects` and `t.toFormat(mask, options)` attached to `interface Tempo`.
+  - `Tempo.fromFormat(input, mask, options)` attached to `TempoStatic`.
+
+### Monorepo Retirement & npm Deprecation
+Following the precedent set when `packages/plugins/astro` was retired and migrated to `packages/plugins/celestial`:
+1. The standalone `packages/plugins/dialects/` directory in the monorepo will be retired upon the v5 release.
+2. The npm package `@magmacomputing/tempo-plugin-dialects` will be marked as `@deprecated` on npmjs:
+   ```text
+   npm deprecate @magmacomputing/tempo-plugin-dialects "Dialects are now built directly into Tempo v5. Use @magmacomputing/tempo or @tempo-dev/core."
+   ```
+3. Existing unit tests (38 tests) will be migrated to `packages/tempo/test/plugin/dialect/`.
+
+---
+
+## 6. Core Byte-Budget Optimization: Extracting Low-Use Features
+
+### Strategic Context: Net-Negative Byte Budget
+Adding native format dialects to standard Tempo in v5 introduces ~4–5 KB of minified code (layout compilers, translation maps, and regex shims). To offset this and ensure Tempo v5 remains lean, fast, and competitive with ultra-light alternatives, v5 should audit and extract niche, high-complexity features into opt-in plugins.
+
+This achieves a **net-negative byte impact**: standard users gain the universal formatting features they expect (Moment/LDML masks), while shedding niche code paths they rarely touch.
+
+---
+
+### Prime Candidate: The Slick Shorthand Engine (`@tempo-dev/plugin-slick`)
+
+#### What the Slick Engine Encompasses
+The "Slick" engine is a domain-specific mini-language inside Tempo designed for navigating and shifting across custom Terminology cycles:
+1. **String Navigation Shorthand**: Shifting to dynamic term boundaries via string expressions (`t.set('#qtr.>q1')`, `t.add('#timeOfDay.>afternoon')`, `#zodiac.<`).
+2. **Directional Operator Grammar**: Parsing and executing momentum modifiers (`>`, `<`, `>=`, `<=`, `+`, `-`, `this`).
+3. **Cycle-Preservation Mathematics**: Calculating relative percentage offsets (e.g. remaining 45% of the way through an uneven cycle when shifting to the next Term).
+4. **Slick Object Mutation Shifters**: Value-level shorthand in `.set()` and `.add()` (e.g. `t.set({ mm: '>2', wkd: '>Fri' })`).
+5. **Core Footprint**:
+   - Complex parser regexes in [`support.default.ts`](file:///home/michael/Project/magma/packages/tempo/src/support/support.default.ts) (`Match.slick`, `Match.slickValue`, `Match.shorthand`, `SLICK_KEYS`).
+   - Extensive branching in [`engine.term.ts`](file:///home/michael/Project/magma/packages/tempo/src/engine/engine.term.ts#L134-L245) (~300+ lines).
+   - Dedicated mutation handlers in [`module.mutate.ts`](file:///home/michael/Project/magma/packages/tempo/src/module/module.mutate.ts#L120-L175).
+   - Early normalizer checks in [`engine.normalizer.ts`](file:///home/michael/Project/magma/packages/tempo/src/engine/engine.normalizer.ts#L131).
+   - **Estimated Core Size:** ~8–12 KB minified.
+
+#### Proposed Extraction to Plugin
+* **New Package:** `@tempo-dev/plugin-slick` (or `@magmacomputing/tempo-plugin-slick`).
+* **Consumption Model:**
+  ```typescript
+  import { Tempo } from '@magmacomputing/tempo';
+  import { SlickPlugin } from '@tempo-dev/plugin-slick';
+
+  Tempo.use(SlickPlugin);
+
+  // Enables string shorthand and relative cycle preservation:
+  t.set('#qtr.>q1');
+  t.set({ wkd: '>Fri' });
+  ```
+* **Net Byte Savings**:
+  - Extracting Slick saves ~8–12 KB.
+  - Adding Dialects adds ~4–5 KB.
+  - **Net Result for Core Tempo v5:** **~4–7 KB reduction in total package bundle size**, with significantly simpler core mutation and term resolution code paths.
+
+---
+
+### Additional Candidates for Byte-Savings Auditing in v5
+
+| Feature Area | Current Location | Rationale for Extraction | Proposed Destination |
+| :--- | :--- | :--- | :--- |
+| **Astrological Terms** | `src/term/term.zodiac.ts` | Astrological signs (`#zodiac.aries`) are bundled in standard Tempo. Enterprise/business users rarely require horoscope cycles. | Move to `@magmacomputing/tempo-plugin-celestial` or `@tempo-dev/plugin-astrology`. |
+| **Macro Epochs / Timelines** | `src/term/term.timeline.ts` | Geological and cosmological epochs (`#timeline.cenozoic`) are niche domain terms. | Move to community plugin `@tempo-dev/plugin-geology`. |
+| **Complex Bidi Isolation** | `international.library.ts` | Bi-directional text isolation wrapper (`isolateBidi`) for formatting. | Audit whether standard `Intl` options suffice without custom wrappers. |
+
