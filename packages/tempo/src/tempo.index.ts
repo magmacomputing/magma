@@ -59,6 +59,7 @@ export type * from '#tempo/format';
 export type * from '#tempo/mutate';
 export type * from '#tempo/duration';
 export type * from '#tempo/term';
+export { TermHook } from '#tempo/support';
 
 export { defineConfig } from './config/config.define.js';
 export { Interval } from './interval.index.js';

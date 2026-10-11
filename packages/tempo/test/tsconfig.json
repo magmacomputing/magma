@@ -28,6 +28,7 @@
 			"#server/*": [ "../../library/src/server/*" ],
 			"#tempo": [ "../src/tempo.index.ts" ],
 			"#tempo/core": [ "../src/core.index.ts" ],
+			"#tempo/enums": [ "../src/support/support.enum.ts" ],
 			"#tempo/duration": [ "../src/module/module.duration.ts" ],
 			"#tempo/mutate": [ "../src/module/module.mutate.ts" ],
 			"#tempo/format": [ "../src/module/module.format.ts" ],

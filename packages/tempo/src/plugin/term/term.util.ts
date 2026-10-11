@@ -62,8 +62,8 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
 	const id = (ident.startsWith('#') ? ident.slice(1) : ident).toLowerCase();
 	const [termPart] = id.split('.');
 
-	const st = state ?? getRuntime().state;
-	if (!st) return undefined;
+	const st = state?.pluginsDb ? state : getRuntime().state;
+	if (!st?.pluginsDb?.terms) return undefined;
 
 	return st.pluginsDb.terms.find((t: TermPlugin) => {
 		if (t.key?.toLowerCase() === termPart || t.scope?.toLowerCase() === termPart) return true;

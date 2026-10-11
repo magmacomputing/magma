@@ -289,9 +289,9 @@ const tempo = new Tempo(new Date());
 
 ### Converting to `Temporal` Objects
 ```typescript
-const zdt = new Tempo().toDateTime();  // Temporal.ZonedDateTime
+const zdt = new Tempo().zdt;             // Temporal.ZonedDateTime (or .toDateTime())
 const instant = new Tempo().toInstant(); // Temporal.Instant
-const pdt = new Tempo().toPlainDate(); // Temporal.PlainDate
+const pdt = new Tempo().toPlainDate();   // Temporal.PlainDate
 ```
 
 ### Sorting an array of Tempos

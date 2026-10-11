@@ -6,7 +6,8 @@ import { ifDefined } from '#library/object.library.js';
 import { getRelativeTime, formatNumber, formatDuration, formatList } from '#library/international.library.js';
 
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
-import { enums, isTempo, TempoError } from '#tempo/support';
+import { findTermPlugin } from '../plugin/term/term.util.js';
+import { enums, isTempo, TempoError, sym, TermHook } from '#tempo/support';
 import { Tempo } from '../tempo.class.js';
 import type * as t from '../tempo.type.js';
 
@@ -187,6 +188,18 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 
 	const [selfTz, selfCal] = getTemporalIds(selfZdt);
 	const [offsetTz] = getTemporalIds(offsetZdt);
+
+	// Term Lifecycle Hook: [TermHook.diff]
+	if (isString(unit) && unit.startsWith('#')) {
+		const [termPart] = unit.slice(1).split('.');
+		const termObj = findTermPlugin(termPart, (this as any)[sym.$Internal]?.());
+		if (termObj && isFunction((termObj as any)[TermHook.diff])) {
+			const targetTempo = isTempo(offset) ? offset : new (this.constructor as any)(offsetZdt, (this as any).config);
+			const diffRes = (termObj as any)[TermHook.diff](targetTempo, unit, this);
+			if (isDefined(diffRes))
+				return since ? `${diffRes} ${unit}` : diffRes;
+		}
+	}
 
 	let temporalUnit = unit;
 	if (isDefined(temporalUnit)) {

@@ -6,6 +6,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.0] - 2026-10-09
+
+### Added & Architecture
+- **Unified `Tempo.enums` Namespace & Extensible `ORDINAL` Enum**:
+  - Added `Tempo.enums` static getter consolidating all live enumerators under a single namespace, streamlining the class static surface to retain only core calendar/direction domain getters (`WEEKDAY/S`, `MONTH/S`, `DURATION/S`, `SEASON`, `COMPASS`).
+  - Exported `ORDINAL` enum (`current: 0`, `first: 1` through `tenth: 10`, `last: -1`) from `@magmacomputing/tempo/enums`, accessible via `Tempo.enums.ORDINAL`.
+  - Integrated written ordinal resolution into the lexer and parse engine (`resolveNth` and dynamic `Token.nth` regex patterns), enabling natural expressions like `"first Wednesday of October"` or `"last day of May"`.
+  - Added `registry.ordinals` to `Tempo.init()`, constructor options, and cascading configurations, allowing custom word-to-offset mappings.
+  - Aligned `[TermHook.ordinal]` and `SprintTerm` examples to leverage `Tempo.enums.ORDINAL` for written ordinal offset dispatch.
+- **Term Plugin Lifecycle Hooks Protocol (Phase 1)**:
+  - Introduced the well-known symbol lifecycle protocol for domain term plugins, protecting hook names against property collisions and dual-package hazards via `Symbol.for('magmacomputing/tempo/term/...')`.
+  - Exported `TermHook` (`parse`, `ordinal`, `step`, `diff`, `bound`, `format`), `TermHookSymbol`, `TermLifecycleHooks`, and `TermParseContext` from `@magmacomputing/tempo` and the Plugin SDK (`@magmacomputing/tempo/plugin/sdk`).
+  - Implemented core engine dispatch slots across parsing, mutations, duration diffs, and formatting:
+    - `[TermHook.parse]`: Triggered when parsing explicit `#term` expressions, enabling custom term date-resolution without regex monkey-patching.
+    - `[TermHook.ordinal]`: Triggered on anchored ordinal natural-language patterns (e.g. `"3rd day of #term"`).
+    - `[TermHook.step]`: Intercepts relative step arithmetic for dictionary mutations (`t.add({ '#term': n })`, `t.sub({ '#term': n })`).
+    - `[TermHook.bound]`: Snaps boundaries for term ranges (`t.set({ '#term': 'start' | 'mid' | 'end' })`, `t.set({ start: '#term' })`, and shorthand `t.set('#term.mid')`).
+    - `[TermHook.diff]`: Computes whole or fractional term difference spans in `t1.until(t2, '#term')` and `t1.since(t2, '#term')`.
+    - `[TermHook.format]`: Dispatches custom term format tokens (e.g. `t.format('{#academic}')`, `t.format('{#academic:upper}')`).
+  - Zero-overhead ISO fast-paths: Hooks are strictly guarded by `#` term sigils, introducing 0ns penalty on standard ISO date paths and maintaining 100% backward compatibility with existing term plugins.
+
 ## [4.5.1] - 2026-10-05
 
 ### Fixed & Hardened

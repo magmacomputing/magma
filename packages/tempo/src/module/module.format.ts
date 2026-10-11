@@ -7,7 +7,7 @@ import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 
-import { isTempo, enums, Match, getRuntime, hasOwn, $Internal } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, hasOwn, $Internal, TermHook, hasNativeFormatBraces } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -220,7 +220,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const isNamedFormat = isString(fmt) && hasOwn(formats, fmt);
 	const dialect = evaluate(options?.dialect ?? config?.dialect);
-	if (dialect && isString(fmt) && !isNamedFormat) {
+	if (dialect && isString(fmt) && !isNamedFormat && !hasNativeFormatBraces(fmt, dialect)) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
 		const dialectsRegistry = config?.registry?.dialects
 			?? (getRuntime() as any).dialects
@@ -401,6 +401,16 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				if (hasOwn(customTokens, token) && isFunction(customTokenFn)) {
 					res = customTokenFn(zdt, { modifiers, config });
 				} else if (token.startsWith('#') && isTempo(obj)) {
+					const termName = token.slice(1).split('.')[0];
+					const plugin = findTermPlugin(termName, (obj.constructor as any)[$Internal]?.());
+					const hookFn = (plugin as any)?.[TermHook.format] ?? ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
+					if (isFunction(hookFn)) {
+						const hookRes = hookFn(token, obj as Tempo);
+						if (isDefined(hookRes)) {
+							res = hookRes;
+							break;
+						}
+					}
 					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
 					res = isObject(termObj)
 						? (termObj.label ?? termObj.key ?? `{${token}}`)

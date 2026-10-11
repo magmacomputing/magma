@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant, getTemporalIds } from '#library/temporal.library.js';
-import { isDefined, isString, isZonedDateTime, isNumeric } from '#library/assertion.library.js';
+import { isDefined, isString, isZonedDateTime, isNumeric, isFunction } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import type { LooseUnion } from '#library/type.library.js';
 
@@ -9,6 +9,7 @@ import { getHost } from '../plugin/plugin.util.js';
 import { parseModifier, normalizeModifier } from './engine.lexer.js';
 
 import type { Tempo } from '../tempo.class.js';
+import { TermHook } from '#tempo/support';
 import type { TempoTermType } from '../plugin/term/term.type.js';
 
 const SHIFTER_MODIFIERS = new Set(['>', '<', '>=', '<=', '+', '-'] as const);
@@ -133,6 +134,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	// Slick Shorthand Parsing (e.g. #qtr.>2, #zodiac.<)
 	let mod: string | undefined;
 	let nbr = 1;
+	let hasNbr = false;
 	let rKey = rangePart;
 	let numericOnly = false;
 
@@ -160,7 +162,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		const { groups } = (slick || {}) as any;
 		if (groups) {
 			const hasMod = isDefined(groups.sh_mod);
-			const hasNbr = isNumeric(groups.sh_nbr);
+			hasNbr = isNumeric(groups.sh_nbr);
 			mod = hasMod ? groups.sh_mod : undefined;
 
 			if (mod && state.config.registry?.modifiers)
@@ -194,6 +196,33 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 		Tempo?.[TermError]?.(instance.config, unit);
 		return null;
+	}
+
+	// 0a. Term Lifecycle Hook: [TermHook.step]
+	if (RELATIVE_MUTATIONS.has(mutate as RelativeMutation) && isFunction((termObj as any)[TermHook.step])) {
+		const baseCount = (rangePart && mod && !['this', '=', '>=', '<='].includes(mod))
+			? (isBackwardShift(mod) ? -nbr : nbr)
+			: (isNumeric(offset) ? Number(offset) : 1);
+		const stepCount = (SUB_MUTATIONS.has(mutate as SubMutation) ? -1 : 1) * baseCount;
+		const hookRes = (termObj as any)[TermHook.step](unit, stepCount, instance);
+		if (isDefined(hookRes)) {
+			const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
+			if (hookZdt) return hookZdt.withTimeZone(tz).withCalendar(cal);
+		}
+	}
+
+	// 0b. Term Lifecycle Hook: [TermHook.bound]
+	if (!RELATIVE_MUTATIONS.has(mutate as RelativeMutation)) {
+		const boundTarget = (rangePart === 'start' || rangePart === 'mid' || rangePart === 'end')
+			? rangePart
+			: (ABSOLUTE_MUTATIONS.has(mutate as AbsoluteMutation) ? mutate : undefined);
+		if (boundTarget && isFunction((termObj as any)[TermHook.bound])) {
+			const hookRes = (termObj as any)[TermHook.bound](boundTarget as 'start' | 'mid' | 'end', unit, instance);
+			if (isDefined(hookRes)) {
+				const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
+				if (hookZdt) return hookZdt.withTimeZone(tz).withCalendar(cal);
+			}
+		}
 	}
 
 	// 0. Handle relative .add() or .subtract() — preserving position within the target range

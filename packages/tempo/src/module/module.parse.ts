@@ -14,11 +14,11 @@ import { selectLayoutPatterns } from '../engine/engine.planner.js';
 import { compose } from '../engine/engine.composer.js';
 import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js';
 
-import { getRange, getTermRange } from '../plugin/term/term.util.js';
+import { getRange, getTermRange, findTermPlugin } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
-import type { Range, ResolvedRange } from '../plugin/term/term.type.js';
+import type { Range, ResolvedRange, TermParseContext } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet } from '#tempo/support';
+import { sym, isTempo, TermError, TermHook, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet, hasNativeFormatBraces } from '#tempo/support';
 import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
@@ -380,8 +380,11 @@ const _ParseEngine = {
 
 			const hasExplicitTzOption = hasOwn(state.options, 'timeZone');
 			const effectiveTz = hasExplicitTzOption ? targetTz : (timeZone ?? targetTz);
-			if (isZonedDateTime(dateTime) && !state.errored)
+			if (isZonedDateTime(dateTime) && !state.errored) {
 				dateTime = dateTime.withTimeZone(effectiveTz).withCalendar(targetCal);
+				if (!hasExplicitTzOption && timeZone && state.config)
+					state.config.timeZone = effectiveTz;
+			}
 
 			if ((state.config.cache === true || state.config.cache === enums.CACHE.On || state.config.cache === enums.CACHE.Refresh || state.config.cache === 'refresh') && isString(tempo) && isZonedDateTime(dateTime) && !state.errored) {
 				const formatOpt = evaluate(state.options?.format ?? state.config?.format);
@@ -441,10 +444,83 @@ const _ParseEngine = {
 		if (isZonedDateTime(value))
 			return { type: 'Temporal.ZonedDateTime', value }
 
-		if (isString(value) && value.startsWith('#')) {
-			const res = resolveTermValue(TempoClass, state as any, value, dateTime);
-			if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res }
-			return { type: 'Void', value: undefined as any }
+		if (isString(value) && value.includes('#')) {
+			const hashIdx = value.indexOf('#');
+			const termId = value.slice(hashIdx + 1).split(/[\s./]/)[0];
+			const termObj = findTermPlugin(termId, state);
+			if (termObj) {
+				let memoAnchor: any;
+				const getAnchor = () => {
+					if (memoAnchor !== undefined) return memoAnchor;
+					try {
+						const optAnchor = state.options?.anchor;
+						memoAnchor = isTempo(optAnchor)
+							? optAnchor
+							: (optAnchor && TempoClass ? new TempoClass(optAnchor, state.config) : (isTempo(dateTime) ? dateTime : ((TempoClass && isZonedDateTime(dateTime)) ? new TempoClass(dateTime, state.config) : undefined)));
+					} catch {
+						memoAnchor = undefined;
+					}
+					return memoAnchor;
+				};
+
+				const ctx: TermParseContext = {
+					get anchor() { return getAnchor(); },
+					timeZone: state.config?.timeZone,
+					calendar: state.config?.calendar,
+					locale: state.config?.locale,
+					geo: (state.options as any)?.geo ?? (state.config as any)?.geo,
+					config: state.config,
+				};
+
+				// 1. TermHook.parse: Explicit #term string expression
+				if (value.startsWith('#') && isFunction((termObj as any)[TermHook.parse])) {
+					const hooked = (termObj as any)[TermHook.parse](value, ctx);
+					if (hooked) {
+						const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
+						if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt, zone: hookedZdt.timeZoneId };
+					}
+				}
+
+				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
+				if (isFunction((termObj as any)[TermHook.ordinal])) {
+					const rawLocalOrdinals = { ...state.config?.registry?.ordinals, ...(state.options as any)?.registry?.ordinals };
+					const localOrdinals: Record<string, number> = {};
+					for (const [k, v] of Object.entries(rawLocalOrdinals))
+						localOrdinals[k.toLowerCase()] = v as number;
+
+					const allOrdKeys = Array.from(new Set([
+						...(Enum.keys(enums.ORDINAL) as string[]),
+						...Object.keys(localOrdinals)
+					]));
+					const ordWords = allOrdKeys.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+					const ordMatch = value.match(new RegExp(`^\\s*(?<ord>\\d+(?:st|nd|rd|th)?|${ordWords})\\s+(?:day\\s+of\\s+)?(?<term>#[\\w.]+)\\s*$`, 'i'));
+					if (ordMatch?.groups?.term) {
+						const [ordTermId] = ordMatch.groups.term.slice(1).split('.');
+						const targetTermObj = findTermPlugin(ordTermId, state);
+						if (targetTermObj === termObj) {
+							const anchorTempo = ctx.anchor ?? getAnchor();
+							const ordRaw = ordMatch.groups.ord?.toLowerCase();
+							const numericVal = /^-?\d+/.test(ordRaw) ? parseInt(ordRaw, 10) : undefined;
+							const resolvedVal = localOrdinals[ordRaw] ?? (ordRaw ? (enums.ORDINAL as any)?.[ordRaw] : undefined) ?? numericVal;
+							const matchGroups: Record<string, any> = {
+								...ordMatch.groups,
+								...(isDefined(resolvedVal) ? { value: resolvedVal } : {})
+							};
+							const hooked = (termObj as any)[TermHook.ordinal](matchGroups, anchorTempo, ctx);
+							if (hooked) {
+								const hookedZdt = isTempo(hooked) ? hooked.toDateTime() : (isZonedDateTime(hooked) ? hooked : undefined);
+								if (hookedZdt) return { type: 'Temporal.ZonedDateTime', value: hookedZdt, zone: hookedZdt.timeZoneId };
+							}
+						}
+					}
+				}
+			}
+
+			if (value.startsWith('#')) {
+				const res = resolveTermValue(TempoClass, state as any, value, dateTime);
+				if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res, zone: res.timeZoneId };
+				return { type: 'Void', value: undefined as any };
+			}
 		}
 
 		if (isString(value)) {
@@ -477,10 +553,11 @@ const _ParseEngine = {
 			if (isDefined(formatOpt)) {
 				const formats = asArray(formatOpt);
 				const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
+				const dialect = dialectOpt ?? evaluate(state.options?.dialect ?? state.config?.dialect);
 				for (const fmt of formats) {
 					if (!isString(fmt)) continue;
 					try {
-						const res = fmt.includes('{')
+						const res = hasNativeFormatBraces(fmt, dialect)
 							? parseBracedFormat(trim, fmt, dateTime, tz, cal)
 							: parseDialectFormat(trim, fmt, state, dateTime, tz, cal, dialectOpt);
 						if (isZonedDateTime(res)) {

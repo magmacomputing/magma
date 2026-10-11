@@ -73,17 +73,25 @@ It correctly resolves both trailing (`200 BC`) and leading (`BC 200`) formats.
 
 ### 📆 Ordinals & Nth Parsing (`"3rd Wednesday of October"`)
 
-Tempo natively supports parsing structured ordinal weekday and ordinal date expressions in deterministic $O(1)$ time with zero network overhead.
+Tempo natively supports parsing structured ordinal weekday and ordinal date expressions—using both numeric (`1st`, `2nd`, `3rd`) and written word ordinals (`first`, `second`, `tenth`, `last`, `current`)—in deterministic $O(1)$ time with zero network overhead.
 
 ```typescript
-// Ordinal Weekdays
+// Numeric Ordinal Weekdays
 new Tempo('3rd Wednesday of October');        // 3rd Wed in Oct of anchor/current year
 new Tempo('1st Thursday of November 2026');   // 1st Thursday of November 2026
+
+// Written Ordinal Weekdays (backed by Tempo.enums.ORDINAL)
+new Tempo('first Wednesday of October');      // 1st Wed in Oct
+new Tempo('second Friday of November');       // 2nd Fri in Nov
+new Tempo('last Monday of May');              // Last Mon in May
 
 // Ordinal Dates
 new Tempo('15th day of May');                 // 15th day of May
 new Tempo('1st day of 2026');                 // 1st day of 2026
+new Tempo('last day of the month');           // Last day of anchor/current month
 ```
+
+Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })` (or `Enum.extend(Tempo.enums.ORDINAL, ...)`) or per-instance via `new Tempo(date, { registry: { ordinals: { eleventh: 11 } } })`.
 
 #### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)
 
@@ -311,7 +319,7 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
 - `this.set(input)`: Reset the context to a specific date/time.
 - `this.add(duration)`: Add a Temporal-style duration (e.g. 'P1D').
 - `this.toNow()`: Align context with current system time.
-- `this.toDateTime()`: Resolve the context to a `Temporal.ZonedDateTime`.
+- `this.zdt` (or `this.toDateTime()`): Resolve the context to a `Temporal.ZonedDateTime`.
 - `this.yy` / `this.mm` / `this.dd`: Access current date components.
 - `this.hh` / `this.mi` / `this.ss`: Access current time components.
 - `this.tz` / `this.cal` / `this.locale` / `this.sphere` / `this.config`: Access instance metadata.
@@ -322,7 +330,7 @@ Functional Alias Context is a powerful API for creating dynamic, self-referentia
     return this.set('2026-05-20').add({ hours: 1 }); // Resolves to 2026-05-20T01:00:00
 },
 'bedtime': function() {
-    return this.set('22:00').toDateTime();
+    return this.set('22:00').zdt; // or .toDateTime()
 }
 ```
 

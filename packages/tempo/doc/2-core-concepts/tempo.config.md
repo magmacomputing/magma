@@ -210,7 +210,7 @@ Tempo looks for the following structure:
 | `plugins` | `(Plugin \| TermPlugin)[]` | Modular plugins/terms to register during configuration. |
 | `pluginOptions` | `Record<string, any>` | Plugin configuration defaults and dictionaries keyed by plugin name. |
 | `timeZones` | `Record<string, string>` | Custom timezone aliases to be merged. |
-| `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
+| `registry` | `{ formats?, locales?, numbers?, ordinals?, events?, periods?, snippets?, layouts?, ignores?, modifiers?, tokens? }` | Custom configuration for internal dictionary registries. |
 
 ---
 
@@ -248,7 +248,7 @@ Tempo.init({
 | `geo` | `GeoOptions` | `undefined` | Geographic coordinates, city, country, elevation, and timezone metadata. |
 | `intl` | `IntlOptions` | `undefined` | Internationalization configuration grouping `relativeTimeFormat`, `numberFormat`, and `durationFormat`. |
 | `localeInfo` | `boolean` | `false` | Enables locale-aware week-boundary mutation behavior (`week: 'start' \| 'mid' \| 'end'`). Formatting tokens (`{dow:locale}`, `{hh:locale}`) resolve locale info independently. |
-| `registry` | `{ formats?, locales?, numbers?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
+| `registry` | `{ formats?, locales?, numbers?, ordinals?, events?, periods?, snippets?, layouts?, ignores?, modifiers? }` | Built-in registries | Custom data augmentation registries (e.g., format aliases, number-to-word mappings, parsing logic, localization). |
 | `extends` | `string \| string[]` | `undefined` | Local file path(s) or `file://` URL(s) to inherit base configuration from. |
 | `plugins` | `(Plugin \| TermPlugin)[]` | `[]` | Plugins/terms to register during initialization (applied via `Tempo.use(p)`). |
 | `pluginOptions` | `Record<string, any>` | `{}` | Plugin configuration defaults and dictionaries keyed by plugin name. |
