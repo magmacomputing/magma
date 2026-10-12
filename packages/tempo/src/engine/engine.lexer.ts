@@ -1,4 +1,4 @@
-import { isString, isEmpty, isUndefined, isDefined, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isDefined, isNullish, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
@@ -22,7 +22,7 @@ namespace Lexer {
 }
 
 /** return a new object, with only numeric values */
-function num(groups: Record<string, string | number>) {
+function num(groups: Record<string, string | number>, config?: any) {
 	return ownEntries(groups)
 		.reduce((acc: Record<string, number>, [key, val]: [string, any]) => {
 			if (isNumber(val)) {
@@ -36,7 +36,21 @@ function num(groups: Record<string, string | number>) {
 				return acc;
 			}
 
-			const num = resolveNumber(val);
+			if (config?.registry?.numbers) {
+				const low = isString(val) ? val.trim().toLowerCase() : '';
+				for (const [k, n] of Object.entries(config.registry.numbers)) {
+					if (k.toLowerCase() === low && isNumber(n)) {
+						acc[key] = n as number;
+						return acc;
+					}
+				}
+			}
+
+			const num = resolveNumber(val, config);
+			if (isNumber(num)) {
+				acc[key] = num;
+				return acc;
+			}
 			if (Enum.has(enums.NUMBER, num)) {
 				acc[key] = enums.NUMBER[num as t.Number];
 				return acc;
@@ -54,11 +68,17 @@ function num(groups: Record<string, string | number>) {
  * Resolves a number word by matching its prefix against registered number names.
  *
  * @param str - The value to resolve
- * @returns The matching number name, or the original value when no match exists
+ * @param config - Optional configuration containing custom registry numbers
+ * @returns The matching number name, configured numeric value, or the original value when no match exists
  */
-export function resolveNumber(str: any): t.Number | any {
+export function resolveNumber(str: any, config?: any): t.Number | number | any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
+	if (config?.registry?.numbers) {
+		for (const [k, v] of Object.entries(config.registry.numbers)) {
+			if (k.toLowerCase() === low && isNumber(v)) return v;
+		}
+	}
 	return Enum.keys(enums.NUMBER).find((key: string) => key.startsWith(low)) ?? str;
 }
 
@@ -66,27 +86,30 @@ export function resolveNumber(str: any): t.Number | any {
  * Resolves an ordinal expression to a numeric position.
  *
  * @param str - An ordinal expression, numeric value, or `last`
+ * @param config - Optional configuration containing custom registry ordinals
  * @returns The 1-based position, `-1` for `last`, or `1` when the input is invalid or unspecified
  */
-export function resolveNth(str: any): number {
-	if (!isString(str)) return Number(str) || 1;
+export function resolveNth(str: any, config?: any): number {
+	if (isNullish(str)) return 1;
+	if (!isString(str)) {
+		const num = Number(str);
+		return Number.isFinite(num) ? num : 1;
+	}
 	const low = str.trim().toLowerCase();
-	switch (low) {
-		case 'last': return -1;
-		case 'first': case '1st': return 1;
-		case 'second': case '2nd': return 2;
-		case 'third': case '3rd': return 3;
-		case 'fourth': case '4th': return 4;
-		case 'fifth': case '5th': return 5;
-		default: {
-			const match = low.match(RE_LEADING_DIGITS);
-			if (match) {
-				const val = parseInt(match[1], 10);
-				if (Number.isFinite(val) && val >= 1 && val <= 366) return val;
-			}
-			return 1;
+	if (config?.registry?.ordinals) {
+		for (const [k, v] of Object.entries(config.registry.ordinals)) {
+			if (k.toLowerCase() === low && isNumber(v)) return v as number;
 		}
 	}
+	const ordValue = enums.ORDINAL[low];
+	if (isNumber(ordValue)) return ordValue;
+
+	const match = low.match(RE_LEADING_DIGITS);
+	if (match) {
+		const val = parseInt(match[1], 10);
+		if (Number.isFinite(val)) return val;
+	}
+	return 1;
 }
 
 /**
@@ -194,7 +217,7 @@ export function parseModifier({ mod, adjust, offset, period }: Lexer.GroupModifi
  * @returns The resolved date and time, the anchor date and time when the ordinal falls outside the month, or `undefined` when the weekday or date components cannot be resolved.
  */
 export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: string, dateTime: Temporal.ZonedDateTime, config: any): Temporal.ZonedDateTime | undefined {
-	const nthVal = resolveNth(nthStr);
+	const nthVal = resolveNth(nthStr, config);
 	const weekday = prefix(wkd);
 	const targetWkd = Enum.get(enums.WEEKDAY, weekday) ?? Enum.get(enums.WEEKDAYS, weekday);
 
@@ -206,7 +229,7 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 	if (!isTemporal(fallbackAnchor)) fallbackAnchor = undefined;
 
 	let yy = groups.yy ? Number(groups.yy) : (fallbackAnchor?.year ?? dateTime.year);
-	let mm = groups.mm ? num({ month: groups.mm }).month : (fallbackAnchor?.month ?? dateTime.month);
+	let mm = groups.mm ? num({ month: groups.mm }, config).month : (fallbackAnchor?.month ?? dateTime.month);
 
 	if (Number.isFinite(yy) && yy < 100) {
 		const pivot = config?.pivot ?? 75;
@@ -217,13 +240,19 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 
 	if (!Number.isFinite(yy) || !Number.isFinite(mm)) return undefined;
 
+	if (nthVal === 0 || Math.abs(nthVal) > 5) {
+		logError(`Ordinal weekday out of bounds for month ${mm}`, config);
+		return undefined;
+	}
+
 	const firstDay = Temporal.PlainDate.from({ year: yy, month: mm, day: 1 });
 	let targetDate: Temporal.PlainDate;
 
-	if (nthVal === -1) {
+	if (nthVal < 0) {
 		const lastDay = firstDay.add({ months: 1 }).subtract({ days: 1 });
 		const daysBack = (lastDay.dayOfWeek - targetWkd + 7) % 7;
-		targetDate = lastDay.subtract({ days: daysBack });
+		const lastWkd = lastDay.subtract({ days: daysBack });
+		targetDate = lastWkd.subtract({ weeks: Math.abs(nthVal) - 1 });
 	} else {
 		const daysUntil = (targetWkd - firstDay.dayOfWeek + 7) % 7;
 		const firstWkd = firstDay.add({ days: daysUntil });
@@ -274,7 +303,7 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	}
 
 	const weekday = prefix(wkd);
-	const { nbr: adjust = 1 } = num({ nbr });
+	const { nbr: adjust = 1 } = num({ nbr }, config);
 	const offset = Enum.get(enums.WEEKDAY, weekday) ?? Enum.get(enums.WEEKDAYS, weekday);
 
 	if (!isNumber(offset)) {
@@ -318,7 +347,7 @@ export function parseOrdinalDate(
 	year: number,
 	month: number
 ): Temporal.ZonedDateTime | undefined {
-	const nthVal = resolveNth(nthStr);
+	const nthVal = resolveNth(nthStr, config);
 	const untStr = unt ? singular(unt).toLowerCase() : 'day';
 
 	let targetYear = year;
@@ -326,12 +355,21 @@ export function parseOrdinalDate(
 	let targetDate: Temporal.PlainDate | undefined;
 
 	if (untStr === 'day') {
-		if (nthVal === -1) {
+		const maxDays = isDefined(targetMonth) ? 31 : 366;
+		if (nthVal === 0 || Math.abs(nthVal) > maxDays) {
+			logError(`Ordinal date day ${nthVal} out of bounds for ${isDefined(targetMonth) ? `month ${targetMonth}` : `year ${targetYear}`}`, config);
+			return undefined;
+		}
+
+		if (nthVal < 0) {
+			const offsetFromEnd = Math.abs(nthVal) - 1;
 			if (isDefined(targetMonth)) {
 				const firstDay = Temporal.PlainDate.from({ year: targetYear, month: targetMonth, day: 1 });
-				targetDate = firstDay.add({ months: 1 }).subtract({ days: 1 });
+				const lastDay = firstDay.add({ months: 1 }).subtract({ days: 1 });
+				targetDate = lastDay.subtract({ days: offsetFromEnd });
 			} else {
-				targetDate = Temporal.PlainDate.from({ year: targetYear, month: 12, day: 31 });
+				const lastDay = Temporal.PlainDate.from({ year: targetYear, month: 12, day: 31 });
+				targetDate = lastDay.subtract({ days: offsetFromEnd });
 			}
 		} else if (nthVal > 0) {
 			if (isDefined(targetMonth)) {
@@ -433,7 +471,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		year: yy ?? fallbackYear,
 		month: mm ?? fallbackMonth,
 		day: dd ?? fallbackDay,
-	} as any);
+	} as any, config);
 
 	const isExplicitNth = isDefined(groups["ord"] ?? groups["nth"]);
 	const nthStr = groups["ord"] ?? groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"] || unt) ? 'last' : undefined);
@@ -444,7 +482,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	}
 
 	if (unt) {
-		const { nbr: adjust = 1 } = num({ nbr });
+		const { nbr: adjust = 1 } = num({ nbr }, config);
 		const dir = parseModifier({ mod: mod ?? afx, adjust: 1, offset: 0, period: 0 }, config);
 		const direction = dir < 0 ? -1 : 1;
 		const plural = `${singular(unt)}s`;
@@ -464,7 +502,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		year += (century - Number(year >= pivotYear)) * 100;
 	}
 
-	const { nbr: adjust = 1 } = num({ nbr });
+	const { nbr: adjust = 1 } = num({ nbr }, config);
 	const offset = Number(pad(month) + '.' + pad(day));
 	const period = Number(pad(dateTime.month) + '.' + pad(dateTime.day + 1));
 	const tz = (dateTime as any).timeZoneId ?? (dateTime as any).timeZone;
@@ -491,10 +529,10 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 }
 
 /** resolve a time pattern match */
-export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTime): Temporal.ZonedDateTime {
+export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTime, config?: any): Temporal.ZonedDateTime {
 	if (isUndefined(groups["hh"])) return dateTime;
 
-	let { hh = 0, mi = 0, ss = 0, ms = 0, us = 0, ns = 0 } = num(groups);
+	let { hh = 0, mi = 0, ss = 0, ms = 0, us = 0, ns = 0 } = num(groups, config);
 	if (hh >= 24) {
 		dateTime = dateTime.add({ days: Math.trunc(hh / 24) });
 		hh %= 24;

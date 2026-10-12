@@ -41,6 +41,7 @@
       "#tempo/support/*": [ "./support/*" ],
       "@magmacomputing/tempo": [ "./tempo.index.ts" ],
       "@magmacomputing/tempo/plugin": [ "./plugin/plugin.index.ts" ],
+      "@magmacomputing/tempo/plugin/sdk": [ "./plugin/plugin.sdk.ts" ],
       "@magmacomputing/tempo/plugin/*": [ "./plugin/*.ts" ],
       "@magmacomputing/tempo/term": [ "./plugin/term/term.index.ts" ],
       "@magmacomputing/tempo/term/*": [ "./plugin/term/term.*.ts" ],

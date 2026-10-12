@@ -71,6 +71,7 @@ Tempo leverages several other internal data dictionaries to parse and format dat
 - **Snippets**: Reusable Regex patterns mapped to variables for parsing.
 - **Layouts**: Composed string patterns mapped to Regex logic for parsing.
 - **Numbers**: Word-to-number dictionaries (e.g., `"one" -> 1`).
+- **Ordinals**: Word-to-ordinal offset dictionaries (e.g., `"first" -> 1`, `"last" -> -1`, `"current" -> 0`).
 
 *(Note: All dictionaries are consolidated into the `registry` namespace to separate data from behavior.)*
 

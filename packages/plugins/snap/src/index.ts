@@ -1,12 +1,12 @@
 import { definePlugin, type TempoPlugin, logError } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
-type SnapKey = 
-	| 'hh' | 'hours' | 'hour' 
-	| 'mi' | 'minutes' | 'minute' 
-	| 'ss' | 'seconds' | 'second' 
-	| 'ms' | 'milliseconds' | 'millisecond' 
-	| 'us' | 'microseconds' | 'microsecond' 
+type SnapKey =
+	| 'hh' | 'hours' | 'hour'
+	| 'mi' | 'minutes' | 'minute'
+	| 'ss' | 'seconds' | 'second'
+	| 'ms' | 'milliseconds' | 'millisecond'
+	| 'us' | 'microseconds' | 'microsecond'
 	| 'ns' | 'nanoseconds' | 'nanosecond';
 
 /** Utility type that enforces exactly one key from the union */

@@ -100,6 +100,8 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
 export class Tempo {
 	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = cast<t.IntervalConstructor>(new Proxy(Interval, intervalProxyHandler));
 
+	/** Live registry enumerations */													static get enums() { return enums }
+
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
 	/** Month names (short-form) */														static get MONTH() { return enums.MONTH }
@@ -110,14 +112,15 @@ export class Tempo {
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
-	/** Tempo to Temporal DateTime Units map */								static get ELEMENT() { return enums.ELEMENT }
-	/** Pre-configured format {name -> string} pairs */				static get FORMAT() { return enums.FORMAT }
-	/** Number names (0-10) */																static get NUMBER() { return enums.NUMBER }
-	/** TimeZone aliases */																		static get TIMEZONE() { return enums.TIMEZONE }
-	/** regional date-parsing configuration */								static get MONTH_DAY() { return enums.MONTH_DAY }
-	/** initialization strategies */													static get MODE() { return enums.MODE }
-	/** cache operation modes */                              static get CACHE() { return enums.CACHE }
-	/** some useful Dates */																	static get LIMIT() { return enums.LIMIT }
+	/** @deprecated Use Tempo.enums.ELEMENT */								static get ELEMENT() { return enums.ELEMENT }
+	/** @deprecated Use Tempo.enums.FORMAT */									static get FORMAT() { return enums.FORMAT }
+	/** @deprecated Use Tempo.enums.NUMBER */									static get NUMBER() { return enums.NUMBER }
+	/** @deprecated Use Tempo.enums.ORDINAL */								static get ORDINAL() { return enums.ORDINAL }
+	/** @deprecated Use Tempo.enums.TIMEZONE */								static get TIMEZONE() { return enums.TIMEZONE }
+	/** @deprecated Use Tempo.enums.MONTH_DAY */							static get MONTH_DAY() { return enums.MONTH_DAY }
+	/** @deprecated Use Tempo.enums.MODE */										static get MODE() { return enums.MODE }
+	/** @deprecated Use Tempo.enums.CACHE */                  static get CACHE() { return enums.CACHE }
+	/** @deprecated Use Tempo.enums.LIMIT */									static get LIMIT() { return enums.LIMIT }
 
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return _lifecycle.extendDepth > 0 }
@@ -241,7 +244,7 @@ export class Tempo {
 		const rawSphere = options.sphere ?? options.geo?.sphere;
 		if (isDefined(rawSphere)) {
 			const evaluatedSphere = evaluate(rawSphere);
-			if (isDefined(evaluatedSphere)) return evaluatedSphere;
+			if (isDefined(evaluatedSphere)) return evaluatedSphere as t.COMPASS;
 		}
 
 		const geo = coerceGeo(options) ?? shape.config.geo ?? getStashedGeo();
@@ -267,7 +270,7 @@ export class Tempo {
 	static #isMonthDay(shape: Internal.State) {
 		const { timeZone, locale } = shape.config;
 		const mdy = shape.parse.monthDay;
-		const globalMdy = Tempo.MONTH_DAY as t.MonthDay;
+		const globalMdy = enums.MONTH_DAY as t.MonthDay;
 
 		const rawLocale = Tempo.#locale(locale);
 		if (!getLC(rawLocale) && !Tempo.#warnedLocales.has(rawLocale)) {
@@ -446,6 +449,7 @@ export class Tempo {
 				if (registryOpts.formats) registryUpdate('FORMAT', registryOpts.formats);
 				if (registryOpts.locales) registryUpdate('LOCALE', registryOpts.locales);
 				if (registryOpts.numbers) registryUpdate('NUMBER', registryOpts.numbers);
+				if (registryOpts.ordinals) registryUpdate('ORDINAL', registryOpts.ordinals);
 			}
 		}
 
@@ -484,6 +488,9 @@ export class Tempo {
 		const state = targetState ?? this[$Internal]();
 		const wordsList = [
 			...Enum.keys(enums.NUMBER),
+			...Object.keys(state.config.registry?.numbers ?? {}),
+			...Enum.keys(enums.ORDINAL),
+			...Object.keys(state.config.registry?.ordinals ?? {}),
 			...Enum.keys(enums.WEEKDAY),
 			...Enum.keys(enums.WEEKDAYS),
 			...Enum.keys(enums.MONTH),
@@ -1118,7 +1125,7 @@ export class Tempo {
 			// 1. Augment the parsing state (non-destructively)
 			const parse = state.parse;
 			parse.pattern ??= new Map<symbol, RegExp>();
-			parse.monthDay = resolveMonthDay(Default.monthDay, Tempo.MONTH_DAY);
+			parse.monthDay = resolveMonthDay(Default.monthDay, enums.MONTH_DAY);
 			parse.planner.layoutOrder = asArray<string | symbol>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder);
 			parse.planner.preFilter = Boolean(Default.planner?.preFilter ?? (Default as any).preFilter);
 			parse.pivot ??= Default.pivot as any;
@@ -1612,8 +1619,8 @@ export class Tempo {
 		const { mode } = this.#local.parse;
 
 		// 🏛️ Initialization Strategy ('auto' | 'strict' | 'defer')
-		if (mode === Tempo.MODE.Defer) this.#local.parse.lazy = true;
-		else if (mode === Tempo.MODE.Strict) this.#local.parse.lazy = false;
+		if (mode === enums.MODE.Defer) this.#local.parse.lazy = true;
+		else if (mode === enums.MODE.Strict) this.#local.parse.lazy = false;
 		else if (isString(this.#tempo) && isText(input) && guard.test(trimAll(input)))
 			this.#local.parse.lazy = true;												// auto-switch to lazy-mode for valid strings
 

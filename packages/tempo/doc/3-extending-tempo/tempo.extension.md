@@ -73,7 +73,7 @@ export const BusinessDaysPlugin: TempoPlugin = definePlugin({
 
 Notice how we used the `next.dow` getter to easily read the Day Of Week? Tempo instances have many lightweight getters (like `.yy`, `.mm`, `.dd`, `.hh`) built-in.
 
-However, if you ever need to calculate advanced calendar math (like `dayOfYear`, `daysInMonth`, or `weeksInYear`), you can drop into `this.toDateTime()` to access the raw, underlying `Temporal.ZonedDateTime` object.
+However, if you ever need to calculate advanced calendar math (like `dayOfYear`, `daysInMonth`, or `weeksInYear`), you can drop into `this.zdt` (or `this.toDateTime()`) to access the raw, underlying `Temporal.ZonedDateTime` object with zero method call ceremony.
 
 ## 3. TypeScript Module Augmentation
 

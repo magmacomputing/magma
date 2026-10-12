@@ -153,7 +153,7 @@ export function normalizeMatch(
 	if (state.errored) return dateTime;
 
 	// 5. Time
-	dateTime = parseTime(groups, dateTime);
+	dateTime = parseTime(groups, dateTime, state.config);
 
 	return dateTime;
 }

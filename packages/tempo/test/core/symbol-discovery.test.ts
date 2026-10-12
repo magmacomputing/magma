@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { Enum } from '#tempo/support';
 
 // We use a private test symbol to avoid trampling on globalThis[$Tempo] during tests
 const $TestTempo = Symbol('TestTempoDiscovery');
@@ -76,8 +77,8 @@ describe('Global Discovery (via Configurable Symbol)', () => {
 		}
 
 		Tempo.init({ discovery: $TestTempo });
-		expect(Tempo.FORMAT.has('custom')).toBe(true);
-		expect((Tempo.FORMAT as any).custom).toBe('{yyyy}!!{mm}!!{dd}');
+		expect(Enum.has(Tempo.enums.FORMAT, 'custom')).toBe(true);
+		expect((Tempo.enums.FORMAT as any).custom).toBe('{yyyy}!!{mm}!!{dd}');
 
 		const t = new Tempo('2024-05-20');
 		expect((t.fmt as any).custom).toBe('2024!!05!!20');

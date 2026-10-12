@@ -11,7 +11,7 @@ describe('Discovery in Extend', () => {
 				locales: ['custom-locale']
 			}
 		});
-		expect(Tempo.MONTH_DAY.locales).toContain('custom-locale');
+		expect(Tempo.enums.MONTH_DAY.locales).toContain('custom-locale');
 	});
 
 	it('should apply relativeTime discovery via extend', () => {

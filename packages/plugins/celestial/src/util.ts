@@ -31,33 +31,34 @@ export function isValidGeo(geo: any): geo is { latitude?: number; longitude?: nu
  * @returns The resolved reference `Tempo`, geographic coordinates, timezone, hemisphere, and coordinate availability
  * @internal
  */
-export function getCelestialCoordinates(t: Tempo, anchor?: any): {
+export function getCelestialCoordinates(t: Tempo | any, anchor?: any): {
 	refTempo: Tempo;
 	lat?: number | undefined;
 	lng?: number | undefined;
+	elevation?: number | undefined;
 	hasGeo: boolean;
 	geo: any;
 	timeZone: string;
 	sphere?: 'north' | 'south' | undefined;
 } {
-	const refTempo = (anchor instanceof Tempo)
-		? anchor
-		: (isDefined(anchor)
-			? new Tempo(isNumber(anchor) ? new Date(anchor) : anchor, (t as any).config)
-			: t);
+	const target = anchor ?? t;
+	const refTempo = target instanceof Tempo
+		? target
+		: new Tempo(isNumber(target) ? new Date(target) : target, t?.config);
 
-	const geo = refTempo.geo ?? (refTempo as any).config?.geo ?? null;
+	const geo = refTempo.geo ?? refTempo.config?.geo ?? anchor?.geo ?? t?.geo ?? null;
 	const hasGeo = isValidGeo(geo);
 	const latVal = hasGeo ? (geo.latitude ?? geo.lat) : undefined;
 	const lngVal = hasGeo ? (geo.longitude ?? geo.lng ?? geo.long) : undefined;
-	const timeZone = refTempo.tz ?? 'UTC';
+	const elevation = hasGeo ? ((geo as any)?.elevation ?? refTempo.config?.geo?.elevation) : undefined;
+	const timeZone = refTempo.tz ?? anchor?.tz ?? t?.tz ?? 'UTC';
 
-	const sphere = refTempo.sphere as 'north' | 'south' | undefined;
+	const sphere = (refTempo.sphere ?? anchor?.sphere ?? t?.sphere) as 'north' | 'south' | undefined;
 
 	if (!hasGeo)
 		logWarn("CelestialPlugin: Valid 'geo' coordinates (latitude: -90..90, longitude: -180..180) were not provided; geo-dependent properties evaluate to null.", (refTempo as any).config);
 
-	return { refTempo, lat: latVal, lng: lngVal, hasGeo, geo, timeZone, ...(sphere ? { sphere } : {}) };
+	return { refTempo, lat: latVal, lng: lngVal, elevation, hasGeo, geo, timeZone, ...(sphere ? { sphere } : {}) };
 }
 
 /**

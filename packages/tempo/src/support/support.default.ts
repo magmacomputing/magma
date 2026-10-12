@@ -3,7 +3,7 @@ import { secure, proxify } from '#library/proxy.library.js';
 import { getDateTimeFormat } from '#library/international.library.js';
 import { LOG } from '#library/logger.class.js';
 
-import { NUMBER, TIMEZONE, MODE, MONTH_DAY, FORMAT, LOCALE } from './support.enum.js';
+import { NUMBER, ORDINAL, TIMEZONE, MODE, MONTH_DAY, FORMAT, LOCALE } from './support.enum.js';
 import { Token } from './support.symbol.js';
 import type { Options, AliasContext, IntlOptions } from '../tempo.type.js';
 
@@ -79,7 +79,7 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.brk]: new RegExp(`(\\[(?<brk>${bracket_content.source})\\](?:\\[(?<cal>${bracket_content.source})\\])?)?`),	// timezone/calendar brackets [...]
 	[Token.slk]: new RegExp(Match.shorthand.source),					// shorthand shifter
 	[Token.era]: /(?:\s*(?<era>b\.?c\.?e\.?|c\.?e\.?|b\.?c\.?|a\.?d\.?))/i,	// historical era designation
-	[Token.nth]: /(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|first|second|third|fourth|fifth|last)/i,	// ordinal index (1st, 2nd, 3rd, last, etc)
+	[Token.nth]: /(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|current|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|last)/i,	// ordinal index (1st, 2nd, 3rd, last, etc)
 })
 /** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
@@ -248,7 +248,8 @@ export const Default = secure({
 			'>': [],
 			'<=': [],
 			'>=': [],
-		}
+		},
+		/** Ordinal mapping */ ordinals: ORDINAL,
 	},
 	/** parse planner configuration (layoutOrder, etc.) */		planner: {
 		layoutOrder: [

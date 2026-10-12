@@ -25,8 +25,8 @@ export const COMPASS = looseIndex<string, string>()(enumify({
 export type COMPASS = ValueOf<typeof COMPASS>
 
 /**
- * Various enumerations used throughout Tempo library.
- * These are exported and added as static getters of the Tempo class.
+ * Various enumerations used throughout the Tempo library.
+ * These are exported, accessible via the `Tempo.enums` namespace, with core domain enums also exposed as top-level static getters on the Tempo class.
  */
 
 /** @internal LIVE state for all registries */
@@ -43,6 +43,20 @@ export const DEFAULTS = {
 		/** number value 8 */ eight: 8,
 		/** number value 9 */ nine: 9,
 		/** number value 10 */ ten: 10,
+	},
+	ORDINAL: {
+		/** ordinal value 0 */ current: 0,
+		/** ordinal value 1 */ first: 1,
+		/** ordinal value 2 */ second: 2,
+		/** ordinal value 3 */ third: 3,
+		/** ordinal value 4 */ fourth: 4,
+		/** ordinal value 5 */ fifth: 5,
+		/** ordinal value 6 */ sixth: 6,
+		/** ordinal value 7 */ seventh: 7,
+		/** ordinal value 8 */ eighth: 8,
+		/** ordinal value 9 */ ninth: 9,
+		/** ordinal value 10 */ tenth: 10,
+		/** ordinal value -1 */ last: -1,
 	},
 	DURATION: {
 		/** approx number of seconds in a year */								year: 31_536_000,
@@ -141,6 +155,7 @@ export const DEFAULTS = {
 /** @internal Centralized mutable state for all extendable registries */
 export const STATE = {
 	NUMBER: allDescriptors(DEFAULTS.NUMBER),
+	ORDINAL: allDescriptors(DEFAULTS.ORDINAL),
 	DURATION: allDescriptors(DEFAULTS.DURATION),
 	TIMEZONE: allDescriptors(DEFAULTS.TIMEZONE),
 	DURATIONS: allDescriptors(DEFAULTS.DURATIONS),
@@ -152,6 +167,7 @@ export const STATE = {
 
 const defineExtensible = (target: any) => Object.defineProperty(target, sym.$Extensible, { value: true, enumerable: false, configurable: false, writable: false });
 defineExtensible(STATE.NUMBER);
+defineExtensible(STATE.ORDINAL);
 defineExtensible(STATE.FORMAT);
 defineExtensible(STATE.TIMEZONE);
 defineExtensible(STATE.DURATION);
@@ -183,6 +199,11 @@ export type Months = ValueOf<typeof MONTHS>
 export const NUMBER = looseIndex<string, number>()(enumify(STATE.NUMBER, false));
 export type NUMBER = typeof NUMBER;
 export type Number = KeyOf<typeof NUMBER>
+
+/** ordinal names */
+export const ORDINAL = looseIndex<string, number>()(enumify(STATE.ORDINAL, false));
+export type ORDINAL = typeof ORDINAL;
+export type Ordinal = KeyOf<typeof ORDINAL>;
 
 /** common time-zone aliases */
 export const TIMEZONE = looseIndex<string, string>()(proxify(STATE.TIMEZONE, true, false));
@@ -276,13 +297,13 @@ export const PARSE = enumify(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
-const discoveryKeys = ['options', 'extends', 'plugins', 'terms', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'formats', 'ignore'] as const;
+const discoveryKeys = ['options', 'extends', 'plugins', 'terms', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'ordinals', 'formats', 'ignore'] as const;
 export const DISCOVERY = enumify(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */
 export const REGISTRIES: Record<string, any> = {
-	NUMBER, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT, MONTH_DAY, LOCALE
+	NUMBER, ORDINAL, DURATION, TIMEZONE, DURATIONS, FORMAT, LIMIT, MONTH_DAY, LOCALE
 }
 
 /** public-reachable enums */
@@ -294,6 +315,7 @@ export default {
 	MONTH,
 	MONTHS,
 	NUMBER,
+	ORDINAL,
 	TIMEZONE,
 	DURATION,
 	DURATIONS,

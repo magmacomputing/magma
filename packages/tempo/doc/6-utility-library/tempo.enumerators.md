@@ -52,13 +52,18 @@ For consumers of the library, these enumerations are exposed via **public packag
 Avoid referencing internal source files (such as `tempo.index.ts`) in application code.
 
 ### 1. Static Properties on `Tempo`
-You can access enums directly from the `Tempo` class:
+You can access all enums via the unified `Tempo.enums` getter, or use top-level getters for core calendar and direction enums (`WEEKDAY`, `WEEKDAYS`, `MONTH`, `MONTHS`, `DURATION`, `DURATIONS`, `SEASON`, `COMPASS`):
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
+// Core domain enums directly on Tempo:
 const direction = Tempo.COMPASS.North; // 'north'
 const monthIndex = Tempo.MONTH.Feb;    // 2 (since 'All' was index 0)
+
+// All enums via the unified Tempo.enums accessor:
+const first = Tempo.enums.ORDINAL.first; // 1
+const dateFormat = Tempo.enums.FORMAT.date;
 ```
 
 ### 2. Canonical Namespace Import
@@ -76,7 +81,7 @@ const monthIndex = MONTH.Feb;
 Import individual enumerators directly:
 
 ```typescript
-import { COMPASS, MONTH, WEEKDAY, Enum } from '@magmacomputing/tempo/enums';
+import { COMPASS, MONTH, WEEKDAY, ORDINAL, Enum } from '@magmacomputing/tempo/enums';
 
 console.log('compass keys: ', Enum.keys(COMPASS));
 ```

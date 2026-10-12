@@ -79,6 +79,7 @@ function mergeConfigs(parent: Options, child: Options): Options {
 			formats: { ...parent.registry?.formats, ...child.registry?.formats },
 			locales: { ...parent.registry?.locales, ...child.registry?.locales },
 			numbers: { ...parent.registry?.numbers, ...child.registry?.numbers },
+			ordinals: { ...parent.registry?.ordinals, ...child.registry?.ordinals },
 		};
 	}
 

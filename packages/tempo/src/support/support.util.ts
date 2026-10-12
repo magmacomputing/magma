@@ -165,7 +165,7 @@ export function getLargestUnit(list: readonly any[]): string {
 /**
  * @internal Normalize a MonthDay configuration value against a base.
  * @param value The user-supplied value to normalize
- * @param base The base/default value (e.g., Tempo.MONTH_DAY)
+ * @param base The base/default value (e.g., enums.MONTH_DAY)
  */
 export function resolveMonthDay(value: t.MonthDay | boolean | Readonly<t.MonthDay> = {}, base: t.MonthDay): t.MonthDay {
 	const isExplicit = isBoolean(value) || isDefined((value as t.MonthDay).active);
@@ -321,3 +321,37 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 
 /** @internal generate localized snippets for a locale or list of locales */
 export const generateLocalizedSnippets = (locales: string | readonly string[]) => _generateLocalizedSnippets(asArray(locales).join(','));
+
+/** @internal Regex to match bracket-escaped literals in Moment / Day.js masks (e.g. `[literal]`) */
+export const RE_BRACKETED_LITERAL = /\[[^\]]*\]/g;
+
+/** @internal Regex to match single-quote escaped literals in LDML masks (e.g. `'literal'` or `''`) */
+export const RE_QUOTED_LITERAL = /'([^']|'')*'/g;
+
+/** @internal Dialects using bracket-escaped literals */
+export const MOMENT_DIALECTS = ['moment', 'dayjs'] as const;
+
+/** @internal Dialects using single-quote escaped literals */
+export const LDML_DIALECTS = ['ldml', 'luxon', 'datefns', 'cldr'] as const;
+
+const RE_COMPLETE_BRACED_TOKEN = /\{[^}]+\}/;
+
+/**
+ * @internal Checks whether a format mask contains unescaped native Tempo braced tokens (`{token}`).
+ * Strips dialect-specific escaped literals before evaluating:
+ * - Moment/Day.js: `[...]`
+ * - LDML/Luxon/date-fns: `'...'`
+ */
+export function hasNativeFormatBraces(fmt: unknown, dialect?: unknown): boolean {
+	if (!isString(fmt) || !fmt.includes('{')) return false;
+	const d = isString(dialect) ? dialect.trim().toLowerCase() : '';
+
+	let clean = fmt;
+	if (MOMENT_DIALECTS.includes(d as any)) {
+		clean = clean.replace(RE_BRACKETED_LITERAL, '');
+	} else if (LDML_DIALECTS.includes(d as any)) {
+		clean = clean.replace(RE_QUOTED_LITERAL, '');
+	}
+
+	return RE_COMPLETE_BRACED_TOKEN.test(clean);
+}

@@ -60,7 +60,7 @@ describe('Tempo: Month-Day Parsing (Ambiguity Support)', () => {
 	});
 
 	it('should provide fallback timezones if Intl.Locale.getTimeZones is missing', () => {
-		expect(Tempo.MONTH_DAY.timezones['en-US']).toContain('America/New_York');
+		expect(Tempo.enums.MONTH_DAY.timezones['en-US']).toContain('America/New_York');
 	});
 
 	it('should deep-merge timezones in instance options', () => {

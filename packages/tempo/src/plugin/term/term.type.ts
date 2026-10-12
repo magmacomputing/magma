@@ -1,6 +1,6 @@
-import type { Property } from '#library/type.library.js';
+import type { Property, ValueOf } from '#library/type.library.js';
 import type { Tempo } from '../../tempo.class.js';
-import { TermError } from '#tempo/support';
+import { TermError, TermHook } from '#tempo/support';
 
 /**
  * ## TempoTermType
@@ -10,11 +10,47 @@ export type TempoTermType = typeof Tempo & {
 	[TermError]?: (config: any, term: string) => void;
 }
 
+export type TermHookSymbol = ValueOf<typeof TermHook>;
+
+/**
+ * Context provided during onTermParse hook evaluation.
+ */
+export interface TermParseContext {
+	anchor?: Tempo;
+	timeZone?: string;
+	calendar?: string;
+	locale?: string;
+	[key: string]: any;
+}
+
+/**
+ * Protocol contract for Term Plugins implementing lifecycle hooks.
+ */
+export interface TermLifecycleHooks {
+	/** Invoked when the lexer/parser encounters an explicit '#' term expression */
+	[TermHook.parse]?: (input: string, context?: TermParseContext) => Tempo | Temporal.ZonedDateTime | undefined;
+
+	/** Invoked for ordinal offsets anchored to terms (e.g. "3rd day of #qtr.2") */
+	[TermHook.ordinal]?: (groups: Record<string, any>, anchor: Tempo, context?: TermParseContext) => Tempo | Temporal.ZonedDateTime | undefined;
+
+	/** Stepping arithmetic for t.add({ '#term': n }) or t.sub({ '#term': n }) */
+	[TermHook.step]?: (unit: string, count: number, tempo: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;
+
+	/** Difference arithmetic for t1.until(t2, '#term') or t1.since(t2, '#term') */
+	[TermHook.diff]?: (other: Tempo, unit: string, tempo: Tempo) => number | undefined;
+
+	/** Boundary snapping for t.set({ '#term': 'start' | 'mid' | 'end' }) */
+	[TermHook.bound]?: (boundary: 'start' | 'mid' | 'end', unit: string, tempo: Tempo) => Tempo | Temporal.ZonedDateTime | undefined;
+
+	/** Invoked when the format engine encounters a custom term token (e.g. '{#FQ}') */
+	[TermHook.format]?: (token: string, tempo: Tempo) => string | undefined;
+}
+
 /**
  * ## TermPlugin
  * Interface for term-driven parsing and resolution.
  */
-export interface TermPlugin {
+export interface TermPlugin extends TermLifecycleHooks {
 	/** Unique identifier for the term */
 	key: string;
 	/** Optional secondary alias keys for the term */

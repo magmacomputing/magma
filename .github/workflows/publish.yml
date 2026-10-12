@@ -68,6 +68,11 @@ on:
         required: false
         type: string
         default: ''
+      tag:
+        description: '🏷️ npm dist-tag (auto | latest | next | legacy)'
+        required: false
+        type: string
+        default: 'auto'
   release:
     types: [published]
 
@@ -200,6 +205,8 @@ jobs:
           npm run build:all
 
       - name: Publish Package(s) with Provenance
+        env:
+          INPUT_TAG: ${{ inputs.tag || 'auto' }}
         run: |
           publish_pkg() {
             local pkg="$1"
@@ -238,8 +245,69 @@ jobs:
               return 0
             fi
 
-            echo "📦 Publishing $pkg@$ver with provenance..."
-            (cd "$(dirname "$pkg_json")" && npm publish --access public --provenance)
+            # Determine npm dist-tag
+            local tag="${INPUT_TAG:-auto}"
+            if [ "$tag" = "auto" ] || [ -z "$tag" ]; then
+              # Auto-detect prereleases (-alpha, -beta, -rc)
+              local ver_no_build="${ver%%+*}"
+              if [[ "$ver_no_build" == *-* ]]; then
+                tag="next"
+              else
+                # Check current 'latest' version on npm
+                local current_latest=""
+                local view_output=""
+                local view_status=0
+                view_output=$(npm view "$pkg" dist-tags.latest 2>&1) || view_status=$?
+
+                if [ $view_status -ne 0 ]; then
+                  if echo "$view_output" | grep -qE "code E404|404 Not Found"; then
+                    # Package not yet published on registry: default initial release to 'latest'
+                    tag="latest"
+                  else
+                    echo "❌ Error: Failed to query npm dist-tags for '$pkg': $view_output"
+                    echo "Please specify an explicit dist-tag in workflow inputs (e.g. 'latest', 'next', 'legacy') to proceed."
+                    exit 1
+                  fi
+                else
+                  current_latest=$(echo "$view_output" | tr -d '[:space:]')
+
+                  # Compare full semantic versions: if registry latest is newer than ver, publish as legacy
+                  local is_greater
+                  is_greater=$(node -e "
+                    const cmp = (a, b) => {
+                      const [va, pa] = a.replace(/\+.*$/, '').split('-');
+                      const [vb, pb] = b.replace(/\+.*$/, '').split('-');
+                      const na = va.split('.').map(Number);
+                      const nb = vb.split('.').map(Number);
+                      for (let i = 0; i < 3; i++) {
+                        if ((na[i] || 0) > (nb[i] || 0)) return 1;
+                        if ((na[i] || 0) < (nb[i] || 0)) return -1;
+                      }
+                      if (!pa && pb) return 1;
+                      if (pa && !pb) return -1;
+                      if (pa && pb) return pa.localeCompare(pb, undefined, { numeric: true });
+                      return 0;
+                    };
+                    process.stdout.write(cmp(process.argv[1], process.argv[2]) > 0 ? 'true' : 'false');
+                  " "$current_latest" "$ver")
+
+                  if [ "$is_greater" = "true" ]; then
+                    tag="legacy"
+                  else
+                    tag="latest"
+                  fi
+                fi
+              fi
+            fi
+
+            # Validate dist-tag: must be URL-safe and not a semver version or range
+            if ! [[ "$tag" =~ ^[a-zA-Z0-9_.-]+$ ]] || [[ "$tag" =~ ^[vV]?[0-9] ]] || [[ "$tag" =~ ^[\^~<>=] ]]; then
+              echo "❌ Error: Invalid npm dist-tag '$tag'. Dist-tags must contain only [a-zA-Z0-9_.-] and cannot start with a digit, 'v', or semver range symbols."
+              exit 1
+            fi
+
+            echo "📦 Publishing $pkg@$ver with provenance (--tag $tag)..."
+            (cd "$(dirname "$pkg_json")" && npm publish --access public --provenance --tag "$tag")
           }
 
           for pkg in $TARGET_PKGS; do

@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo/core';
+import { Enum } from '#tempo/support';
 import { FormatModule } from '#tempo/format';
 import { parseWeekday, parseDate } from '#tempo/engine/engine.lexer.js';
 import '#tempo/parse';
@@ -140,6 +141,101 @@ describe('Core Ordinal Offset Parsing', () => {
 			expect(res.day).toBe(1);
 			expect(groups).not.toHaveProperty('ord');
 			expect(groups).not.toHaveProperty('nth');
+		});
+	});
+
+	describe('Tempo.enums.ORDINAL Enum and Extensibility', () => {
+		it('exposes built-in ordinals on Tempo.enums.ORDINAL and enums.ORDINAL', () => {
+			expect(Tempo.enums.ORDINAL.first).toBe(1);
+			expect(Tempo.enums.ORDINAL.second).toBe(2);
+			expect(Tempo.enums.ORDINAL.third).toBe(3);
+			expect(Tempo.enums.ORDINAL.fourth).toBe(4);
+			expect(Tempo.enums.ORDINAL.fifth).toBe(5);
+			expect(Tempo.enums.ORDINAL.sixth).toBe(6);
+			expect(Tempo.enums.ORDINAL.tenth).toBe(10);
+			expect(Tempo.enums.ORDINAL.current).toBe(0);
+			expect(Tempo.enums.ORDINAL.last).toBe(-1);
+		});
+
+		it('parses extended written ordinals beyond fifth in natural dates', () => {
+			const t6th = new Tempo('sixth day of May 2026');
+			expect(t6th.isValid).toBe(true);
+			expect(t6th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-06');
+
+			const t10th = new Tempo('tenth day of May 2026');
+			expect(t10th.isValid).toBe(true);
+			expect(t10th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
+		});
+
+		it('supports user extensibility via Enum.extend and Tempo.init registry', () => {
+			try {
+				const CustomOrd = Enum.extend(Tempo.enums.ORDINAL, {
+					zeroth: 0,
+				});
+				expect(CustomOrd.zeroth).toBe(0);
+				expect(CustomOrd.first).toBe(1);
+
+				Tempo.init({
+					registry: {
+						ordinals: {
+							penultimate: -2,
+							twelfth: 12,
+						}
+					}
+				});
+
+				expect(Tempo.enums.ORDINAL.penultimate).toBe(-2);
+				expect(Tempo.enums.ORDINAL.twelfth).toBe(12);
+
+				const t12th = new Tempo('twelfth day of May 2026');
+				expect(t12th.isValid).toBe(true);
+				expect(t12th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-12');
+
+				const tPenultDay = new Tempo('penultimate day of May 2026');
+				expect(tPenultDay.isValid).toBe(true);
+				expect(tPenultDay.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-30');
+
+				const tPenultWkd = new Tempo('penultimate Friday of May 2026');
+				expect(tPenultWkd.isValid).toBe(true);
+				expect(tPenultWkd.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-22');
+			} finally {
+				Tempo.init();
+			}
+		});
+
+		it('supports per-instance ordinals in ordinary parsing via constructor options', () => {
+			const t11th = new Tempo('eleventh day of May 2026', {
+				registry: {
+					ordinals: {
+						eleventh: 11,
+					}
+				}
+			});
+			expect(t11th.isValid).toBe(true);
+			expect(t11th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-11');
+
+			const tPenultDay = new Tempo('penultimate day of May 2026', {
+				registry: {
+					ordinals: {
+						penultimate: -2,
+					}
+				}
+			});
+			expect(tPenultDay.isValid).toBe(true);
+			expect(tPenultDay.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-30');
+
+			const tPenultWkd = new Tempo('penultimate Friday of May 2026', {
+				registry: {
+					ordinals: {
+						penultimate: -2,
+					}
+				}
+			});
+			expect(tPenultWkd.isValid).toBe(true);
+			expect(tPenultWkd.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-22');
+
+			// Verify global enums.ORDINAL was not polluted
+			expect((Tempo.enums.ORDINAL as any).eleventh).toBeUndefined();
 		});
 	});
 });

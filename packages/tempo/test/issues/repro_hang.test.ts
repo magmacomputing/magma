@@ -8,8 +8,8 @@ describe('Tempo Initialization Hang Repro', () => {
 		// Before the fix, this would cause infinite recursion and hang.
 		expect(getType(Tempo)).toBe('Class')
 		expect(isTempo(new Tempo())).toBe(true)
-		expect(Tempo.NUMBER.zero).toBe(0)
-		expect(Tempo.FORMAT.date).toBeDefined()
+		expect(Tempo.enums.NUMBER.zero).toBe(0)
+		expect(Tempo.enums.FORMAT.date).toBeDefined()
 	})
 
 	it('should be ready after initialization', () => {

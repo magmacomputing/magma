@@ -1,4 +1,4 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow, logWarn, COMPASS } from '@magmacomputing/tempo/plugin/sdk';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, logWarn, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of meteorological season ranges */
@@ -49,8 +49,20 @@ export const SeasonTerm = defineTerm({
 		return resolve(this, anchor);
 	},
 
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
+	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
+		return getTermRange(this, resolve(this, anchor), keyOnly as any, anchor);
+	},
+
+	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {
+		return resolveRangeOrdinal(this, groups, anchor);
+	},
+
+	[TermHook.diff](this: any, other: Tempo, unit: string, tempo: Tempo) {
+		return resolveRangeDiff(this, other, unit, tempo);
+	},
+
+	[TermHook.format](this: any, token: string, tempo: Tempo) {
+		return resolveRangeFormat(this, token, tempo);
 	}
 });
 

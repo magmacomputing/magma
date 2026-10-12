@@ -39,4 +39,25 @@ describe('Number-Word Pilot (0-10)', () => {
 		const base = new Tempo('2024-03-20');
 		expect(base.add('eleven days hence').toPlainDate().toString({ calendarName: 'never' })).toBe('2024-03-31');
 	});
+
+	it('should resolve per-instance numbers in ordinary parsing via constructor options', () => {
+		const base = new Tempo('2024-03-20');
+		const tHence = new Tempo('dozen days hence', {
+			anchor: base,
+			registry: {
+				numbers: { dozen: 12 }
+			}
+		});
+		expect(tHence.isValid).toBe(true);
+		expect(tHence.format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+
+		const tAgo = new Tempo('dozen days ago', {
+			anchor: base,
+			registry: {
+				numbers: { dozen: 12 }
+			}
+		});
+		expect(tAgo.isValid).toBe(true);
+		expect(tAgo.format('{yyyy}-{mm}-{dd}')).toBe('2024-03-08');
+	});
 });

@@ -100,11 +100,11 @@ describe('Tempo Core Caching Architecture', () => {
 		});
 	});
 
-	describe('Tempo.CACHE Enum & Facade', () => {
-		it('should expose Tempo.CACHE enum values', () => {
-			expect(Tempo.CACHE.Off).toBe(false);
-			expect(Tempo.CACHE.On).toBe(true);
-			expect(Tempo.CACHE.Refresh).toBe('refresh');
+	describe('Tempo.enums.CACHE Enum & Facade', () => {
+		it('should expose Tempo.enums.CACHE enum values', () => {
+			expect(Tempo.enums.CACHE.Off).toBe(false);
+			expect(Tempo.enums.CACHE.On).toBe(true);
+			expect(Tempo.enums.CACHE.Refresh).toBe('refresh');
 		});
 
 		it('should expose normalized Tempo.cache facade methods and serialize via toJSON()', () => {

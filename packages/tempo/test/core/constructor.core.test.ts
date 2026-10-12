@@ -14,7 +14,7 @@ describe('Tempo Core', () => {
 		describe("mode: 'auto' (Default)", () => {
 			it('should auto-switch to lazy mode if input passes Master Guard', () => {
 				const t = new Tempo('2024-01-01');
-				expect(t.parse.mode).toBe(Tempo.MODE.Auto);
+				expect(t.parse.mode).toBe(Tempo.enums.MODE.Auto);
 				expect(t.parse.lazy).toBe(true);
 				expect(t.yy).toBe(2024);
 				expect(t.yw).toBe(2024);
@@ -29,13 +29,13 @@ describe('Tempo Core', () => {
 		describe("mode: 'strict'", () => {
 			it('should throw immediately on invalid TimeZone', () => {
 				// Even with a valid-looking date, 'strict' forces immediate validation of all options
-				expect(() => new Tempo('2024-01-01', { mode: Tempo.MODE.Strict, timeZone: 'Invalid/Zone' })).toThrow(/(?:Tempo: Unrecognized time zone Invalid\/Zone|Temporal error: Not a valid time zone string)/i);
+				expect(() => new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Strict, timeZone: 'Invalid/Zone' })).toThrow(/(?:Tempo: Unrecognized time zone Invalid\/Zone|Temporal error: Not a valid time zone string)/i);
 			});
 		});
 
 		describe("Global strategy overrides", () => {
 			it("should throw on invalid input when global mode is 'strict'", () => {
-				Tempo.init({ mode: Tempo.MODE.Strict });
+				Tempo.init({ mode: Tempo.enums.MODE.Strict });
 				expect(() => new Tempo('Invalid Date')).toThrow();
 			});
 		});
@@ -43,7 +43,7 @@ describe('Tempo Core', () => {
 		describe("mode: 'defer'", () => {
 			it('should NOT throw immediately on invalid TimeZone', () => {
 				// 'defer' ignores the guard and skips all validation in the constructor
-				const t = new Tempo('2024-01-01', { mode: Tempo.MODE.Defer, timeZone: 'Invalid/Zone' });
+				const t = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Defer, timeZone: 'Invalid/Zone' });
 				expect(t).toBeInstanceOf(Tempo);
 
 				// Throws only on access
@@ -52,20 +52,20 @@ describe('Tempo Core', () => {
 			});
 
 			it('should allow introspection of lazy state with valid configuration', () => {
-				const t = new Tempo('2024-01-01', { mode: Tempo.MODE.Defer });
+				const t = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Defer });
 				expect(t.parse.lazy).toBe(true);
 			});
 		});
 
 		describe("catch: true (Advanced Error Handling)", () => {
 			it('should suppress immediate throws in strict mode', () => {
-				const t = new Tempo('2024-01-01', { mode: Tempo.MODE.Strict, timeZone: 'Invalid/Zone', catch: true });
+				const t = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Strict, timeZone: 'Invalid/Zone', catch: true });
 				expect(t.isValid).toBe(false);
 				expect(t.format('{yyyy}')).toBe('');
 			});
 
 			it('should suppress deferred throws in defer mode', () => {
-				const t = new Tempo('2024-01-01', { mode: Tempo.MODE.Defer, timeZone: 'Invalid/Zone', catch: true });
+				const t = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Defer, timeZone: 'Invalid/Zone', catch: true });
 				expect(t.isValid).toBe(false);										// Validates on call
 				expect(t.format('{yyyy}')).toBe('');
 			});

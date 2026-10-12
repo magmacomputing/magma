@@ -8,51 +8,51 @@ describe('Discovery Security (Direct Registry Check)', () => {
 		// Attempt to overwrite 'one' via direct registryUpdate (which discovery uses)
 		registryUpdate('NUMBER', { one: 99, eleven: 11 });
 
-		expect(Tempo.NUMBER.one).toBe(1);
-		expect(Tempo.NUMBER.one).not.toBe(99);
-		expect((Tempo.NUMBER as any).eleven).toBe(11);
+		expect(Tempo.enums.NUMBER.one).toBe(1);
+		expect(Tempo.enums.NUMBER.one).not.toBe(99);
+		expect((Tempo.enums.NUMBER as any).eleven).toBe(11);
 	});
 
 	test('registryUpdate protects core TIMEZONE keys from overwrite', () => {
 		// Attempt to overwrite 'utc' alias
 		registryUpdate('TIMEZONE', { utc: 'Broken/Zone', myzone: 'Pacific/Auckland' });
 
-		expect(Tempo.TIMEZONE.utc).toBe('UTC');
-		expect(Tempo.TIMEZONE.utc).not.toBe('Broken/Zone');
-		expect((Tempo.TIMEZONE as any).myzone).toBe('Pacific/Auckland');
+		expect(Tempo.enums.TIMEZONE.utc).toBe('UTC');
+		expect(Tempo.enums.TIMEZONE.utc).not.toBe('Broken/Zone');
+		expect((Tempo.enums.TIMEZONE as any).myzone).toBe('Pacific/Auckland');
 	});
 
 	test('registryUpdate protects core FORMAT keys from overwrite', () => {
 		// Attempt to overwrite 'date' format
-		const originalDate = Tempo.FORMAT.date;
+		const originalDate = Tempo.enums.FORMAT.date;
 		registryUpdate('FORMAT', { date: 'BROKEN', custom: 'YYYY' });
 
-		expect(Tempo.FORMAT.date).toBe(originalDate);
-		expect((Tempo.FORMAT as any).custom).toBe('YYYY');
+		expect(Tempo.enums.FORMAT.date).toBe(originalDate);
+		expect((Tempo.enums.FORMAT as any).custom).toBe('YYYY');
 	});
 
 	test('registries are read-only to the public (Soft Freeze check)', () => {
 		try {
-			(Tempo.NUMBER as any).one = 42;
+			(Tempo.enums.NUMBER as any).one = 42;
 		} catch (e) {
 			// expected
 		}
-		expect(Tempo.NUMBER.one).toBe(1);
+		expect(Tempo.enums.NUMBER.one).toBe(1);
 	});
 
 	afterAll(() => {
 		// Cleanup added keys to keep environment clean for other tests
-		const numTarget = unwrap(Tempo.NUMBER as any);
+		const numTarget = unwrap(Tempo.enums.NUMBER as any);
 		if (numTarget) {
 			delete numTarget.eleven;
 		}
 
-		const fmtTarget = unwrap(Tempo.FORMAT as any);
+		const fmtTarget = unwrap(Tempo.enums.FORMAT as any);
 		if (fmtTarget) {
 			delete fmtTarget.custom;
 		}
 
-		const tzTarget = unwrap(Tempo.TIMEZONE as any);
+		const tzTarget = unwrap(Tempo.enums.TIMEZONE as any);
 		if (tzTarget) {
 			delete tzTarget.myzone;
 		}

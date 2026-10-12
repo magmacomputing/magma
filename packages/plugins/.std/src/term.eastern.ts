@@ -1,4 +1,4 @@
-import { defineTerm } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import { getChineseZodiac as getChineseZodiacFn } from '@magmacomputing/tempo-fns';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -203,6 +203,9 @@ export const EasternTerm = defineTerm({
 		}
 		return scopeObj;
 	},
+	[TermHook.format](this: any, token: string, tempo: Tempo) {
+		return resolveRangeFormat(this, token, tempo);
+	}
 });
 
 export const LunarSignTerm = EasternTerm;

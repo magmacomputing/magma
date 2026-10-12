@@ -1,6 +1,6 @@
 import { sym } from '#library/symbol.library.js';
 import { getType, protoType } from '#library/type.library.js';
-import type { Type, Primitive, Nullish, Temporals, Property, GetType } from '#library/type.library.js';
+import type { Type, Primitive, Nullish, Temporals, Property, GetType, ValueOf } from '#library/type.library.js';
 
 /** @internal check if an object has an own property (respects Proxy/Shadowing) */
 export { hasOwn } from '#library/primitive.library.js';
@@ -129,6 +129,14 @@ export const isPropertyKey = (obj: unknown): obj is PropertyKey => {
 };
 
 /**
+ * Keys considered unsafe for object assignment or prototype manipulation
+ */
+const UNSAFE_KEYS = ['__proto__', 'constructor', 'prototype'] as const;
+
+/** Property keys rejected to guard against prototype pollution */
+export type UnsafeKey = ValueOf<typeof UNSAFE_KEYS>;
+
+/**
  * Asserts if a property key is safe against prototype pollution and prototype hijacking.
  * Returns false for '__proto__', 'constructor', and 'prototype'.
  * 
@@ -140,8 +148,8 @@ export const isPropertyKey = (obj: unknown): obj is PropertyKey => {
  * isSafeKey('__proto__'); // false
  * ```
  */
-export const isSafeKey = (key: PropertyKey): boolean =>
-	key !== '__proto__' && key !== 'constructor' && key !== 'prototype';
+export const isSafeKey = (key: PropertyKey): key is Exclude<PropertyKey, UnsafeKey> =>
+	!UNSAFE_KEYS.includes(key as any);
 
 export const isNull = (obj: unknown): obj is null => obj === null;
 export const isNullish = (obj: unknown): obj is Nullish => obj === null || obj === undefined || isType<Nullish>(obj, 'Void', 'Empty');

@@ -1,7 +1,52 @@
 import { protoType, getType, cast } from '#library/type.library.js';
-import type { Singular, CountOf, AssertEqual, Cast } from '#library/type.library.js';
+import { enumify } from '#library/enumerate.library.js';
+import { looseIndex } from '#library/object.library.js';
+import type { Singular, CountOf, AssertEqual, Cast, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
 
 describe('Type Library (Compile-Time)', () => {
+	it('should correctly resolve KeyOf, ValueOf, and correlated EntryOf', () => {
+		// Plain non-enum objects
+		type Plain = { a: 1; b: 'hello' };
+		const testPlainKey: AssertEqual<KeyOf<Plain>, 'a' | 'b'> = true;
+		const testPlainVal: AssertEqual<ValueOf<Plain>, 1 | 'hello'> = true;
+		const testPlainEntry: AssertEqual<EntryOf<Plain>, ['a', 1] | ['b', 'hello']> = true;
+		expect(testPlainKey).toBe(true);
+		expect(testPlainVal).toBe(true);
+		expect(testPlainEntry).toBe(true);
+
+		// Plain object with function properties (non-enum)
+		type WithMethod = { name: string; values: () => number[] };
+		const testMethodVal: AssertEqual<ValueOf<WithMethod>, string | (() => number[])> = true;
+		const testMethodEntry: AssertEqual<EntryOf<WithMethod>, ['name', string] | ['values', () => number[]]> = true;
+		expect(testMethodVal).toBe(true);
+		expect(testMethodEntry).toBe(true);
+
+		// Plain object with optional properties
+		type WithOptional = { opt?: string; req: number };
+		const testOptionalEntry: AssertEqual<EntryOf<WithOptional>, ['opt', string | undefined] | ['req', number]> = true;
+		expect(testOptionalEntry).toBe(true);
+
+		// Loose enums: unwinding the loose index signature & extracting correlated entry pairs
+		const testEnum = looseIndex<string, string>()(enumify({
+			North: 'north',
+			South: 'south',
+		}, false));
+		type TestEnum = typeof testEnum;
+		const testEnumKey: AssertEqual<KeyOf<TestEnum>, 'North' | 'South'> = true;
+		const testEnumVal: AssertEqual<ValueOf<TestEnum>, 'north' | 'south'> = true;
+		const testEnumEntry: AssertEqual<EntryOf<TestEnum>, ['North', 'north'] | ['South', 'south']> = true;
+		expect(testEnumKey).toBe(true);
+		expect(testEnumVal).toBe(true);
+		expect(testEnumEntry).toBe(true);
+
+		// ValueOf & EntryOf on as const tuples
+		const colors = ['red', 'green', 'blue'] as const;
+		const testTupleVal: AssertEqual<ValueOf<typeof colors>, 'red' | 'green' | 'blue'> = true;
+		const testTupleEntry: AssertEqual<EntryOf<typeof colors>, [number, 'red' | 'green' | 'blue']> = true;
+		expect(testTupleVal).toBe(true);
+		expect(testTupleEntry).toBe(true);
+	});
+
 	it('should correctly resolve Singular types at compile-time', () => {
 		const testCats: AssertEqual<Singular<'cats'>, 'cat'> = true;
 		const testBus: AssertEqual<Singular<'bus'>, 'bus'> = true;

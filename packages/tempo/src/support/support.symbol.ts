@@ -24,6 +24,21 @@ export const isTempo = (tempo?: any): tempo is TempoBrand => tempo?.[sym.$Identi
 
 export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termError') as any;
 
+/**
+ * Well-Known Symbols for Term Lifecycle Protocol.
+ * Utilizing Symbol.for() to guarantee consistency across module boundaries and dual package instances.
+ */
+export const TermHook = {
+	parse: Symbol.for('magmacomputing/tempo/term/parse'),
+	ordinal: Symbol.for('magmacomputing/tempo/term/ordinal'),
+	step: Symbol.for('magmacomputing/tempo/term/step'),
+	diff: Symbol.for('magmacomputing/tempo/term/diff'),
+	bound: Symbol.for('magmacomputing/tempo/term/bound'),
+	format: Symbol.for('magmacomputing/tempo/term/format')
+} as const;
+
+export type TermHook = typeof TermHook;
+
 /** @internal unique symbols for critical internal accessors */
 /** key for Global Discovery of Tempo configuration */			export const $Tempo: unique symbol = Symbol.for('$Tempo') as any;
 /** key for Reactive Plugin Registration */									export const $Register: unique symbol = Symbol.for('magmacomputing/tempo/register') as any;

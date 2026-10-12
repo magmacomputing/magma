@@ -127,7 +127,11 @@ export class PatternCompiler {
 
 		// 1. ensure numeric snippets are current
 		if (enums?.NUMBER) {
-			const keys = (Enum.keys(enums.NUMBER) as string[]).map((w: string) => Match.escape(w));
+			const localNumbers = state.config.registry?.numbers ?? {};
+			const keys = Array.from(new Set([
+				...(Enum.keys(enums.NUMBER) as string[]),
+				...Object.keys(localNumbers)
+			])).map((w: string) => Match.escape(w));
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a: string, b: string) => b.length - a.length).join('|')})`);
 
 			snippet[Token.nbr] = nbr;
@@ -157,6 +161,16 @@ export class PatternCompiler {
 
 			snippet[Token.mod] = new RegExp(`((?<mod>${modPattern})? *)`, 'i');
 			snippet[Token.afx] = new RegExp(`((s)? (?<afx>${afxPattern}))?${snippet[Token.sep]?.source || ''}?`, 'i');
+		}
+
+		if (enums?.ORDINAL) {
+			const localOrdinals = state.config.registry?.ordinals ?? {};
+			const ordKeys = Array.from(new Set([
+				...(Enum.keys(enums.ORDINAL) as string[]),
+				...Object.keys(localOrdinals)
+			])).map((w: string) => Match.escape(w));
+			const ordWordPattern = ordKeys.sort((a: string, b: string) => b.length - a.length).join('|');
+			snippet[Token.nth] = new RegExp(`(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|${ordWordPattern})`, 'i');
 		}
 
 		// 2. build ignore pattern
