@@ -149,7 +149,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				if (mapped) asArray(mapped).forEach(w => words.add(w));
 			});
 			if (words.size > 0) {
-				const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+				const escapedWords = Array.from(words).map(Match.escape);
 				escapedWords.sort((a, b) => b.length - a.length);
 				const wordPattern = escapedWords.join('|');
 				// Preserve the original term group (including # prefix) from Match.slick; only extend mod alternation

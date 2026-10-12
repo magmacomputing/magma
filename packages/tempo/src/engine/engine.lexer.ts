@@ -242,7 +242,7 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 
 	if (nthVal === 0 || Math.abs(nthVal) > 5) {
 		logError(`Ordinal weekday out of bounds for month ${mm}`, config);
-		return dateTime;
+		return undefined;
 	}
 
 	const firstDay = Temporal.PlainDate.from({ year: yy, month: mm, day: 1 });

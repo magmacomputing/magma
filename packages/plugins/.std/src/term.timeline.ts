@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of daily time periods */
@@ -37,6 +37,10 @@ export const TimelineTerm = defineTerm({
 
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
+	},
+
+	[TermHook.format](this: any, token: string, tempo: Tempo) {
+		return resolveRangeFormat(this, token, tempo);
 	}
 });
 

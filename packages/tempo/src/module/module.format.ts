@@ -406,12 +406,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					const pluginHook = (plugin as any)?.[TermHook.format];
 					let hookRes: any;
 					if (isFunction(pluginHook))
-						hookRes = pluginHook(token, obj as Tempo);
+						hookRes = pluginHook.call(plugin, token, obj as Tempo);
 
 					if (!isDefined(hookRes)) {
 						const instanceHook = ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
 						if (isFunction(instanceHook))
-							hookRes = instanceHook(token, obj as Tempo);
+							hookRes = instanceHook.call(((obj as any)?.term?.[termName]), token, obj as Tempo);
 					}
 					if (isDefined(hookRes)) {
 						res = hookRes;

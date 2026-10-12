@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, COMPASS, logWarn } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, COMPASS, TermHook, logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import { isNumber, asArray } from '@magmacomputing/library';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -52,9 +52,21 @@ export const QuarterTerm = defineTerm({
 	},
 
 	/** determine where the current Tempo instance fits within the above range */
-	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
+	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
 		const res = resolve(this, anchor);
-		return getTermRange(this, asArray(res), keyOnly, anchor) as any;
+		return getTermRange(this, asArray(res), keyOnly as any, anchor) as any;
+	},
+
+	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {
+		return resolveRangeOrdinal(this, groups, anchor);
+	},
+
+	[TermHook.diff](this: any, other: Tempo, unit: string, tempo: Tempo) {
+		return resolveRangeDiff(this, other, unit, tempo);
+	},
+
+	[TermHook.format](this: any, token: string, tempo: Tempo) {
+		return resolveRangeFormat(this, token, tempo);
 	}
 });
 

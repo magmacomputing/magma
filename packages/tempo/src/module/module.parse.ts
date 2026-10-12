@@ -1,7 +1,7 @@
 import '#library/temporal.polyfill.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
@@ -45,15 +45,16 @@ function buildCacheKey(str: string, today: Temporal.ZonedDateTime, state: t.Inte
 const BRACED_CACHE = new WeakCache<string, RegExp>();
 const RE_SINGLE_WHITESPACE = /\s/;
 const RE_REGEX_ESCAPE_CHAR = /[\\^$*+?.()|[\]{}]/;
-const RE_REGEX_ESCAPE_ALL = /[.*+?^${}()|[\]\\]/g;
 const RE_SIGNED_LEADING_DIGITS = /^-?\d+/;
+const RE_ORDINAL_SUFFIX = /(?:st|nd|rd|th)/;
+const RE_TERM_ID = /#[\w.]+/;
 
 /** Constructs a regular expression to match ordinal term expressions (e.g. "3rd day of #qtr.2"). */
 function buildOrdinalTermPattern(ordWords?: string): RegExp {
-	const ordPattern = ordWords && ordWords.length > 0
-		? `\\d+(?:st|nd|rd|th)?|${ordWords}`
-		: '\\d+(?:st|nd|rd|th)?';
-	return new RegExp(`^\\s*(?<ord>${ordPattern})\\s+(?:day\\s+of\\s+)?(?<term>#[\\w.]+)\\s*$`, 'i');
+	const ordPattern = isText(ordWords)
+		? `-?\\d+${RE_ORDINAL_SUFFIX.source}?|${ordWords.trim()}`
+		: `-?\\d+${RE_ORDINAL_SUFFIX.source}?`;
+	return new RegExp(`^\\s*(?<ord>${ordPattern})\\s+(?:day\\s+of\\s+)?(?<term>${RE_TERM_ID.source})\\s*$`, 'i');
 }
 
 /** Compiles a native braced format mask into a cached parsing expression. */
@@ -502,7 +503,7 @@ const _ParseEngine = {
 						...(Enum.keys(enums.ORDINAL) as string[]),
 						...Object.keys(localOrdinals)
 					])).filter(Boolean);
-					const ordWords = allOrdKeys.map(k => k.replace(RE_REGEX_ESCAPE_ALL, '\\$&')).join('|');
+					const ordWords = allOrdKeys.map(Match.escape).join('|');
 					const ordMatch = value.match(buildOrdinalTermPattern(ordWords));
 					if (ordMatch?.groups?.term) {
 						const [ordTermId] = ordMatch.groups.term.slice(1).split('.');

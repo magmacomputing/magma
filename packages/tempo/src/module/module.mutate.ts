@@ -142,7 +142,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 											}
 										});
 										if (words.size > 0) {
-											const escapedWords = Array.from(words).map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+											const escapedWords = Array.from(words).map(Match.escape);
 											escapedWords.sort((a, b) => b.length - a.length);
 											const wordPattern = escapedWords.join('|');
 											matchSlickValue = new RegExp(`^(?<sh_mod>[\\+\\-\\<\\>\\=]=?|${wordPattern})?(?<sh_nbr>-?[0-9]+)?(?<sh_unit>[\\w]*)$`);

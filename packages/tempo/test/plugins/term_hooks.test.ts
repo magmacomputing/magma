@@ -1,5 +1,6 @@
 import { Tempo, TermHook } from '#tempo';
 import { defineTerm } from '#tempo/plugin/term/term.util.js';
+import { EasternTerm, TimelineTerm } from '#tempo/std';
 
 describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	beforeEach(() => {
@@ -142,6 +143,148 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(mixedGroups).toBeDefined();
 		expect(mixedGroups.ord.toLowerCase()).toBe('penultimate');
 		expect(mixedGroups.value).toBe(-2);
+	});
+
+	it('should support negative ordinals like "-2nd day of #cycle.2" in [TermHook.ordinal]', () => {
+		let capturedGroups: any;
+		const CycleTerm = defineTerm({
+			key: 'cycle',
+			scope: 'cycle',
+			define() { return undefined; },
+			[TermHook.ordinal](groups: Record<string, any>, anchor: any) {
+				capturedGroups = groups;
+				const dayOffset = groups.value ?? parseInt(groups.ord, 10);
+				return anchor.add({ days: dayOffset });
+			}
+		});
+		Tempo.use(CycleTerm);
+
+		const anchor = new Tempo('2026-06-30T00:00:00Z');
+		const t = Tempo.from('-2nd day of #cycle.2', { anchor });
+		expect(t.isValid).toBe(true);
+		expect(capturedGroups).toBeDefined();
+		expect(capturedGroups.ord).toBe('-2nd');
+		expect(capturedGroups.term).toBe('#cycle.2');
+		expect(capturedGroups.value).toBe(-2);
+		expect(t.format('{yyyy}-{mm}-{dd}')).toBe('2026-06-28');
+	});
+
+	it('should resolve natural ordinals via [TermHook.ordinal] on standard QuarterTerm (#qtr)', () => {
+		const anchor = new Tempo('2026-01-15T00:00:00Z', { sphere: 'north' });
+
+		// 1st day of #qtr.2 -> 2026-04-01
+		const t1st = Tempo.from('1st day of #qtr.2', { anchor });
+		expect(t1st.isValid).toBe(true);
+		expect(t1st.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-01');
+
+		// 3rd day of #qtr.2 -> 2026-04-03
+		const t3rd = Tempo.from('3rd day of #qtr.2', { anchor });
+		expect(t3rd.isValid).toBe(true);
+		expect(t3rd.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-03');
+
+		// last day of #qtr.2 -> 2026-06-30
+		const tLast = Tempo.from('last day of #qtr.2', { anchor });
+		expect(tLast.isValid).toBe(true);
+		expect(tLast.format('{yyyy}-{mm}-{dd}')).toBe('2026-06-30');
+
+		// -2nd day of #qtr.2 -> 2026-06-29
+		const tNeg2nd = Tempo.from('-2nd day of #qtr.2', { anchor });
+		expect(tNeg2nd.isValid).toBe(true);
+		expect(tNeg2nd.format('{yyyy}-{mm}-{dd}')).toBe('2026-06-29');
+
+		// Ordinal on current quarter (anchor in Q1)
+		const tCurLast = Tempo.from('last day of #qtr', { anchor });
+		expect(tCurLast.isValid).toBe(true);
+		expect(tCurLast.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-31');
+
+		// Out of range ordinals throw unresolvable error on evaluation
+		expect(() => Tempo.from('200th day of #qtr.2', { anchor }).toDateTime()).toThrow();
+		expect(() => Tempo.from('-200th day of #qtr.2', { anchor }).toDateTime()).toThrow();
+	});
+
+	it('should resolve natural ordinals via [TermHook.ordinal] on standard SeasonTerm (#szn)', () => {
+		const anchor = new Tempo('2026-01-15T00:00:00Z', { sphere: 'north' });
+
+		// 1st day of #szn.summer -> 2026-06-01 (meteorological north summer starts Jun 1)
+		const tSummerStart = Tempo.from('1st day of #szn.summer', { anchor });
+		expect(tSummerStart.isValid).toBe(true);
+		expect(tSummerStart.format('{yyyy}-{mm}-{dd}')).toBe('2026-06-01');
+
+		// last day of #szn.summer -> 2026-08-31
+		const tSummerEnd = Tempo.from('last day of #szn.summer', { anchor });
+		expect(tSummerEnd.isValid).toBe(true);
+		expect(tSummerEnd.format('{yyyy}-{mm}-{dd}')).toBe('2026-08-31');
+	});
+
+	it('should resolve natural ordinals via [TermHook.ordinal] on standard ZodiacTerm (#zdc)', () => {
+		const anchor = new Tempo('2026-01-15T00:00:00Z');
+
+		// 1st day of #zdc.aries -> 2026-03-21 (Aries: Mar 21 - Apr 19)
+		const tAriesStart = Tempo.from('1st day of #zdc.aries', { anchor });
+		expect(tAriesStart.isValid).toBe(true);
+		expect(tAriesStart.format('{yyyy}-{mm}-{dd}')).toBe('2026-03-21');
+
+		// last day of #zdc.aries -> 2026-04-19 (day before Taurus starts Apr 20)
+		const tAriesEnd = Tempo.from('last day of #zdc.aries', { anchor });
+		expect(tAriesEnd.isValid).toBe(true);
+		expect(tAriesEnd.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-19');
+	});
+
+	it('should calculate cycle diffs via [TermHook.diff] on standard QuarterTerm (#qtr)', () => {
+		const t1 = new Tempo('2026-02-15T00:00:00Z', { sphere: 'north' });
+		const t2 = new Tempo('2026-11-20T00:00:00Z', { sphere: 'north' });
+
+		// Q1 to Q4 = 3 quarters
+		expect(t1.until(t2, '#qtr')).toBe(3);
+		expect(t2.since(t1, '#qtr')).toBe('-3 #qtr');
+		expect(t1.until(t1, '#qtr')).toBe(0);
+
+		// Across calendar years: Q1 2026 to Q2 2027 = 5 quarters
+		const t3 = new Tempo('2027-05-10T00:00:00Z', { sphere: 'north' });
+		expect(t1.until(t3, '#qtr')).toBe(5);
+		expect(t3.since(t1, '#qtr')).toBe('-5 #qtr');
+	});
+
+	it('should calculate cycle diffs via [TermHook.diff] on standard SeasonTerm (#szn)', () => {
+		const t1 = new Tempo('2026-04-15T00:00:00Z', { sphere: 'north' }); // Spring
+		const t2 = new Tempo('2026-10-15T00:00:00Z', { sphere: 'north' }); // Autumn
+
+		// Spring to Autumn = 2 seasons
+		expect(t1.until(t2, '#szn')).toBe(2);
+		expect(t2.since(t1, '#szn')).toBe('-2 #szn');
+		expect(t1.until(t1, '#szn')).toBe(0);
+	});
+
+	it('should format tokens with subkeys via [TermHook.format] on standard terms', () => {
+		Tempo.use([EasternTerm, TimelineTerm]);
+
+		// QuarterTerm format
+		const tQ1 = new Tempo('2026-02-15T00:00:00Z', { sphere: 'north' });
+		expect(tQ1.format('Quarter: {#qtr}')).toBe('Quarter: Q1');
+		expect(tQ1.format('Label: {#qtr.label}')).toBe('Label: First Quarter');
+		expect(tQ1.format('Upper: {#qtr.label:upper}')).toBe('Upper: FIRST QUARTER');
+
+		// SeasonTerm format
+		const tSzn = new Tempo('2026-07-15T00:00:00Z', { sphere: 'north' });
+		expect(tSzn.format('Season: {#szn}')).toBe('Season: Summer');
+		expect(tSzn.format('Symbol: {#szn.symbol}')).toBe('Symbol: Sun');
+
+		// ZodiacTerm format
+		const tZdc = new Tempo('2026-04-05T00:00:00Z');
+		expect(tZdc.format('Sign: {#zdc}')).toBe('Sign: Aries');
+		expect(tZdc.format('Emoji: {#zdc.emoji}')).toBe('Emoji: ♈');
+		expect(tZdc.format('Symbol: {#zdc.symbol}')).toBe('Symbol: Ram');
+
+		// EasternTerm format
+		const tEast = new Tempo('2024-05-15T00:00:00Z');
+		expect(tEast.format('Sign: {#sign}')).toBe('Sign: Dragon');
+		expect(tEast.format('Emoji: {#sign.emoji}')).toBe('Emoji: 🐉');
+		expect(tEast.format('Element: {#sign.element}')).toBe('Element: Wood');
+
+		// TimelineTerm format
+		const tTod = new Tempo('2026-06-15T09:30:00Z');
+		expect(tTod.format('Period: {#tod}')).toBe('Period: Morning');
+		expect(tTod.format('Hour: {#tod.hour}')).toBe('Hour: 8');
 	});
 
 	it('should dispatch [TermHook.step] on add() and sub() dictionary mutations', () => {

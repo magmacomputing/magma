@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject } from '#library/assertion.library.js';
+import { isDefined, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
@@ -97,13 +97,15 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
  * @returns The matching range key, resolved range, or `undefined` when no range is available
  * @internal
  */
-export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number = true, anchor?: any): string | ResolvedRange | undefined | null {
+export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any): string | ResolvedRange | undefined | null {
 	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
 
-	let zdt = anchor ?? (tempo as any).toDateTime();
+	let zdt = isTempo(anchor)
+		? anchor.toDateTime()
+		: (isZonedDateTime(anchor) ? anchor : (isTempo(tempo) ? tempo.toDateTime() : undefined));
 	if (!isZonedDateTime(zdt))
-		zdt = instant().toZonedDateTimeISO((tempo as any).config?.timeZone ?? 'UTC');
+		zdt = instant().toZonedDateTimeISO(tempo.config.timeZone ?? 'UTC');
 
 	// determine the largest unit defined in the range list, and use the unit above it as rollover
 	const unit = getLargestUnit(list);
@@ -164,6 +166,36 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 			end,
 			...match
 		}
+	}
+
+	if (isText(keyOnly)) {
+		const cycle = Math.floor(chronological.length / 3);
+		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
+		const cycleSlice = cycle > 0 ? chronological.slice(offset, offset + cycle) : chronological;
+		const lowKey = keyOnly.toLowerCase();
+		const match = chronological.find(r => r.year === zdt.year && (r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey))
+			?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey)
+			?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey);
+		if (!match) return undefined;
+
+		const start = resolve(match, zdt);
+		const i = chronological.indexOf(match);
+		const next = chronological[i + 1];
+		let end: Tempo;
+
+		if (next) {
+			end = resolve(next, zdt);
+		} else {
+			const roll = { ...match };
+			if (isNumber(roll.year)) roll.year++;
+			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+		}
+
+		return {
+			start,
+			end,
+			...match
+		};
 	}
 
 	const match = chronological[matchIndex === -1 ? 0 : matchIndex];
@@ -471,3 +503,153 @@ export function registerTerm(term: TermPlugin, state?: any) {
 
 	rt.emit(sym.$Register, term);
 }
+
+/**
+ * Resolves an anchored ordinal expression (e.g. "3rd day of #qtr.2", "last day of #szn.summer")
+ * relative to a range-based Term plugin.
+ *
+ * @param termObj - The term plugin instance providing ranges via define()
+ * @param groups - Capture groups from the ordinal expression (e.g. ord, term, value)
+ * @param anchor - The reference Tempo instance
+ * @returns The resolved Tempo instance, or undefined when not resolvable
+ */
+export function resolveRangeOrdinal(
+	termObj: any,
+	groups: Record<string, any>,
+	anchor: Tempo
+): Tempo | undefined {
+	const rawDayOffset = groups.value ?? (isString(groups.ord) ? parseInt(groups.ord, 10) : undefined);
+	if (!Number.isFinite(rawDayOffset) || rawDayOffset === 0) return undefined;
+
+	const parts = (groups.term || '').slice(1).split('.');
+	const subKey = parts[1];
+
+	let range: any;
+	if (isDefined(subKey) && subKey !== '') {
+		const cycleNum = parseInt(subKey, 10);
+		if (Number.isInteger(cycleNum) && cycleNum > 0) {
+			range = isFunction(termObj.define) ? termObj.define.call(anchor, cycleNum, anchor) : undefined;
+		} else {
+			range = isFunction(termObj.define) ? termObj.define.call(anchor, subKey, anchor) : undefined;
+		}
+	} else {
+		range = isFunction(termObj.define) ? termObj.define.call(anchor, false, anchor) : undefined;
+	}
+
+	if (!range || !range.start || !range.end) return undefined;
+
+	const target = (rawDayOffset > 0)
+		? range.start.add({ days: rawDayOffset - 1 })
+		: range.end.subtract({ days: Math.abs(rawDayOffset) });
+
+	const targetNs = target.toDateTime().epochNanoseconds as bigint;
+	const startNs = range.start.toDateTime().epochNanoseconds as bigint;
+	const endNs = range.end.toDateTime().epochNanoseconds as bigint;
+
+	return (targetNs < startNs || targetNs >= endNs)
+		? undefined
+		: target;
+}
+
+/**
+ * Resolves the difference between two Tempo instances in terms of a range-based Term plugin.
+ * (e.g. t1.until(t2, '#qtr'), t2.since(t1, '#szn'))
+ *
+ * @param termObj - The term plugin instance providing ranges via define()
+ * @param other - The target Tempo instance
+ * @param _unit - The unit string (e.g. "#qtr")
+ * @param tempo - The origin Tempo instance
+ * @returns The signed count of ranges between tempo and other, or undefined
+ */
+export function resolveRangeDiff(
+	termObj: any,
+	other: Tempo,
+	_unit: string,
+	tempo: Tempo
+): number | undefined {
+	if (!isFunction(termObj?.define)) return undefined;
+
+	const rangeA = termObj.define.call(tempo, false, tempo);
+	const rangeB = termObj.define.call(other, false, other);
+	if (!rangeA?.start || !rangeA?.end || !rangeB?.start || !rangeB?.end) return undefined;
+
+	const startANs = rangeA.start.toDateTime().epochNanoseconds as bigint;
+	const startBNs = rangeB.start.toDateTime().epochNanoseconds as bigint;
+
+	if (startANs === startBNs) return 0;
+
+	// Invert for past target
+	if (startBNs < startANs) {
+		const positiveDiff = resolveRangeDiff(termObj, tempo, _unit, other);
+		return isDefined(positiveDiff) ? -positiveDiff : undefined;
+	}
+
+	let count = 0;
+	let currentRange = rangeA;
+	const maxIterations = 10000;
+
+	while (count < maxIterations) {
+		const currentEndNs = currentRange.end.toDateTime().epochNanoseconds as bigint;
+		if (currentEndNs > startBNs)
+			break;
+
+		count++;
+		const nextRange = termObj.define.call(currentRange.end, false, currentRange.end);
+		if (!nextRange?.start || !nextRange?.end || (nextRange.start.toDateTime().epochNanoseconds as bigint) <= (currentRange.start.toDateTime().epochNanoseconds as bigint))
+			return undefined;
+
+		currentRange = nextRange;
+	}
+
+	return (count >= maxIterations) ? undefined : count;
+}
+
+/**
+ * Resolves formatted term tokens (e.g. "{#qtr}", "{#qtr.label}", "{#szn.symbol}")
+ * by delegating to the range definition of the term.
+ *
+ * @param termObj - The term plugin instance providing ranges via define()
+ * @param token - The format token (e.g. "#qtr", "#qtr.label")
+ * @param tempo - The reference Tempo instance being formatted
+ * @returns The resolved string value, or undefined when not resolvable
+ */
+export function resolveRangeFormat(
+	termObj: any,
+	token: string,
+	tempo: Tempo
+): string | undefined {
+	if (!isFunction(termObj?.define)) return undefined;
+
+	const range = termObj.define.call(tempo, false, tempo);
+	if (!range) return undefined;
+
+	const parts = token.slice(1).split('.');
+	const subKeys = parts.slice(1);
+
+	// Top-level token without sub-path (e.g. "{#qtr}", "{#quarter}", "{#szn}")
+	if (subKeys.length === 0) {
+		const tokenName = parts[0]?.toLowerCase();
+		const isScope = tokenName === termObj.scope?.toLowerCase();
+		const val = isObject(range)
+			? (isScope ? (range.label ?? range.key) : (range.key ?? range.label))
+			: range;
+		return isDefined(val) ? String(val) : undefined;
+	}
+
+	// Traverse sub-keys (e.g. "{#qtr.label}", "{#szn.symbol}")
+	let curr: any = range;
+	for (const key of subKeys) {
+		if (isNullish(curr) || !isSafeKey(key)) return undefined;
+		curr = curr[key];
+	}
+
+	if (isNullish(curr) || isFunction(curr)) return undefined;
+
+	if (isTempo(curr))
+		return (curr as Tempo).format('{yyyy}-{mm}-{dd}');
+
+	return isObject(curr)
+		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)
+		: String(curr);
+}
+
