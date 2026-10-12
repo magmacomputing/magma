@@ -28,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `[TermHook.diff]`: Computes whole or fractional term difference spans in `t1.until(t2, '#term')` and `t1.since(t2, '#term')`.
     - `[TermHook.format]`: Dispatches custom term format tokens (e.g. `t.format('{#academic}')`, `t.format('{#academic:upper}')`).
   - Zero-overhead ISO fast-paths: Hooks are strictly guarded by `#` term sigils, introducing 0ns penalty on standard ISO date paths and maintaining 100% backward compatibility with existing term plugins.
+- **Standard Terms Lifecycle Hooks & Shared SDK Utilities**:
+  - Implemented `[TermHook.ordinal]`, `[TermHook.diff]`, and `[TermHook.format]` across standard range terms (`QuarterTerm`, `SeasonTerm`, `ZodiacTerm`, `TimelineTerm`, `EasternTerm`).
+  - Added and exported shared SDK utilities: `resolveRangeOrdinal`, `resolveRangeDiff`, and `resolveRangeFormat` via `@magmacomputing/tempo/plugin/sdk`.
+  - Supported natural ordinal queries with negative ordinals (e.g. `"-2nd day of #qtr.2"`, `"last day of #szn.summer"`), strict range boundary guarding `[range.start, range.end)`, cycle duration spans (`t1.until(t2, '#qtr')`, `t2.since(t1, '#szn')`), and sub-property token formatting (`{#qtr.label}`, `{#szn.symbol}`, `{#zdc.emoji}`, `{#sign.animal}`, `{#tod.hour}`) with automatic modifier support (`{#qtr.label:upper}`).
+- **Regex Rationalisation & Performance**:
+  - Centralized pattern escaping using `Match.escape` across `engine.term.ts`, `module.mutate.ts`, and `module.parse.ts`.
+  - Hoisted composable regex constants (`RE_ORDINAL_SUFFIX`, `RE_TERM_ID`, `RE_SIGNED_LEADING_DIGITS`, `buildOrdinalTermPattern`) to module level.
 
 ## [4.5.1] - 2026-10-05
 

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.0] - 2026-10-11
+
+### Added & Hardened
+- **Safe Key Exclusion & UnsafeKey Type (`object.library`, `assertion.library`, `type.library`)**:
+  - Exported `UnsafeKey` type derived from internal `UNSAFE_KEYS` (`'__proto__'`, `'constructor'`, `'prototype'`).
+  - Updated `isSafeKey` type guard to narrow return types to `key is Exclude<PropertyKey, UnsafeKey>`.
+  - Updated `ifDefined` to return `Omit<T, UnsafeKey>`, ensuring filtered own enumerable properties like `constructor` are omitted from the resulting return type.
+  - Enhanced `ValueOf<T>` to accept `readonly any[]` (tuples/arrays) without needing a specialized `ElementOf` utility type.
+
 ## [4.5.1] - 2026-10-05
 
 ### Added & Hardened
