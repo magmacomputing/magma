@@ -86,7 +86,7 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('translates Oracle masks preserving case rules, FM toggling, and unsupported tokens', () => {
 		const res = Tempo.dialects.explain('IYYY-IW-D J', DIALECT.Oracle);
-		expect(res.pattern).toBe('{yw}-{wy}-{dow:locale} J');
+		expect(res.pattern).toBe('{yow}-{woy}-{dow:locale} J');
 		const jToken = res.tokens.find(t => t.source === 'J');
 		expect(jToken?.tempo).toBe('');
 		expect(jToken?.desc).toContain('Julian day');

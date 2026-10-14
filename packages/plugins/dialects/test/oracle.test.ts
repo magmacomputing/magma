@@ -79,6 +79,12 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(jan8.dialects.sql('WW')).toBe('02');
 		});
 
+		it('formats time zone region (TZR) and daylight saving abbreviation (TZD)', () => {
+			const ny = new Tempo('2026-10-24T15:30:45[America/New_York]');
+			expect(ny.dialects.sql('TZR')).toBe('America/New_York');
+			expect(ny.dialects.sql('TZD')).toBe('EDT');
+		});
+
 		it('formats ISO week-year tokens (IYYY, IYY, IY, I)', () => {
 			const dec31 = new Tempo('2024-12-30T10:00:00Z'); // Week 1 of ISO year 2025
 			expect(dec31.dialects.sql('IYYY-IW')).toBe('2025-01');
@@ -189,5 +195,35 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(t.yy).toBe(2026);
 			expect(t.mm).toBe(10);
 			expect(t.dd).toBe(24);
+		});
+
+		it('rejects invalid out-of-range calendar dates using overflow reject', () => {
+			const tInvalidDay = Tempo.dialects.parse('2026-04-31', 'YYYY-MM-DD', 'oracle', { error: 'catch' });
+			expect(tInvalidDay.isValid).toBe(false);
+
+			const tInvalidFeb = Tempo.dialects.parse('2026-02-29', 'YYYY-MM-DD', 'oracle', { error: 'catch' });
+			expect(tInvalidFeb.isValid).toBe(false);
+		});
+
+		it('returns invalid for masks containing unsupported reverse-parse tokens', () => {
+			const tJulian = Tempo.dialects.parse('2461338', 'J', 'oracle', { error: 'catch' });
+			expect(tJulian.isValid).toBe(false);
+
+			const tWeek = Tempo.dialects.parse('2026-43', 'YYYY-WW', 'oracle', { error: 'catch' });
+			expect(tWeek.isValid).toBe(false);
+		});
+
+		it('preserves fractional-second precision up to nanoseconds (FF9)', () => {
+			const t = Tempo.dialects.parse('2026-10-24 15:30:45.123456789', 'YYYY-MM-DD HH24:MI:SS.FF9', 'oracle');
+			expect(t.isValid).toBe(true);
+			expect(t.ms).toBe(123);
+			const zdt = t.toDateTime();
+			expect(zdt.microsecond).toBe(456);
+			expect(zdt.nanosecond).toBe(789);
+		});
+
+		it('gracefully handles invalid time zones returning invalid instance', () => {
+			const tBadTz = Tempo.dialects.parse('2026-10-24 15:30:45 Nonexistent/Timezone', 'YYYY-MM-DD HH24:MI:SS TZR', 'oracle', { error: 'catch' });
+			expect(tBadTz.isValid).toBe(false);
 		});
 });

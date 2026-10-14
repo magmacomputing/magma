@@ -53,7 +53,7 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 | Dialect Identifier | Canonical Constant | Common Aliases | Format Example | Primary Ecosystems |
 | :--- | :--- | :--- | :--- | :--- |
 | `'ldml'` | `DIALECT.Ldml` | `'luxon'`, `'datefns'`, `'cldr'` | `yyyy-MM-dd HH:mm:ss.SSS` | Luxon, date-fns, CLDR, Unicode UTS #35 |
-| `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog, SQL |
+| `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog |
 | `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD HH:mm:ss` | Moment.js, Day.js |
 | `'oracle'` | `DIALECT.Oracle` | `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'` | `YYYY-MM-DD HH24:MI:SS` | Oracle, PostgreSQL, Snowflake, AWS Redshift |
 

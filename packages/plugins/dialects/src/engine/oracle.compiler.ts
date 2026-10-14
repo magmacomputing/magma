@@ -213,8 +213,18 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					parts.push((z) => z.offset.slice(4, 6));
 					break;
 				case 'TZR':
-				case 'TZD':
 					parts.push((z) => z.timeZoneId);
+					break;
+				case 'TZD':
+					parts.push((z) => {
+						try {
+							const dtf = new Intl.DateTimeFormat('en-US', { timeZone: z.timeZoneId, timeZoneName: 'short' });
+							const part = dtf.formatToParts(z.epochMilliseconds).find((p) => p.type === 'timeZoneName');
+							return part?.value ?? z.timeZoneId;
+						} catch {
+							return z.timeZoneId;
+						}
+					});
 					break;
 
 				default:
@@ -253,9 +263,18 @@ export function formatOracle(zdt: Temporal.ZonedDateTime, mask: string): string 
 }
 
 /**
- * Compiles an Oracle format model into a regular expression for parsing.
+ * Format tokens supported by formatOracle but unsupported for reverse parsing in parseOracle:
+ * YYY, IYY, IY, Y, I, J, W, Q, IW, WW, SSSSS, TZH, TZM.
  */
-export function compileOracleParser(mask: string): RegExp {
+const ORACLE_UNSUPPORTED_PARSE_TOKENS: ReadonlySet<string> = new Set([
+	'YYY', 'IYY', 'IY', 'Y', 'I', 'J', 'W', 'Q', 'IW', 'WW', 'SSSSS', 'TZH', 'TZM',
+]);
+
+/**
+ * Compiles an Oracle format model into a regular expression for parsing.
+ * Returns undefined if the mask contains unsupported reverse-parse tokens.
+ */
+export function compileOracleParser(mask: string): RegExp | undefined {
 	const cached = ORACLE_PARSE_CACHE.get(mask);
 	if (cached) return cached;
 
@@ -352,6 +371,8 @@ export function compileOracleParser(mask: string): RegExp {
 				default:
 					if (upper.startsWith('FF')) {
 						pattern += group('us', '\\d{1,9}');
+					} else if (ORACLE_UNSUPPORTED_PARSE_TOKENS.has(upper)) {
+						return undefined;
 					} else {
 						pattern += token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 					}
@@ -387,6 +408,7 @@ export function parseOracle(
 	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileOracleParser(mask);
+	if (!rx) return undefined;
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
@@ -402,7 +424,16 @@ export function parseOracle(
 		tz = tz_name;
 	}
 
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
+	let today: Temporal.ZonedDateTime;
+	if (options.today) {
+		today = options.today;
+	} else {
+		try {
+			today = Temporal.Now.zonedDateTimeISO(tz);
+		} catch {
+			return undefined;
+		}
+	}
 	const cal = options.calendar ?? 'iso8601';
 
 	let year = today.year;
@@ -464,6 +495,7 @@ export function parseOracle(
 	let second = 0;
 	let millisecond = 0;
 	let microsecond = 0;
+	let nanosecond = 0;
 
 	const hh = getGroup('hh');
 	const h12 = getGroup('h12');
@@ -501,10 +533,11 @@ export function parseOracle(
 
 	const usVal = getGroup('us');
 	if (usVal) {
-		const padded = usVal.padEnd(6, '0').slice(0, 6);
-		const usTotal = parseInt(padded, 10);
-		millisecond = Math.floor(usTotal / 1000);
-		microsecond = usTotal % 1000;
+		const padded = usVal.padEnd(9, '0').slice(0, 9);
+		const nanosTotal = parseInt(padded, 10);
+		millisecond = Math.floor(nanosTotal / 1_000_000);
+		microsecond = Math.floor((nanosTotal % 1_000_000) / 1000);
+		nanosecond = nanosTotal % 1000;
 	}
 
 	try {
@@ -519,7 +552,8 @@ export function parseOracle(
 			second,
 			millisecond,
 			microsecond,
-		});
+			nanosecond,
+		}, { overflow: 'reject' });
 	} catch {
 		return undefined;
 	}
