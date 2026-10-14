@@ -304,7 +304,7 @@ export function parseStrftime(
 	} else {
 		if (mm) month = parseInt(mm, 10);
 		else if (month_name || month_abbr) {
-			const m = resolveMonth(month_name || month_abbr);
+			const m = resolveMonth(month_name || month_abbr!);
 			if (m) month = m;
 			else return undefined;
 		} else if (!yyyy && !yyVal) {
