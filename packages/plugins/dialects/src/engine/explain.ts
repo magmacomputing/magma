@@ -170,6 +170,7 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	MON: { tempo: '{mmm:upper}', desc: 'Short month name uppercase (e.g. OCT)' },
 	Mon: { tempo: '{mmm}', desc: 'Short month name capitalized (e.g. Oct)' },
 	mon: { tempo: '{mmm:lower}', desc: 'Short month name lowercase (e.g. oct)' },
+	RM: { tempo: '', desc: 'Roman numeral month (I-XII; unsupported native token in Tempo)' },
 	DD: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	DAY: { tempo: '{wkd:upper}', desc: 'Full weekday name uppercase (e.g. WEDNESDAY)' },

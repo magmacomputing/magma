@@ -438,10 +438,13 @@ export function parseOracle(
 
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
+	const iyyy = getGroup('iyyy');
 	const yyVal = getGroup('yy');
 	const rrVal = getGroup('rr');
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
+	} else if (iyyy) {
+		year = parseInt(iyyy, 10);
 	} else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
 		const currentCentury = Math.floor(today.year / 100) * 100;
@@ -456,6 +459,8 @@ export function parseOracle(
 			year = rr < 50 ? currentCentury + 100 + rr : currentCentury + rr;
 		}
 	}
+
+	const hasYear = Boolean(yyyy || iyyy || yyVal || rrVal);
 
 	let month = 1;
 	const mm = getGroup('mm');
@@ -472,7 +477,7 @@ export function parseOracle(
 		const m = resolveMonth(month_name || month_abbr!);
 		if (m) month = m;
 		else return undefined;
-	} else if (!yyyy && !yyVal) {
+	} else if (!hasYear) {
 		month = today.month;
 	}
 
@@ -486,7 +491,7 @@ export function parseOracle(
 		const p = Temporal.PlainDate.from({ year, month: 1, day: 1 }).add({ days: dVal - 1 });
 		month = p.month;
 		day = p.day;
-	} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+	} else if (!hasYear && !mm && !month_name && !month_abbr) {
 		day = today.day;
 	}
 

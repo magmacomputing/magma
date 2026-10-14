@@ -164,6 +164,14 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(t.dd).toBe(24);
 		});
 
+		it('parses ISO week-numbering year (IYYY)', () => {
+			const t = Tempo.dialects.parse('2025-10-24', 'IYYY-MM-DD', 'oracle');
+			expect(t.isValid).toBe(true);
+			expect(t.yy).toBe(2025);
+			expect(t.mm).toBe(10);
+			expect(t.dd).toBe(24);
+		});
+
 		it('parses two-digit years with YY (current century) and RR (pivot century)', () => {
 			const today2026 = new Tempo('2026-05-15T12:00:00Z').toDateTime();
 

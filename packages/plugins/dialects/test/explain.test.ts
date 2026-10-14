@@ -106,6 +106,7 @@ describe('Dialect Explain & Migration Helper', () => {
 		// RM does not map to {mm}
 		const resRm = Tempo.dialects.explain('DD-RM-YYYY', DIALECT.Oracle);
 		expect(resRm.pattern).toBe('{dd}-RM-{yyyy}');
+		expect(resRm.tokens.find(t => t.source === 'RM')?.desc).toContain('Roman numeral month');
 
 		// Standard Oracle format model explanation
 		const exp = Tempo.dialects.explain('YYYY-MM-DD HH24:MI:SS', 'oracle');
