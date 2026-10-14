@@ -9,8 +9,9 @@ import { formatLdml, parseLdml } from './engine/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from './engine/strftime.compiler.js';
 import { formatOracle, parseOracle } from './engine/oracle.compiler.js';
 import { explain, type ExplainResult, type ExplainedToken } from './engine/explain.js';
+import { exportDialect } from './engine/export.js';
 import { attachDialectShims } from './shims/luxon.shim.js';
-import type { DialectsInstanceNamespace, DialectsStaticNamespace } from './types.js';
+import type { DialectsInstanceNamespace, DialectsStaticNamespace, ExportResult, ExportedToken } from './types.js';
 
 export {
 	DIALECT,
@@ -25,9 +26,10 @@ export {
 	formatOracle,
 	parseOracle,
 	explain,
+	exportDialect,
 };
 
-export type { Dialect, DialectAlias, DialectsInstanceNamespace, DialectsStaticNamespace, ExplainResult, ExplainedToken };
+export type { Dialect, DialectAlias, DialectsInstanceNamespace, DialectsStaticNamespace, ExplainResult, ExplainedToken, ExportResult, ExportedToken };
 
 /**
  * ## DialectsPlugin
@@ -70,6 +72,9 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 				explain: (mask: string, dialect?: string): ExplainResult => {
 					return explain(mask, dialect);
 				},
+				export: (mask: string, dialect?: string): ExportResult => {
+					return exportDialect(mask, dialect);
+				},
 			};
 
 			Object.defineProperty(installedClass, 'dialects', {
@@ -102,6 +107,7 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 						sql: (mask: string) => format(mask, DIALECT.Oracle),
 						format,
 						explain: (mask: string, dialect?: string): ExplainResult => explain(mask, dialect),
+						export: (mask: string, dialect?: string): ExportResult => exportDialect(mask, dialect),
 					};
 				},
 				configurable: true,
