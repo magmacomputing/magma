@@ -697,20 +697,20 @@
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@latest",
-			"@magmacomputing/tempo-fns": "https://esm.sh/@magmacomputing/tempo-fns@latest",
-			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai@latest",
-			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch@latest",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial@latest",
-			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects@latest",
-			"@magmacomputing/tempo-plugin-finance": "https://esm.sh/@magmacomputing/tempo-plugin-finance@latest",
-			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo@latest",
-			"@magmacomputing/tempo-plugin-holidays": "https://esm.sh/@magmacomputing/tempo-plugin-holidays@latest",
-			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap@latest",
-			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial@latest",
-			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync@latest",
-			"@magmacomputing/tempo-plugin-ntp": "https://esm.sh/@magmacomputing/tempo-plugin-ntp@latest",
-			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@latest"
+			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo",
+			"@magmacomputing/tempo-fns": "https://esm.sh/@magmacomputing/tempo-fns",
+			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai",
+			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch",
+			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial",
+			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects",
+			"@magmacomputing/tempo-plugin-finance": "https://esm.sh/@magmacomputing/tempo-plugin-finance",
+			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo",
+			"@magmacomputing/tempo-plugin-holidays": "https://esm.sh/@magmacomputing/tempo-plugin-holidays",
+			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap",
+			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial",
+			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync",
+			"@magmacomputing/tempo-plugin-ntp": "https://esm.sh/@magmacomputing/tempo-plugin-ntp",
+			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker"
 		}
 	}
 	</script>
@@ -868,6 +868,53 @@
 			console.warn('Could not load snippets.manifest.js dynamically:', err);
 		}
 
+		let SUPPORTED_EXTRA_PLUGINS = {};
+		try {
+			const pmod = await import('./plugins.manifest.js');
+			SUPPORTED_EXTRA_PLUGINS = pmod.SUPPORTED_EXTRA_PLUGINS || {};
+		} catch (err) {
+			console.warn('Could not load plugins.manifest.js dynamically:', err);
+		}
+
+		async function ensurePluginLoaded(pluginName) {
+			if (pluginName && Object.hasOwn(SUPPORTED_EXTRA_PLUGINS, pluginName)) {
+				try {
+					const targetPlugin = SUPPORTED_EXTRA_PLUGINS[pluginName];
+					const mod = await targetPlugin.loader();
+					const pluginObj = Object.values(mod).find(v => (typeof v === 'object' || typeof v === 'function') && v !== null && 'name' in v && 'install' in v);
+					if (pluginObj && window.Tempo) window.Tempo.use(pluginObj);
+					return mod;
+				} catch (e) {
+					console.warn(`Plugin ${pluginName} loader fallback:`, e);
+				}
+			}
+			return null;
+		}
+
+		function resolveSnippet(keyOrPlugin, code) {
+			if (keyOrPlugin) {
+				if (Object.hasOwn(SNIPPETS, keyOrPlugin))
+					return { key: keyOrPlugin, ...SNIPPETS[keyOrPlugin] };
+
+				const byPlugin = Object.entries(SNIPPETS).find(([, s]) => s.plugin === keyOrPlugin);
+				if (byPlugin)
+					return { key: byPlugin[0], ...byPlugin[1] };
+			}
+			if (code) {
+				const trimmed = code.trim();
+				const byCode = Object.entries(SNIPPETS).find(([, s]) => s.code && s.code.trim() === trimmed);
+				if (byCode)
+					return { key: byCode[0], ...byCode[1] };
+
+				const byImport = Object.entries(SNIPPETS).find(([, s]) =>
+					s.plugin && (code.includes(`tempo-plugin-${s.plugin}`) || code.includes(`Tempo.${s.plugin}`))
+				);
+				if (byImport)
+					return { key: byImport[0], ...byImport[1] };
+			}
+			return null;
+		}
+
 		const LOGO_TEMPO = `<svg class="brand-logo" viewBox="0 0 235.319 235.319" fill="#38bdf8" style="width: 22px; height: 22px; filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.45));">
 			<path d="m201.094,29.997c2.649-0.623 4.623-2.996 4.623-5.835v-18.162c0-3.313-2.687-6-6-6h-164.114c-3.313,0-6,2.687-6,6v18.163c0,2.839 1.974,5.212 4.623,5.835 1.812,32.314 18.594,61.928 45.682,80.076l11.324,7.586-11.324,7.586c-27.089,18.147-43.871,47.762-45.682,80.076-2.649,0.623-4.623,2.996-4.623,5.835v18.163c0,3.313 2.687,6 6,6h164.114c3.313,0 6-2.687 6-6v-18.163c0-2.839-1.974-5.212-4.623-5.835-1.812-32.314-18.594-61.928-45.683-80.076l-11.324-7.586 11.324-7.586c27.089-18.148 43.871-47.763 45.683-80.077zm-159.491-17.997h152.114v6.163h-152.114v-6.163zm152.114,211.319h-152.114v-6.163h152.114v6.163zm-63.749-110.644c-1.663,1.114-2.661,2.983-2.661,4.985s0.998,3.871 2.661,4.985l18.765,12.571c23.71,15.883 38.49,41.705 40.333,69.941h-142.812c1.843-28.235 16.623-54.057 40.333-69.941l18.765-12.571c1.663-1.114 2.661-2.983 2.661-4.985s-0.998-3.871-2.661-4.985l-18.765-12.571c-23.71-15.884-38.49-41.706-40.333-69.941h142.812c-1.843,28.236-16.623,54.057-40.333,69.941l-18.765,12.571z"/>
 			<path d="m133.307,82.66h-31.295c-2.487,0-4.717,1.535-5.605,3.858-0.888,2.324-0.25,4.955 1.604,6.613l15.647,14c1.139,1.019 2.57,1.528 4,1.528s2.862-0.509 4-1.528l15.647-14c1.854-1.659 2.492-4.29 1.604-6.613-0.885-2.323-3.115-3.858-5.602-3.858z"/>
@@ -888,7 +935,7 @@
 		const urlParams = new URLSearchParams(window.location.search);
 		const isEmbed = urlParams.get('embed') === 'true' || urlParams.get('mode') === 'mini';
 		const pluginParam = urlParams.get('plugin') || urlParams.get('preset');
-		const activeSnippetMeta = SNIPPETS[pluginParam];
+		const activeSnippetMeta = resolveSnippet(pluginParam);
 		// A known preset is a plugin demo only if it names a plugin; an unknown key is treated as a plugin name.
 		const pluginName = activeSnippetMeta ? activeSnippetMeta.plugin : pluginParam;
 		const isPluginMode = Boolean(pluginName);
@@ -964,18 +1011,12 @@
 				Tempo.use(CelestialPlugin);
 
 				// Dynamically register extra plugin if specified in query param against auto-synced manifest
-				const { SUPPORTED_EXTRA_PLUGINS } = await import('./plugins.manifest.js')
-					.catch(() => ({ SUPPORTED_EXTRA_PLUGINS: {} }));
-
-				if (pluginParam && Object.prototype.hasOwnProperty.call(SUPPORTED_EXTRA_PLUGINS, pluginParam)) {
-					const targetPlugin = SUPPORTED_EXTRA_PLUGINS[pluginParam];
+				if (pluginName) {
 					try {
-						statusText.textContent = `Loading ${targetPlugin.name}...`;
-						const mod = await targetPlugin.loader();
-						const pluginObj = Object.values(mod).find(v => (typeof v === 'object' || typeof v === 'function') && v !== null && 'name' in v && 'install' in v);
-						if (pluginObj) Tempo.use(pluginObj);
+						statusText.textContent = `Loading ${pluginName}...`;
+						await ensurePluginLoaded(pluginName);
 					} catch (e) {
-						console.warn(`Plugin ${pluginParam} dynamic load:`, e);
+						console.warn(`Plugin ${pluginName} dynamic load:`, e);
 					}
 				}
 
@@ -988,8 +1029,17 @@
 
 				// Check for URL hash code or load default preset
 				const shouldAutoRun = loadFromHashOrPreset();
-				if (shouldAutoRun)
+				if (shouldAutoRun) {
 					executeCode();
+				} else if (resultBox.textContent === 'Initializing Sandbox...') {
+					const snippet = resolveSnippet(pluginParam, codeEditor.value);
+					const key = snippet?.key || snippet?.plugin || pluginParam || '';
+					resultBox.className = 'result-box';
+					resultBox.style.color = 'var(--text-dim)';
+					resultBox.textContent = key
+						? `⚡ Auto-run paused for ${key}. Press ▶ Run (Ctrl+Enter) to evaluate.`
+						: '⚡ Auto-run paused. Press ▶ Run (Ctrl+Enter) to evaluate.';
+				}
 			} catch (err) {
 				console.error(err);
 				statusText.textContent = 'Initialization failed. Check network/console.';
@@ -1154,26 +1204,48 @@
 					codeEditor.value = decodeURIComponent(atob(encoded));
 					updateLineNumbers();
 					updateEmbedFullLink();
-					if (activeSnippetMeta?.autoRun === false || codeEditor.value.includes('tempo-plugin-ai') || codeEditor.value.includes('Tempo.ai')) {
+
+					const snippet = resolveSnippet(pluginParam, codeEditor.value);
+					if (snippet?.key && Object.hasOwn(SNIPPETS, snippet.key)) {
+						presetSelect.value = snippet.key;
+					}
+
+					const isAutoRunDisabled = snippet ? snippet.autoRun === false : false;
+					if (isAutoRunDisabled) {
 						autorunToggle.checked = false;
 						if (embedAutorunToggle) embedAutorunToggle.checked = false;
+						const key = snippet.key || snippet.plugin || pluginParam || 'snippet';
+						resultBox.className = 'result-box';
+						resultBox.style.color = 'var(--text-dim)';
+						resultBox.textContent = `⚡ Auto-run paused for ${key}. Press ▶ Run (Ctrl+Enter) to evaluate.`;
+						evalTimeEl.textContent = '0.0 ms';
+						if (quotaBadge) quotaBadge.style.display = 'none';
 						return false;
 					}
-					return autorunToggle.checked;
+
+					const autoRunEnabled = autorunToggle.checked;
+					resultBox.className = 'result-box';
+					resultBox.style.color = autoRunEnabled ? 'inherit' : 'var(--text-dim)';
+					resultBox.textContent = autoRunEnabled
+						? 'Evaluating...'
+						: `⚡ Auto-run paused for ${snippet?.key || pluginParam || 'snippet'}. Press ▶ Run (Ctrl+Enter) to evaluate.`;
+					evalTimeEl.textContent = '0.0 ms';
+					if (quotaBadge) quotaBadge.style.display = 'none';
+					return autoRunEnabled;
 				} catch {
 					// Fallback if hash invalid
 				}
 			}
-			if (activeSnippetMeta) {
-				presetSelect.value = pluginParam;
-				loadPreset(pluginParam, false);
+			if (activeSnippetMeta?.key) {
+				presetSelect.value = activeSnippetMeta.key;
+				loadPreset(activeSnippetMeta.key, false);
 				return autorunToggle.checked;
 			}
 			loadPreset('quickstart', false);
 			return autorunToggle.checked;
 		}
 
-		function loadPreset(key, runNow = false) {
+		async function loadPreset(key, runNow = false) {
 			const preset = SNIPPETS[key];
 			if (preset) {
 				codeEditor.value = preset.code;
@@ -1191,12 +1263,16 @@
 					: `⚡ Auto-run paused for ${key}. Press ▶ Run (Ctrl+Enter) to evaluate.`;
 				evalTimeEl.textContent = '0.0 ms';
 				if (quotaBadge) quotaBadge.style.display = 'none';
+
+				if (preset.plugin)
+					await ensurePluginLoaded(preset.plugin);
+
 				if (runNow && isReady && autorunToggle.checked) executeCode();
 			}
 		}
 
-		presetSelect.addEventListener('change', (e) => {
-			loadPreset(e.target.value, true);
+		presetSelect.addEventListener('change', async (e) => {
+			await loadPreset(e.target.value, true);
 		});
 
 		runBtn.addEventListener('click', executeCode);
@@ -1205,6 +1281,9 @@
 		embedRunBtn?.addEventListener('click', executeCode);
 		embedAutorunToggle?.addEventListener('change', (e) => {
 			autorunToggle.checked = e.target.checked;
+		});
+		autorunToggle.addEventListener('change', (e) => {
+			if (embedAutorunToggle) embedAutorunToggle.checked = e.target.checked;
 		});
 
 		embedOpenFullBtn?.addEventListener('click', (e) => {
