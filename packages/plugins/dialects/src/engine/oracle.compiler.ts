@@ -20,6 +20,13 @@ const ROMAN_MAP: Readonly<Record<string, number>> = {
 const EPOCH_1970_PLAIN_DATE = Temporal.PlainDate.from({ year: 1970, month: 1, day: 1 });
 const JULIAN_DAY_OFFSET_1970 = 2_440_588;
 
+const REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
+const REGEX_DOT = /\./g;
+
+function escapeRegex(str: string): string {
+	return str.replace(REGEX_ESCAPE, '\\$&');
+}
+
 function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
 	if (token === token.toLowerCase()) return str.toLowerCase();
@@ -288,7 +295,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 		const index = match.index!;
 		if (index > lastIndex) {
 			const literal = mask.slice(lastIndex, index);
-			pattern += literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(literal);
 		}
 
 		const token = match[0];
@@ -296,7 +303,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 
 		if (token.startsWith('"') && token.endsWith('"')) {
 			const literal = token.slice(1, -1);
-			pattern += literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(literal);
 		} else if (upper === 'FM' || upper === 'FX') {
 			// Modifiers have no character pattern representation in the input
 		} else {
@@ -374,7 +381,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 					} else if (ORACLE_UNSUPPORTED_PARSE_TOKENS.has(upper)) {
 						return undefined;
 					} else {
-						pattern += token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+						pattern += escapeRegex(token);
 					}
 					break;
 			}
@@ -385,7 +392,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 
 	if (lastIndex < mask.length) {
 		const trailing = mask.slice(lastIndex);
-		pattern += trailing.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		pattern += escapeRegex(trailing);
 	}
 
 	const rx = new RegExp(`^${pattern}$`, 'i');
@@ -396,7 +403,9 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 /** Resolves an English month name or abbreviation to its month number. */
 function resolveMonth(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
+	return Enum.get(enums.MONTH, cap)
+		?? Enum.get(enums.MONTHS, cap)
+		?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
 /**
@@ -409,6 +418,7 @@ export function parseOracle(
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileOracleParser(mask);
 	if (!rx) return undefined;
+
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
@@ -516,7 +526,7 @@ export function parseOracle(
 
 	const mer = getGroup('mer');
 	if (mer) {
-		const clean = mer.replace(/\./g, '').toLowerCase();
+		const clean = mer.replace(REGEX_DOT, '').toLowerCase();
 		const isPm = clean.startsWith('p');
 		if (isPm && hour < 12) hour += 12;
 		else if (!isPm && hour === 12) hour = 0;
