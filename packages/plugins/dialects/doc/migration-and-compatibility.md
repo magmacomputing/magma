@@ -97,6 +97,49 @@ console.log(modernPattern);
 
 ---
 
+## Exporting Dialect Models: `Tempo.dialects.export()`
+
+To emit external dialect masks from canonical Tempo patterns (for example, generating SQL/Oracle `TO_CHAR` format models or POSIX `strftime` masks from shared application templates), use `Tempo.dialects.export()`:
+
+```typescript
+// Export canonical Tempo pattern to Oracle / SQL TO_CHAR model
+const oracleExport = Tempo.dialects.export('{YYYY}-{MM}-{DD} {HH24}:{mi}:{ss}', 'oracle');
+console.log(oracleExport.pattern);
+// Output: "YYYY-MM-DD HH24:MI:SS"
+
+// Export to POSIX strftime
+const posixExport = Tempo.dialects.export('{YYYY}-{MM}-{DD} {HH24}:{mi}:{ss}', 'strftime');
+console.log(posixExport.pattern);
+// Output: "%Y-%m-%d %H:%M:%S"
+```
+
+Any tokens that cannot be directly mapped to the target ecosystem are tracked in `unsupported`.
+
+---
+
+## Universal Cross-Dialect Conversion: `Tempo.dialects.convert()`
+
+With Tempo serving as an Intermediate Representation (IR), you can convert format masks directly between any supported external ecosystems in a single call:
+
+```typescript
+// Convert POSIX strftime directly to Oracle / SQL TO_CHAR
+const sqlMask = Tempo.dialects.convert('%Y-%m-%d %H:%M:%S', 'strftime', 'oracle');
+console.log(sqlMask.pattern);
+// Output: "YYYY-MM-DD HH24:MI:SS"
+
+// Convert Moment.js directly to POSIX strftime
+const posixMask = Tempo.dialects.convert('YYYY-MM-DD HH:mm:ss', 'moment', 'strftime');
+console.log(posixMask.pattern);
+// Output: "%Y-%m-%d %H:%M:%S"
+
+// Auto-detect source dialect
+const toLdml = Tempo.dialects.convert('%Y-%m-%d', 'ldml');
+console.log(toLdml.pattern);
+// Output: "yyyy-MM-dd"
+```
+
+---
+
 ## Drop-In API Compatibility Shims
 
 For large codebases where updating thousands of call sites simultaneously is impractical, installing `DialectsPlugin` attaches drop-in convenience methods directly onto `Tempo`:

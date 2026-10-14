@@ -6,9 +6,9 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-The **Dialects Plugin** enables Tempo to seamlessly format and parse dates using established external formatting standards, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime` (C, Python, Linux)**.
+The **Dialects Plugin** enables Tempo to seamlessly format and parse dates using established external formatting standards, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **POSIX `strftime` (C, Python, Linux)**, **Moment.js / Day.js**, and **Oracle / SQL `TO_CHAR` (PostgreSQL, Snowflake, Redshift)**.
 
-It provides transparent drop-in compatibility shims, multi-candidate fallback parsing, and an automated `.explain()` translation engine to assist incremental migrations to native Tempo `{token}` syntax.
+It provides transparent drop-in compatibility shims, multi-candidate fallback parsing, an automated `.explain()` ingestion engine, `.export()` for emitting dialect models from Tempo tokens, and `.convert()` for direct bidirectional transpilation between external ecosystems.
 
 ---
 
@@ -76,11 +76,15 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`t.dialects.sql(mask)`** | Instance | SQL / Oracle mask | `string` | Convenience alias for `t.dialects.oracle(mask)`. |
 | **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%` and SQL specifiers. |
 | **`t.dialects.explain(mask, dialect?)`** | Instance | External format mask | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
+| **`t.dialects.export(pattern, dialect?)`** | Instance | Native Tempo pattern, target dialect | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
+| **`t.dialects.convert(mask, to)`** / **`convert(mask, from, to)`** | Instance | Mask, target (or source + target) | `ConvertResult` | Converts a format mask directly from one dialect to another. |
 | **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask. |
 | **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser (first matching mask succeeds). |
 | **`Tempo.dialects.parse(input, mask, dialect?)`** | Static | Date string, mask, dialect | `Tempo` | Explicit dialect parser. |
 | **`Tempo.dialects.fromFormats(input, masks[], ...)`**| Static | Date string, candidate masks | `Tempo` | Explicit multi-candidate fallback parser. |
 | **`Tempo.dialects.explain(mask, dialect?)`** | Static | External format mask | `ExplainResult` | AST analyzer translating legacy masks into native Tempo `{token}` syntax. |
+| **`Tempo.dialects.export(pattern, dialect?)`** | Static | Native Tempo pattern, target dialect | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
+| **`Tempo.dialects.convert(mask, to)`** / **`convert(mask, from, to)`** | Static | Mask, target (or source + target) | `ConvertResult` | Converts a format mask directly from one dialect to another. |
 
 ---
 

@@ -32,6 +32,15 @@ export interface ExportResult {
 	toString(): string;
 }
 
+export interface ConvertResult {
+	readonly from: Dialect;
+	readonly to: Dialect;
+	readonly source: string;
+	readonly pattern: string;
+	readonly unsupported: readonly string[];
+	toString(): string;
+}
+
 export type DialectInput = Evaluable<string>;
 
 export interface DialectsInstanceNamespace {
@@ -64,6 +73,12 @@ export interface DialectsInstanceNamespace {
 	 * Exports a native Tempo format pattern into the corresponding external dialect format model.
 	 */
 	export(mask: string, dialect?: DialectInput): ExportResult;
+	/**
+	 * Converts a format mask directly from one dialect to another.
+	 * If fromDialect is omitted, it will be automatically detected.
+	 */
+	convert(mask: string, toDialect: DialectInput): ConvertResult;
+	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
 
 export interface DialectsStaticNamespace {
@@ -86,6 +101,12 @@ export interface DialectsStaticNamespace {
 	 * Exports a native Tempo format pattern into the corresponding external dialect format model.
 	 */
 	export(mask: string, dialect?: DialectInput): ExportResult;
+	/**
+	 * Converts a format mask directly from one dialect to another.
+	 * If fromDialect is omitted, it will be automatically detected.
+	 */
+	convert(mask: string, toDialect: DialectInput): ConvertResult;
+	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
 
 declare module '@magmacomputing/tempo' {
