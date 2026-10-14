@@ -4,13 +4,9 @@ import { formatLdml, parseLdml } from './ldml.compiler.js';
 import { formatStrftime, parseStrftime } from './strftime.compiler.js';
 import { formatOracle, parseOracle } from './oracle.compiler.js';
 
-export interface DialectOptions {
-	dialect?: any;
-	timeZone?: any;
-	calendar?: any;
-	today?: Temporal.ZonedDateTime | undefined;
-	[key: string]: any;
-}
+import { type ParseOptions as DialectOptions } from './shared.compiler.js';
+
+export type { DialectOptions };
 
 const ORACLE_DETECTION_REGEX = /\bhh(?:24|12)\b/i;
 const ORACLE_UPPER_REGEX = /\b(?:MI|SSSSS|FF[1-9]?)\b/;

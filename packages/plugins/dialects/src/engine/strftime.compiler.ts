@@ -1,7 +1,14 @@
 import { pad, WeakCache } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
-
-type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
+import {
+	type FormatterFn,
+	type ParseOptions,
+	escapeRegex,
+	resolveMonth,
+	createGroupExtractor,
+	resolveParseContext,
+	resolveTimeComponents,
+} from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const STRFTIME_PARSE_CACHE = new WeakCache<string, RegExp>();
@@ -155,7 +162,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 		const index = match.index!;
 		if (index > lastIndex) {
 			const literal = mask.slice(lastIndex, index);
-			pattern += literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(literal);
 		}
 
 		const specifier = match[1];
@@ -232,7 +239,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += `${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}`;
 				break;
 			default:
-				pattern += match[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+				pattern += escapeRegex(match[0]);
 				break;
 		}
 
@@ -241,18 +248,12 @@ export function compileStrftimeParser(mask: string): RegExp {
 
 	if (lastIndex < mask.length) {
 		const trailing = mask.slice(lastIndex);
-		pattern += trailing.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		pattern += escapeRegex(trailing);
 	}
 
 	const rx = new RegExp(`^${pattern}$`, 'i');
 	STRFTIME_PARSE_CACHE.set(mask, rx);
 	return rx;
-}
-
-/** Resolves a localized full or abbreviated English month name to its month number. */
-function resolveMonth(str: string): number | undefined {
-	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
 /**
@@ -261,26 +262,16 @@ function resolveMonth(str: string): number | undefined {
 export function parseStrftime(
 	input: string,
 	mask: string,
-	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
+	options: ParseOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileStrftimeParser(mask);
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
-	const g = match.groups;
-	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
-
-	let tz = options.timeZone ?? 'UTC';
-	const tz_offset = getGroup('tz_offset');
-	const tz_name = getGroup('tz_name');
-	if (tz_offset) {
-		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
-	} else if (tz_name) {
-		tz = tz_name;
-	}
-
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
-	const cal = options.calendar ?? 'iso8601';
+	const getGroup = createGroupExtractor(match);
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+	const { tz, today, cal } = ctx;
 
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
@@ -326,28 +317,11 @@ export function parseStrftime(
 		}
 	}
 
-	let hour = 0;
-	let minute = 0;
-	let second = 0;
+	const time = resolveTimeComponents(getGroup);
+	if (!time) return undefined;
+	const { hour, minute, second } = time;
 	let millisecond = 0;
 	let microsecond = 0;
-
-	const hh = getGroup('hh');
-	const h12 = getGroup('h12');
-	if (hh) hour = parseInt(hh, 10);
-	else if (h12) hour = parseInt(h12, 10);
-
-	const mer = getGroup('mer');
-	if (mer) {
-		const isPm = mer.toLowerCase().startsWith('p');
-		if (isPm && hour < 12) hour += 12;
-		else if (!isPm && hour === 12) hour = 0;
-	}
-
-	const mi = getGroup('mi');
-	if (mi) minute = parseInt(mi, 10);
-	const ss = getGroup('ss');
-	if (ss) second = parseInt(ss, 10);
 	const us = getGroup('us');
 	if (us) {
 		const padded = us.padEnd(6, '0').slice(0, 6);

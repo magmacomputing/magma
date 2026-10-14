@@ -1,7 +1,14 @@
 import { pad, suffix, WeakCache } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
-
-type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
+import {
+	type FormatterFn,
+	type ParseOptions,
+	escapeRegex,
+	resolveMonth,
+	createGroupExtractor,
+	resolveParseContext,
+	resolveTimeComponents,
+} from './shared.compiler.js';
 
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
@@ -221,7 +228,7 @@ export function compileLdmlParser(mask: string): RegExp {
 		const index = match.index!;
 		if (index > lastIndex) {
 			const literal = mask.slice(lastIndex, index);
-			pattern += literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(literal);
 		}
 
 		const token = match[0];
@@ -229,7 +236,7 @@ export function compileLdmlParser(mask: string): RegExp {
 			const unquoted = token.length === 2 && token === "''"
 				? "'"
 				: token.slice(1, -1).replace(/''/g, "'");
-			pattern += unquoted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(unquoted);
 		} else {
 			switch (token) {
 				case 'yyyy':
@@ -348,7 +355,7 @@ export function compileLdmlParser(mask: string): RegExp {
 					break;
 
 				default:
-					pattern += token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+					pattern += escapeRegex(token);
 					break;
 			}
 		}
@@ -358,18 +365,12 @@ export function compileLdmlParser(mask: string): RegExp {
 
 	if (lastIndex < mask.length) {
 		const trailing = mask.slice(lastIndex);
-		pattern += trailing.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		pattern += escapeRegex(trailing);
 	}
 
 	const rx = new RegExp(`^${pattern}$`, 'i');
 	PARSE_REGEX_CACHE.set(mask, rx);
 	return rx;
-}
-
-/** Resolves a localized full or abbreviated English month name to its month number. */
-function resolveMonth(str: string): number | undefined {
-	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
 /**
@@ -378,26 +379,16 @@ function resolveMonth(str: string): number | undefined {
 export function parseLdml(
 	input: string,
 	mask: string,
-	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
+	options: ParseOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileLdmlParser(mask);
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
-	const g = match.groups;
-	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
-
-	let tz = options.timeZone ?? 'UTC';
-	const tz_offset = getGroup('tz_offset');
-	const tz_name = getGroup('tz_name');
-	if (tz_offset) {
-		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
-	} else if (tz_name) {
-		tz = tz_name;
-	}
-
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
-	const cal = options.calendar ?? 'iso8601';
+	const getGroup = createGroupExtractor(match);
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+	const { tz, today, cal } = ctx;
 
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
@@ -430,51 +421,13 @@ export function parseLdml(
 		day = today.day;
 	}
 
-	let hour = 0;
-	let minute = 0;
-	let second = 0;
+	const time = resolveTimeComponents(getGroup);
+	if (!time) return undefined;
+	const { hour, minute, second } = time;
 	let millisecond = 0;
-
-	const hh = getGroup('hh');
-	const h24 = getGroup('h24');
-	const h12 = getGroup('h12');
-	if (hh) {
-		const val = parseInt(hh, 10);
-		if (val < 0 || val > 23) return undefined;
-		hour = val;
-	} else if (h24) {
-		const val = parseInt(h24, 10);
-		if (val < 1 || val > 24) return undefined;
-		hour = val === 24 ? 0 : val;
-	} else if (h12) {
-		const val = parseInt(h12, 10);
-		if (val < 1 || val > 12) return undefined;
-		hour = val;
-	}
-
-	const mer = getGroup('mer');
-	if (mer) {
-		const isPm = mer.toLowerCase().startsWith('p');
-		if (isPm && hour < 12) hour += 12;
-		else if (!isPm && hour === 12) hour = 0;
-	}
-
-	const mi = getGroup('mi');
-	if (mi) {
-		const val = parseInt(mi, 10);
-		if (val < 0 || val > 59) return undefined;
-		minute = val;
-	}
-	const ss = getGroup('ss');
-	if (ss) {
-		const val = parseInt(ss, 10);
-		if (val < 0 || val > 59) return undefined;
-		second = val;
-	}
 	const ms = getGroup('ms');
-	if (ms) {
+	if (ms)
 		millisecond = parseInt(ms.padEnd(3, '0').slice(0, 3), 10);
-	}
 
 	try {
 		return Temporal.PlainDateTime.from(

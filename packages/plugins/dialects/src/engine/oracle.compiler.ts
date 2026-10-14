@@ -1,7 +1,14 @@
 import { pad, WeakCache, isNumber } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
-
-type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
+import {
+	type FormatterFn,
+	type ParseOptions,
+	escapeRegex,
+	resolveMonth,
+	createGroupExtractor,
+	resolveParseContext,
+	resolveTimeComponents,
+} from './shared.compiler.js';
 
 const ORACLE_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const ORACLE_PARSE_CACHE = new WeakCache<string, RegExp>();
@@ -19,13 +26,6 @@ const ROMAN_MAP: Readonly<Record<string, number>> = {
 
 const EPOCH_1970_PLAIN_DATE = Temporal.PlainDate.from({ year: 1970, month: 1, day: 1 });
 const JULIAN_DAY_OFFSET_1970 = 2_440_588;
-
-const REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
-const REGEX_DOT = /\./g;
-
-function escapeRegex(str: string): string {
-	return str.replace(REGEX_ESCAPE, '\\$&');
-}
 
 function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
@@ -400,21 +400,13 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 	return rx;
 }
 
-/** Resolves an English month name or abbreviation to its month number. */
-function resolveMonth(str: string): number | undefined {
-	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap)
-		?? Enum.get(enums.MONTHS, cap)
-		?? Enum.get(enums.MONTH, cap.slice(0, 3));
-}
-
 /**
  * Parses an input string with an Oracle TO_CHAR / TO_DATE format model.
  */
 export function parseOracle(
 	input: string,
 	mask: string,
-	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
+	options: ParseOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileOracleParser(mask);
 	if (!rx) return undefined;
@@ -422,29 +414,10 @@ export function parseOracle(
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
-	const g = match.groups;
-	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
-
-	let tz = options.timeZone ?? 'UTC';
-	const tz_offset = getGroup('tz_offset');
-	const tz_name = getGroup('tz_name');
-	if (tz_offset) {
-		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
-	} else if (tz_name) {
-		tz = tz_name;
-	}
-
-	let today: Temporal.ZonedDateTime;
-	if (options.today) {
-		today = options.today;
-	} else {
-		try {
-			today = Temporal.Now.zonedDateTimeISO(tz);
-		} catch {
-			return undefined;
-		}
-	}
-	const cal = options.calendar ?? 'iso8601';
+	const getGroup = createGroupExtractor(match);
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+	const { tz, today, cal } = ctx;
 
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
@@ -505,46 +478,12 @@ export function parseOracle(
 		day = today.day;
 	}
 
-	let hour = 0;
-	let minute = 0;
-	let second = 0;
+	const time = resolveTimeComponents(getGroup);
+	if (!time) return undefined;
+	const { hour, minute, second } = time;
 	let millisecond = 0;
 	let microsecond = 0;
 	let nanosecond = 0;
-
-	const hh = getGroup('hh');
-	const h12 = getGroup('h12');
-	if (hh) {
-		const val = parseInt(hh, 10);
-		if (val < 0 || val > 23) return undefined;
-		hour = val;
-	} else if (h12) {
-		const val = parseInt(h12, 10);
-		if (val < 1 || val > 12) return undefined;
-		hour = val;
-	}
-
-	const mer = getGroup('mer');
-	if (mer) {
-		const clean = mer.replace(REGEX_DOT, '').toLowerCase();
-		const isPm = clean.startsWith('p');
-		if (isPm && hour < 12) hour += 12;
-		else if (!isPm && hour === 12) hour = 0;
-	}
-
-	const mi = getGroup('mi');
-	if (mi) {
-		const val = parseInt(mi, 10);
-		if (val < 0 || val > 59) return undefined;
-		minute = val;
-	}
-
-	const ss = getGroup('ss');
-	if (ss) {
-		const val = parseInt(ss, 10);
-		if (val < 0 || val > 59) return undefined;
-		second = val;
-	}
 
 	const usVal = getGroup('us');
 	if (usVal) {
