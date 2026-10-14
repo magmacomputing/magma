@@ -1,4 +1,3 @@
-import { describe, it, expect, beforeAll } from 'vitest';
 import { Tempo } from '@magmacomputing/tempo';
 import { DialectsPlugin, DIALECT } from '../src/index.js';
 
