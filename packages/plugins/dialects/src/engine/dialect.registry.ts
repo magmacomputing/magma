@@ -12,7 +12,8 @@ export interface DialectOptions {
 	[key: string]: any;
 }
 
-const ORACLE_DETECTION_REGEX = /\b(?:hh24|hh12|mi|ff[1-9]?)\b/i;
+const ORACLE_DETECTION_REGEX = /\bhh(?:24|12)\b/i;
+const ORACLE_UPPER_REGEX = /\b(?:MI|SSSSS|FF[1-9]?)\b/;
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
@@ -22,7 +23,7 @@ export function detectDialect(mask: string, explicitDialect?: any): Dialect {
 	if (resolved) return normalizeDialect(String(resolved));
 	if (mask.includes('%')) return DIALECT.Strftime;
 
-	return (ORACLE_DETECTION_REGEX.test(mask))
+	return (ORACLE_DETECTION_REGEX.test(mask) || ORACLE_UPPER_REGEX.test(mask))
 		? DIALECT.Oracle
 		: DIALECT.Ldml;
 }

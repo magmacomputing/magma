@@ -83,4 +83,44 @@ describe('Dialect Explain & Migration Helper', () => {
 		const res2 = dt.dialects.explain('%F %T');
 		expect(res2.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
 	});
+
+	it('translates Oracle masks preserving case rules, FM toggling, and unsupported tokens', () => {
+		const res = Tempo.dialects.explain('IYYY-IW-D J', DIALECT.Oracle);
+		expect(res.pattern).toBe('{yw}-{wy}-{dow:locale} J');
+		const jToken = res.tokens.find(t => t.source === 'J');
+		expect(jToken?.tempo).toBe('');
+		expect(jToken?.desc).toContain('Julian day');
+
+		// Case-insensitive token matching for recognized single letters (e.g. 'd')
+		const resLowerD = Tempo.dialects.explain('YYYY-MM-d', DIALECT.Oracle);
+		expect(resLowerD.pattern).toBe('{yyyy}-{mm}-{dow:locale}');
+
+		// Fill Mode (FM) toggles unpadded tokens
+		const resFm = Tempo.dialects.explain('FMMM/DD/YYYY FMHH24:MI', DIALECT.Oracle);
+		expect(resFm.pattern).toBe('{mm:raw}/{dd:raw}/{yyyy} {hh}:{mi}');
+
+		// Dotted meridiem tokens preserve dots with {mer:upper:dots}
+		const resDots = Tempo.dialects.explain('HH12:MI:SS A.M.', DIALECT.Oracle);
+		expect(resDots.pattern).toBe('{h12}:{mi}:{ss} {mer:upper:dots}');
+
+		// RM does not map to {mm}
+		const resRm = Tempo.dialects.explain('DD-RM-YYYY', DIALECT.Oracle);
+		expect(resRm.pattern).toBe('{dd}-RM-{yyyy}');
+
+		// Standard Oracle format model explanation
+		const exp = Tempo.dialects.explain('YYYY-MM-DD HH24:MI:SS', 'oracle');
+		expect(exp.dialect).toBe(DIALECT.Oracle);
+		expect(exp.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+		expect(exp.toString()).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+		expect(exp.tokens.length).toBe(6);
+
+		// With sql alias
+		const expSql = Tempo.dialects.explain('YYYY-MM-DD HH24:MI:SS', 'sql');
+		expect(expSql.dialect).toBe(DIALECT.Oracle);
+		expect(expSql.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+
+		// Double quoted literals and fractional seconds
+		const expLit = Tempo.dialects.explain('YYYY"-"MM"-"DD HH24:MI:SS.FF3', 'oracle');
+		expect(expLit.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}');
+	});
 });

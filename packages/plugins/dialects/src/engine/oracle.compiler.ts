@@ -17,6 +17,9 @@ const ROMAN_MAP: Readonly<Record<string, number>> = {
 	vii: 7, viii: 8, ix: 9, x: 10, xi: 11, xii: 12,
 };
 
+const EPOCH_1970_PLAIN_DATE = Temporal.PlainDate.from({ year: 1970, month: 1, day: 1 });
+const JULIAN_DAY_OFFSET_1970 = 2_440_588;
+
 function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
 	if (token === token.toLowerCase()) return str.toLowerCase();
@@ -62,7 +65,7 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 			const literal = token.slice(1, -1);
 			parts.push(() => literal);
 		} else if (upper === 'FM') {
-			fillMode = true;
+			fillMode = !fillMode;
 		} else if (upper === 'FX') {
 			// Format exact - parse only modifier
 		} else {
@@ -83,16 +86,16 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					parts.push((z) => pad(Math.abs(z.year) % 100, 2));
 					break;
 				case 'IYY':
-					parts.push((z) => pad(Math.abs(((z as any).yearOfWeek ?? z.year)) % 1000, 3));
+					parts.push((z) => pad(Math.abs(getIsoWeek(z).yearOfWeek) % 1000, 3));
 					break;
 				case 'IY':
-					parts.push((z) => pad(Math.abs(((z as any).yearOfWeek ?? z.year)) % 100, 2));
+					parts.push((z) => pad(Math.abs(getIsoWeek(z).yearOfWeek) % 100, 2));
 					break;
 				case 'Y':
 					parts.push((z) => String(Math.abs(z.year) % 10));
 					break;
 				case 'I':
-					parts.push((z) => String(Math.abs(((z as any).yearOfWeek ?? z.year)) % 10));
+					parts.push((z) => String(Math.abs(getIsoWeek(z).yearOfWeek) % 10));
 					break;
 
 				case 'MM':
@@ -139,7 +142,10 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					parts.push((z) => String(z.dayOfWeek));
 					break;
 				case 'J':
-					parts.push((z) => String(Math.floor((Number(z.epochMilliseconds) / 86400000) + 2440587.5)));
+					parts.push((z) => {
+						const pd = z.toPlainDate().withCalendar('iso8601');
+						return String(JULIAN_DAY_OFFSET_1970 + pd.since(EPOCH_1970_PLAIN_DATE).days);
+					});
 					break;
 
 				case 'HH24':
@@ -178,9 +184,14 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					break;
 
 				case 'IW':
-				case 'WW':
 					parts.push((z) => {
 						const w = getIsoWeek(z).weekOfYear;
+						return isFm ? String(w) : pad(w, 2);
+					});
+					break;
+				case 'WW':
+					parts.push((z) => {
+						const w = Math.ceil(z.dayOfYear / 7);
 						return isFm ? String(w) : pad(w, 2);
 					});
 					break;
@@ -279,8 +290,10 @@ export function compileOracleParser(mask: string): RegExp {
 					pattern += group('iyyy', '\\d{4}');
 					break;
 				case 'YY':
-				case 'RR':
 					pattern += group('yy', '\\d{2}');
+					break;
+				case 'RR':
+					pattern += group('rr', '\\d{2}');
 					break;
 				case 'MM':
 					pattern += group('mm', '\\d{1,2}');
@@ -326,7 +339,7 @@ export function compileOracleParser(mask: string): RegExp {
 				case 'PM':
 				case 'A.M.':
 				case 'P.M.':
-					pattern += group('mer', '[AaPp]\\.?[Mm]?\\.?');
+					pattern += group('mer', '[AaPp]\\.?[Mm]\\.?');
 					break;
 				case 'TZH:TZM':
 				case 'OF':
@@ -395,12 +408,22 @@ export function parseOracle(
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
+	const rrVal = getGroup('rr');
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
 	} else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
-		// Oracle RR 2-digit pivot logic:
-		year = yy >= 50 ? 1900 + yy : 2000 + yy;
+		const currentCentury = Math.floor(today.year / 100) * 100;
+		year = currentCentury + yy;
+	} else if (rrVal) {
+		const rr = parseInt(rrVal, 10);
+		const currentCentury = Math.floor(today.year / 100) * 100;
+		const curYY = today.year % 100;
+		if (curYY < 50) {
+			year = rr < 50 ? currentCentury + rr : currentCentury - 100 + rr;
+		} else {
+			year = rr < 50 ? currentCentury + 100 + rr : currentCentury + rr;
+		}
 	}
 
 	let month = 1;

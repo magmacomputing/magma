@@ -6,8 +6,7 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 
 	const dt = new Tempo('2026-10-24T15:30:45.123456');
 
-	describe('Formatting', () => {
-		it('formats standard Oracle/SQL format models via .oracle() and .sql()', () => {
+	it('formats standard Oracle/SQL format models via .oracle() and .sql()', () => {
 			expect(dt.dialects.oracle('YYYY-MM-DD HH24:MI:SS')).toBe('2026-10-24 15:30:45');
 			expect(dt.dialects.sql('YYYY-MM-DD HH24:MI:SS')).toBe('2026-10-24 15:30:45');
 			expect(dt.format('YYYY-MM-DD HH24:MI:SS', { dialect: DIALECT.Oracle })).toBe('2026-10-24 15:30:45');
@@ -47,12 +46,14 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(dt.dialects.sql('HH:MI:SS a.m.')).toBe('03:30:45 p.m.');
 		});
 
-		it('handles FM (Fill Mode) to suppress padding', () => {
+		it('handles FM (Fill Mode) to toggle padding suppression', () => {
 			const spring = new Tempo('2026-04-09T08:05:07');
 			// Without FM: zero-padded
 			expect(spring.dialects.sql('MM/DD/YYYY HH24:MI:SS')).toBe('04/09/2026 08:05:07');
-			// With FM: unpadded
-			expect(spring.dialects.sql('FMMM/FMDD/YYYY FMHH24:FMMI:FMSS')).toBe('4/9/2026 8:5:7');
+			// With single FM prefix: unpadded across subsequent elements
+			expect(spring.dialects.sql('FMMM/DD/YYYY HH24:MI:SS')).toBe('4/9/2026 8:5:7');
+			// Second FM toggles padding back on
+			expect(spring.dialects.sql('FMMM/FMDD/YYYY')).toBe('4/09/2026');
 		});
 
 		it('handles double-quoted literal text in format models', () => {
@@ -66,18 +67,30 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(dt.dialects.sql('YYYY-MM-DD HH24:MI:SS.FF')).toBe('2026-10-24 15:30:45.123456');
 		});
 
-		it('formats week, quarter, and day of year (IW, Q, DDD)', () => {
+		it('formats week, quarter, Julian day, and day of year (IW, WW, Q, J, DDD)', () => {
 			expect(dt.dialects.sql('YYYY-"W"IW-D')).toBe('2026-W43-6');
+			expect(dt.dialects.sql('WW')).toBe('43');
 			expect(dt.dialects.sql('YYYY-"Q"Q')).toBe('2026-Q4');
 			expect(dt.dialects.sql('DDD')).toBe('297');
+			expect(dt.dialects.sql('J')).toBe('2461338');
+
+			// Jan 8 is always WW = 2 (day 8 of year)
+			const jan8 = new Tempo('2026-01-08T12:00:00Z');
+			expect(jan8.dialects.sql('WW')).toBe('02');
+		});
+
+		it('formats ISO week-year tokens (IYYY, IYY, IY, I)', () => {
+			const dec31 = new Tempo('2024-12-30T10:00:00Z'); // Week 1 of ISO year 2025
+			expect(dec31.dialects.sql('IYYY-IW')).toBe('2025-01');
+			expect(dec31.dialects.sql('IYY')).toBe('025');
+			expect(dec31.dialects.sql('IY')).toBe('25');
+			expect(dec31.dialects.sql('I')).toBe('5');
 		});
 
 		it('auto-detects Oracle dialect with distinct tokens (HH24, MI, FF)', () => {
 			expect(dt.dialects.format('YYYY-MM-DD HH24:MI:SS')).toBe('2026-10-24 15:30:45');
 		});
-	});
 
-	describe('Parsing', () => {
 		it('parses standard ISO-like timestamps with YYYY-MM-DD HH24:MI:SS', () => {
 			const t = Tempo.dialects.parse('2026-10-24 15:30:45', 'YYYY-MM-DD HH24:MI:SS', 'oracle');
 			expect(t.isValid).toBe(true);
@@ -145,6 +158,31 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(t.dd).toBe(24);
 		});
 
+		it('parses two-digit years with YY (current century) and RR (pivot century)', () => {
+			const today2026 = new Tempo('2026-05-15T12:00:00Z').toDateTime();
+
+			// YY always adopts current century (2000s in 2026)
+			const tYY = Tempo.dialects.parse('85-10-24', 'YY-MM-DD', 'oracle', { today: today2026 });
+			expect(tYY.isValid).toBe(true);
+			expect(tYY.yy).toBe(2085);
+
+			// RR pivots: in 2026 (curYY < 50), 85 >= 50 goes to previous century (1985)
+			const tRR = Tempo.dialects.parse('85-10-24', 'RR-MM-DD', 'oracle', { today: today2026 });
+			expect(tRR.isValid).toBe(true);
+			expect(tRR.yy).toBe(1985);
+
+			// RR: 26 < 50 goes to current century (2026)
+			const tRR2 = Tempo.dialects.parse('26-10-24', 'RR-MM-DD', 'oracle', { today: today2026 });
+			expect(tRR2.isValid).toBe(true);
+			expect(tRR2.yy).toBe(2026);
+		});
+
+		it('parses dotted meridiem markers (A.M. / P.M.)', () => {
+			const t = Tempo.dialects.parse('03:30:45 P.M.', 'HH12:MI:SS A.M.', 'oracle');
+			expect(t.isValid).toBe(true);
+			expect(t.hh).toBe(15);
+		});
+
 		it('parses day of year (DDD)', () => {
 			const t = Tempo.dialects.parse('2026-297', 'YYYY-DDD', 'oracle');
 			expect(t.isValid).toBe(true);
@@ -152,30 +190,4 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(t.mm).toBe(10);
 			expect(t.dd).toBe(24);
 		});
-	});
-
-	describe('Explain', () => {
-		it('explains Oracle/SQL format models into Tempo token syntax', () => {
-			const exp = Tempo.dialects.explain('YYYY-MM-DD HH24:MI:SS', 'oracle');
-			expect(exp.dialect).toBe(DIALECT.Oracle);
-			expect(exp.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
-			expect(exp.toString()).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
-			expect(exp.tokens.length).toBe(6);
-		});
-
-		it('explains with sql alias and auto-detect', () => {
-			const exp1 = Tempo.dialects.explain('YYYY-MM-DD HH24:MI:SS', 'sql');
-			expect(exp1.dialect).toBe(DIALECT.Oracle);
-			expect(exp1.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
-
-			const exp2 = dt.dialects.explain('YYYY-MM-DD HH24:MI:SS');
-			expect(exp2.dialect).toBe(DIALECT.Oracle);
-			expect(exp2.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
-		});
-
-		it('explains double quoted literals and fractional seconds', () => {
-			const exp = Tempo.dialects.explain('YYYY"-"MM"-"DD HH24:MI:SS.FF3', 'oracle');
-			expect(exp.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}');
-		});
-	});
 });
