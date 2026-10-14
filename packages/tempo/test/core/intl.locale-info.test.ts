@@ -117,8 +117,17 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 			const tSetWy = t.set({ wy: 35 });
 			expect(tSetWy.wy).toBe(35);
+			expect(tSetWy.woy).toBe(35);
 			expect(tSetWy.dow).toBe(3);
 			expect(tSetWy.yw).toBe(2026);
+			expect(tSetWy.yow).toBe(2026);
+
+			const tSetWoy = t.set({ woy: 35 });
+			expect(tSetWoy.wy).toBe(35);
+			expect(tSetWoy.woy).toBe(35);
+			expect(tSetWoy.dow).toBe(3);
+			expect(tSetWoy.yw).toBe(2026);
+			expect(tSetWoy.yow).toBe(2026);
 
 			const tSetLowercase = t.set({ isoweek: 5 });
 			expect(tSetLowercase.wy).toBe(5);
@@ -128,10 +137,14 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			// Across year boundary: 2025-12-30 is Tuesday of week 1 of 2026
 			const tBoundary = new Tempo('2025-12-30T10:00:00Z');
 			expect(tBoundary.yw).toBe(2026);
+			expect(tBoundary.yow).toBe(2026);
 			expect(tBoundary.wy).toBe(1);
+			expect(tBoundary.woy).toBe(1);
 			const tTarget = tBoundary.set({ isoWeek: 25 });
 			expect(tTarget.yw).toBe(2026);
+			expect(tTarget.yow).toBe(2026);
 			expect(tTarget.wy).toBe(25);
+			expect(tTarget.woy).toBe(25);
 			expect(tTarget.dow).toBe(2);
 
 			// Clamping to maxWeeks within the ISO year (2024 has 52 ISO weeks)
@@ -151,15 +164,26 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			// 2026-05-20T14:30:15Z is Wednesday (dow: 3) of week 21, ISO year 2026
 			const t = new Tempo('2026-05-20T14:30:15Z');
 			expect(t.yw).toBe(2026);
+			expect(t.yow).toBe(2026);
 			expect(t.wy).toBe(21);
+			expect(t.woy).toBe(21);
 			expect(t.dow).toBe(3);
 
 			// Shift to ISO year 2028
 			const t2028 = t.set({ yw: 2028 });
 			expect(t2028.yw).toBe(2028);
+			expect(t2028.yow).toBe(2028);
 			expect(t2028.wy).toBe(21);
+			expect(t2028.woy).toBe(21);
 			expect(t2028.dow).toBe(3);
 			expect(t2028.format('{hh}:{mi}:{ss}')).toBe('14:30:15');
+
+			// Alias yow
+			const tYow = t.set({ yow: 2028 });
+			expect(tYow.yw).toBe(2028);
+			expect(tYow.yow).toBe(2028);
+			expect(tYow.wy).toBe(21);
+			expect(tYow.woy).toBe(21);
 
 			// Alias isoYear
 			const tIsoYear = t.set({ isoYear: 2029 });

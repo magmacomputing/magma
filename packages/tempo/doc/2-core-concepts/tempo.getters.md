@@ -50,8 +50,8 @@ console.log(t.zdt.monthCode);    // 'M10'
 
 | Getter | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.yw` | `number` | 4-digit ISO week-numbering year | `2026` |
-| `.wy` | `number` | ISO week number of the year (1-53) | `43` |
+| `.yow` | `number` | 4-digit ISO week-numbering year | `2026` |
+| `.woy` | `number` | ISO week number of the year (1-53) | `43` |
 | `.dow` | `number` | ISO weekday number (1 = Mon, 7 = Sun) | `6` |
 | `.doy` | `number` | Day of the year (1-366) | `297` |
 

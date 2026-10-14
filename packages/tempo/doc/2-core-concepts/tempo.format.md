@@ -109,9 +109,8 @@ Tempo.use(FormatModule);
 | `{yy}` | 2-digit Year | `26` |
 | `{eon}` | Absolute Year within Era | `200` |
 | `{era}` | Era Designator (e.g., AD/BC, CE/BCE) | `AD` |
-| `{yywy}` | ISO Year & Week | `202617` |
-| `{yw}` | ISO Year of Week | `2026` |
-| `{wy}` | Zero-padded ISO Week of Year | `43` |
+| `{yow}` | ISO Year of Week | `2026` |
+| `{woy}` | Zero-padded ISO Week of Year | `43` |
 | `{mon}` | Full Month Name | `October` |
 | `{mmm}` | Short Month Name | `Oct` |
 | `{mm}` | Zero-padded Month | `10` |
@@ -119,8 +118,8 @@ Tempo.use(FormatModule);
 | `{wkd}` | Full Weekday Name | `Saturday` |
 | `{www}` | Short Weekday Name | `Sat` |
 | `{dow}` | ISO Day of Week (1=Mon, 7=Sun) | `6` |
-| `{intl.<prop>}` | Regional metadata via `Intl.LocaleInfo` (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) | `US`, `Latn`, `7`, `ltr` |
 | `{doy}` | Day of Year (1-366) | `297` |
+| `{intl.<prop>}` | Regional metadata via `Intl.LocaleInfo` (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) | `US`, `Latn`, `7`, `ltr` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
 | `{h24}` | Zero-padded Hour synonym (24h) | `15` |
 | `{h12}` | Zero-padded Hour (12h) plus meridiem | `03pm` |

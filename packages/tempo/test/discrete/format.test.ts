@@ -25,10 +25,15 @@ describe('Tempo.format() refinements', () => {
     expect(typeof t2.format('{dd}')).toBe('string');
   })
 
-  it('should handle yw for ISO year', () => {
+  it('should handle yw and yow for ISO year, and wy / woy for ISO week', () => {
     const t3 = new Tempo('2024-12-30');										// Monday, Week 1 of 2025
     expect(t3.yw).toBe(2025);
+    expect(t3.yow).toBe(2025);
+    expect(t3.wy).toBe(1);
+    expect(t3.woy).toBe(1);
     expect(t3.format('{yw}{ww}')).toBe('202501');
+    expect(t3.format('{yow}{woy}')).toBe('202501');
+    expect(t3.format('{yywoy}')).toBe('202501');
     expect(typeof t3.format('{yw}{ww}')).toBe('string');
   })
 

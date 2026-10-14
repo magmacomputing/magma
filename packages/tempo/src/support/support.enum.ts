@@ -241,12 +241,13 @@ export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
 export const LOCALE = proxify(STATE.LOCALE, true, true);
 
 /** date-time element tokens */
-const elementKeys = ['yy', 'mm', 'wy', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
+const elementKeys = ['yy', 'mm', 'wy', 'ww', 'woy', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
 	/** Year element */ yy: 'year',
 	/** Month element */ mm: 'month',
-	/** ISO week number element */ wy: 'week',
+	/** @internal ISO week number element */ wy: 'week',
 	/** Week element */ ww: 'week',
+	/** ISO week number element */ woy: 'week',
 	/** Day element */ dd: 'day',
 	/** Hour element */ hh: 'hour',
 	/** Minute element */ mi: 'minute',

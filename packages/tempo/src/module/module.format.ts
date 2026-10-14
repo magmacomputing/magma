@@ -291,9 +291,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy': res = pad(zdt.year % 100); break;
-			case 'yw': res = pad(getISOWeekOfYear(zdt).yearOfWeek, 4); break;
-			case 'ww': case 'wy': res = pad(getISOWeekOfYear(zdt).weekOfYear); break;
-			case 'yyww': case 'yywy': {
+			case 'yw': case 'yow': res = pad(getISOWeekOfYear(zdt).yearOfWeek, 4); break;
+			case 'ww': case 'wy': case 'woy': res = pad(getISOWeekOfYear(zdt).weekOfYear); break;
+			case 'yyww': case 'yywy': case 'yywoy': {
 				const { weekOfYear, yearOfWeek } = getISOWeekOfYear(zdt);
 				res = pad(yearOfWeek, 4) + pad(weekOfYear);
 				break;

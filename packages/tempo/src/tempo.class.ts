@@ -1854,12 +1854,14 @@ export class Tempo {
 	 * @deprecated Use `eon` (Tempo canonical) or `zdt.eraYear` instead. To be removed in v5.0.0.
 	 */
 	get eraYear() { return this.toDateTime().eraYear; }
-	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
+	/** @internal 4-digit ISO week-numbering year */					get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
+	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
-	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/**
 	 * ISO week number of the year.
-	 * @deprecated Use `wy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
+	 * @deprecated Use `woy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
 	 */
 	get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
