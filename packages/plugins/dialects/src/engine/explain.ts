@@ -199,7 +199,7 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	'p.m.': { tempo: '{mer:dots}', desc: 'a.m./p.m. marker' },
 	IW: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
 	WW: { tempo: '', desc: 'Week of year (01-53, starting Jan 1; unsupported standalone token in Tempo)' },
-	W: { tempo: '{#week}', desc: 'Week of month (1-5)' },
+	W: { tempo: '', desc: 'Week of month (1-5; unsupported standalone token in Tempo)' },
 	Q: { tempo: '{#quarter}', desc: 'Quarter number 1-4 (via #quarter Term)' },
 	'TZH:TZM': { tempo: '{tz:offset}', desc: 'Time zone offset (e.g. +08:00)' },
 	TZH: { tempo: '', desc: 'Time zone offset hours (unsupported standalone token in Tempo)' },
