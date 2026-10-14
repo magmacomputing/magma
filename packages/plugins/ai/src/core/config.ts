@@ -34,7 +34,7 @@ export const DEFAULT_PROVIDERS: Readonly<Record<string, Partial<AiProvider>>> = 
 	groq: {
 		url: 'https://api.groq.com/openai/v1/chat/completions',
 		models: {
-			default: 'openai/gpt-oss-20b',
+			default: 'openai/gpt-oss-120b',
 			fast: 'openai/gpt-oss-20b',
 			large: 'openai/gpt-oss-120b'
 		},

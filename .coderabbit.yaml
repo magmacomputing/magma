@@ -1,5 +1,6 @@
 # .coderabbit.yaml
 reviews:
+  review_status: false
   auto_review:
     enabled: true
     auto_pause_after_reviewed_commits: 0
@@ -12,7 +13,7 @@ reviews:
     - "!**/public/*.html"         # Ignore HTML bundles and demo scripts
     - "!**/public/llms*.txt"      # Ignore LLM context bundles
     - "!**/llms*.txt"             # Ignore root or nested LLM context files
-    - "!**/public/providers.v1.json" # Ignore static provider definitions
+    - "!**/public/providers.v1.*" # Ignore static provider definitions (.json and .jsonc)
     - "!**/doc/api/**"            # Ignore ONLY the generated TypeDoc API documentation
     - "!**/.vitepress/cache/**"   # Ignore VitePress cache
     - "!**/.vitepress/dist/**"    # Ignore VitePress build output

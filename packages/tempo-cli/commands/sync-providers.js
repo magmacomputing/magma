@@ -22,8 +22,8 @@ const PROVIDER_REGISTRY = {
 		url: 'https://api.groq.com/openai/v1/models',
 		extract: data => (data.data || []).map(m => m.id),
 		selectRecommended: (models, current) =>
-			models.find(m => m === 'openai/gpt-oss-20b')
-			?? models.find(m => m === 'openai/gpt-oss-120b')
+			models.find(m => m === 'openai/gpt-oss-120b' || m === 'gpt-oss-120b')
+			?? models.find(m => m === 'openai/gpt-oss-20b' || m === 'gpt-oss-20b')
 			?? models.find(m => m === 'qwen/qwen3.6-27b')
 			?? current
 	},
@@ -222,7 +222,7 @@ Options:
 
 	const providerEntries = Object.entries(providers).map(([id, prov], idx, arr) => {
 		const comment = PROVIDER_COMMENTS[id] || (PROVIDER_REGISTRY[id]?.name ? `${PROVIDER_REGISTRY[id].name}: AI inference provider` : `${id}: AI inference provider`);
-		const jsonStr = JSON.stringify(prov, null, 6).replace(/^/gm, '    ').trim();
+		const jsonStr = JSON.stringify(prov, null, 2).replace(/^/gm, '    ').trim();
 		const comma = idx < arr.length - 1 ? ',' : '';
 		return `    // ${comment}\n    "${id}": ${jsonStr}${comma}`;
 	}).join('\n');
