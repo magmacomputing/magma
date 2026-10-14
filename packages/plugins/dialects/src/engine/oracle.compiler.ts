@@ -471,7 +471,9 @@ export function parseOracle(
 		day = parseInt(dd, 10);
 	} else if (doy && !mm && !month_name && !month_abbr) {
 		const dVal = parseInt(doy, 10);
-		const p = Temporal.PlainDate.from({ year, month: 1, day: 1 }).add({ days: dVal - 1 });
+		const jan1 = Temporal.PlainDate.from({ year, month: 1, day: 1 });
+		if (dVal < 1 || dVal > jan1.daysInYear) return undefined;
+		const p = jan1.add({ days: dVal - 1 });
 		month = p.month;
 		day = p.day;
 	} else if (!hasYear && !mm && !month_name && !month_abbr) {

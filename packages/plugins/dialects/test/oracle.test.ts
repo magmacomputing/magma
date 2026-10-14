@@ -203,6 +203,14 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(t.yy).toBe(2026);
 			expect(t.mm).toBe(10);
 			expect(t.dd).toBe(24);
+
+			const tInvalidDoy = Tempo.dialects.parse('2026-366', 'YYYY-DDD', 'oracle', { error: 'catch' });
+			expect(tInvalidDoy.isValid).toBe(false);
+
+			const tValidLeapDoy = Tempo.dialects.parse('2024-366', 'YYYY-DDD', 'oracle');
+			expect(tValidLeapDoy.isValid).toBe(true);
+			expect(tValidLeapDoy.mm).toBe(12);
+			expect(tValidLeapDoy.dd).toBe(31);
 		});
 
 		it('rejects invalid out-of-range calendar dates using overflow reject', () => {
