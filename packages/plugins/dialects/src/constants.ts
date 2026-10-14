@@ -9,10 +9,12 @@ export const DIALECT: Enum.wrap<{
 	Ldml: 'ldml';
 	Strftime: 'strftime';
 	Moment: 'moment';
+	Oracle: 'oracle';
 }> = enumify({
 	Ldml: 'ldml',
 	Strftime: 'strftime',
 	Moment: 'moment',
+	Oracle: 'oracle',
 });
 
 export type Dialect = ValueOf<typeof DIALECT>;
@@ -29,6 +31,13 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	c: 'strftime';
 	python: 'strftime';
 	dayjs: 'moment';
+	sql: 'oracle';
+	postgres: 'oracle';
+	postgresql: 'oracle';
+	snowflake: 'oracle';
+	redshift: 'oracle';
+	to_char: 'oracle';
+	tochar: 'oracle';
 }> = enumify({
 	luxon: 'ldml',
 	datefns: 'ldml',
@@ -37,6 +46,13 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	c: 'strftime',
 	python: 'strftime',
 	dayjs: 'moment',
+	sql: 'oracle',
+	postgres: 'oracle',
+	postgresql: 'oracle',
+	snowflake: 'oracle',
+	redshift: 'oracle',
+	to_char: 'oracle',
+	tochar: 'oracle',
 });
 
 export type DialectAlias = KeyOf<typeof DIALECT_ALIAS>;

@@ -1,11 +1,13 @@
 import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import { getRuntime } from '@magmacomputing/tempo/support';
+import { isFunction } from '@magmacomputing/tempo/library';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAlias } from './constants.js';
 import { formatWithDialect, parseWithDialect } from './engine/dialect.registry.js';
 import { formatLdml, parseLdml } from './engine/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from './engine/strftime.compiler.js';
+import { formatOracle, parseOracle } from './engine/oracle.compiler.js';
 import { explain, type ExplainResult, type ExplainedToken } from './engine/explain.js';
 import { attachDialectShims } from './shims/luxon.shim.js';
 import type { DialectsInstanceNamespace, DialectsStaticNamespace } from './types.js';
@@ -20,6 +22,8 @@ export {
 	parseLdml,
 	formatStrftime,
 	parseStrftime,
+	formatOracle,
+	parseOracle,
 	explain,
 };
 
@@ -27,7 +31,7 @@ export type { Dialect, DialectAlias, DialectsInstanceNamespace, DialectsStaticNa
 
 /**
  * ## DialectsPlugin
- * Extends Tempo with external format dialects (Unicode LDML, Luxon, Moment, POSIX strftime).
+ * Extends Tempo with external format dialects (Unicode LDML, Luxon, Moment, POSIX strftime, Oracle/SQL TO_CHAR).
  */
 export const DialectsPlugin: TempoPlugin = definePlugin({
 	name: 'dialects',
@@ -81,37 +85,23 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 			Object.defineProperty(installedClass.prototype, 'dialects', {
 				get: function (this: Tempo): DialectsInstanceNamespace {
 					const self = this;
+					const format = (mask: string, dialect?: string) => {
+						if (isFunction((self as any).hasModule) && !(self as any).hasModule('FormatModule'))
+							throw new Error("[Tempo Dialects] Formatting requires 'FormatModule'. Call 'Tempo.use(FormatModule)' first.");
+
+						return formatWithDialect(self.toDateTime(), mask, {
+							...self.config,
+							dialect,
+						});
+					};
+
 					return {
-						ldml: (mask: string) => {
-							if (typeof (self as any).hasModule === 'function' && !(self as any).hasModule('FormatModule')) {
-								throw new Error("[Tempo Dialects] Formatting requires 'FormatModule'. Call 'Tempo.use(FormatModule)' first.");
-							}
-							return formatWithDialect(self.toDateTime(), mask, {
-								...self.config,
-								dialect: DIALECT.Ldml,
-							});
-						},
-						strftime: (mask: string) => {
-							if (typeof (self as any).hasModule === 'function' && !(self as any).hasModule('FormatModule')) {
-								throw new Error("[Tempo Dialects] Formatting requires 'FormatModule'. Call 'Tempo.use(FormatModule)' first.");
-							}
-							return formatWithDialect(self.toDateTime(), mask, {
-								...self.config,
-								dialect: DIALECT.Strftime,
-							});
-						},
-						format: (mask: string, dialect?: string) => {
-							if (typeof (self as any).hasModule === 'function' && !(self as any).hasModule('FormatModule')) {
-								throw new Error("[Tempo Dialects] Formatting requires 'FormatModule'. Call 'Tempo.use(FormatModule)' first.");
-							}
-							return formatWithDialect(self.toDateTime(), mask, {
-								...self.config,
-								dialect,
-							});
-						},
-						explain: (mask: string, dialect?: string): ExplainResult => {
-							return explain(mask, dialect);
-						},
+						ldml: (mask: string) => format(mask, DIALECT.Ldml),
+						strftime: (mask: string) => format(mask, DIALECT.Strftime),
+						oracle: (mask: string) => format(mask, DIALECT.Oracle),
+						sql: (mask: string) => format(mask, DIALECT.Oracle),
+						format,
+						explain: (mask: string, dialect?: string): ExplainResult => explain(mask, dialect),
 					};
 				},
 				configurable: true,

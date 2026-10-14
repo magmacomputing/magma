@@ -28,6 +28,14 @@ export interface DialectsInstanceNamespace {
 	 */
 	strftime(mask: string): string;
 	/**
+	 * Formats this instance using Oracle / SQL TO_CHAR format models (e.g. 'YYYY-MM-DD HH24:MI:SS').
+	 */
+	oracle(mask: string): string;
+	/**
+	 * Convenience helper for formatting using SQL / Oracle format models (e.g. 'YYYY-MM-DD HH24:MI:SS').
+	 */
+	sql(mask: string): string;
+	/**
 	 * Formats this instance using a specified dialect mask.
 	 */
 	format(mask: string, dialect?: DialectInput): string;

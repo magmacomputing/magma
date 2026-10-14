@@ -5,6 +5,27 @@ All notable changes to `@magmacomputing/tempo-plugin-dialects` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-10-14
+
+### Added
+- **Oracle / SQL TO_CHAR Format Dialect**:
+  - Full support for Oracle, PostgreSQL, Snowflake, and AWS Redshift date/time format models (`TO_CHAR`, `TO_DATE`, `TO_TIMESTAMP`).
+  - Added `DIALECT.Oracle = 'oracle'` to `DIALECT` enum.
+  - Added ecosystem aliases in `DIALECT_ALIAS`: `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'`, and `'tochar'`.
+  - Added dedicated instance helpers `t.dialects.oracle(mask)` and `t.dialects.sql(mask)`.
+  - Added `formatOracle` and `parseOracle` compiler engines with high-performance closure compilation and `WeakCache` memoization.
+  - Comprehensive token support:
+    - **Year**: `YYYY`, `RRRR` (with 2-digit pivot), `YYY`, `YY`, `RR`, `Y`, `IYYY` (ISO week-numbering year), `IYY`, `IY`, `I`.
+    - **Month**: `MM` (zero-padded), `MONTH` / `Month` / `month` (case-preserving full names), `MON` / `Mon` / `mon` (case-preserving abbreviations), and `RM` / `rm` (Roman numerals).
+    - **Day**: `DD`, `DDD` (day of year), `DAY` / `Day` / `day`, `DY` / `Dy` / `dy`, `D` (day of week), `J` (Julian day).
+    - **Time**: `HH24` (24-hour), `HH12` / `HH` (12-hour), `MI` (minutes), `SS` (seconds), `SSSSS` (seconds past midnight).
+    - **Subseconds**: `FF` and `FF1`-`FF9` (nanosecond-precision fractional seconds).
+    - **Meridiem**: `AM` / `PM`, `am` / `pm`, `A.M.` / `P.M.`, `a.m.` / `p.m.`.
+    - **Week & Quarter**: `IW` (ISO week), `WW` (week of year), `W` (week of month), `Q` (quarter).
+    - **Timezone**: `TZH:TZM`, `TZH`, `TZM`, `TZR`, `TZD`, `OF`.
+    - **Modifiers & Literals**: `FM` (Fill Mode unpadded suppression), `FX` (format exact), and `"..."` double-quoted literal text preservation.
+  - Enhanced `explain(mask, dialect)` with Oracle format translation to native Tempo `{token}` masks.
+
 ## [1.0.3] - 2026-10-03
 
 ### Changed

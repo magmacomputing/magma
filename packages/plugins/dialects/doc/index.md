@@ -55,6 +55,7 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 | `'ldml'` | `DIALECT.Ldml` | `'luxon'`, `'datefns'`, `'cldr'` | `yyyy-MM-dd HH:mm:ss.SSS` | Luxon, date-fns, CLDR, Unicode UTS #35 |
 | `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog, SQL |
 | `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD HH:mm:ss` | Moment.js, Day.js |
+| `'oracle'` | `DIALECT.Oracle` | `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'` | `YYYY-MM-DD HH24:MI:SS` | Oracle, PostgreSQL, Snowflake, AWS Redshift |
 
 > [!TIP]
 > **Native Tempo Syntax is Optimal**
@@ -71,7 +72,9 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`t.toFormat(mask, options?)`** | Instance | Format mask string, options | `string` | **Luxon Drop-In Formatter**. Formats the instance using LDML (or explicit dialect). |
 | **`t.dialects.ldml(mask)`** | Instance | Unicode LDML mask | `string` | Fast-path formatter for Unicode LDML / Luxon / date-fns masks. |
 | **`t.dialects.strftime(mask)`** | Instance | POSIX strftime mask | `string` | Fast-path formatter for POSIX strftime specifiers (`%Y`, `%m`, `%d`, etc.). |
-| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%` specifiers. |
+| **`t.dialects.oracle(mask)`** | Instance | Oracle / SQL mask | `string` | Fast-path formatter for Oracle / PostgreSQL / Snowflake format models (`YYYY`, `HH24`, `MI`, etc.). |
+| **`t.dialects.sql(mask)`** | Instance | SQL / Oracle mask | `string` | Convenience alias for `t.dialects.oracle(mask)`. |
+| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%` and SQL specifiers. |
 | **`t.dialects.explain(mask, dialect?)`** | Instance | External format mask | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
 | **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask. |
 | **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser (first matching mask succeeds). |

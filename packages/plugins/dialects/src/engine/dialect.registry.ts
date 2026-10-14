@@ -2,6 +2,7 @@ import { evaluate } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import { formatLdml, parseLdml } from './ldml.compiler.js';
 import { formatStrftime, parseStrftime } from './strftime.compiler.js';
+import { formatOracle, parseOracle } from './oracle.compiler.js';
 
 export interface DialectOptions {
 	dialect?: any;
@@ -11,6 +12,8 @@ export interface DialectOptions {
 	[key: string]: any;
 }
 
+const ORACLE_DETECTION_REGEX = /\b(?:hh24|hh12|mi|ff[1-9]?)\b/i;
+
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
  */
@@ -18,7 +21,10 @@ export function detectDialect(mask: string, explicitDialect?: any): Dialect {
 	const resolved = evaluate(explicitDialect);
 	if (resolved) return normalizeDialect(String(resolved));
 	if (mask.includes('%')) return DIALECT.Strftime;
-	return DIALECT.Ldml;
+
+	return (ORACLE_DETECTION_REGEX.test(mask))
+		? DIALECT.Oracle
+		: DIALECT.Ldml;
 }
 
 /**
@@ -64,6 +70,8 @@ export function formatWithDialect(
 ): string {
 	const dialect = detectDialect(mask, options.dialect);
 	switch (dialect) {
+		case DIALECT.Oracle:
+			return formatOracle(zdt, mask);
 		case DIALECT.Strftime:
 			return formatStrftime(zdt, mask);
 		case DIALECT.Moment:
@@ -84,6 +92,8 @@ export function parseWithDialect(
 ): Temporal.ZonedDateTime | undefined {
 	const dialect = detectDialect(mask, options.dialect);
 	switch (dialect) {
+		case DIALECT.Oracle:
+			return parseOracle(input, mask, options);
 		case DIALECT.Strftime:
 			return parseStrftime(input, mask, options);
 		case DIALECT.Moment:

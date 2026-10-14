@@ -1,8 +1,8 @@
 {
 	"name": "@magmacomputing/tempo-plugin-dialects",
-	"version": "1.0.3",
+	"version": "1.1.0",
 	"type": "module",
-	"description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
+	"description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, POSIX strftime, and Oracle/SQL TO_CHAR",
 	"main": "dist/index.js",
 	"module": "dist/index.mjs",
 	"types": "dist/index.d.ts",
@@ -25,7 +25,12 @@
 		"ldml",
 		"moment",
 		"strftime",
-		"date-fns"
+		"date-fns",
+		"oracle",
+		"sql",
+		"postgres",
+		"snowflake",
+		"to_char"
 	],
 	"author": "Magma Computing",
 	"license": "MIT",

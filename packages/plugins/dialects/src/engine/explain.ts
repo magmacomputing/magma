@@ -151,9 +151,62 @@ const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	Z: { tempo: '{tz:offset}', desc: 'ISO-8601 time zone offset (e.g. -08:00)' },
 };
 
+const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
+	YYYY: { tempo: '{yyyy}', desc: '4-digit year' },
+	RRRR: { tempo: '{yyyy}', desc: '4-digit year (with 2000 pivot)' },
+	IYYY: { tempo: '{yw}', desc: '4-digit ISO week-numbering year' },
+	YYY: { tempo: '{yyyy}', desc: 'Last 3 digits of year' },
+	YY: { tempo: '{yy}', desc: '2-digit year' },
+	RR: { tempo: '{yy}', desc: '2-digit year (with 2000 pivot)' },
+	Y: { tempo: '{yyyy}', desc: 'Last digit of year' },
+	MM: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
+	MONTH: { tempo: '{mon:upper}', desc: 'Full month name uppercase (e.g. OCTOBER)' },
+	Month: { tempo: '{mon}', desc: 'Full month name capitalized (e.g. October)' },
+	month: { tempo: '{mon:lower}', desc: 'Full month name lowercase (e.g. october)' },
+	MON: { tempo: '{mmm:upper}', desc: 'Short month name uppercase (e.g. OCT)' },
+	Mon: { tempo: '{mmm}', desc: 'Short month name capitalized (e.g. Oct)' },
+	mon: { tempo: '{mmm:lower}', desc: 'Short month name lowercase (e.g. oct)' },
+	RM: { tempo: '{mm}', desc: 'Roman numeral month (I-XII)' },
+	DD: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
+	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
+	DAY: { tempo: '{wkd:upper}', desc: 'Full weekday name uppercase (e.g. WEDNESDAY)' },
+	Day: { tempo: '{wkd}', desc: 'Full weekday name capitalized (e.g. Wednesday)' },
+	day: { tempo: '{wkd:lower}', desc: 'Full weekday name lowercase (e.g. wednesday)' },
+	DY: { tempo: '{www:upper}', desc: 'Short weekday name uppercase (e.g. WED)' },
+	Dy: { tempo: '{www}', desc: 'Short weekday name capitalized (e.g. Wed)' },
+	dy: { tempo: '{www:lower}', desc: 'Short weekday name lowercase (e.g. wed)' },
+	D: { tempo: '{dow}', desc: 'Day of week (1-7)' },
+	HH24: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
+	HH12: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	HH: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	MI: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
+	SS: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
+	SSSSS: { tempo: '{ss}', desc: 'Seconds past midnight (0-86399)' },
+	FF3: { tempo: '{ms}', desc: 'Millisecond (000-999)' },
+	FF6: { tempo: '{ff:6}', desc: 'Fractional seconds / microseconds (000000-999999)' },
+	FF: { tempo: '{ff:6}', desc: 'Fractional seconds / microseconds (000000-999999)' },
+	AM: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	PM: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	am: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
+	pm: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
+	'A.M.': { tempo: '{mer:upper}', desc: 'A.M./P.M. marker' },
+	'P.M.': { tempo: '{mer:upper}', desc: 'A.M./P.M. marker' },
+	IW: { tempo: '{wy}', desc: 'Zero-padded ISO week of year (01-53)' },
+	WW: { tempo: '{wy}', desc: 'Zero-padded week of year (01-53)' },
+	W: { tempo: '{#week}', desc: 'Week of month (1-5)' },
+	Q: { tempo: '{#quarter}', desc: 'Quarter number 1-4 (via #quarter Term)' },
+	'TZH:TZM': { tempo: '{tz:offset}', desc: 'Time zone offset (e.g. +08:00)' },
+	TZH: { tempo: '{tz:offset}', desc: 'Time zone offset hours' },
+	TZM: { tempo: '{tz:offset}', desc: 'Time zone offset minutes' },
+	TZR: { tempo: '{tz:name}', desc: 'Time zone region name (e.g. UTC, America/New_York)' },
+	TZD: { tempo: '{tz:short}', desc: 'Time zone daylight saving abbreviation' },
+	OF: { tempo: '{tz:offset}', desc: 'Time zone offset (e.g. +02)' },
+};
+
 const LDML_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|ww|QQ|qq|ZZ|zz|a|d|H|h|k|m|s|S|c|e|E|w|y|L|M|Q|q|Z|z)/g;
 const STRFTIME_REGEX = /%([%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
 const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
+const ORACLE_REGEX = /"[^"]*"|TZH:TZM|HH24|HH12|SSSSS|MONTH|Month|month|IYYY|YYYY|RRRR|A\.M\.|P\.M\.|MON|Mon|mon|YYY|IYY|TZD|TZR|TZH|TZM|DAY|Day|day|DDD|FF[1-9]?|FM|FX|IW|WW|YY|RR|IY|MM|DD|DY|Dy|dy|HH|MI|SS|AM|PM|am|pm|RM|OF|D|W|Q|Y|I|J/gi;
 
 /**
  * Translates an external date format mask into native Tempo {token} syntax
@@ -164,83 +217,120 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 	const tokens: ExplainedToken[] = [];
 	let pattern = '';
 
-	if (dialect === DIALECT.Strftime) {
-		let lastIndex = 0;
-		for (const match of mask.matchAll(STRFTIME_REGEX)) {
-			const index = match.index!;
-			if (index > lastIndex) {
-				pattern += mask.slice(lastIndex, index);
-			}
+	switch (dialect) {
+		case DIALECT.Oracle: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(ORACLE_REGEX)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += mask.slice(lastIndex, index);
 
-			const raw = match[0];
-			const spec = match[1];
-			if (spec === '%') {
-				pattern += '%';
-			} else {
-				const info = STRFTIME_EXPLAIN_MAP[spec];
-				if (info) {
-					pattern += info.tempo;
-					tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+				const raw = match[0];
+				if (raw.startsWith('"') && raw.endsWith('"')) {
+					pattern += raw.slice(1, -1);
+				} else if (/^fm$/i.test(raw)) {
+					tokens.push({ source: raw, tempo: '', desc: 'Fill Mode toggle (suppresses padding)' });
+				} else if (/^fx$/i.test(raw)) {
+					tokens.push({ source: raw, tempo: '', desc: 'Format exact matching modifier' });
 				} else {
-					pattern += raw;
+					let info = ORACLE_EXPLAIN_MAP[raw] ?? ORACLE_EXPLAIN_MAP[raw.toUpperCase()];
+					if (!info && /^FF([1-9])$/i.test(raw)) {
+						const prec = raw.slice(2);
+						info = { tempo: `{ff:${prec}}`, desc: `Fractional seconds (${prec} digits)` };
+					}
+					if (info) {
+						pattern += info.tempo;
+						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+					} else {
+						pattern += raw;
+					}
 				}
+				lastIndex = index + raw.length;
 			}
-			lastIndex = index + raw.length;
+			if (lastIndex < mask.length)
+				pattern += mask.slice(lastIndex);
+			break;
 		}
-		if (lastIndex < mask.length) {
-			pattern += mask.slice(lastIndex);
-		}
-	} else if (dialect === DIALECT.Moment) {
-		let lastIndex = 0;
-		for (const match of mask.matchAll(MOMENT_REGEX)) {
-			const index = match.index!;
-			if (index > lastIndex) {
-				pattern += mask.slice(lastIndex, index);
-			}
 
-			const raw = match[0];
-			if (raw.startsWith('[')) {
-				pattern += match[1] ?? raw.slice(1, -1);
-			} else {
-				const info = MOMENT_EXPLAIN_MAP[raw];
-				if (info) {
-					pattern += info.tempo;
-					tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
-				} else {
-					pattern += raw;
-				}
-			}
-			lastIndex = index + raw.length;
-		}
-		if (lastIndex < mask.length) {
-			pattern += mask.slice(lastIndex);
-		}
-	} else {
-		// LDML
-		let lastIndex = 0;
-		for (const match of mask.matchAll(LDML_REGEX)) {
-			const index = match.index!;
-			if (index > lastIndex) {
-				pattern += mask.slice(lastIndex, index);
-			}
+		case DIALECT.Strftime: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(STRFTIME_REGEX)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += mask.slice(lastIndex, index);
 
-			const raw = match[0];
-			if (raw.startsWith("'")) {
-				const unquoted = raw.length === 2 && raw === "''" ? "'" : raw.slice(1, -1).replace(/''/g, "'");
-				pattern += unquoted;
-			} else {
-				const info = LDML_EXPLAIN_MAP[raw];
-				if (info) {
-					pattern += info.tempo;
-					tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+				const raw = match[0];
+				const spec = match[1];
+				if (spec === '%') {
+					pattern += '%';
 				} else {
-					pattern += raw;
+					const info = STRFTIME_EXPLAIN_MAP[spec];
+					if (info) {
+						pattern += info.tempo;
+						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+					} else {
+						pattern += raw;
+					}
 				}
+				lastIndex = index + raw.length;
 			}
-			lastIndex = index + raw.length;
+			if (lastIndex < mask.length)
+				pattern += mask.slice(lastIndex);
+			break;
 		}
-		if (lastIndex < mask.length) {
-			pattern += mask.slice(lastIndex);
+
+		case DIALECT.Moment: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(MOMENT_REGEX)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += mask.slice(lastIndex, index);
+
+				const raw = match[0];
+				if (raw.startsWith('[')) {
+					pattern += match[1] ?? raw.slice(1, -1);
+				} else {
+					const info = MOMENT_EXPLAIN_MAP[raw];
+					if (info) {
+						pattern += info.tempo;
+						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+					} else {
+						pattern += raw;
+					}
+				}
+				lastIndex = index + raw.length;
+			}
+			if (lastIndex < mask.length)
+				pattern += mask.slice(lastIndex);
+			break;
+		}
+
+		case DIALECT.Ldml:
+		default: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(LDML_REGEX)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += mask.slice(lastIndex, index);
+
+				const raw = match[0];
+				if (raw.startsWith("'")) {
+					const unquoted = raw.length === 2 && raw === "''" ? "'" : raw.slice(1, -1).replace(/''/g, "'");
+					pattern += unquoted;
+				} else {
+					const info = LDML_EXPLAIN_MAP[raw];
+					if (info) {
+						pattern += info.tempo;
+						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+					} else {
+						pattern += raw;
+					}
+				}
+				lastIndex = index + raw.length;
+			}
+			if (lastIndex < mask.length)
+				pattern += mask.slice(lastIndex);
+			break;
 		}
 	}
 
