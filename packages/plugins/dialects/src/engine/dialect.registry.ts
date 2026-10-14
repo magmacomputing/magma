@@ -6,8 +6,6 @@ import { formatOracle, parseOracle } from './oracle.compiler.js';
 
 import { type ParseOptions as DialectOptions } from './shared.compiler.js';
 
-export type { DialectOptions };
-
 const ORACLE_DETECTION_REGEX = /\bhh(?:24|12)\b/i;
 const ORACLE_UPPER_REGEX = /\b(?:MI|SSSSS|FF[1-9]?)\b/;
 
