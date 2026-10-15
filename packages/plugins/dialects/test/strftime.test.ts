@@ -9,11 +9,20 @@ describe('POSIX strftime Formatting & Parsing', () => {
 	it('formats standard strftime specifiers', () => {
 		expect(dt.format('%Y-%m-%d %H:%M:%S', { dialect: DIALECT.Strftime })).toBe('2026-10-24 15:30:45');
 		expect(dt.format('%B %d, %Y (%A)', { dialect: DIALECT.Strftime })).toBe('October 24, 2026 (Saturday)');
+
+		const tzDt = new Tempo('2026-10-24T15:30:45+02:00[Europe/Paris]');
+		expect(tzDt.format('%Y-%m-%d %H:%M:%S %z %Z', { dialect: DIALECT.Strftime })).toBe('2026-10-24 15:30:45 +0200 Europe/Paris');
+
+		const negDt = new Tempo('-000005-10-24T15:30:45Z');
+		expect(negDt.format('%y', { dialect: DIALECT.Strftime })).toBe('95');
 	});
 
 	it('auto-detects strftime dialect when mask contains % specifiers', () => {
 		expect(dt.dialects.format('%F %T')).toBe('2026-10-24 15:30:45');
 		expect(dt.dialects.strftime('%Y/%m/%d')).toBe('2026/10/24');
+
+		// Quoted percent in LDML does not trigger strftime
+		expect(dt.dialects.format("yyyy-MM-dd '100%'")).toBe('2026-10-24 100%');
 	});
 
 	it('parses %f microsecond precision properly splitting ms and us', () => {

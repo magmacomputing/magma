@@ -77,10 +77,27 @@ This style guide defines common coding conventions, formatting standards, and Ty
 ---
 
 ## 6. Module-Level Regular Expression Constants
-- **Always Declare Regular Expressions as Module-Level Constants**: Never instantiate inline RegExp literals inside function, method, or loop bodies (e.g. avoid `str.match(/^[+-]\d{2}:?\d{2}$/)` inside hot paths). Instead, declare them at the top of the module as descriptive constants (e.g. `export const ISO_OFFSET_SECONDS_REGEX = /^[+-]\d{2}:?\d{2}:?\d{2}$/;` or `const RE_INTERVAL = /^(\d+)\s*(ms|s|m|h|d)?$/i;`).
-  - **Self-Documenting Code**: Regular expressions are notoriously dense and hard to parse at a glance. Naming the constant (e.g., `ISO_CALENDAR_DATE_REGEX`, `RE_INTERVAL`, `ISO_OFFSET_SUFFIX_REGEX`) explicitly documents the semantic intent of the pattern, turning opaque syntax into readable code.
+- **Always Declare Static Regular Expressions as Module-Scoped Constants**: Static regular expression patterns must ALWAYS be implemented as module-scoped `const` variables using the `RE_*` naming prefix (for example, `RE_ORACLE_DETECTION`, `RE_INTERVAL`, `RE_OFFSET_WITH_SECONDS`). Never instantiate inline RegExp literals inside function, method, or loop bodies (e.g. avoid `str.match(/^[+-]\d{2}:?\d{2}$/)` inside hot paths):
+  - **Self-Documenting Code**: Regular expressions are notoriously dense and hard to parse at a glance. Naming the constant (e.g. `RE_ORACLE_DETECTION`, `RE_INTERVAL`, `RE_OFFSET_WITH_SECONDS`) explicitly documents the semantic intent of the pattern, turning opaque syntax into readable code.
   - **Compilation & Execution Efficiency**: When a regular expression is declared inline, JavaScript engines (such as V8) must evaluate the literal expression on every invocation, allocating a new `RegExp` object instance on the heap and incurring pattern compilation checks. Hoisting it to the module level ensures the engine compiles the pattern bytecode (or Irregexp machine code) exactly once at module evaluation.
   - **Reduced Garbage Collection (GC) Pressure**: Reusing a single singleton RegExp instance across multiple test/match operations in high-throughput hot paths (e.g. date parsing, string normalization, loop filtering) eliminates short-lived object allocations, preventing minor GC scavenges and latency spikes.
   - **Stateless Matching Discipline**: When using regular expressions without the `/g` or `/y` flags (recommended for general string tests), operations like `.test()` and `str.match(RE)` are completely stateless and safe for concurrent calls across threads or async iterations. If stateful flags (`/g` or `/y`) are required, reset `RE.lastIndex = 0` before and after execution, or instantiate a localized instance.
+
+---
+
+## 7. Preferred Function Returns
+- **Ternary for Dual Terminal Cases**: Where a function ends with two final cases (e.g. `if (test1) return 'xyz'; return 'abc';`), refactor to a clean ternary:
+  ```ts
+  // Preferred
+  return (test1)
+  	? 'xyz'
+  	: 'abc';
+
+  // Avoid multiple interspersed exit points at function termination
+  if (test1) return 'xyz';
+  return 'abc';
+  ```
+  This reads clearer, avoids multiple exit points interspersed through the function, and makes the terminal branches immediately obvious.
+
 
 

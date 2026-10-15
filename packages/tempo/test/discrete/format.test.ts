@@ -269,5 +269,23 @@ describe('Tempo.format() refinements', () => {
       expect(t4.format('{dd:nth}')).toBe('4th');
     })
   })
+
+  describe('roman-modifier', () => {
+    it('supports :roman modifier for integer date and time tokens', () => {
+      const dt = new Tempo('2026-10-24T15:30:45');
+      expect(dt.format('{yyyy:roman}')).toBe('MMXXVI');
+      expect(dt.format('{mm:roman}')).toBe('X');
+      expect(dt.format('{mm:roman:lower}')).toBe('x');
+      expect(dt.format('{dd:roman}')).toBe('XXIV');
+      expect(dt.format('{woy:roman}')).toBe('XLIII');
+      expect(dt.format('{dow:roman}')).toBe('VI');
+    })
+
+    it('falls back to original value when token is out of Roman range or non-integer', () => {
+      const dtFuture = new Tempo('4050-10-24T15:30:45');
+      expect(dtFuture.format('{yyyy:roman}')).toBe('4050');
+      expect(dtFuture.format('{mon:long:roman}')).toBe('October');
+    })
+  })
 })
 

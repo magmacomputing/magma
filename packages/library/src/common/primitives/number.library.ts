@@ -98,3 +98,48 @@ export const fix = (nbr: string | number = 0, max = 2) =>
  */
 export const asTime = (hhmi: string | number) =>
 	Number(String(hhmi).replace(':', ''));
+
+const ROMAN_MATRIX: readonly (readonly [number, string])[] = [
+	[1000, 'M'],
+	[900, 'CM'],
+	[500, 'D'],
+	[400, 'CD'],
+	[100, 'C'],
+	[90, 'XC'],
+	[50, 'L'],
+	[40, 'XL'],
+	[10, 'X'],
+	[9, 'IX'],
+	[5, 'V'],
+	[4, 'IV'],
+	[1, 'I'],
+];
+
+/**
+ * Converts a positive integer into its Roman numeral string representation.
+ * 
+ * @param num - The number to convert
+ * @returns The Roman numeral string
+ * @example
+ * ```ts
+ * convertToRoman(2026); // 'MMXXVI'
+ * convertToRoman(14); // 'XIV'
+ * ```
+ */
+export function convertToRoman(num: number): string {
+	if (!Number.isInteger(num) || num < 1 || num > 3999)
+		return '';
+
+	let n = num;
+	let result = '';
+
+	for (const [value, symbol] of ROMAN_MATRIX) {
+		while (n >= value) {
+			result += symbol;
+			n -= value;
+		}
+	}
+
+	return result;
+}
+

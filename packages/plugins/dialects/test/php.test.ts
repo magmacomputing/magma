@@ -88,6 +88,40 @@ describe('PHP Date Dialect Engine', () => {
 		expect(parsed.dd).toBe(24);
 	});
 
+	it('parses negative epoch seconds for pre-1970 dates (U)', () => {
+		const parsed = Tempo.dialects.parse('-60', 'U', DIALECT.Php, { timeZone: 'UTC' });
+		expect(parsed.isValid).toBe(true);
+		expect(parsed.yy).toBe(1969);
+		expect(parsed.mm).toBe(12);
+		expect(parsed.dd).toBe(31);
+		expect(parsed.hh).toBe(23);
+		expect(parsed.mi).toBe(59);
+		expect(parsed.ss).toBe(0);
+
+		// Format and parse round-trip
+		const pre1970 = new Tempo('1955-11-05T06:00:00Z');
+		const formattedU = pre1970.dialects.php('U');
+		expect(Number(formattedU)).toBeLessThan(0);
+		const roundTripped = Tempo.dialects.parse(formattedU, 'U', DIALECT.Php, { timeZone: 'UTC' });
+		expect(roundTripped.iso).toBe('1955-11-05T06:00:00Z');
+	});
+
+	it('round-trips timezone identifiers containing hyphens and colons via e', () => {
+		const tEtc = new Tempo('2026-10-24T15:30:00[Etc/GMT-14]');
+		const formattedEtc = tEtc.dialects.php('Y-m-d H:i:s e');
+		expect(formattedEtc).toBe('2026-10-24 15:30:00 Etc/GMT-14');
+		const parsedEtc = Tempo.dialects.parse(formattedEtc, 'Y-m-d H:i:s e', DIALECT.Php);
+		expect(parsedEtc.isValid).toBe(true);
+		expect(parsedEtc.toDateTime().timeZoneId).toBe('Etc/GMT-14');
+
+		const tOffset = new Tempo('2026-10-24T15:30:00+05:30', { timeZone: '+05:30' });
+		const formattedOffset = tOffset.dialects.php('Y-m-d H:i:s e');
+		expect(formattedOffset).toBe('2026-10-24 15:30:00 +05:30');
+		const parsedOffset = Tempo.dialects.parse(formattedOffset, 'Y-m-d H:i:s e', DIALECT.Php);
+		expect(parsedOffset.isValid).toBe(true);
+		expect(parsedOffset.toDateTime().timeZoneId).toBe('+05:30');
+	});
+
 	it('explains PHP masks to Tempo IR', () => {
 		const res = Tempo.dialects.explain('Y-m-d H:i:s', DIALECT.Php);
 		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');

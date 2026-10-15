@@ -31,6 +31,8 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	mmm: { ldml: 'MMM', strftime: '%b', oracle: 'Mon', moment: 'MMM', php: 'M', go: 'Jan', desc: 'Short month name capitalized (e.g. Oct)' },
 	'mmm:upper': { ldml: 'MMM', strftime: '%b', oracle: 'MON', moment: 'MMM', php: 'M', go: 'Jan', desc: 'Short month name uppercase (e.g. OCT)' },
 	'mmm:lower': { ldml: 'MMM', strftime: '%b', oracle: 'mon', moment: 'MMM', php: 'M', go: 'Jan', desc: 'Short month name lowercase (e.g. oct)' },
+	'mm:roman': { oracle: 'RM', desc: 'Roman numeral month in uppercase (I-XII)' },
+	'mm:roman:lower': { oracle: 'rm', desc: 'Roman numeral month in lowercase (i-xii)' },
 
 	// Day of Month
 	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', desc: 'Zero-padded day of month (01-31)' },
@@ -39,8 +41,8 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 
 	// Day of Year
 	doy: { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
-	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDD', moment: 'DDD', go: '002', desc: 'Unpadded day of year (1-366)' },
-	'doy:ord': { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDo', go: '002', desc: 'Day of year with ordinal suffix' },
+	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDD', moment: 'DDD', desc: 'Unpadded day of year (1-366)' },
+	'doy:ord': { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDo', desc: 'Day of year with ordinal suffix' },
 
 	// Weekday
 	wkd: { ldml: 'EEEE', strftime: '%A', oracle: 'Day', moment: 'dddd', php: 'l', go: 'Monday', desc: 'Full weekday name capitalized' },
@@ -113,6 +115,7 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	'ff:6': 'ff',
 	'tz:name': 'tz',
 	'tz:long': 'tz',
+	'tz:offset:basic': 'tz:offsetcompact',
 };
 
 const REGEX_SINGLE_QUOTE = /'/g;

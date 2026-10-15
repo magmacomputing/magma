@@ -87,7 +87,7 @@ Tempo.use(FormatModule);
 > **Format Dialects & Migration**
 > Tempo's formatting engine uses explicit curly braces and consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common cross-ecosystem pitfalls—such as token confusion between calendar year and ISO week-year (in Unicode LDML `yyyy` is calendar year while `YYYY` is ISO week-year, whereas in Moment and Day.js `YYYY` is calendar year while `GGGG` is ISO week-year).
 >
-> If you are migrating an existing codebase from Moment, Day.js, or Luxon, the [`@magmacomputing/tempo-plugin-dialects`](/doc/9-plugins/dialects.index) community plugin provides drop-in support for familiar external masks:
+> If you are migrating an existing codebase from Moment, Day.js, or Luxon, the [`@magmacomputing/tempo-plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin provides drop-in support for familiar external masks:
 >
 > ```typescript
 > import { Tempo } from '@magmacomputing/tempo';
@@ -101,7 +101,7 @@ Tempo.use(FormatModule);
 > t.format('{yyyy}-{mm}-{dd}');  // "2026-10-24" (Native Tempo tokens always work)
 > ```
 >
-> For Unicode LDML, POSIX `strftime`, and dual-mode configuration details, see the [Dialects Plugin documentation](/doc/9-plugins/dialects.index).
+> For Unicode LDML, POSIX `strftime`, and dual-mode configuration details, see the [Dialects Plugin Documentation](../../../plugins/dialects/doc/index.md).
 
 | Token | Description | Example |
 | :--- | :--- | :--- |
@@ -148,6 +148,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:<number>` | Number | Zero-fill pads numeric tokens (e.g. `{ns:6}` → `000005`), or slices fractional-second `{ff}` to precision length (e.g. `{ff:1}` → tenths, `{ff:2}` → hundredths) | `{doy:3}` → `045`, `{ff:1}` → `7` |
 | `:raw` | Number | Unpadded number with no meridiem | `{h12:raw}` → `3` |
 | `:ord` | Number | Unpadded number with ordinal suffix | `{dd:ord}` → `24th` |
+| `:roman` | Number | Converts integer into Roman numeral representation (supports chaining with `:lower`) | `{yyyy:roman}` → `MMXXVI`, `{mm:roman:lower}` → `x` |
 | `:upper` | String | Converts to uppercase | `{mer:upper}` → `PM` |
 | `:lower` | String | Converts to lowercase | `{mon:lower}` → `october` |
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |

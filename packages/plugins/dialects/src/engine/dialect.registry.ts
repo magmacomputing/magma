@@ -8,20 +8,27 @@ import { formatGo, parseGo } from '../compiler/go.compiler.js';
 
 import { type ParseOptions as DialectOptions } from '../compiler/shared.compiler.js';
 
-const ORACLE_DETECTION_REGEX = /\bhh(?:24|12)\b/i;
-const ORACLE_UPPER_REGEX = /\b(?:MI|SSSSS|FF[1-9]?)\b/;
-const GO_DETECTION_REGEX = /\b2006\b|\b15:04\b|Z07:00|-07:00/;
+const RE_ORACLE_DETECTION = /\bhh(?:24|12)\b/i;
+const RE_ORACLE_UPPER = /\b(?:MI|SSSSS|FF[1-9]?)\b/;
+const RE_GO_DETECTION =
+	/\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b/;
+const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
+const RE_STRFTIME_SPECIFIERS = /%[a-zA-Z%]/;
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
  */
 export function detectDialect(mask: string, explicitDialect?: any): Dialect {
 	const resolved = evaluate(explicitDialect);
-	if (resolved) return normalizeDialect(String(resolved));
-	if (mask.includes('%')) return DIALECT.Strftime;
-	if (GO_DETECTION_REGEX.test(mask)) return DIALECT.Go;
+	if (resolved) return normalizeDialect(resolved);
+	// Strip single-quoted string literals to prevent quoted text in LDML from triggering false positives
+	const clean = mask.replace(RE_QUOTED_LITERALS, '');
 
-	return (ORACLE_DETECTION_REGEX.test(mask) || ORACLE_UPPER_REGEX.test(mask))
+	if (RE_STRFTIME_SPECIFIERS.test(clean)) return DIALECT.Strftime;
+
+	if (RE_GO_DETECTION.test(clean)) return DIALECT.Go;
+
+	return (RE_ORACLE_DETECTION.test(clean) || RE_ORACLE_UPPER.test(clean))
 		? DIALECT.Oracle
 		: DIALECT.Ldml;
 }

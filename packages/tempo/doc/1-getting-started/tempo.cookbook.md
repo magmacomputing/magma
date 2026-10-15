@@ -276,6 +276,31 @@ for await (const t of quarterly) {
 
 👉 **Learn More:** See the [Ticker Plugin Documentation](../../../plugins/ticker/doc/index.md) for detailed configuration, term-driven intervals, and `await using` syntax requirements.
 
+---
+
+### Format & Parse Dialects Plugin (Moment, Luxon, SQL, POSIX, PHP)
+If you are migrating existing code or layouts from Moment.js, Luxon, date-fns, POSIX `strftime`, PHP, or SQL, use the [`@magmacomputing/tempo-plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin.
+
+```typescript
+// Zero-config drop-in import automatically mounts dialect shims:
+import '@magmacomputing/tempo-plugin-dialects/install';
+
+const t = new Tempo('2026-10-24T15:30:00');
+
+// Luxon convenience shim (.toFormat)
+t.toFormat('yyyy-MM-dd HH:mm:ss');          // "2026-10-24 15:30:00"
+
+// LDML & Moment parsing
+Tempo.fromFormat('2026-10-24', 'yyyy-MM-dd'); // LDML parsing via Luxon shim
+Tempo.dialects.parse('2026-10-24', 'YYYY-MM-DD', 'moment'); // Moment layout parsing
+
+// Direct dialect formatters
+t.dialects.sql('YYYY-MM-DD HH24:MI:SS');     // Oracle / PostgreSQL TO_CHAR
+t.dialects.php('Y-m-d H:i:s');               // PHP date()
+t.dialects.go('2006-01-02 15:04:05');        // Go reference layout
+```
+
+👉 **Learn More:** See the [Dialects Plugin Documentation](../../../plugins/dialects/doc/index.md) for full token specifications, multi-candidate parsing fallbacks, and cross-ecosystem translation.
 
 ---
 

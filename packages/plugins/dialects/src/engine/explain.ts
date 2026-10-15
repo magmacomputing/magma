@@ -170,7 +170,8 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	MON: { tempo: '{mmm:upper}', desc: 'Short month name uppercase (e.g. OCT)' },
 	Mon: { tempo: '{mmm}', desc: 'Short month name capitalized (e.g. Oct)' },
 	mon: { tempo: '{mmm:lower}', desc: 'Short month name lowercase (e.g. oct)' },
-	RM: { tempo: '', desc: 'Roman numeral month (I-XII; unsupported native token in Tempo)' },
+	RM: { tempo: '{mm:roman}', desc: 'Roman numeral month uppercase (e.g. X)' },
+	rm: { tempo: '{mm:roman:lower}', desc: 'Roman numeral month lowercase (e.g. x)' },
 	DD: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	DAY: { tempo: '{wkd:upper}', desc: 'Full weekday name uppercase (e.g. WEDNESDAY)' },
@@ -248,13 +249,13 @@ const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonl
 	u: { tempo: '{ff:6}', desc: 'Microseconds (6 digits)' },
 	a: { tempo: '{mer}', desc: 'AM/PM marker (lowercase)' },
 	A: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
-	O: { tempo: '{tz:offset:basic}', desc: 'Difference to GMT without colon (+0200)' },
+	O: { tempo: '{tz:offsetcompact}', desc: 'Difference to GMT without colon (+0200)' },
 	P: { tempo: '{tz:offset}', desc: 'Difference to GMT with colon (+02:00)' },
 	T: { tempo: '{tz:short}', desc: 'Timezone abbreviation (e.g. UTC, EST)' },
 	e: { tempo: '{tz}', desc: 'Timezone identifier (e.g. UTC, Europe/London)' },
 	U: { tempo: '{ts}', desc: 'Seconds since the Unix Epoch' },
 	c: { tempo: '{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}{tz:offset}', desc: 'ISO 8601 date' },
-	r: { tempo: '{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss} {tz:offset:basic}', desc: 'RFC 2822 formatted date' },
+	r: { tempo: '{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss} {tz:offsetcompact}', desc: 'RFC 2822 formatted date' },
 };
 
 const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
@@ -268,6 +269,7 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	_2: { tempo: '{dd:raw}', desc: 'Space-padded day of month ( 1-31)' },
 	2: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
 	'002': { tempo: '{doy}', desc: 'Day of year (001-366)' },
+	__2: { tempo: '{doy:raw}', desc: 'Space-padded day of year (  1-366)' },
 	Monday: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Monday)' },
 	Mon: { tempo: '{www}', desc: 'Short weekday name (e.g. Mon)' },
 	15: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
@@ -287,13 +289,14 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	'.999999999': { tempo: '.{ff:9}', desc: 'Trailing nanosecond' },
 	'Z07:00': { tempo: '{tz:offset}', desc: 'UTC Z or ISO-8601 offset' },
 	'Z07:00:00': { tempo: '{tz:offset}', desc: 'UTC Z or ISO-8601 offset with seconds' },
-	Z0700: { tempo: '{tz:offset:basic}', desc: 'UTC Z or basic numeric offset' },
-	Z070000: { tempo: '{tz:offset:basic}', desc: 'UTC Z or basic numeric offset with seconds' },
+	Z0700: { tempo: '{tz:offsetcompact}', desc: 'UTC Z or basic numeric offset' },
+	Z070000: { tempo: '{tz:offsetcompact}', desc: 'UTC Z or basic numeric offset with seconds' },
 	'-07:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset' },
 	'-07:00:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset with seconds' },
-	'-0700': { tempo: '{tz:offset:basic}', desc: 'Basic numeric offset' },
-	'-070000': { tempo: '{tz:offset:basic}', desc: 'Basic numeric offset with seconds' },
-	'-07': { tempo: '{tz:offset:hour}', desc: 'Hour-only numeric offset' },
+	'-0700': { tempo: '{tz:offsetcompact}', desc: 'Basic numeric offset' },
+	'-070000': { tempo: '{tz:offsetcompact}', desc: 'Basic numeric offset with seconds' },
+	'-07': { tempo: '', desc: 'Hour-only numeric offset (unsupported in Tempo)' },
+	Z07: { tempo: '', desc: 'UTC Z or hour-only numeric offset (unsupported in Tempo)' },
 	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },
 };
 
@@ -424,7 +427,7 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 
 				const info = PHP_EXPLAIN_MAP[char];
 				if (info) {
-					pattern += info.tempo;
+					pattern += info.tempo || char;
 					tokens.push({ source: char, tempo: info.tempo, desc: info.desc });
 				} else {
 					pattern += char;
@@ -444,7 +447,7 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 				const raw = match[0];
 				const info = GO_EXPLAIN_MAP[raw];
 				if (info) {
-					pattern += info.tempo;
+					pattern += info.tempo || raw;
 					tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 				} else {
 					pattern += raw;

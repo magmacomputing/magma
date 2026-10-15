@@ -318,10 +318,10 @@ export function compilePhpParser(mask: string): RegExp {
 				break;
 			case 'e':
 			case 'T':
-				pattern += group('tz_name', '[A-Za-z0-9_/+]+');
+				pattern += group('tz_name', '[-A-Za-z0-9_/+.:]+');
 				break;
 			case 'U':
-				pattern += group('epoch_sec', '\\d+');
+				pattern += group('epoch_sec', '-?\\d+');
 				break;
 			case 'c':
 				pattern += `${group('yyyy', '\\d{4}')}-${group('mm', '\\d{2}')}-${group('dd', '\\d{2}')}T${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}:${group('ss', '\\d{2}')}${group('tz_offset', '[+-]\\d{2}:\\d{2}|Z')}`;

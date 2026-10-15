@@ -462,12 +462,12 @@ export function parseOracle(
 	const doy = getGroup('day_of_year');
 	if (dd) {
 		day = parseInt(dd, 10);
-	} else if (doy && !mm && !month_name && !month_abbr) {
+	} else if (doy && !mm && !month_roman && !month_name && !month_abbr) {
 		const res = resolveDayOfYear(year, parseInt(doy, 10));
 		if (!res) return undefined;
 		month = res.month;
 		day = res.day;
-	} else if (!hasYear && !mm && !month_name && !month_abbr) {
+	} else if (!hasYear && !mm && !month_roman && !month_name && !month_abbr) {
 		day = today.day;
 	}
 

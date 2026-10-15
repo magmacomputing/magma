@@ -27,6 +27,8 @@ export interface ParsedTime {
 
 export const REGEX_ESCAPE = /[.*+?^${}()|[\]\\]/g;
 export const REGEX_DOT = /\./g;
+const RE_OFFSET_WITH_SECONDS = /^[+-]\d{2}:\d{2}:\d{2}$/;
+const RE_OFFSET_COMPACT_SECONDS = /^[+-]\d{6}$/;
 
 /** Escapes special regex characters in a literal string. */
 export function escapeRegex(str: string): string {
@@ -59,7 +61,13 @@ export function resolveParseContext(
 	const tz_offset = getGroup('tz_offset');
 	const tz_name = getGroup('tz_name');
 	if (tz_offset) {
-		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
+		let norm = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
+		if (RE_OFFSET_WITH_SECONDS.test(norm)) {
+			norm = norm.slice(0, 6);
+		} else if (RE_OFFSET_COMPACT_SECONDS.test(norm)) {
+			norm = norm.slice(0, 5);
+		}
+		tz = norm;
 	} else if (tz_name) {
 		tz = tz_name;
 	}

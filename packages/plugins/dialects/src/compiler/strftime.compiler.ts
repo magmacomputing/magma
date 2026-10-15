@@ -42,7 +42,7 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => pad(z.year, 4));
 				break;
 			case 'y':
-				parts.push((z) => pad(z.year % 100, 2));
+				parts.push((z) => pad(((z.year % 100) + 100) % 100, 2));
 				break;
 			case 'm':
 				parts.push((z) => pad(z.month, 2));
@@ -116,6 +116,12 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 			case 'R':
 				parts.push((z) => `${pad(z.hour, 2)}:${pad(z.minute, 2)}`);
 				break;
+			case 'z':
+				parts.push((z) => z.offset.replace(':', ''));
+				break;
+			case 'Z':
+				parts.push((z) => z.timeZoneId);
+				break;
 			default:
 				parts.push(() => match[0]);
 				break;
@@ -172,7 +178,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += '%';
 				break;
 			case 'Y':
-				pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
+				pattern += group('yyyy', '[+-]\\d{4,6}|\\d{4}');
 				break;
 			case 'y':
 				pattern += group('yy', '\\d{2}');

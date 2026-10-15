@@ -319,20 +319,34 @@ export function compileGoParser(mask: string): RegExp {
 				pattern += `(?:\\.${group('ns', '\\d{1,9}')})?`;
 				break;
 			case 'Z07:00':
-			case 'Z07:00:00':
-			case '-07:00':
-			case '-07:00:00':
 				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}|Z');
 				break;
+			case 'Z07:00:00':
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}(?::\\d{2})?|Z');
+				break;
+			case '-07:00':
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}');
+				break;
+			case '-07:00:00':
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}(?::\\d{2})?');
+				break;
 			case 'Z0700':
-			case 'Z070000':
-			case '-0700':
-			case '-070000':
 				pattern += group('tz_offset', '[+-]\\d{4}|Z');
 				break;
+			case 'Z070000':
+				pattern += group('tz_offset', '[+-]\\d{4}(?:\\d{2})?|Z');
+				break;
+			case '-0700':
+				pattern += group('tz_offset', '[+-]\\d{4}');
+				break;
+			case '-070000':
+				pattern += group('tz_offset', '[+-]\\d{4}(?:\\d{2})?');
+				break;
 			case 'Z07':
-			case '-07':
 				pattern += group('tz_offset', '[+-]\\d{2}|Z');
+				break;
+			case '-07':
+				pattern += group('tz_offset', '[+-]\\d{2}');
 				break;
 			case 'MST':
 				pattern += group('tz_name', '[A-Za-z0-9_/+]+');
@@ -378,7 +392,7 @@ export function parseGo(
 		year = parseInt(yyyy, 10);
 	} else if (yy) {
 		const shortYear = parseInt(yy, 10);
-		year = shortYear >= 70 ? 1900 + shortYear : 2000 + shortYear;
+		year = shortYear >= 69 ? 1900 + shortYear : 2000 + shortYear;
 	}
 
 	let month = 1;

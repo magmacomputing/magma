@@ -23,7 +23,7 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Full name (`October`) | `MMMM` | `LLLL` | `MMMM` | `%B` | `Month` | `F` | `January` | `{mon}` |
 | **Day** | Zero-padded day (`01`-`31`) | `dd` | `dd` | `DD` | `%d` | `DD` | `d` | `02` | `{dd}` |
 | | Unpadded day (`1`-`31`) | `d` | `d` | `D` | `%-d` | `FMDD` | `j` | `2` | `{dd:raw}` |
-| | Ordinal day (`24th`) | N/A | N/A | `Do` | `%-d` | `DD` | `jS` | `2` | `{dd:ord}` |
+| | Ordinal day (`24th`) | N/A | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
 | **Day of Year** | Day of year (`001`-`366`) | `DDD` | `ooo` | `DDDD` | `%j` | `DDD` | N/A | `002` | `{doy}` |
 | **Week of Year**| ISO week (`01`-`53`) | `ww` | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
 | **Weekday** | Full name (`Saturday`) | `EEEE` | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
@@ -43,9 +43,9 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Microseconds (`6` digits) | `SSSSSS`| `u` | `SSSSSS`| `%6f*` | `FF6` | `u` | `.000000`| `{ff:6}` |
 | | Nanoseconds (`9` digits) | `SSSSSSSSS`| N/A | `SSSSSSSSS`| `%9f*` | `FF9` | N/A | `.000000000`| `{ff:9}` |
 | **Timezone** | Short abbreviation / IANA | `z` | `z` | `zz` | `%Z` | `TZD` | `T` | `MST` | `{tz:short}` |
-| | Standard offset (`+08:00`) | `ZZZZZ`| `ZZ` | `Z` | `%z` | `TZH:TZM`| `P` | `-07:00` | `{tz:offset}` |
+| | Standard offset (`+08:00`) | `ZZZZZ`| `ZZ` | `Z` | N/A | `TZH:TZM`| `P` | `-07:00` | `{tz:offset}` |
 | | Compact offset (`+0800`) | `ZZ` | `ZZZ` | `ZZ` | `%z` | `OF` | `O` | `-0700` | `{tz:offsetcompact}` |
-| **Timestamp** | Unix epoch (seconds) | `t` | N/A | `X` | `%s` | N/A | `U` | N/A | `{ts}` |
+| **Timestamp** | Unix epoch (seconds) | N/A | N/A | `X` | `%s` | N/A | `U` | N/A | `{ts}` |
 | | Quarter with ordinal (`3rd`) | N/A | N/A | `Qo` | N/A | N/A | N/A | N/A | `{#quarter:ord}` |
 | | Full quarter name (`3rd quarter`) | `QQQQ` | `qqqq` | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
 

@@ -43,12 +43,27 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(doyParsed.yy).toBe(2026);
 		expect(doyParsed.mm).toBe(10);
 		expect(doyParsed.dd).toBe(24);
+		// Seconds-precision offsets
+		const parsedSec = Tempo.dialects.parse('2026-10-24 15:30:45+05:30:00', '2006-01-02 15:04:05Z07:00:00', DIALECT.Go);
+		expect(parsedSec.toDateTime().offset).toBe('+05:30');
+
+		const parsedSecCompact = Tempo.dialects.parse('2026-10-24 15:30:45+053000', '2006-01-02 15:04:05Z070000', DIALECT.Go);
+		expect(parsedSecCompact.toDateTime().offset).toBe('+05:30');
 	});
 
-	it('auto-detects Go layout in explain', () => {
+	it('auto-detects Go layout in explain and detectDialect', () => {
 		const res = Tempo.dialects.explain('2006-01-02 15:04:05');
 		expect(res.dialect).toBe(DIALECT.Go);
 		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+
+		expect(Tempo.dialects.explain('01/02/06').dialect).toBe(DIALECT.Go);
+		expect(Tempo.dialects.explain('06-01-02').dialect).toBe(DIALECT.Go);
+		expect(Tempo.dialects.explain('3:04 PM').dialect).toBe(DIALECT.Go);
+		expect(Tempo.dialects.explain('03:04:05').dialect).toBe(DIALECT.Go);
+
+		// Masks with separated numbers should not false-positive as Go
+		expect(Tempo.dialects.explain('HH24:MI 01 06').dialect).toBe(DIALECT.Oracle);
+		expect(Tempo.dialects.explain('yyyy-MM-dd 01 06').dialect).toBe(DIALECT.Ldml);
 	});
 
 	it('exports Tempo IR to Go layout', () => {

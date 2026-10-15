@@ -1,5 +1,5 @@
-import { enumify } from '@magmacomputing/tempo/library';
-import type { ValueOf, KeyOf, Enum } from '@magmacomputing/tempo/library';
+import { enumify, Enum } from '@magmacomputing/tempo/library';
+import type { ValueOf, KeyOf } from '@magmacomputing/tempo/library';
 
 /**
  * ## DIALECT
@@ -72,15 +72,16 @@ export type DialectAlias = KeyOf<typeof DIALECT_ALIAS>;
  */
 export function normalizeDialect(input?: string): Dialect {
 	if (!input) return DIALECT.Ldml;
-	const lower = input.trim().toLowerCase();
-	if (DIALECT_ALIAS.has(lower as any))
-		return (DIALECT_ALIAS as any)[lower] as Dialect;
+	const trimmed = String(input).trim() as KeyOf<typeof DIALECT>;
+	const lower = trimmed.toLowerCase() as KeyOf<typeof DIALECT_ALIAS>;
 
-	if (DIALECT.includes(lower as any))
+	if (Enum.has(DIALECT_ALIAS, lower))
+		return DIALECT_ALIAS[lower] as Dialect;
+
+	if (Enum.includes(DIALECT, lower))
 		return lower as Dialect;
 
-	if (DIALECT.has(input.trim() as any))
-		return (DIALECT as any)[input.trim()] as Dialect;
-
-	return DIALECT.Ldml;
+	return Enum.has(DIALECT, trimmed)
+		? DIALECT[trimmed]
+		: DIALECT.Ldml;
 }

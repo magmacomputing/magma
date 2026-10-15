@@ -30,6 +30,12 @@ describe('Dialect Export', () => {
 
 		const res3 = Tempo.dialects.export('{wkd:upper}', 'oracle');
 		expect(res3.pattern).toBe('DAY');
+
+		const res4 = Tempo.dialects.export('{dd}-{mm:roman}-{yyyy}', 'oracle');
+		expect(res4.pattern).toBe('DD-RM-YYYY');
+
+		const res5 = Tempo.dialects.export('{dd}-{mm:roman:lower}-{yyyy}', 'oracle');
+		expect(res5.pattern).toBe('DD-rm-YYYY');
 	});
 
 	it('exports timezone and fractional second tokens to Oracle', () => {
@@ -133,6 +139,13 @@ describe('Dialect Export', () => {
 		expect(resPhp.unsupported).toContain('{doy}');
 		expect(resPhp.unsupported).toContain('{doy:raw}');
 		expect(resPhp.unsupported).toContain('{doy:ord}');
+
+		// Go unsupported unpadded and ordinal day-of-year tokens
+		const resGoDoy = Tempo.dialects.export('{doy} {doy:raw} {doy:ord}', 'go');
+		expect(resGoDoy.pattern).toBe('002 {doy:raw} {doy:ord}');
+		expect(resGoDoy.unsupported).not.toContain('{doy}');
+		expect(resGoDoy.unsupported).toContain('{doy:raw}');
+		expect(resGoDoy.unsupported).toContain('{doy:ord}');
 	});
 
 	it('works seamlessly from instance namespace t.dialects.export', () => {
