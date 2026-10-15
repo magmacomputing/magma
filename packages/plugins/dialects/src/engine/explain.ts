@@ -232,7 +232,7 @@ const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonl
 	d: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	j: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
 	S: { tempo: '', desc: 'English ordinal suffix (st, nd, rd, th)' },
-	z: { tempo: '{doy}', desc: 'Day of year (0-365 in PHP)' },
+	z: { tempo: '', desc: 'The day of the year starting from 0 (0-365; unsupported in 1-based Tempo)' },
 	l: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Sunday)' },
 	D: { tempo: '{www}', desc: 'Short weekday name (e.g. Sun)' },
 	N: { tempo: '{dow}', desc: 'ISO-8601 day of week (1 for Monday to 7 for Sunday)' },

@@ -233,6 +233,8 @@ export function compilePhpParser(mask: string): RegExp {
 
 	let pattern = '^';
 	let i = 0;
+	let groupIndex = 0;
+	const group = (name: string, rx: string) => `(?<${name}_${groupIndex++}>${rx})`;
 
 	while (i < mask.length) {
 		const char = mask[i];
@@ -245,75 +247,87 @@ export function compilePhpParser(mask: string): RegExp {
 
 		switch (char) {
 			case 'Y':
-				pattern += '(?<yyyy>\\d{4})';
+				pattern += group('yyyy', '\\d{4}');
 				break;
 			case 'y':
-				pattern += '(?<yy>\\d{2})';
+				pattern += group('yy', '\\d{2}');
 				break;
 			case 'm':
-				pattern += '(?<mm>\\d{2})';
+				pattern += group('mm', '\\d{2}');
 				break;
 			case 'n':
-				pattern += '(?<mm>\\d{1,2})';
+				pattern += group('mm', '\\d{1,2}');
 				break;
 			case 'M':
-				pattern += '(?<mon_short>[A-Za-z]{3})';
+				pattern += group('mon_short', '[A-Za-z]{3}');
 				break;
 			case 'F':
-				pattern += '(?<mon_long>[A-Za-z]+)';
+				pattern += group('mon_long', '[A-Za-z]+');
 				break;
 			case 'd':
-				pattern += '(?<dd>\\d{2})';
+				pattern += group('dd', '\\d{2}');
 				break;
 			case 'j':
-				pattern += '(?<dd>\\d{1,2})';
+				pattern += group('dd', '\\d{1,2}');
+				break;
+			case 'D':
+				pattern += '(?:[A-Za-z]{3})';
+				break;
+			case 'l':
+				pattern += '(?:[A-Za-z]+)';
 				break;
 			case 'S':
 				pattern += '(?:st|nd|rd|th)';
 				break;
 			case 'z':
-				pattern += '(?<doy>\\d{1,3})';
+				pattern += group('doy', '\\d{1,3}');
 				break;
 			case 'H':
-				pattern += '(?<hh>\\d{2})';
+				pattern += group('hh', '\\d{2}');
 				break;
 			case 'G':
-				pattern += '(?<hh>\\d{1,2})';
+				pattern += group('hh', '\\d{1,2}');
 				break;
 			case 'h':
-				pattern += '(?<h12>\\d{2})';
+				pattern += group('h12', '\\d{2}');
 				break;
 			case 'g':
-				pattern += '(?<h12>\\d{1,2})';
+				pattern += group('h12', '\\d{1,2}');
 				break;
 			case 'i':
-				pattern += '(?<mi>\\d{2})';
+				pattern += group('mi', '\\d{2}');
 				break;
 			case 's':
-				pattern += '(?<ss>\\d{2})';
+				pattern += group('ss', '\\d{2}');
 				break;
 			case 'v':
-				pattern += '(?<ms>\\d{3})';
+				pattern += group('ms', '\\d{3}');
 				break;
 			case 'u':
-				pattern += '(?<us>\\d{6})';
+				pattern += group('us', '\\d{6}');
 				break;
 			case 'a':
 			case 'A':
-				pattern += '(?<mer>am|pm|AM|PM)';
+				pattern += group('mer', 'am|pm|AM|PM');
 				break;
 			case 'P':
-				pattern += '(?<tz_offset>[+-]\\d{2}:\\d{2}|Z)';
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}|Z');
 				break;
 			case 'O':
-				pattern += '(?<tz_offset>[+-]\\d{4})';
+				pattern += group('tz_offset', '[+-]\\d{4}');
 				break;
 			case 'e':
 			case 'T':
-				pattern += '(?<tz_name>[A-Za-z0-9_/+]+)';
+				pattern += group('tz_name', '[A-Za-z0-9_/+]+');
 				break;
 			case 'U':
-				pattern += '(?<epoch_sec>\\d+)';
+				pattern += group('epoch_sec', '\\d+');
+				break;
+			case 'c':
+				pattern += `${group('yyyy', '\\d{4}')}-${group('mm', '\\d{2}')}-${group('dd', '\\d{2}')}T${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}:${group('ss', '\\d{2}')}${group('tz_offset', '[+-]\\d{2}:\\d{2}|Z')}`;
+				break;
+			case 'r':
+				pattern += `(?:[A-Za-z]{3}), ${group('dd', '\\d{1,2}')} ${group('mon_short', '[A-Za-z]{3}')} ${group('yyyy', '\\d{4}')} ${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}:${group('ss', '\\d{2}')} ${group('tz_offset', '[+-]\\d{4}')}`;
 				break;
 			default:
 				pattern += escapeRegex(char);

@@ -56,7 +56,7 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 | `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog |
 | `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD HH:mm:ss` | Moment.js, Day.js |
 | `'oracle'` | `DIALECT.Oracle` | `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'` | `YYYY-MM-DD HH24:MI:SS` | Oracle, PostgreSQL, Snowflake, AWS Redshift |
-| `'php'` | `DIALECT.Php` | `'laravel'`, `'wordpress'` | `Y-m-d H:i:s` | PHP, Laravel, WordPress, Symfony |
+| `'php'` | `DIALECT.Php` | `'laravel'`, `'WordPress'` | `Y-m-d H:i:s` | PHP, Laravel, WordPress, Symfony |
 | `'go'` | `DIALECT.Go` | `'golang'` | `2006-01-02 15:04:05` | Go (`time.Format`, `time.Parse`) |
 
 > [!TIP]

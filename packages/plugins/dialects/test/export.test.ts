@@ -116,6 +116,23 @@ describe('Dialect Export', () => {
 		expect(resLdml.unsupported).toContain('{ts}');
 		expect(resLdml.unsupported).toContain('{#quarter}');
 		expect(resLdml.unsupported).toContain('{#quarter:ord}');
+
+		// Go unsupported ISO week-year and week tokens
+		const resGo = Tempo.dialects.export('{yow} {yw} {woy} {wy}', 'go');
+		expect(resGo.unsupported).toContain('{yow}');
+		expect(resGo.unsupported).toContain('{yw}');
+		expect(resGo.unsupported).toContain('{woy}');
+		expect(resGo.unsupported).toContain('{wy}');
+
+		// Supported week-year and week-of-year in other dialects
+		const resOracle = Tempo.dialects.export('{yow}-{woy} {yw}-{wy}', 'oracle');
+		expect(resOracle.pattern).toBe('IYYY-IW IYYY-IW');
+
+		// PHP unsupported day-of-year tokens
+		const resPhp = Tempo.dialects.export('{doy} {doy:raw} {doy:ord}', 'php');
+		expect(resPhp.unsupported).toContain('{doy}');
+		expect(resPhp.unsupported).toContain('{doy:raw}');
+		expect(resPhp.unsupported).toContain('{doy:ord}');
 	});
 
 	it('works seamlessly from instance namespace t.dialects.export', () => {

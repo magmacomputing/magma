@@ -59,6 +59,35 @@ describe('PHP Date Dialect Engine', () => {
 		expect(doyParsed.dd).toBe(24);
 	});
 
+	it('parses compound masks c and r', () => {
+		const parsedC = Tempo.dialects.parse('2026-10-24T15:30:45+02:00', 'c', DIALECT.Php);
+		expect(parsedC.isValid).toBe(true);
+		expect(parsedC.yy).toBe(2026);
+		expect(parsedC.mm).toBe(10);
+		expect(parsedC.dd).toBe(24);
+		expect(parsedC.hh).toBe(15);
+		expect(parsedC.mi).toBe(30);
+		expect(parsedC.ss).toBe(45);
+		expect(parsedC.toDateTime().offset).toBe('+02:00');
+
+		const parsedR = Tempo.dialects.parse('Sat, 24 Oct 2026 15:30:45 +0200', 'r', DIALECT.Php);
+		expect(parsedR.isValid).toBe(true);
+		expect(parsedR.yy).toBe(2026);
+		expect(parsedR.mm).toBe(10);
+		expect(parsedR.dd).toBe(24);
+		expect(parsedR.hh).toBe(15);
+		expect(parsedR.mi).toBe(30);
+		expect(parsedR.ss).toBe(45);
+		expect(parsedR.toDateTime().offset).toBe('+02:00');
+	});
+
+	it('compiles parser without throwing on repeated layout tokens', () => {
+		const parsed = Tempo.dialects.parse('2026-10-24 (2026)', 'Y-m-d (Y)', DIALECT.Php, { timeZone: 'UTC' });
+		expect(parsed.yy).toBe(2026);
+		expect(parsed.mm).toBe(10);
+		expect(parsed.dd).toBe(24);
+	});
+
 	it('explains PHP masks to Tempo IR', () => {
 		const res = Tempo.dialects.explain('Y-m-d H:i:s', DIALECT.Php);
 		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');

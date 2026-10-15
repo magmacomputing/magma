@@ -1856,7 +1856,6 @@ export class Tempo {
 	get eraYear() { return this.toDateTime().eraYear; }
 	/** @internal 4-digit ISO week-numbering year */					get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
-	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/**
@@ -1864,6 +1863,7 @@ export class Tempo {
 	 * @deprecated Use `woy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
 	 */
 	get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/**
 	 * Day of the month (1-31).

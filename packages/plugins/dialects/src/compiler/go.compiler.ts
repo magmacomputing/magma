@@ -235,6 +235,8 @@ export function compileGoParser(mask: string): RegExp {
 
 	let pattern = '^';
 	let lastIndex = 0;
+	let groupIndex = 0;
+	const group = (name: string, rx: string) => `(?<${name}_${groupIndex++}>${rx})`;
 
 	for (const match of mask.matchAll(GO_TOKEN_REGEX)) {
 		const index = match.index!;
@@ -245,95 +247,95 @@ export function compileGoParser(mask: string): RegExp {
 		const token = match[0];
 		switch (token) {
 			case '2006':
-				pattern += '(?<yyyy>\\d{4})';
+				pattern += group('yyyy', '\\d{4}');
 				break;
 			case '06':
-				pattern += '(?<yy>\\d{2})';
+				pattern += group('yy', '\\d{2}');
 				break;
 			case 'January':
-				pattern += '(?<mon_long>[A-Za-z]+)';
+				pattern += group('mon_long', '[A-Za-z]+');
 				break;
 			case 'Jan':
-				pattern += '(?<mon_short>[A-Za-z]{3})';
+				pattern += group('mon_short', '[A-Za-z]{3}');
 				break;
 			case '01':
-				pattern += '(?<mm>\\d{2})';
+				pattern += group('mm', '\\d{2}');
 				break;
 			case '1':
-				pattern += '(?<mm>\\d{1,2})';
+				pattern += group('mm', '\\d{1,2}');
 				break;
 			case '02':
-				pattern += '(?<dd>\\d{2})';
+				pattern += group('dd', '\\d{2}');
 				break;
 			case '_2':
-				pattern += '(?<dd>\\s?\\d{1,2})';
+				pattern += group('dd', '\\s?\\d{1,2}');
 				break;
 			case '2':
-				pattern += '(?<dd>\\d{1,2})';
+				pattern += group('dd', '\\d{1,2}');
 				break;
 			case '002':
 			case '__2':
-				pattern += '(?<doy>\\d{1,3})';
+				pattern += group('doy', '\\d{1,3}');
 				break;
 			case 'Monday':
 			case 'Mon':
 				pattern += '(?:[A-Za-z]+)';
 				break;
 			case '15':
-				pattern += '(?<hh>\\d{2})';
+				pattern += group('hh', '\\d{2}');
 				break;
 			case '03':
-				pattern += '(?<h12>\\d{2})';
+				pattern += group('h12', '\\d{2}');
 				break;
 			case '3':
-				pattern += '(?<h12>\\d{1,2})';
+				pattern += group('h12', '\\d{1,2}');
 				break;
 			case '04':
-				pattern += '(?<mi>\\d{2})';
+				pattern += group('mi', '\\d{2}');
 				break;
 			case '4':
-				pattern += '(?<mi>\\d{1,2})';
+				pattern += group('mi', '\\d{1,2}');
 				break;
 			case '05':
-				pattern += '(?<ss>\\d{2})';
+				pattern += group('ss', '\\d{2}');
 				break;
 			case '5':
-				pattern += '(?<ss>\\d{1,2})';
+				pattern += group('ss', '\\d{1,2}');
 				break;
 			case 'PM':
 			case 'pm':
-				pattern += '(?<mer>AM|PM|am|pm)';
+				pattern += group('mer', 'AM|PM|am|pm');
 				break;
 			case '.000':
 			case '.999':
-				pattern += '(?:\\.(?<ms>\\d{1,3}))?';
+				pattern += `(?:\\.${group('ms', '\\d{1,3}')})?`;
 				break;
 			case '.000000':
 			case '.999999':
-				pattern += '(?:\\.(?<us>\\d{1,6}))?';
+				pattern += `(?:\\.${group('us', '\\d{1,6}')})?`;
 				break;
 			case '.000000000':
 			case '.999999999':
-				pattern += '(?:\\.(?<ns>\\d{1,9}))?';
+				pattern += `(?:\\.${group('ns', '\\d{1,9}')})?`;
 				break;
 			case 'Z07:00':
 			case 'Z07:00:00':
 			case '-07:00':
 			case '-07:00:00':
-				pattern += '(?<tz_offset>[+-]\\d{2}:\\d{2}|Z)';
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}|Z');
 				break;
 			case 'Z0700':
 			case 'Z070000':
 			case '-0700':
 			case '-070000':
-				pattern += '(?<tz_offset>[+-]\\d{4}|Z)';
+				pattern += group('tz_offset', '[+-]\\d{4}|Z');
 				break;
 			case 'Z07':
 			case '-07':
-				pattern += '(?<tz_offset>[+-]\\d{2}|Z)';
+				pattern += group('tz_offset', '[+-]\\d{2}|Z');
 				break;
 			case 'MST':
-				pattern += '(?<tz_name>[A-Za-z0-9_/+]+)';
+				pattern += group('tz_name', '[A-Za-z0-9_/+]+');
 				break;
 			default:
 				pattern += escapeRegex(token);

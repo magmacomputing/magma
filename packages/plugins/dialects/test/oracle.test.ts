@@ -187,6 +187,14 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(tWeekDay.dd).toBe(24);
 		});
 
+		it('rejects invalid ISO week date combinations', () => {
+			const tInvalidDay = Tempo.dialects.parse('2025-43-8', 'IYYY-IW-D', 'oracle', { error: 'catch' });
+			expect(tInvalidDay.isValid).toBe(false);
+
+			const tInvalidWeek = Tempo.dialects.parse('2025-53-1', 'IYYY-IW-D', 'oracle', { error: 'catch' });
+			expect(tInvalidWeek.isValid).toBe(false);
+		});
+
 		it('preserves round-tripping near ISO year boundaries with IYYY-MM-DD', () => {
 			// 2024-12-30 is Monday of ISO week 1, 2025 -> formats to "2025-12-30"
 			const orig = new Tempo('2024-12-30T12:00:00Z');

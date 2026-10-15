@@ -477,7 +477,10 @@ export function parseOracle(
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
 		const dVal = getGroup('weekday_num');
 		const isoDay = dVal ? parseInt(dVal, 10) : 1;
+		if (isoDay < 1 || isoDay > 7) return undefined;
 		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
 		year = targetDate.year;
 		month = targetDate.month;
 		day = targetDate.day;

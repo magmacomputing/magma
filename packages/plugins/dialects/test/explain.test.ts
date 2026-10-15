@@ -124,4 +124,10 @@ describe('Dialect Explain & Migration Helper', () => {
 		const expLit = Tempo.dialects.explain('YYYY"-"MM"-"DD HH24:MI:SS.FF3', 'oracle');
 		expect(expLit.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}');
 	});
+
+	it('marks PHP z as unsupported in explain mapping', () => {
+		const res = Tempo.dialects.explain('z', DIALECT.Php);
+		expect(res.tokens[0].tempo).toBe('');
+		expect(res.tokens[0].desc).toContain('unsupported');
+	});
 });

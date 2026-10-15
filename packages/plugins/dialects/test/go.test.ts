@@ -69,4 +69,11 @@ describe('Go Reference Time Dialect Engine', () => {
 		const go2oracle = Tempo.dialects.convert('2006-01-02 15:04:05', DIALECT.Go, DIALECT.Oracle);
 		expect(go2oracle.pattern).toBe('YYYY-MM-DD HH24:MI:SS');
 	});
+
+	it('compiles parser without throwing on repeated layout tokens', () => {
+		const parsed = Tempo.dialects.parse('24/10/2026 (24)', '02/01/2006 (02)', DIALECT.Go, { timeZone: 'UTC' });
+		expect(parsed.yy).toBe(2026);
+		expect(parsed.mm).toBe(10);
+		expect(parsed.dd).toBe(24);
+	});
 });
