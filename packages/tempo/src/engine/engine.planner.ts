@@ -71,14 +71,16 @@ const LAYOUT = {
 	rel: 'relativeOffset',
 	ye: 'yearEra',
 	ey: 'eraYearLeading',
+	dRy: 'dayRomanMonthYear',
+	Ryy: 'romanYearOnly',
 } as const;
 
 const COMPACT_SIX = new Set<string>([LAYOUT.hms, LAYOUT.dmy6, LAYOUT.mdy6, LAYOUT.ymd6]);
 const COMPACT_EIGHT = new Set<string>([LAYOUT.dt, LAYOUT.dmy, LAYOUT.mdy, LAYOUT.ymd]);
 const ALPHA_EXCLUDE = new Set<string>([LAYOUT.hms, LAYOUT.dmy6, LAYOUT.mdy6, LAYOUT.ymd6, LAYOUT.off]);
-const NUMERIC_EXCLUDE = new Set<string>([LAYOUT.wkd, LAYOUT.rel]);
+const NUMERIC_EXCLUDE = new Set<string>([LAYOUT.wkd, LAYOUT.rel, LAYOUT.dRy, LAYOUT.Ryy]);
 const COLON_BIAS = new Set<string>([LAYOUT.tm, LAYOUT.tmd, LAYOUT.dtm]);
-const ERA_BIAS = new Set<string>([LAYOUT.ye, LAYOUT.ey, LAYOUT.dmy, LAYOUT.mdy, LAYOUT.ymd]);
+const ERA_BIAS = new Set<string>([LAYOUT.ye, LAYOUT.ey, LAYOUT.dmy, LAYOUT.mdy, LAYOUT.ymd, LAYOUT.Ryy]);
 
 /**
  * Classify raw parse input once so later planner phases can choose candidate layouts.

@@ -113,7 +113,19 @@ const ROMAN_MATRIX: readonly (readonly [number, string])[] = [
 	[5, 'V'],
 	[4, 'IV'],
 	[1, 'I'],
-];
+]
+
+const ROMAN_VALUES: Record<string, number> = {
+	I: 1,
+	V: 5,
+	X: 10,
+	L: 50,
+	C: 100,
+	D: 500,
+	M: 1000,
+}
+
+const RE_ROMAN_NUMERALS = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/;
 
 /**
  * Converts a positive integer into its Roman numeral string representation.
@@ -122,11 +134,11 @@ const ROMAN_MATRIX: readonly (readonly [number, string])[] = [
  * @returns The Roman numeral string
  * @example
  * ```ts
- * convertToRoman(2026); // 'MMXXVI'
- * convertToRoman(14); // 'XIV'
+ * toRoman(2026); // 'MMXXVI'
+ * toRoman(14); // 'XIV'
  * ```
  */
-export function convertToRoman(num: number): string {
+export function toRoman(num: number): string {
 	if (!Number.isInteger(num) || num < 1 || num > 3999)
 		return '';
 
@@ -142,4 +154,33 @@ export function convertToRoman(num: number): string {
 
 	return result;
 }
+
+/**
+ * Converts a Roman numeral string into its numeric integer value.
+ *
+ * @param roman - The Roman numeral string to convert (case-insensitive)
+ * @returns The integer value (1-3999), or NaN if invalid
+ * @example
+ * ```ts
+ * fromRoman('MMXXVI'); // 2026
+ * fromRoman('XIV'); // 14
+ * fromRoman('IIII'); // NaN
+ * ```
+ */
+export function fromRoman(roman: string): number {
+	const str = roman?.trim?.().toUpperCase();
+	if (!str || !RE_ROMAN_NUMERALS.test(str))
+		return NaN;
+
+	let total = 0;
+	for (let i = 0; i < str.length; i++) {
+		const current = ROMAN_VALUES[str[i]] ?? 0;
+		const next = ROMAN_VALUES[str[i + 1]] ?? 0;
+
+		total += current < next ? -current : current;
+	}
+
+	return total;
+}
+
 

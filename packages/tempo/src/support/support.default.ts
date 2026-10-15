@@ -80,6 +80,8 @@ export const Snippet = looseIndex<symbol, RegExp>()({
 	[Token.slk]: new RegExp(Match.shorthand.source),					// shorthand shifter
 	[Token.era]: /(?:\s*(?<era>b\.?c\.?e\.?|c\.?e\.?|b\.?c\.?|a\.?d\.?))/i,	// historical era designation
 	[Token.nth]: /(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|current|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|last)/i,	// ordinal index (1st, 2nd, 3rd, last, etc)
+	[Token.Rm]: /(?<Rm>XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I)/i,	// Roman month (1-12)
+	[Token.Ry]: /(?<Ry>M{1,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3}))/i,	// Roman year (1-3999)
 })
 /** @internal Tempo Snippet type */
 export type Snippet = typeof Snippet
@@ -93,7 +95,7 @@ export type Snippet = typeof Snippet
  * @internal
  */
 export const datePattern = {
-	dmy: '{mod}?(?:{dd}{sep}?{mm}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?',
+	dmy: '{mod}?(?:{dd}{sep}?(?:{mm}|{Rm})({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?',
 	mdy: '{mod}?(?:{mm}{sep}?{dd}({sep}?{yy})?|{evt}|(?<slk>{slk})|{wkd}){afx}?'
 }
 
@@ -117,6 +119,8 @@ export const Layout = looseIndex<symbol, string>()({
 	[Token.rel]: '{nbr}{sep}?{unt}{sep}?{afx}',								// relative duration (e.g. 2 days ago)
 	[Token.ye]: '{mod}?{yy}{era}',														// explicit year and era (e.g. 200 BC)
 	[Token.ey]: '{mod}?{era}{sep}?{yy}',											// explicit leading era and year (e.g. BC 200)
+	[Token.dRy]: '{mod}?({wkd}{sep}+)?{dd}{sep}?{Rm}({sep}?{yy})?{era}?{afx}?{sfx}?{brk}?',// day-RomanMonth(-year) (e.g. 14.X.2026)
+	[Token.Ryy]: '{mod}?(?:anno\\s+domini\\s+|(?:copyright\\s*)?(?:©\\s*)?)?{Ry}{era}?{afx}?{sfx}?{brk}?',// archival Roman year (e.g. MMXXVI, Copyright © MMXXVI)
 })
 /** @internal Tempo Layout type */
 export type Layout = typeof Layout
@@ -204,7 +208,10 @@ export const Guard = [
 	'st', 'nd', 'rd', 'th',
 	'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
 	'mondays', 'tuesdays', 'wednesdays', 'thursdays', 'fridays', 'saturdays', 'sundays',
-	'bc', 'bce', 'ad', 'ce', 'b.c.', 'b.c.e.', 'a.d.', 'c.e.'
+	'bc', 'bce', 'ad', 'ce', 'b.c.', 'b.c.e.', 'a.d.', 'c.e.',
+	'anno', 'domini', 'copyright', '©',
+	'xii', 'xi', 'x', 'ix', 'viii', 'vii', 'vi', 'v', 'iv', 'iii', 'ii', 'i',
+	'm', 'd', 'c', 'l'
 ] as const;
 
 /** @internal baseline Intl settings */
