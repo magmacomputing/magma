@@ -61,6 +61,29 @@ describe('Dialects Cross-Dialect Converter (.convert)', () => {
 		// %s (epoch seconds) in POSIX translates to Tempo {ts}, which has no direct Oracle TO_CHAR token
 		const res = Tempo.dialects.convert('%Y-%m-%d %s', DIALECT.Strftime, DIALECT.Oracle);
 		expect(res.unsupported).toContain('{ts}');
+
+		// Oracle WW has no tempo mapping (tempo: '') -> tracked as unsupported, while FM is excluded
+		const resOracle = Tempo.dialects.convert('FM"Week "WW', DIALECT.Oracle, DIALECT.Strftime);
+		expect(resOracle.unsupported).toContain('WW');
+		expect(resOracle.unsupported).not.toContain('FM');
+	});
+
+	it('cross-converts between PHP date() and Go reference layouts', () => {
+		const res1 = Tempo.dialects.convert('Y-m-d H:i:s', DIALECT.Php, DIALECT.Go);
+		expect(res1.from).toBe(DIALECT.Php);
+		expect(res1.to).toBe(DIALECT.Go);
+		expect(res1.pattern).toBe('2006-01-02 15:04:05');
+
+		const res2 = Tempo.dialects.convert('2006-01-02 15:04:05', DIALECT.Go, DIALECT.Php);
+		expect(res2.from).toBe(DIALECT.Go);
+		expect(res2.to).toBe(DIALECT.Php);
+		expect(res2.pattern).toBe('Y-m-d H:i:s');
+
+		// Auto-detect Go layout
+		const resAuto = Tempo.dialects.convert('2006-01-02 15:04:05', DIALECT.Strftime);
+		expect(resAuto.from).toBe(DIALECT.Go);
+		expect(resAuto.to).toBe(DIALECT.Strftime);
+		expect(resAuto.pattern).toBe('%Y-%m-%d %H:%M:%S');
 	});
 
 	it('is available on instance namespace t.dialects.convert', () => {

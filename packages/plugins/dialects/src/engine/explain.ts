@@ -221,10 +221,88 @@ const ORACLE_UNPADDED_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: str
 	IW: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
 };
 
+const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
+	Y: { tempo: '{yyyy}', desc: '4-digit year' },
+	y: { tempo: '{yy}', desc: '2-digit year' },
+	o: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
+	m: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
+	n: { tempo: '{mm:raw}', desc: 'Unpadded month number (1-12)' },
+	M: { tempo: '{mmm}', desc: 'Short month name (e.g. Jan)' },
+	F: { tempo: '{mon}', desc: 'Full month name (e.g. January)' },
+	d: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
+	j: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	S: { tempo: '', desc: 'English ordinal suffix (st, nd, rd, th)' },
+	z: { tempo: '{doy}', desc: 'Day of year (0-365 in PHP)' },
+	l: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Sunday)' },
+	D: { tempo: '{www}', desc: 'Short weekday name (e.g. Sun)' },
+	N: { tempo: '{dow}', desc: 'ISO-8601 day of week (1 for Monday to 7 for Sunday)' },
+	w: { tempo: '{dow:locale}', desc: 'Day of week (0 for Sunday to 6 for Saturday)' },
+	W: { tempo: '{woy}', desc: 'ISO-8601 week number (01-53)' },
+	H: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
+	G: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
+	h: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	g: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	i: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
+	s: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
+	v: { tempo: '{ms}', desc: 'Millisecond (000-999)' },
+	u: { tempo: '{ff:6}', desc: 'Microseconds (6 digits)' },
+	a: { tempo: '{mer}', desc: 'AM/PM marker (lowercase)' },
+	A: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	O: { tempo: '{tz:offset:basic}', desc: 'Difference to GMT without colon (+0200)' },
+	P: { tempo: '{tz:offset}', desc: 'Difference to GMT with colon (+02:00)' },
+	T: { tempo: '{tz:short}', desc: 'Timezone abbreviation (e.g. UTC, EST)' },
+	e: { tempo: '{tz}', desc: 'Timezone identifier (e.g. UTC, Europe/London)' },
+	U: { tempo: '{ts}', desc: 'Seconds since the Unix Epoch' },
+	c: { tempo: '{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}{tz:offset}', desc: 'ISO 8601 date' },
+	r: { tempo: '{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss} {tz:offset:basic}', desc: 'RFC 2822 formatted date' },
+};
+
+const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
+	2006: { tempo: '{yyyy}', desc: '4-digit year' },
+	'06': { tempo: '{yy}', desc: '2-digit year' },
+	January: { tempo: '{mon}', desc: 'Full month name (e.g. January)' },
+	Jan: { tempo: '{mmm}', desc: 'Short month name (e.g. Jan)' },
+	'01': { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
+	1: { tempo: '{mm:raw}', desc: 'Unpadded month number (1-12)' },
+	'02': { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
+	_2: { tempo: '{dd:raw}', desc: 'Space-padded day of month ( 1-31)' },
+	2: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	'002': { tempo: '{doy}', desc: 'Day of year (001-366)' },
+	Monday: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Monday)' },
+	Mon: { tempo: '{www}', desc: 'Short weekday name (e.g. Mon)' },
+	15: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
+	'03': { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	3: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	'04': { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
+	4: { tempo: '{mi:raw}', desc: 'Unpadded minute (0-59)' },
+	'05': { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
+	5: { tempo: '{ss:raw}', desc: 'Unpadded second (0-59)' },
+	PM: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	pm: { tempo: '{mer}', desc: 'AM/PM marker (lowercase)' },
+	'.000': { tempo: '.{ms}', desc: 'Millisecond (000-999)' },
+	'.000000': { tempo: '.{ff:6}', desc: 'Microsecond (6 digits)' },
+	'.000000000': { tempo: '.{ff:9}', desc: 'Nanosecond (9 digits)' },
+	'.999': { tempo: '.{ms}', desc: 'Trailing millisecond' },
+	'.999999': { tempo: '.{ff:6}', desc: 'Trailing microsecond' },
+	'.999999999': { tempo: '.{ff:9}', desc: 'Trailing nanosecond' },
+	'Z07:00': { tempo: '{tz:offset}', desc: 'UTC Z or ISO-8601 offset' },
+	'Z07:00:00': { tempo: '{tz:offset}', desc: 'UTC Z or ISO-8601 offset with seconds' },
+	Z0700: { tempo: '{tz:offset:basic}', desc: 'UTC Z or basic numeric offset' },
+	Z070000: { tempo: '{tz:offset:basic}', desc: 'UTC Z or basic numeric offset with seconds' },
+	'-07:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset' },
+	'-07:00:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset with seconds' },
+	'-0700': { tempo: '{tz:offset:basic}', desc: 'Basic numeric offset' },
+	'-070000': { tempo: '{tz:offset:basic}', desc: 'Basic numeric offset with seconds' },
+	'-07': { tempo: '{tz:offset:hour}', desc: 'Hour-only numeric offset' },
+	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },
+};
+
 const LDML_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|ww|QQ|qq|ZZ|zz|a|d|H|h|k|m|s|S|c|e|E|w|y|L|M|Q|q|Z|z)/g;
 const STRFTIME_REGEX = /%([%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
 const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_REGEX = /"[^"]*"|TZH:TZM|HH24|HH12|SSSSS|MONTH|Month|month|IYYY|YYYY|RRRR|A\.M\.|P\.M\.|a\.m\.|p\.m\.|MON|Mon|mon|YYY|IYY|TZD|TZR|TZH|TZM|DAY|Day|day|DDD|FF[1-9]?|FM|FX|IW|WW|YY|RR|IY|MM|DD|DY|Dy|dy|HH|MI|SS|AM|PM|am|pm|RM|OF|D|W|Q|Y|I|J/gi;
+const GO_EXPLAIN_REGEX =
+	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon|Jan|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
 
 /**
  * Translates an external date format mask into native Tempo {token} syntax
@@ -326,6 +404,50 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 					} else {
 						pattern += raw;
 					}
+				}
+				lastIndex = index + raw.length;
+			}
+			if (lastIndex < mask.length)
+				pattern += mask.slice(lastIndex);
+			break;
+		}
+
+		case DIALECT.Php: {
+			let i = 0;
+			while (i < mask.length) {
+				const char = mask[i];
+				if (char === '\\' && i + 1 < mask.length) {
+					pattern += mask[i + 1];
+					i += 2;
+					continue;
+				}
+
+				const info = PHP_EXPLAIN_MAP[char];
+				if (info) {
+					pattern += info.tempo;
+					tokens.push({ source: char, tempo: info.tempo, desc: info.desc });
+				} else {
+					pattern += char;
+				}
+				i++;
+			}
+			break;
+		}
+
+		case DIALECT.Go: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(GO_EXPLAIN_REGEX)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += mask.slice(lastIndex, index);
+
+				const raw = match[0];
+				const info = GO_EXPLAIN_MAP[raw];
+				if (info) {
+					pattern += info.tempo;
+					tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+				} else {
+					pattern += raw;
 				}
 				lastIndex = index + raw.length;
 			}

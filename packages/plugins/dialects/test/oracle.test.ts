@@ -172,6 +172,34 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(t.dd).toBe(24);
 		});
 
+		it('parses ISO week date combinations (IYYY-IW and IYYY-IW-D)', () => {
+			const tWeek = Tempo.dialects.parse('2025-01', 'IYYY-IW', 'oracle');
+			expect(tWeek.isValid).toBe(true);
+			// Week 1 of 2025 starts on Monday 2024-12-30
+			expect(tWeek.yy).toBe(2024);
+			expect(tWeek.mm).toBe(12);
+			expect(tWeek.dd).toBe(30);
+
+			const tWeekDay = Tempo.dialects.parse('2025-43-5', 'IYYY-IW-D', 'oracle');
+			expect(tWeekDay.isValid).toBe(true);
+			expect(tWeekDay.yy).toBe(2025);
+			expect(tWeekDay.mm).toBe(10);
+			expect(tWeekDay.dd).toBe(24);
+		});
+
+		it('preserves round-tripping near ISO year boundaries with IYYY-MM-DD', () => {
+			// 2024-12-30 is Monday of ISO week 1, 2025 -> formats to "2025-12-30"
+			const orig = new Tempo('2024-12-30T12:00:00Z');
+			const formatted = orig.dialects.sql('IYYY-MM-DD');
+			expect(formatted).toBe('2025-12-30');
+
+			const parsed = Tempo.dialects.parse(formatted, 'IYYY-MM-DD', 'oracle');
+			expect(parsed.isValid).toBe(true);
+			expect(parsed.yy).toBe(2024);
+			expect(parsed.mm).toBe(12);
+			expect(parsed.dd).toBe(30);
+		});
+
 		it('parses two-digit years with YY (current century) and RR (pivot century)', () => {
 			const today2026 = new Tempo('2026-05-15T12:00:00Z').toDateTime();
 

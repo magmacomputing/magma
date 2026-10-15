@@ -61,6 +61,14 @@ export interface DialectsInstanceNamespace {
 	 */
 	sql(mask: string): string;
 	/**
+	 * Formats this instance using PHP date format specifiers (e.g. 'Y-m-d H:i:s').
+	 */
+	php(mask: string): string;
+	/**
+	 * Formats this instance using Go reference time format layout (e.g. '2006-01-02 15:04:05').
+	 */
+	go(mask: string): string;
+	/**
 	 * Formats this instance using a specified dialect mask.
 	 */
 	format(mask: string, dialect?: DialectInput): string;

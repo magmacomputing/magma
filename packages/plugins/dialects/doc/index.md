@@ -56,6 +56,8 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 | `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog |
 | `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD HH:mm:ss` | Moment.js, Day.js |
 | `'oracle'` | `DIALECT.Oracle` | `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'` | `YYYY-MM-DD HH24:MI:SS` | Oracle, PostgreSQL, Snowflake, AWS Redshift |
+| `'php'` | `DIALECT.Php` | `'laravel'`, `'wordpress'` | `Y-m-d H:i:s` | PHP, Laravel, WordPress, Symfony |
+| `'go'` | `DIALECT.Go` | `'golang'` | `2006-01-02 15:04:05` | Go (`time.Format`, `time.Parse`) |
 
 > [!TIP]
 > **Native Tempo Syntax is Optimal**
@@ -74,7 +76,9 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`t.dialects.strftime(mask)`** | Instance | POSIX strftime mask | `string` | Fast-path formatter for POSIX strftime specifiers (`%Y`, `%m`, `%d`, etc.). |
 | **`t.dialects.oracle(mask)`** | Instance | Oracle / SQL mask | `string` | Fast-path formatter for Oracle / PostgreSQL / Snowflake format models (`YYYY`, `HH24`, `MI`, etc.). |
 | **`t.dialects.sql(mask)`** | Instance | SQL / Oracle mask | `string` | Convenience alias for `t.dialects.oracle(mask)`. |
-| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%` and SQL specifiers. |
+| **`t.dialects.php(mask)`** | Instance | PHP date mask | `string` | Fast-path formatter for PHP `date()` specifiers (`Y`, `m`, `d`, `H`, `i`, `s`, etc.). |
+| **`t.dialects.go(mask)`** | Instance | Go reference mask | `string` | Fast-path formatter for Go reference time layout (`2006`, `01`, `02`, `15`, `04`, `05`). |
+| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%`, Go, and SQL specifiers. |
 | **`t.dialects.explain(mask, dialect?)`** | Instance | External format mask | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
 | **`t.dialects.export(pattern, dialect?)`** | Instance | Native Tempo pattern, target dialect | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
 | **`t.dialects.convert(mask, to)`** / **`convert(mask, from, to)`** | Instance | Mask, target (or source + target) | `ConvertResult` | Converts a format mask directly from one dialect to another. |

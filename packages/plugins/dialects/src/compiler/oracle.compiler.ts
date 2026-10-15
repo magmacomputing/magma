@@ -1,4 +1,4 @@
-import { pad, WeakCache, isNumber } from '@magmacomputing/tempo/library';
+import { pad, WeakCache } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
@@ -8,6 +8,10 @@ import {
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
+	resolveDayOfYear,
+	getIsoWeek,
+	fromIsoWeek,
+	resolveIsoCalendarYear,
 } from './shared.compiler.js';
 
 const ORACLE_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
@@ -24,27 +28,12 @@ const ROMAN_MAP: Readonly<Record<string, number>> = {
 	vii: 7, viii: 8, ix: 9, x: 10, xi: 11, xii: 12,
 };
 
-const EPOCH_1970_PLAIN_DATE = Temporal.PlainDate.from({ year: 1970, month: 1, day: 1 });
 const JULIAN_DAY_OFFSET_1970 = 2_440_588;
 
 function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
 	if (token === token.toLowerCase()) return str.toLowerCase();
 	return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
-
-function getIsoWeek(z: Temporal.ZonedDateTime): { weekOfYear: number; yearOfWeek: number } {
-	if (isNumber((z as any).weekOfYear) && isNumber((z as any).yearOfWeek))
-		return { weekOfYear: (z as any).weekOfYear, yearOfWeek: (z as any).yearOfWeek };
-
-	const date = Temporal.PlainDate.from({ year: z.year, month: z.month, day: z.day });
-	const dayOfWeek = date.dayOfWeek;
-	const thursday = date.add({ days: 4 - dayOfWeek });
-	const yearOfWeek = thursday.year;
-	const jan1 = Temporal.PlainDate.from({ year: yearOfWeek, month: 1, day: 1 });
-	const daysSinceJan1 = thursday.since(jan1, { largestUnit: 'days' }).days;
-	const weekOfYear = Math.floor(daysSinceJan1 / 7) + 1;
-	return { weekOfYear, yearOfWeek };
 }
 
 /**
@@ -150,8 +139,8 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					break;
 				case 'J':
 					parts.push((z) => {
-						const pd = z.toPlainDate().withCalendar('iso8601');
-						return String(JULIAN_DAY_OFFSET_1970 + pd.since(EPOCH_1970_PLAIN_DATE).days);
+						const daysSince1970 = Math.floor(Date.UTC(z.year, z.month - 1, z.day) / 86_400_000);
+						return String(JULIAN_DAY_OFFSET_1970 + daysSince1970);
 					});
 					break;
 
@@ -274,7 +263,7 @@ export function formatOracle(zdt: Temporal.ZonedDateTime, mask: string): string 
  * YYY, IYY, IY, Y, I, J, W, Q, IW, WW, SSSSS, TZH, TZM.
  */
 const ORACLE_UNSUPPORTED_PARSE_TOKENS: ReadonlySet<string> = new Set([
-	'YYY', 'IYY', 'IY', 'Y', 'I', 'J', 'W', 'Q', 'IW', 'WW', 'SSSSS', 'TZH', 'TZM',
+	'YYY', 'IYY', 'IY', 'Y', 'I', 'J', 'W', 'Q', 'WW', 'SSSSS', 'TZH', 'TZM',
 ]);
 
 /**
@@ -347,6 +336,9 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 					break;
 				case 'D':
 					pattern += group('weekday_num', '\\d{1}');
+					break;
+				case 'IW':
+					pattern += group('iw', '\\d{1,2}');
 					break;
 				case 'HH24':
 					pattern += group('hh', '\\d{1,2}');
@@ -422,6 +414,7 @@ export function parseOracle(
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
 	const iyyy = getGroup('iyyy');
+	const iw = getGroup('iw');
 	const yyVal = getGroup('yy');
 	const rrVal = getGroup('rr');
 	if (yyyy) {
@@ -470,14 +463,26 @@ export function parseOracle(
 	if (dd) {
 		day = parseInt(dd, 10);
 	} else if (doy && !mm && !month_name && !month_abbr) {
-		const dVal = parseInt(doy, 10);
-		const jan1 = Temporal.PlainDate.from({ year, month: 1, day: 1 });
-		if (dVal < 1 || dVal > jan1.daysInYear) return undefined;
-		const p = jan1.add({ days: dVal - 1 });
-		month = p.month;
-		day = p.day;
+		const res = resolveDayOfYear(year, parseInt(doy, 10));
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
 	} else if (!hasYear && !mm && !month_name && !month_abbr) {
 		day = today.day;
+	}
+
+	if (iw) {
+		const isoYear = iyyy ? parseInt(iyyy, 10) : ((today as any).yearOfWeek ?? today.year);
+		const isoWeek = parseInt(iw, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const dVal = getGroup('weekday_num');
+		const isoDay = dVal ? parseInt(dVal, 10) : 1;
+		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else if (iyyy) {
+		year = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day);
 	}
 
 	const time = resolveTimeComponents(getGroup);

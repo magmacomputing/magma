@@ -33,6 +33,11 @@ export function convertDialect(
 	const exported = exportDialect(explained.pattern, to);
 
 	const unsupportedSet = new Set<string>();
+	for (const token of explained.tokens) {
+		const upper = token.source.toUpperCase();
+		if (!token.tempo && upper !== 'FM' && upper !== 'FX')
+			unsupportedSet.add(token.source);
+	}
 	for (const token of exported.unsupported)
 		unsupportedSet.add(token);
 

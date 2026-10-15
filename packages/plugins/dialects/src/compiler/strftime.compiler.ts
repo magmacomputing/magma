@@ -8,6 +8,7 @@ import {
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
+	resolveDayOfYear,
 } from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
@@ -291,16 +292,10 @@ export function parseStrftime(
 	const dd = getGroup('dd');
 
 	if (day_of_year) {
-		const doy = parseInt(day_of_year, 10);
-		if (doy < 1 || doy > 366) return undefined;
-		try {
-			const pDate = Temporal.PlainDate.from({ year, month: 1, day: 1 }).add({ days: doy - 1 });
-			if (pDate.year !== year) return undefined;
-			month = pDate.month;
-			day = pDate.day;
-		} catch {
-			return undefined;
-		}
+		const res = resolveDayOfYear(year, parseInt(day_of_year, 10));
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
 	} else {
 		if (mm) month = parseInt(mm, 10);
 		else if (month_name || month_abbr) {
@@ -330,8 +325,10 @@ export function parseStrftime(
 	}
 
 	try {
-		return Temporal.PlainDateTime.from(
+		return Temporal.ZonedDateTime.from(
 			{
+				timeZone: tz,
+				calendar: cal,
 				year,
 				month,
 				day,
@@ -342,8 +339,8 @@ export function parseStrftime(
 				microsecond,
 			},
 			{ overflow: 'reject' }
-		).toZonedDateTime(tz).withCalendar(cal);
-	} catch (e) {
+		);
+	} catch {
 		return undefined;
 	}
 }

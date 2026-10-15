@@ -6,58 +6,46 @@
 
 # Token Specification & Cross-Ecosystem Matrix
 
-This document provides a comprehensive cross-reference matrix comparing date formatting and parsing tokens across **Native Tempo Core**, **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime` (C, Python, SQL)**.
+This document provides a comprehensive cross-reference matrix comparing date formatting and parsing tokens across **Native Tempo Core**, **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, **POSIX `strftime` (C, Python)**, **Oracle / SQL `TO_CHAR`**, **PHP `date()`**, and **Go (`time.Format`)**.
 
 ---
 
 ## 1. Comprehensive Token Cross-Reference Matrix
 
-| Category | Description | Unicode LDML / Luxon | Moment.js / Day.js | POSIX `strftime` | Native Tempo `{token}` |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Year** | 4-digit calendar year (`2026`) | `yyyy` or `y` | `YYYY` | `%Y` | `{yyyy}` |
-| | 2-digit calendar year (`26`) | `yy` | `YY` | `%y` | `{yy}` |
-| | 4-digit ISO week-numbering year | `YYYY` | `GGGG` or `gggg` | `%G` | `{yw}` |
-| | 2-digit ISO week-numbering year | `YY` | `GG` or `gg` | `%g` | `{yy}` (with week context) |
-| **Month** | Zero-padded month (`01`-`12`) | `MM` or `LL` | `MM` | `%m` | `{mm}` |
-| | Unpadded month (`1`-`12`) | `M` or `L` | `M` | `%-m` | `{mm:raw}` |
-| | Month with ordinal suffix (`10th`) | N/A | `Mo` | N/A | `{mm:ord}` |
-| | Short month name (`Oct`) | `MMM` or `LLL` | `MMM` | `%b` or `%h` | `{mmm}` |
-| | Full month name (`October`) | `MMMM` or `LLLL` | `MMMM` | `%B` | `{mon}` |
-| **Day of Month** | Zero-padded day (`01`-`31`) | `dd` | `DD` | `%d` | `{dd}` |
-| | Unpadded day (`1`-`31`) | `d` | `D` | `%e` or `%-d` | `{dd:raw}` |
-| | Day with ordinal suffix (`24th`) | N/A | `Do` | N/A | `{dd:ord}` |
-| **Day of Year** | Day of year (`001`-`366`) | `DDD` | `DDDD` | `%j` | `{doy}` |
-| | Unpadded day of year (`1`-`366`) | `D` | `DDD` | `%-j` | `{doy:raw}` |
-| **Week of Year** | Zero-padded ISO week (`01`-`53`) | `ww` | `WW` | `%V` | `{wy}` |
-| | Unpadded ISO week (`1`-`53`) | `w` | `W` | `%-V` | `{wy:raw}` |
-| **Weekday** | Full weekday name (`Saturday`) | `EEEE` or `cccc` | `dddd` | `%A` | `{wkd}` |
-| | Short weekday name (`Sat`) | `EEE` or `ccc` | `ddd` | `%a` | `{www}` |
-| | 2-character weekday name (`Sa`) | N/A | `dd` | N/A | `{www}` (or slice) |
-| | ISO Day of week (`1` = Mon ... `7` = Sun) | `c` or `e` | N/A | `%u` | `{dow}` |
-| | POSIX Day of week (`0` = Sun ... `6` = Sat) | N/A | `d` | `%w` | `{dow}` (ISO adjusted) |
-| **Hour (24h)** | Zero-padded 24-hour (`00`-`23`) | `HH` | `HH` | `%H` | `{hh}` |
-| | Unpadded 24-hour (`0`-`23`) | `H` | `H` | `%k` or `%-H` | `{hh:raw}` |
-| | Zero-padded 24-hour (`01`-`24`) | `kk` | `kk` | N/A | `{hh}` (normalized) |
-| **Hour (12h)** | Zero-padded 12-hour (`01`-`12`) | `hh` | `hh` | `%I` | `{h12}` |
-| | Unpadded 12-hour (`1`-`12`) | `h` | `h` | `%l` or `%-I` | `{h12:raw}` |
-| **Meridiem** | Uppercase AM/PM (`AM` / `PM`) | `aa` or `a` | `A` | `%p` | `{mer:upper}` |
-| | Lowercase am/pm (`am` / `pm`) | `a` | `a` | `%P` | `{mer}` |
-| **Minute** | Zero-padded minute (`00`-`59`) | `mm` | `mm` | `%M` | `{mi}` |
-| | Unpadded minute (`0`-`59`) | `m` | `m` | `%-M` | `{mi:raw}` |
-| **Second** | Zero-padded second (`00`-`59`) | `ss` | `ss` | `%S` | `{ss}` |
-| | Unpadded second (`0`-`59`) | `s` | `s` | `%-S` | `{ss:raw}` |
-| **Fractional** | Milliseconds (`000`-`999`) | `SSS` | `SSS` | N/A | `{ms}` |
-| | Hundredths (`00`-`99`) | `SS` | `SS` | N/A | `{ff:2}` |
-| | Tenths (`0`-`9`) | `S` | `S` | N/A | `{ff:1}` |
-| | Microseconds (`000000`-`999999`) | N/A | N/A | `%f` | `{ff:6}` |
-| **Timestamp** | Unix timestamp (seconds) | N/A | `X` | `%s` | `{ts}` |
-| | Unix timestamp (milliseconds) | N/A | `x` | N/A | `{ts:ms}` |
-| **Timezone** | Short abbreviation (`PST`, `UTC`) | `zzz` or `z` | `zz` or `z` | `%Z` | `{tz:short}` |
-| | Full localized name (`Pacific Standard Time`) | `zzzz` | N/A | N/A | `{tz:long}` |
-| | Compact offset (`-0800`, `+0530`) | `ZZ` or `Z` | `ZZ` | `%z` | `{tz:offsetcompact}` |
-| | Extended ISO offset (`-08:00`, `+05:30`) | `ZZZZZ` | `Z` | `%:z` | `{tz:offset}` |
-| | Localized GMT offset (`GMT-08:00`) | `ZZZZ` | N/A | N/A | `{tz:longoffset}` |
-| **Quarter** | Quarter number (`1`-`4`) | `Q` or `q` | `Q` | N/A | `{#quarter}` (with Term) |
+| Category | Description | LDML / Luxon | Moment | POSIX | Oracle | PHP | Go | Native Tempo |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Year** | 4-digit year (`2026`) | `yyyy` | `YYYY` | `%Y` | `YYYY` | `Y` | `2006` | `{yyyy}` |
+| | 2-digit year (`26`) | `yy` | `YY` | `%y` | `YY` | `y` | `06` | `{yy}` |
+| | 4-digit ISO week year | `YYYY` | `GGGG` | `%G` | `IYYY` | `o` | `2006` | `{yow}` |
+| **Month** | Zero-padded (`01`-`12`) | `MM` | `MM` | `%m` | `MM` | `m` | `01` | `{mm}` |
+| | Unpadded (`1`-`12`) | `M` | `M` | `%-m` | `FMMM` | `n` | `1` | `{mm:raw}` |
+| | Short name (`Oct`) | `MMM` | `MMM` | `%b` | `Mon` | `M` | `Jan` | `{mmm}` |
+| | Full name (`October`) | `MMMM` | `MMMM` | `%B` | `Month` | `F` | `January` | `{mon}` |
+| **Day** | Zero-padded day (`01`-`31`) | `dd` | `DD` | `%d` | `DD` | `d` | `02` | `{dd}` |
+| | Unpadded day (`1`-`31`) | `d` | `D` | `%-d` | `FMDD` | `j` | `2` | `{dd:raw}` |
+| | Ordinal day (`24th`) | `d` | `Do` | `%-d` | `DD` | `jS` | `2` | `{dd:ord}` |
+| **Day of Year** | Day of year (`001`-`366`) | `DDD` | `DDDD` | `%j` | `DDD` | `z` | `002` | `{doy}` |
+| **Week of Year**| ISO week (`01`-`53`) | `ww` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
+| **Weekday** | Full name (`Saturday`) | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
+| | Short name (`Sat`) | `EEE` | `ddd` | `%a` | `Dy` | `D` | `Mon` | `{www}` |
+| | ISO day of week (`1`-`7`) | `e` | `d` | `%u` | `D` | `N` | N/A | `{dow}` |
+| **Hour (24h)** | Zero-padded (`00`-`23`) | `HH` | `HH` | `%H` | `HH24` | `H` | `15` | `{hh}` |
+| | Unpadded (`0`-`23`) | `H` | `H` | `%-H` | `FMHH24`| `G` | `15` | `{hh:raw}` |
+| **Hour (12h)** | Zero-padded (`01`-`12`) | `hh` | `hh` | `%I` | `HH12` | `h` | `03` | `{h12}` |
+| | Unpadded (`1`-`12`) | `h` | `h` | `%-I` | `FMHH12`| `g` | `3` | `{h12:raw}` |
+| **Meridiem** | Uppercase (`AM` / `PM`) | `a` | `A` | `%p` | `AM` | `A` | `PM` | `{mer:upper}` |
+| | Lowercase (`am` / `pm`) | `a` | `a` | `%P` | `am` | `a` | `pm` | `{mer}` |
+| **Minute** | Zero-padded (`00`-`59`) | `mm` | `mm` | `%M` | `MI` | `i` | `04` | `{mi}` |
+| | Unpadded (`0`-`59`) | `m` | `m` | `%-M` | `FMMI` | `i` | `4` | `{mi:raw}` |
+| **Second** | Zero-padded (`00`-`59`) | `ss` | `ss` | `%S` | `SS` | `s` | `05` | `{ss}` |
+| | Unpadded (`0`-`59`) | `s` | `s` | `%-S` | `FMSS` | `s` | `5` | `{ss:raw}` |
+| **Fractional** | Milliseconds (`000`-`999`) | `SSS`| `SSS` | `%3f` | `FF3` | `v` | `.000` | `{ms}` |
+| | Microseconds (`6` digits) | `SSSSSS`| `SSSSSS`| `%6f` | `FF6` | `u` | `.000000`| `{ff:6}` |
+| | Nanoseconds (`9` digits) | `SSSSSSSSS`| `SSSSSSSSS`| `%9f` | `FF9` | N/A | `.000000000`| `{ff:9}` |
+| **Timezone** | Short abbreviation (`EST`) | `z` | `zz` | `%Z` | `TZD` | `T` | `MST` | `{tz:short}` |
+| | Standard offset (`+08:00`) | `ZZZZZ`| `Z` | `%z` | `TZH:TZM`| `P` | `-07:00` | `{tz:offset}` |
+| | Compact offset (`+0800`) | `ZZ` | `ZZ` | `%z` | `OF` | `O` | `-0700` | `{tz:offsetcompact}` |
+| **Timestamp** | Unix epoch (seconds) | `t` | `X` | `%s` | N/A | `U` | N/A | `{ts}` |
 | | Quarter with ordinal (`3rd`) | N/A | `Qo` | N/A | `{#quarter:ord}` |
 | | Full quarter name (`3rd quarter`) | `QQQQ` | N/A | N/A | `{#quarter}` |
 

@@ -1,13 +1,16 @@
 import { evaluate } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
-import { formatLdml, parseLdml } from './ldml.compiler.js';
-import { formatStrftime, parseStrftime } from './strftime.compiler.js';
-import { formatOracle, parseOracle } from './oracle.compiler.js';
+import { formatLdml, parseLdml } from '../compiler/ldml.compiler.js';
+import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js';
+import { formatOracle, parseOracle } from '../compiler/oracle.compiler.js';
+import { formatPhp, parsePhp } from '../compiler/php.compiler.js';
+import { formatGo, parseGo } from '../compiler/go.compiler.js';
 
-import { type ParseOptions as DialectOptions } from './shared.compiler.js';
+import { type ParseOptions as DialectOptions } from '../compiler/shared.compiler.js';
 
 const ORACLE_DETECTION_REGEX = /\bhh(?:24|12)\b/i;
 const ORACLE_UPPER_REGEX = /\b(?:MI|SSSSS|FF[1-9]?)\b/;
+const GO_DETECTION_REGEX = /\b2006\b|\b15:04\b|Z07:00|-07:00/;
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
@@ -16,6 +19,7 @@ export function detectDialect(mask: string, explicitDialect?: any): Dialect {
 	const resolved = evaluate(explicitDialect);
 	if (resolved) return normalizeDialect(String(resolved));
 	if (mask.includes('%')) return DIALECT.Strftime;
+	if (GO_DETECTION_REGEX.test(mask)) return DIALECT.Go;
 
 	return (ORACLE_DETECTION_REGEX.test(mask) || ORACLE_UPPER_REGEX.test(mask))
 		? DIALECT.Oracle
@@ -71,6 +75,10 @@ export function formatWithDialect(
 			return formatStrftime(zdt, mask);
 		case DIALECT.Moment:
 			return formatLdml(zdt, translateMomentToLdml(mask));
+		case DIALECT.Php:
+			return formatPhp(zdt, mask);
+		case DIALECT.Go:
+			return formatGo(zdt, mask);
 		case DIALECT.Ldml:
 		default:
 			return formatLdml(zdt, mask);
@@ -93,6 +101,10 @@ export function parseWithDialect(
 			return parseStrftime(input, mask, options);
 		case DIALECT.Moment:
 			return parseLdml(input, translateMomentToLdml(mask), options);
+		case DIALECT.Php:
+			return parsePhp(input, mask, options);
+		case DIALECT.Go:
+			return parseGo(input, mask, options);
 		case DIALECT.Ldml:
 		default:
 			return parseLdml(input, mask, options);

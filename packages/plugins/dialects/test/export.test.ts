@@ -70,6 +70,30 @@ describe('Dialect Export', () => {
 		expect(res3.pattern).toBe('Do [of] MMMM YYYY');
 	});
 
+	it('exports Tempo format strings to PHP date() format', () => {
+		const res1 = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', 'php');
+		expect(res1.dialect).toBe(DIALECT.Php);
+		expect(res1.pattern).toBe('Y-m-d H:i:s');
+
+		const res2 = Tempo.dialects.export('{wkd}, {mon} {dd}, {yyyy}', 'php');
+		expect(res2.pattern).toBe('l, F d, Y');
+
+		const res3 = Tempo.dialects.export('{h12}:{mi} {mer:upper}', 'php');
+		expect(res3.pattern).toBe('h:i A');
+	});
+
+	it('exports Tempo format strings to Go reference time layouts', () => {
+		const res1 = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', 'go');
+		expect(res1.dialect).toBe(DIALECT.Go);
+		expect(res1.pattern).toBe('2006-01-02 15:04:05');
+
+		const res2 = Tempo.dialects.export('{wkd}, {mon} {dd}, {yyyy}', 'go');
+		expect(res2.pattern).toBe('Monday, January 02, 2006');
+
+		const res3 = Tempo.dialects.export('{h12}:{mi} {mer:upper}', 'go');
+		expect(res3.pattern).toBe('03:04 PM');
+	});
+
 	it('handles dynamic fractional precision width (ff:1 to ff:9)', () => {
 		const resOracle = Tempo.dialects.export('{ff:4}', 'oracle');
 		expect(resOracle.pattern).toBe('FF4');
@@ -86,6 +110,12 @@ describe('Dialect Export', () => {
 		expect(res.unsupported).toContain('{ts}');
 		const tsToken = res.tokens.find(t => t.source === '{ts}');
 		expect(tsToken?.supported).toBe(false);
+
+		// LDML unsupported tokens
+		const resLdml = Tempo.dialects.export('{ts} {#quarter} {#quarter:ord}', 'ldml');
+		expect(resLdml.unsupported).toContain('{ts}');
+		expect(resLdml.unsupported).toContain('{#quarter}');
+		expect(resLdml.unsupported).toContain('{#quarter:ord}');
 	});
 
 	it('works seamlessly from instance namespace t.dialects.export', () => {

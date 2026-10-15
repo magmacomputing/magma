@@ -103,12 +103,12 @@ To emit external dialect masks from canonical Tempo patterns (for example, gener
 
 ```typescript
 // Export canonical Tempo pattern to Oracle / SQL TO_CHAR model
-const oracleExport = Tempo.dialects.export('{YYYY}-{MM}-{DD} {HH24}:{mi}:{ss}', 'oracle');
+const oracleExport = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', 'oracle');
 console.log(oracleExport.pattern);
 // Output: "YYYY-MM-DD HH24:MI:SS"
 
 // Export to POSIX strftime
-const posixExport = Tempo.dialects.export('{YYYY}-{MM}-{DD} {HH24}:{mi}:{ss}', 'strftime');
+const posixExport = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', 'strftime');
 console.log(posixExport.pattern);
 // Output: "%Y-%m-%d %H:%M:%S"
 ```

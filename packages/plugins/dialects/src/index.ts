@@ -5,9 +5,11 @@ import type { Tempo } from '@magmacomputing/tempo/core';
 
 import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAlias } from './constants.js';
 import { formatWithDialect, parseWithDialect } from './engine/dialect.registry.js';
-import { formatLdml, parseLdml } from './engine/ldml.compiler.js';
-import { formatStrftime, parseStrftime } from './engine/strftime.compiler.js';
-import { formatOracle, parseOracle } from './engine/oracle.compiler.js';
+import { formatLdml, parseLdml } from './compiler/ldml.compiler.js';
+import { formatStrftime, parseStrftime } from './compiler/strftime.compiler.js';
+import { formatOracle, parseOracle } from './compiler/oracle.compiler.js';
+import { formatPhp, parsePhp } from './compiler/php.compiler.js';
+import { formatGo, parseGo } from './compiler/go.compiler.js';
 import { explain, type ExplainResult, type ExplainedToken } from './engine/explain.js';
 import { exportDialect } from './engine/export.js';
 import { convertDialect } from './engine/convert.js';
@@ -26,6 +28,10 @@ export {
 	parseStrftime,
 	formatOracle,
 	parseOracle,
+	formatPhp,
+	parsePhp,
+	formatGo,
+	parseGo,
 	explain,
 	exportDialect,
 	convertDialect,
@@ -110,6 +116,8 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 						strftime: (mask: string) => format(mask, DIALECT.Strftime),
 						oracle: (mask: string) => format(mask, DIALECT.Oracle),
 						sql: (mask: string) => format(mask, DIALECT.Oracle),
+						php: (mask: string) => format(mask, DIALECT.Php),
+						go: (mask: string) => format(mask, DIALECT.Go),
 						format,
 						explain: (mask: string, dialect?: DialectInput): ExplainResult => explain(mask, dialect),
 						export: (mask: string, dialect?: DialectInput): ExportResult => exportDialect(mask, dialect),

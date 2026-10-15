@@ -10,11 +10,15 @@ export const DIALECT: Enum.wrap<{
 	Strftime: 'strftime';
 	Moment: 'moment';
 	Oracle: 'oracle';
+	Php: 'php';
+	Go: 'go';
 }> = enumify({
 	Ldml: 'ldml',
 	Strftime: 'strftime',
 	Moment: 'moment',
 	Oracle: 'oracle',
+	Php: 'php',
+	Go: 'go',
 });
 
 export type Dialect = ValueOf<typeof DIALECT>;
@@ -38,6 +42,9 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	redshift: 'oracle';
 	to_char: 'oracle';
 	tochar: 'oracle';
+	laravel: 'php';
+	wordpress: 'php';
+	golang: 'go';
 }> = enumify({
 	luxon: 'ldml',
 	datefns: 'ldml',
@@ -53,6 +60,9 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	redshift: 'oracle',
 	to_char: 'oracle',
 	tochar: 'oracle',
+	laravel: 'php',
+	wordpress: 'php',
+	golang: 'go',
 });
 
 export type DialectAlias = KeyOf<typeof DIALECT_ALIAS>;

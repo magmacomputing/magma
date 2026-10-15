@@ -172,15 +172,30 @@ packages/tempo/src/plugin/dialect/
 ├── compiler/
 │   ├── ldml.compiler.ts       # Unicode LDML layout compiler & cache
 │   ├── strftime.compiler.ts   # POSIX strftime formatter and parser
-│   └── explain.ts             # .explain() token breakdown and migration assistant
+│   ├── oracle.compiler.ts     # Oracle / SQL TO_CHAR formatter and parser
+│   ├── php.compiler.ts        # PHP date() formatter and parser
+│   ├── go.compiler.ts         # Go reference time formatter and parser
+│   └── shared.compiler.ts     # Zero-allocation date & ISO week arithmetic
 ├── shims/
-│   └── luxon.shim.ts          # t.toFormat() and Tempo.fromFormat() convenience shims
+│   └── luxon.shim.ts          # t.toFormat(), Tempo.fromFormat(), Tempo.fromFormats() convenience shims
 ├── dialect.plugin.ts          # DialectsPlugin definition
 └── dialect.index.ts           # Public exports
 ```
 
-### Full vs. Core Modularity
-* **Standard Tempo (`tempo.index.ts`)**: Auto-registers `DialectsPlugin` on startup alongside `StandardTerms`, `FormatModule`, and `ParseModule`. Setting `Tempo.init({ dialect: 'moment' })` works instantly with zero manual plugin wiring.
+### Full vs. Core Modularity (Tier A & Tier B Architecture)
+To ensure **100% synchronous execution** in core Tempo without asynchronous loader overhead or bundle bloat, dialect support is partitioned into two tiers:
+
+* **Tier A — Runtime Dialect Compilers (Standard Tempo `tempo.index.ts`)**:
+  - Auto-registers the 5 runtime formatting and parsing compilers (`ldml`, `strftime`, `oracle`, `php`, `go`) alongside `StandardTerms`, `FormatModule`, and `ParseModule`.
+  - Includes auto-detection (`detectDialect`), direct dialect instance methods (`t.dialects.sql()`, `t.dialects.php()`, `t.dialects.go()`), and `luxon.shim.ts` (`t.toFormat()`, `Tempo.fromFormat()`).
+  - Total overhead: **~30.8 KB minified (~7.9 KB gzipped)** — a $< 10\%$ increase to standard Tempo's bundle for universal multi-ecosystem compatibility.
+* **Tier B — Introspection & Migration Tooling (`@magmacomputing/tempo/migrate`)**:
+  - Contains `.explain()` (AST token breakdown with human-readable descriptions), `.export()` (egress mapping), and `.convert()` (cross-ecosystem transpilation).
+  - Kept out of the core runtime to avoid bundling ~28 KB minified (~8.4 KB gzipped) of descriptive text strings into applications that only need formatting and parsing.
+  - Imported on-demand by developers during migration phases or config translation tasks:
+    ```typescript
+    import { explain, exportDialect, convert } from '@magmacomputing/tempo/migrate';
+    ```
 * **Tempo Core (`core.index.ts`)**: Dialects remains completely **unregistered** in `@magmacomputing/tempo/core` (or `@tempo-dev/core`), preserving zero-overhead and tree-shakeability for minimalist applications and library authors.
 
 ### Package Exports & Type Augmentation
@@ -190,6 +205,11 @@ packages/tempo/src/plugin/dialect/
     "types": "./dist/plugin/dialect/dialect.index.d.ts",
     "import": "./dist/plugin/dialect/dialect.index.js",
     "default": "./dist/plugin/dialect/dialect.index.js"
+  },
+  "./migrate": {
+    "types": "./dist/plugin/dialect/migrate.index.d.ts",
+    "import": "./dist/plugin/dialect/migrate.index.js",
+    "default": "./dist/plugin/dialect/migrate.index.js"
   }
   ```
 * **Type Declaration Merging (`tempo.type.ts`)**:
@@ -204,7 +224,7 @@ Following the precedent set when `packages/plugins/astro` was retired and migrat
    ```text
    npm deprecate @magmacomputing/tempo-plugin-dialects "Dialects are now built directly into Tempo v5. Use @magmacomputing/tempo or @tempo-dev/core."
    ```
-3. Existing unit tests (38 tests) will be migrated to `packages/tempo/test/plugin/dialect/`.
+3. Existing unit tests will be migrated to `packages/tempo/test/plugin/dialect/`.
 
 ---
 

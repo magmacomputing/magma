@@ -430,8 +430,10 @@ export function parseLdml(
 		millisecond = parseInt(ms.padEnd(3, '0').slice(0, 3), 10);
 
 	try {
-		return Temporal.PlainDateTime.from(
+		return Temporal.ZonedDateTime.from(
 			{
+				timeZone: tz,
+				calendar: cal,
 				year,
 				month,
 				day,
@@ -441,8 +443,8 @@ export function parseLdml(
 				millisecond,
 			},
 			{ overflow: 'reject' }
-		).toZonedDateTime(tz).withCalendar(cal);
-	} catch (e) {
+		);
+	} catch {
 		return undefined;
 	}
 }
