@@ -130,4 +130,24 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(res.tokens[0].tempo).toBe('');
 		expect(res.tokens[0].desc).toContain('unsupported');
 	});
+
+	it('marks unsupported Go tokens (__2, Z0700, Z070000, -070000) as unsupported in explain mapping', () => {
+		const res = Tempo.dialects.explain('2006-__2 Z0700 Z070000 -070000', DIALECT.Go);
+		const tokens = res.tokens;
+		const d2 = tokens.find(t => t.source === '__2');
+		expect(d2?.tempo).toBe('');
+		expect(d2?.desc).toContain('unsupported');
+
+		const z0700 = tokens.find(t => t.source === 'Z0700');
+		expect(z0700?.tempo).toBe('');
+		expect(z0700?.desc).toContain('unsupported');
+
+		const z070000 = tokens.find(t => t.source === 'Z070000');
+		expect(z070000?.tempo).toBe('');
+		expect(z070000?.desc).toContain('unsupported');
+
+		const m070000 = tokens.find(t => t.source === '-070000');
+		expect(m070000?.tempo).toBe('');
+		expect(m070000?.desc).toContain('unsupported');
+	});
 });

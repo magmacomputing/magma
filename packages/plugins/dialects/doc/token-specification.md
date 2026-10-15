@@ -28,9 +28,9 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | **Week of Year**| ISO week (`01`-`53`) | `ww` | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
 | **Weekday** | Full name (`Saturday`) | `EEEE` | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
 | | Short name (`Sat`) | `EEE` | `EEE` | `ddd` | `%a` | `Dy` | `D` | `Mon` | `{www}` |
-| | ISO day of week (`1`-`7`) | `e` | `E` | `d` | `%u` | `D` | `N` | N/A | `{dow}` |
+| | ISO day of week (`1`-`7`) | `e`* | `E` | `E` | `%u` | `D`* | `N` | N/A | `{dow}` |
 | **Hour (24h)** | Zero-padded (`00`-`23`) | `HH` | `HH` | `HH` | `%H` | `HH24` | `H` | `15` | `{hh}` |
-| | Unpadded (`0`-`23`) | `H` | `H` | `H` | `%-H` | `FMHH24`| `G` | `15` | `{hh:raw}` |
+| | Unpadded (`0`-`23`) | `H` | `H` | `H` | `%-H` | `FMHH24`| `G` | N/A | `{hh:raw}` |
 | **Hour (12h)** | Zero-padded (`01`-`12`) | `hh` | `hh` | `hh` | `%I` | `HH12` | `h` | `03` | `{h12}` |
 | | Unpadded (`1`-`12`) | `h` | `h` | `h` | `%-I` | `FMHH12`| `g` | `3` | `{h12:raw}` |
 | **Meridiem** | Uppercase (`AM` / `PM`) | `a` | `a` | `A` | `%p` | `AM` | `A` | `PM` | `{mer:upper}` |
@@ -50,7 +50,7 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Full quarter name (`3rd quarter`) | `QQQQ` | `qqqq` | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
 
 > [!NOTE]
-> `*` `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month, not an ordinal suffix.
+> `*` In LDML (`e`) and Oracle (`D`), day-of-week numeric indexing is territory/locale-dependent; Moment uses `E` for standard ISO weekdays (1–7). Go’s `15` layout always zero-pads 24-hour hours (no unpadded equivalent). `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month, not an ordinal suffix.
 
 ---
 

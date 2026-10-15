@@ -29,6 +29,19 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(t.dialects.go('2006-01-02T15:04:05Z07:00')).toBe('2026-10-24T15:30:45+02:00');
 		expect(t.dialects.go('2006-01-02T15:04:05.000Z07:00')).toBe('2026-10-24T15:30:45.123+02:00');
 		expect(t.dialects.go('2006-01-02T15:04:05.000000Z07:00')).toBe('2026-10-24T15:30:45.123456+02:00');
+
+		// Seconds-precision timezone offset formats
+		expect(t.dialects.go('2006-01-02 15:04:05 Z07:00:00')).toBe('2026-10-24 15:30:45 +02:00:00');
+		expect(t.dialects.go('2006-01-02 15:04:05 -07:00:00')).toBe('2026-10-24 15:30:45 +02:00:00');
+		expect(t.dialects.go('2006-01-02 15:04:05 Z070000')).toBe('2026-10-24 15:30:45 +020000');
+		expect(t.dialects.go('2006-01-02 15:04:05 -070000')).toBe('2026-10-24 15:30:45 +020000');
+
+		// UTC emits Z for Z-prefixed layouts, numeric offset for hyphen-prefixed layouts
+		const tUtc = new Tempo('2026-10-24T15:30:45Z');
+		expect(tUtc.dialects.go('15:04:05 Z07:00:00')).toBe('15:30:45 Z');
+		expect(tUtc.dialects.go('15:04:05 Z070000')).toBe('15:30:45 Z');
+		expect(tUtc.dialects.go('15:04:05 -07:00:00')).toBe('15:30:45 +00:00:00');
+		expect(tUtc.dialects.go('15:04:05 -070000')).toBe('15:30:45 +000000');
 	});
 
 	it('parses formatted Go date strings', () => {
@@ -43,12 +56,19 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(doyParsed.yy).toBe(2026);
 		expect(doyParsed.mm).toBe(10);
 		expect(doyParsed.dd).toBe(24);
-		// Seconds-precision offsets
+		// Seconds-precision offsets (zero seconds)
 		const parsedSec = Tempo.dialects.parse('2026-10-24 15:30:45+05:30:00', '2006-01-02 15:04:05Z07:00:00', DIALECT.Go);
 		expect(parsedSec.toDateTime().offset).toBe('+05:30');
 
 		const parsedSecCompact = Tempo.dialects.parse('2026-10-24 15:30:45+053000', '2006-01-02 15:04:05Z070000', DIALECT.Go);
 		expect(parsedSecCompact.toDateTime().offset).toBe('+05:30');
+
+		// Z layout accepts Z for UTC
+		const parsedZ = Tempo.dialects.parse('2026-10-24 15:30:45Z', '2006-01-02 15:04:05Z07:00:00', DIALECT.Go);
+		expect(parsedZ.iso).toBe('2026-10-24T15:30:45Z');
+
+		// Non-zero offset seconds cannot be represented in Temporal ZonedDateTime and are rejected
+		expect(() => Tempo.dialects.parse('2026-10-24 15:30:45+05:30:45', '2006-01-02 15:04:05-07:00:00', DIALECT.Go).toDateTime()).toThrow();
 	});
 
 	it('auto-detects Go layout in explain and detectDialect', () => {
@@ -61,9 +81,11 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(Tempo.dialects.explain('3:04 PM').dialect).toBe(DIALECT.Go);
 		expect(Tempo.dialects.explain('03:04:05').dialect).toBe(DIALECT.Go);
 
-		// Masks with separated numbers should not false-positive as Go
+		// Masks with separated numbers or LDML conflicts should not false-positive as Go
 		expect(Tempo.dialects.explain('HH24:MI 01 06').dialect).toBe(DIALECT.Oracle);
 		expect(Tempo.dialects.explain('yyyy-MM-dd 01 06').dialect).toBe(DIALECT.Ldml);
+		expect(Tempo.dialects.explain('yyyy-MM-dd 15:04:05').dialect).toBe(DIALECT.Ldml);
+		expect(Tempo.dialects.explain('yyyy-MM-dd 03:04:05').dialect).toBe(DIALECT.Ldml);
 	});
 
 	it('exports Tempo IR to Go layout', () => {

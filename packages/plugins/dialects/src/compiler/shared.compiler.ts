@@ -63,8 +63,10 @@ export function resolveParseContext(
 	if (tz_offset) {
 		let norm = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
 		if (RE_OFFSET_WITH_SECONDS.test(norm)) {
+			if (!norm.endsWith(':00')) return undefined;
 			norm = norm.slice(0, 6);
 		} else if (RE_OFFSET_COMPACT_SECONDS.test(norm)) {
+			if (!norm.endsWith('00')) return undefined;
 			norm = norm.slice(0, 5);
 		}
 		tz = norm;

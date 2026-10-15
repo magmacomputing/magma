@@ -23,6 +23,11 @@ function getTotalNanoseconds(zdt: Temporal.ZonedDateTime): number {
 	return zdt.millisecond * 1_000_000 + zdt.microsecond * 1_000 + zdt.nanosecond;
 }
 
+function formatOffsetSeconds(offset: string, sep: string = ''): string {
+	const [hh, mm, ss = '00'] = offset.split(':');
+	return `${hh}${sep}${mm}${sep}${ss}`;
+}
+
 /**
  * Compiles a Go reference time format mask into a formatter function.
  */
@@ -155,23 +160,31 @@ export function compileGoFormatter(mask: string): FormatterFn {
 
 			// Timezone
 			case 'Z07:00':
+				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : zdt.offset.slice(0, 6)));
+				break;
 			case 'Z07:00:00':
-				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : zdt.offset));
+				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : formatOffsetSeconds(zdt.offset, ':')));
 				break;
 			case 'Z0700':
+				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : zdt.offset.slice(0, 6).replace(':', '')));
+				break;
 			case 'Z070000':
-				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : zdt.offset.replace(':', '')));
+				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : formatOffsetSeconds(zdt.offset, '')));
 				break;
 			case 'Z07':
 				parts.push((zdt) => (zdt.offset === '+00:00' ? 'Z' : zdt.offset.slice(0, 3)));
 				break;
 			case '-07:00':
+				parts.push((zdt) => zdt.offset.slice(0, 6));
+				break;
 			case '-07:00:00':
-				parts.push((zdt) => zdt.offset);
+				parts.push((zdt) => formatOffsetSeconds(zdt.offset, ':'));
 				break;
 			case '-0700':
+				parts.push((zdt) => zdt.offset.slice(0, 6).replace(':', ''));
+				break;
 			case '-070000':
-				parts.push((zdt) => zdt.offset.replace(':', ''));
+				parts.push((zdt) => formatOffsetSeconds(zdt.offset, ''));
 				break;
 			case '-07':
 				parts.push((zdt) => zdt.offset.slice(0, 3));
@@ -322,25 +335,25 @@ export function compileGoParser(mask: string): RegExp {
 				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}|Z');
 				break;
 			case 'Z07:00:00':
-				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}(?::\\d{2})?|Z');
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}:\\d{2}|Z');
 				break;
 			case '-07:00':
 				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}');
 				break;
 			case '-07:00:00':
-				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}(?::\\d{2})?');
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}:\\d{2}');
 				break;
 			case 'Z0700':
 				pattern += group('tz_offset', '[+-]\\d{4}|Z');
 				break;
 			case 'Z070000':
-				pattern += group('tz_offset', '[+-]\\d{4}(?:\\d{2})?|Z');
+				pattern += group('tz_offset', '[+-]\\d{6}|Z');
 				break;
 			case '-0700':
 				pattern += group('tz_offset', '[+-]\\d{4}');
 				break;
 			case '-070000':
-				pattern += group('tz_offset', '[+-]\\d{4}(?:\\d{2})?');
+				pattern += group('tz_offset', '[+-]\\d{6}');
 				break;
 			case 'Z07':
 				pattern += group('tz_offset', '[+-]\\d{2}|Z');
