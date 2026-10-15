@@ -8,12 +8,14 @@ import {
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
+	fromIsoWeek,
+	getIsoWeek,
 } from './shared.compiler.js';
 
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|SSS|MMM|LLL|EEE|ccc|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|a|Do|d|H|h|k|m|s|S|c|e|E|y|L|M|ZZZZZ|ZZZZ|ZZZ|ZZ|Z|zzzz|zzz|zz|z)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|ZZZZ|zzzz|SSS|MMM|LLL|EEE|ccc|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|ZZ|zz|y|M|L|d|H|h|k|m|s|S|a|c|e|E|w|Z|z)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -55,6 +57,12 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'y':
 					parts.push((z) => String(z.year));
+					break;
+				case 'ww':
+					parts.push((z) => pad((z as any).weekOfYear ?? 1, 2));
+					break;
+				case 'w':
+					parts.push((z) => String((z as any).weekOfYear ?? 1));
 					break;
 
 				case 'MMMM':
@@ -240,15 +248,25 @@ export function compileLdmlParser(mask: string): RegExp {
 		} else {
 			switch (token) {
 				case 'yyyy':
-				case 'YYYY':
 					pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
 					break;
+				case 'YYYY':
+					pattern += group('yyyy_week', '[+-]?\\d{4,6}|\\d{4}');
+					break;
 				case 'yy':
-				case 'YY':
 					pattern += group('yy', '\\d{2}');
+					break;
+				case 'YY':
+					pattern += group('yy_week', '\\d{2}');
 					break;
 				case 'y':
 					pattern += group('yyyy', '\\d{1,6}');
+					break;
+				case 'ww':
+					pattern += group('week_of_year', '\\d{2}');
+					break;
+				case 'w':
+					pattern += group('week_of_year', '\\d{1,2}');
 					break;
 
 				case 'MMMM':
@@ -323,7 +341,7 @@ export function compileLdmlParser(mask: string): RegExp {
 
 				case 'aa':
 				case 'a':
-					pattern += group('mer', '[AaPp][Mm]?');
+					pattern += group('mer', '[AaPp][Mm]');
 					break;
 
 				case 'EEEE':
@@ -391,34 +409,71 @@ export function parseLdml(
 	const { tz, today, cal } = ctx;
 
 	let year = today.year;
+	let month = 1;
+	let day = 1;
+
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
-	if (yyyy) year = parseInt(yyyy, 10);
-	else if (yyVal) {
+	const yyyyWeek = getGroup('yyyy_week');
+	const yyWeek = getGroup('yy_week');
+	const weekOfYear = getGroup('week_of_year');
+	const weekdayNum = getGroup('weekday_num');
+	const mm = getGroup('mm');
+	const month_name = getGroup('month_name');
+	const month_abbr = getGroup('month_abbr');
+	const dd = getGroup('dd');
+	const dd_ord = getGroup('dd_ord');
+
+	if (yyyy) {
+		year = parseInt(yyyy, 10);
+	} else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
 	}
 
-	let month = 1;
-	const mm = getGroup('mm');
-	const month_name = getGroup('month_name');
-	const month_abbr = getGroup('month_abbr');
-	if (mm) month = parseInt(mm, 10);
-	else if (month_name || month_abbr) {
-		const m = resolveMonth(month_name || month_abbr!);
-		if (m) month = m;
-		else return undefined;
-	} else if (!yyyy && !yyVal) {
-		month = today.month;
-	}
+	if (yyyyWeek || yyWeek) {
+		if (!weekOfYear) return undefined;
+		let isoYear = yyyyWeek ? parseInt(yyyyWeek, 10) : parseInt(yyWeek!, 10);
+		if (yyWeek && !yyyyWeek)
+			isoYear = isoYear >= 70 ? 1900 + isoYear : 2000 + isoYear;
 
-	let day = 1;
-	const dd = getGroup('dd');
-	const dd_ord = getGroup('dd_ord');
-	if (dd) day = parseInt(dd, 10);
-	else if (dd_ord) day = parseInt(dd_ord, 10);
-	else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
-		day = today.day;
+		const isoWeek = parseInt(weekOfYear, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
+		if (isoDay < 1 || isoDay > 7) return undefined;
+		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else if (weekOfYear) {
+		const isoWeek = parseInt(weekOfYear, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
+		if (isoDay < 1 || isoDay > 7) return undefined;
+		const targetDate = fromIsoWeek(year, isoWeek, isoDay);
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else {
+		if (mm) {
+			month = parseInt(mm, 10);
+		} else if (month_name || month_abbr) {
+			const m = resolveMonth(month_name || month_abbr!);
+			if (m) month = m;
+			else return undefined;
+		} else if (!yyyy && !yyVal) {
+			month = today.month;
+		}
+
+		if (dd) {
+			day = parseInt(dd, 10);
+		} else if (dd_ord) {
+			day = parseInt(dd_ord, 10);
+		} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+			day = today.day;
+		}
 	}
 
 	const time = resolveTimeComponents(getGroup);

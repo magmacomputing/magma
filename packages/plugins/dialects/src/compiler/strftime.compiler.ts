@@ -14,7 +14,7 @@ import {
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const STRFTIME_PARSE_CACHE = new WeakCache<string, RegExp>();
 
-const STRFTIME_SPECIFIER_REGEX = /%([a-zA-Z%])/g;
+const STRFTIME_SPECIFIER_REGEX = /%(-)?(\d+)?([a-zA-Z%])/g;
 
 /**
  * Compiles a POSIX strftime format string into a fast formatter function.
@@ -33,7 +33,9 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 			parts.push(() => literal);
 		}
 
-		const specifier = match[1];
+		const flag = match[1];
+		const width = match[2];
+		const specifier = match[3];
 		switch (specifier) {
 			case '%':
 				parts.push(() => '%');
@@ -45,7 +47,7 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => pad(((z.year % 100) + 100) % 100, 2));
 				break;
 			case 'm':
-				parts.push((z) => pad(z.month, 2));
+				parts.push((z) => (flag === '-' ? String(z.month) : pad(z.month, 2)));
 				break;
 			case 'B':
 				parts.push((z) => Enum.keyOf(enums.MONTHS, z.month) ?? String(z.month));
@@ -55,36 +57,40 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => Enum.keyOf(enums.MONTH, z.month) ?? String(z.month));
 				break;
 			case 'd':
-				parts.push((z) => pad(z.day, 2));
+				parts.push((z) => (flag === '-' ? String(z.day) : pad(z.day, 2)));
 				break;
 			case 'e':
-				parts.push((z) => String(z.day));
+				parts.push((z) => (flag === '-' ? String(z.day) : pad(z.day, 2, ' ')));
 				break;
 			case 'H':
-				parts.push((z) => pad(z.hour, 2));
+				parts.push((z) => (flag === '-' ? String(z.hour) : pad(z.hour, 2)));
 				break;
 			case 'I': {
 				parts.push((z) => {
 					const h = z.hour % 12 || 12;
-					return pad(h, 2);
+					return flag === '-' ? String(h) : pad(h, 2);
 				});
 				break;
 			}
 			case 'l': {
 				parts.push((z) => {
 					const h = z.hour % 12 || 12;
-					return String(h);
+					return flag === '-' ? String(h) : pad(h, 2, ' ');
 				});
 				break;
 			}
 			case 'M':
-				parts.push((z) => pad(z.minute, 2));
+				parts.push((z) => (flag === '-' ? String(z.minute) : pad(z.minute, 2)));
 				break;
 			case 'S':
-				parts.push((z) => pad(z.second, 2));
+				parts.push((z) => (flag === '-' ? String(z.second) : pad(z.second, 2)));
 				break;
 			case 'f':
-				parts.push((z) => pad(z.millisecond * 1000 + z.microsecond, 6));
+				parts.push((z) => {
+					const w = width ? Number(width) : 6;
+					const nsTotal = z.millisecond * 1_000_000 + z.microsecond * 1000 + z.nanosecond;
+					return pad(nsTotal, 9).slice(0, w);
+				});
 				break;
 			case 'p':
 				parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
@@ -105,7 +111,10 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => String(z.dayOfWeek));
 				break;
 			case 'j':
-				parts.push((z) => pad(z.dayOfYear, 3));
+				parts.push((z) => (flag === '-' ? String(z.dayOfYear) : pad(z.dayOfYear, 3)));
+				break;
+			case 'V':
+				parts.push((z) => (flag === '-' ? String(z.weekOfYear ?? 1) : pad(z.weekOfYear ?? 1, 2)));
 				break;
 			case 'F':
 				parts.push((z) => `${pad(z.year, 4)}-${pad(z.month, 2)}-${pad(z.day, 2)}`);
@@ -172,7 +181,9 @@ export function compileStrftimeParser(mask: string): RegExp {
 			pattern += escapeRegex(literal);
 		}
 
-		const specifier = match[1];
+		const flag = match[1];
+		const width = match[2];
+		const specifier = match[3];
 		switch (specifier) {
 			case '%':
 				pattern += '%';
@@ -194,15 +205,19 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('month_abbr', '[A-Za-z]{3,}');
 				break;
 			case 'd':
-			case 'e':
 				pattern += group('dd', '\\d{1,2}');
+				break;
+			case 'e':
+				pattern += group('dd', '\\s?\\d{1,2}');
 				break;
 			case 'H':
 				pattern += group('hh', '\\d{1,2}');
 				break;
 			case 'I':
-			case 'l':
 				pattern += group('h12', '\\d{1,2}');
+				break;
+			case 'l':
+				pattern += group('h12', '\\s?\\d{1,2}');
 				break;
 			case 'M':
 				pattern += group('mi', '\\d{1,2}');
@@ -210,9 +225,11 @@ export function compileStrftimeParser(mask: string): RegExp {
 			case 'S':
 				pattern += group('ss', '\\d{1,2}');
 				break;
-			case 'f':
-				pattern += group('us', '\\d{1,6}');
+			case 'f': {
+				const w = width ? Number(width) : 6;
+				pattern += group('us', `\\d{1,${w}}`);
 				break;
+			}
 			case 'p':
 			case 'P':
 				pattern += group('mer', '[AaPp][Mm]?');
@@ -295,7 +312,7 @@ export function parseStrftime(
 	const mm = getGroup('mm');
 	const month_name = getGroup('month_name');
 	const month_abbr = getGroup('month_abbr');
-	const dd = getGroup('dd');
+	const dd = getGroup('dd')?.trim();
 
 	if (day_of_year) {
 		const res = resolveDayOfYear(year, parseInt(day_of_year, 10));

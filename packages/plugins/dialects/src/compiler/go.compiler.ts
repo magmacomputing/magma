@@ -405,7 +405,7 @@ export function parseGo(
 		year = parseInt(yyyy, 10);
 	} else if (yy) {
 		const shortYear = parseInt(yy, 10);
-		year = shortYear >= 69 ? 1900 + shortYear : 2000 + shortYear;
+		year = shortYear >= 70 ? 1900 + shortYear : 2000 + shortYear;
 	}
 
 	let month = 1;

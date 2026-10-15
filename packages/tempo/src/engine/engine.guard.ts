@@ -1,4 +1,5 @@
 import { isString, isSymbol, isDefined } from '#library/assertion.library.js';
+import { fromRoman } from '#library/number.library.js';
 import { Match } from '#tempo/support/support.default.js';
 
 /**
@@ -70,7 +71,20 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 				}
 				if (matched) continue;
 
-				// 4. Try Fallback char (Match.guard)
+				// 4. Try Roman numeral sequence
+				if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')) {
+					const wordMatch = input.substring(i).match(/^[a-zA-Z]+/);
+					if (wordMatch) {
+						const val = fromRoman(wordMatch[0]);
+						if (!Number.isNaN(val)) {
+							i += wordMatch[0].length;
+							matchedAny = true;
+							continue;
+						}
+					}
+				}
+
+				// 5. Try Fallback char (Match.guard)
 				if (Match.guard.test(char)) {
 					i++;
 					matchedAny = true;

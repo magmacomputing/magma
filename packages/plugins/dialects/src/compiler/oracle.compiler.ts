@@ -29,6 +29,10 @@ const ROMAN_MAP: Readonly<Record<string, number>> = {
 };
 
 const JULIAN_DAY_OFFSET_1970 = 2_440_588;
+let epochPlainDate: Temporal.PlainDate | undefined;
+function getEpochPlainDate(): Temporal.PlainDate {
+	return (epochPlainDate ??= Temporal.PlainDate.from('1970-01-01'));
+}
 
 function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
@@ -139,7 +143,7 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					break;
 				case 'J':
 					parts.push((z) => {
-						const daysSince1970 = Math.floor(Date.UTC(z.year, z.month - 1, z.day) / 86_400_000);
+						const daysSince1970 = z.toPlainDate().withCalendar('iso8601').since(getEpochPlainDate(), { largestUnit: 'day' }).days;
 						return String(JULIAN_DAY_OFFSET_1970 + daysSince1970);
 					});
 					break;

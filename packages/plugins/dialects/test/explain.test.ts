@@ -123,6 +123,13 @@ describe('Dialect Explain & Migration Helper', () => {
 		// Double quoted literals and fractional seconds
 		const expLit = Tempo.dialects.explain('YYYY"-"MM"-"DD HH24:MI:SS.FF3', 'oracle');
 		expect(expLit.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}');
+
+		// Case-sensitive Oracle name tokens vs case-invariant tokens
+		const expMonthVariants = Tempo.dialects.explain('MONTH Month month RM rm', DIALECT.Oracle);
+		expect(expMonthVariants.pattern).toBe('{mon:upper} {mon} {mon:lower} {mm:roman} {mm:roman:lower}');
+
+		const expLowerMask = Tempo.dialects.explain('yyyy-mm-dd hh24:mi:ss', DIALECT.Oracle);
+		expect(expLowerMask.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
 	});
 
 	it('marks PHP z as unsupported in explain mapping', () => {

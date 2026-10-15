@@ -69,6 +69,18 @@ describe('Roman Numeral Date Parsing', () => {
 			expect(t.mm).toBe(1);
 			expect(t.dd).toBe(1);
 		});
+
+		it('parses Roman years under 1000 (e.g. DCCC for 800, CDLXXVI for 476)', () => {
+			const t800 = new Tempo('DCCC');
+			expect(t800.isValid).toBe(true);
+			expect(t800.yy).toBe(800);
+			expect(t800.mm).toBe(1);
+			expect(t800.dd).toBe(1);
+
+			const t476 = new Tempo('Anno Domini CDLXXVI');
+			expect(t476.isValid).toBe(true);
+			expect(t476.yy).toBe(476);
+		});
 	});
 
 	describe('Format Mask Symmetry with :roman modifier', () => {

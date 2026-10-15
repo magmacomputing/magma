@@ -33,14 +33,14 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Unpadded (`0`-`23`) | `H` | `H` | `H` | `%-H` | `FMHH24`| `G` | N/A | `{hh:raw}` |
 | **Hour (12h)** | Zero-padded (`01`-`12`) | `hh` | `hh` | `hh` | `%I` | `HH12` | `h` | `03` | `{h12}` |
 | | Unpadded (`1`-`12`) | `h` | `h` | `h` | `%-I` | `FMHH12`| `g` | `3` | `{h12:raw}` |
-| **Meridiem** | Uppercase (`AM` / `PM`) | `a` | `a` | `A` | `%p` | `AM` | `A` | `PM` | `{mer:upper}` |
+| **Meridiem** | Uppercase (`AM` / `PM`) | `aa` | `a` | `A` | `%p` | `AM` | `A` | `PM` | `{mer:upper}` |
 | | Lowercase (`am` / `pm`) | `a` | `a` | `a` | `%P` | `am` | `a` | `pm` | `{mer}` |
 | **Minute** | Zero-padded (`00`-`59`) | `mm` | `mm` | `mm` | `%M` | `MI` | `i` | `04` | `{mi}` |
 | | Unpadded (`0`-`59`) | `m` | `m` | `m` | `%-M` | `FMMI` | N/A | `4` | `{mi:raw}` |
 | **Second** | Zero-padded (`00`-`59`) | `ss` | `ss` | `ss` | `%S` | `SS` | `s` | `05` | `{ss}` |
 | | Unpadded (`0`-`59`) | `s` | `s` | `s` | `%-S` | `FMSS` | N/A | `5` | `{ss:raw}` |
 | **Fractional** | Milliseconds (`000`-`999`) | `SSS`| `SSS` | `SSS` | `%3f*` | `FF3` | `v` | `.000` | `{ms}` |
-| | Microseconds (`6` digits) | `SSSSSS`| `u` | `SSSSSS`| `%6f*` | `FF6` | `u` | `.000000`| `{ff:6}` |
+| | Microseconds (`6` digits) | `SSSSSS`| `u` | `SSSSSS`| `%f*` | `FF6` | `u` | `.000000`| `{ff:6}` |
 | | Nanoseconds (`9` digits) | `SSSSSSSSS`| N/A | `SSSSSSSSS`| `%9f*` | `FF9` | N/A | `.000000000`| `{ff:9}` |
 | **Timezone** | Short abbreviation / IANA | `z` | `z` | `zz` | `%Z` | `TZD` | `T` | `MST` | `{tz:short}` |
 | | Standard offset (`+08:00`) | `ZZZZZ`| `ZZ` | `Z` | N/A | `TZH:TZM`| `P` | `-07:00` | `{tz:offset}` |

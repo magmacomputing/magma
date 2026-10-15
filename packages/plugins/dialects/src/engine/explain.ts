@@ -303,7 +303,20 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 const LDML_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|ww|QQ|qq|ZZ|zz|a|d|H|h|k|m|s|S|c|e|E|w|y|L|M|Q|q|Z|z)/g;
 const STRFTIME_REGEX = /%([%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
 const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
-const ORACLE_REGEX = /"[^"]*"|TZH:TZM|HH24|HH12|SSSSS|MONTH|Month|month|IYYY|YYYY|RRRR|A\.M\.|P\.M\.|a\.m\.|p\.m\.|MON|Mon|mon|YYY|IYY|TZD|TZR|TZH|TZM|DAY|Day|day|DDD|FF[1-9]?|FM|FX|IW|WW|YY|RR|IY|MM|DD|DY|Dy|dy|HH|MI|SS|AM|PM|am|pm|RM|OF|D|W|Q|Y|I|J/gi;
+const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
+	'MONTH',
+	'MON',
+	'DAY',
+	'DY',
+	'RM',
+	'AM',
+	'PM',
+	'A.M.',
+	'P.M.',
+]);
+
+const ORACLE_REGEX =
+	/"[^"]*"|TZH:TZM|tzh:tzm|HH24|hh24|HH12|hh12|SSSSS|sssss|MONTH|Month|month|IYYY|iyyy|YYYY|yyyy|RRRR|rrrr|A\.M\.|P\.M\.|a\.m\.|p\.m\.|MON|Mon|mon|YYY|yyy|IYY|iyy|TZD|tzd|TZR|tzr|TZH|tzh|TZM|tzm|DAY|Day|day|DDD|ddd|FF[1-9]?|ff[1-9]?|FM|fm|FX|fx|IW|iw|WW|ww|YY|yy|RR|rr|IY|iy|MM|mm|DD|dd|DY|Dy|dy|HH|hh|MI|mi|SS|ss|AM|PM|am|pm|RM|rm|OF|of|[DWQYIJdwqyij]/g;
 const GO_EXPLAIN_REGEX =
 	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon|Jan|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
 
@@ -335,9 +348,10 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 				} else if (upper === 'FX') {
 					tokens.push({ source: raw, tempo: '', desc: 'Format exact matching modifier' });
 				} else {
+					const isCaseSensitive = ORACLE_CASE_SENSITIVE_TOKENS.has(upper);
 					let info = (fillMode ? ORACLE_UNPADDED_EXPLAIN_MAP[upper] : undefined) ??
 						ORACLE_EXPLAIN_MAP[raw] ??
-						ORACLE_EXPLAIN_MAP[upper];
+						(!isCaseSensitive ? ORACLE_EXPLAIN_MAP[upper] : undefined);
 
 					if (!info && /^FF([1-9])$/i.test(raw)) {
 						const prec = raw.slice(2);
@@ -345,11 +359,10 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 					}
 
 					if (info) {
-						if (info.tempo) {
-							pattern += info.tempo;
-						} else {
-							pattern += raw;
-						}
+						pattern += (info.tempo)
+							? info.tempo
+							: raw
+
 						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 					} else {
 						pattern += raw;

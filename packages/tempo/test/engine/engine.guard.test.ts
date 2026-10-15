@@ -53,6 +53,16 @@ describe('engine.guard (Master Guard)', () => {
 		expect(guard.test('apple test.token')).toBe(true);
 	});
 
+	it('should permit valid Roman numerals and reject non-Roman words', () => {
+		const guard = createMasterGuard(['utc']);
+		expect(guard.test('MMXXVI')).toBe(true);
+		expect(guard.test('14.X.2026')).toBe(true);
+		expect(guard.test('14-xii-2026')).toBe(true);
+		expect(guard.test('civil')).toBe(false);
+		expect(guard.test('mild')).toBe(false);
+		expect(guard.test('dim')).toBe(false);
+	});
+
 	it('should fail on empty or non-string input', () => {
 		const guard = createMasterGuard(['apple']);
 		expect(guard.test('')).toBe(false);

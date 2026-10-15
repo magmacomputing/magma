@@ -80,4 +80,38 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(t.mi).toBe(30);
 		expect(t.ss).toBe(45);
 	});
+
+	it('formats and parses unpadded flags and variable width fractional seconds', () => {
+		const dtFrac = new Tempo('2026-05-04T09:08:07.123456');
+		expect(dtFrac.format('%-d/%-m/%Y %-H:%-M:%-S.%3f', { dialect: DIALECT.Strftime })).toBe('4/5/2026 9:8:7.123');
+		expect(dtFrac.format('%Y-%m-%d %H:%M:%S.%f', { dialect: DIALECT.Strftime })).toBe('2026-05-04 09:08:07.123456');
+
+		const parsed = Tempo.dialects.parse('4/5/2026 9:8:7.123', '%-d/%-m/%Y %-H:%-M:%-S.%3f', DIALECT.Strftime);
+		expect(parsed.isValid).toBe(true);
+		expect(parsed.dd).toBe(4);
+		expect(parsed.mm).toBe(5);
+		expect(parsed.hh).toBe(9);
+		expect(parsed.ms).toBe(123);
+	});
+
+	it('formats and parses space-padded %e (day) and %l (hour)', () => {
+		const dtSingle = new Tempo('2026-05-04T09:08:07');
+		// Single digit day and hour should have leading space
+		expect(dtSingle.format('%e', { dialect: DIALECT.Strftime })).toBe(' 4');
+		expect(dtSingle.format('%l', { dialect: DIALECT.Strftime })).toBe(' 9');
+		// With unpadded flag '-'
+		expect(dtSingle.format('%-e', { dialect: DIALECT.Strftime })).toBe('4');
+		expect(dtSingle.format('%-l', { dialect: DIALECT.Strftime })).toBe('9');
+
+		// Parse space-padded input
+		const parsedSpaced = Tempo.dialects.parse('2026-05- 4  9:08:07 AM', '%Y-%m-%e %l:%M:%S %p', DIALECT.Strftime);
+		expect(parsedSpaced.isValid).toBe(true);
+		expect(parsedSpaced.dd).toBe(4);
+		expect(parsedSpaced.hh).toBe(9);
+
+		// Double-digit day and hour without leading space
+		const dtDouble = new Tempo('2026-10-24T11:08:07');
+		expect(dtDouble.format('%e', { dialect: DIALECT.Strftime })).toBe('24');
+		expect(dtDouble.format('%l', { dialect: DIALECT.Strftime })).toBe('11');
+	});
 });

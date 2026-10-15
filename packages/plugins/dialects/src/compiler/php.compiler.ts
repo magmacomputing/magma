@@ -357,19 +357,18 @@ export function parsePhp(
 
 	const getGroup = createGroupExtractor(match);
 
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+
 	const epoch_sec = getGroup('epoch_sec');
 	if (epoch_sec) {
 		const sec = parseInt(epoch_sec, 10);
-		const tz = options.timeZone ?? 'UTC';
 		try {
-			return Temporal.Instant.fromEpochMilliseconds(sec * 1000).toZonedDateTimeISO(tz);
+			return Temporal.Instant.fromEpochMilliseconds(sec * 1000).toZonedDateTimeISO(ctx.tz);
 		} catch {
 			return undefined;
 		}
 	}
-
-	const ctx = resolveParseContext(getGroup, options);
-	if (!ctx) return undefined;
 
 	let year = ctx.today.year;
 	const yyyy = getGroup('yyyy');

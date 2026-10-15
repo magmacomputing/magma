@@ -46,7 +46,7 @@ export function resolveMonth(str: string): number | undefined {
 /** Creates a helper to extract named groups from a RegExpExecArray, including suffixed groups. */
 export function createGroupExtractor(match: RegExpExecArray): (name: string) => string | undefined {
 	const g = match.groups ?? {};
-	return (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
+	return (name: string) => g[name] ?? Object.entries(g).find(([k, v]) => (k === name || k.startsWith(`${name}_`)) && v !== undefined)?.[1];
 }
 
 /**
@@ -98,9 +98,9 @@ export function resolveTimeComponents(getGroup: (name: string) => string | undef
 	let minute = 0;
 	let second = 0;
 
-	const hh = getGroup('hh');
-	const h24 = getGroup('h24');
-	const h12 = getGroup('h12');
+	const hh = getGroup('hh')?.trim();
+	const h24 = getGroup('h24')?.trim();
+	const h12 = getGroup('h12')?.trim();
 	if (hh) {
 		const val = parseInt(hh, 10);
 		if (val < 0 || val > 23) return undefined;
@@ -170,10 +170,12 @@ export function getIsoWeek(z: { year: number; month: number; day: number; weekOf
 		return { weekOfYear: z.weekOfYear, yearOfWeek: z.yearOfWeek };
 	}
 	const d = new Date(Date.UTC(z.year, z.month - 1, z.day));
+	d.setUTCFullYear(z.year);
 	const dayNum = d.getUTCDay() || 7;
 	d.setUTCDate(d.getUTCDate() + 4 - dayNum);
 	const yearOfWeek = d.getUTCFullYear();
 	const yearStart = new Date(Date.UTC(yearOfWeek, 0, 1));
+	yearStart.setUTCFullYear(yearOfWeek);
 	const weekOfYear = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 	return { weekOfYear, yearOfWeek };
 }
@@ -184,6 +186,7 @@ export function getIsoWeek(z: { year: number; month: number; day: number; weekOf
  */
 export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1): { year: number; month: number; day: number } {
 	const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+	jan4.setUTCFullYear(isoYear);
 	const dayOfWeek = jan4.getUTCDay() || 7;
 	const week1MondayTime = jan4.getTime() - (dayOfWeek - 1) * 86400000;
 	const targetTime = week1MondayTime + ((isoWeek - 1) * 7 + (isoDay - 1)) * 86400000;
@@ -196,13 +199,11 @@ export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1
  */
 export function resolveIsoCalendarYear(targetIsoYear: number, month: number, day: number): number {
 	if (month === 12 && day >= 29) {
-		if (getIsoWeek({ year: targetIsoYear - 1, month, day }).yearOfWeek === targetIsoYear) {
+		if (getIsoWeek({ year: targetIsoYear - 1, month, day }).yearOfWeek === targetIsoYear)
 			return targetIsoYear - 1;
-		}
 	} else if (month === 1 && day <= 3) {
-		if (getIsoWeek({ year: targetIsoYear + 1, month, day }).yearOfWeek === targetIsoYear) {
+		if (getIsoWeek({ year: targetIsoYear + 1, month, day }).yearOfWeek === targetIsoYear)
 			return targetIsoYear + 1;
-		}
 	}
 	return targetIsoYear;
 }

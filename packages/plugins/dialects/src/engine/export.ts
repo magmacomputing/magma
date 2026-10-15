@@ -40,7 +40,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'dd:ord': { ldml: 'd', strftime: '%-d', oracle: 'DD', moment: 'Do', php: 'jS', go: '2', desc: 'Day of month with ordinal suffix' },
 
 	// Day of Year
-	doy: { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
+	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
 	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDD', moment: 'DDD', desc: 'Unpadded day of year (1-366)' },
 	'doy:ord': { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDo', desc: 'Day of year with ordinal suffix' },
 
@@ -51,13 +51,13 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	www: { ldml: 'EEE', strftime: '%a', oracle: 'Dy', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name capitalized' },
 	'www:upper': { ldml: 'EEE', strftime: '%a', oracle: 'DY', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name uppercase' },
 	'www:lower': { ldml: 'EEE', strftime: '%a', oracle: 'dy', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name lowercase' },
-	dow: { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'd', php: 'N', desc: 'Day of week number (1-7)' },
+	dow: { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Day of week number (1-7)' },
 	'dow:locale': { ldml: 'e', strftime: '%w', oracle: 'D', moment: 'd', php: 'w', desc: 'Territory-dependent day of week' },
 	'dow:ord': { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'do', php: 'N', desc: 'Day of week with ordinal suffix' },
 
 	// Week of Year
-	woy: { ldml: 'ww', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
-	'woy:raw': { ldml: 'w', strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
+	woy: { strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
+	'woy:raw': { strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
 	'woy:ord': { ldml: 'w', strftime: '%V', oracle: 'IW', moment: 'Wo', php: 'W', desc: 'ISO week of year with ordinal suffix' },
 
 	// Clock & Time
@@ -72,10 +72,10 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 
 	// Fractional Seconds
 	ms: { ldml: 'SSS', strftime: '%3f', oracle: 'FF3', moment: 'SSS', php: 'v', go: '.000', desc: 'Millisecond (000-999)' },
-	'ff:1': { ldml: 'S', strftime: '%1f', oracle: 'FF1', moment: 'S', php: 'v', desc: 'Fractional tenths (0-9)' },
-	'ff:2': { ldml: 'SS', strftime: '%2f', oracle: 'FF2', moment: 'SS', php: 'v', desc: 'Fractional hundredths (00-99)' },
+	'ff:1': { ldml: 'S', strftime: '%1f', oracle: 'FF1', moment: 'S', desc: 'Fractional tenths (0-9)' },
+	'ff:2': { ldml: 'SS', strftime: '%2f', oracle: 'FF2', moment: 'SS', desc: 'Fractional hundredths (00-99)' },
 	'ff:9': { ldml: 'SSSSSSSSS', strftime: '%9f', oracle: 'FF9', moment: 'SSSSSSSSS', go: '.000000000', desc: 'Nanoseconds (000000000-999999999)' },
-	ff: { ldml: 'SSSSSS', strftime: '%6f', oracle: 'FF6', moment: 'SSSSSS', php: 'u', go: '.000000', desc: 'Microseconds (000000-999999)' },
+	ff: { ldml: 'SSSSSS', strftime: '%f', oracle: 'FF6', moment: 'SSSSSS', php: 'u', go: '.000000', desc: 'Microseconds (000000-999999)' },
 
 	// Meridiem
 	mer: { ldml: 'a', strftime: '%P', oracle: 'am', moment: 'a', php: 'a', go: 'pm', desc: 'am/pm lowercase' },
@@ -123,8 +123,9 @@ const REGEX_ALPHA = /[A-Za-z]+/g;
 const REGEX_ORACLE_LITERAL = /[A-Za-z\u0080-\uffff]+/g;
 const REGEX_PERCENT = /%/g;
 const REGEX_PHP_ESCAPE = /[A-Za-z\\]/g;
-const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+)/g;
+const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+|\{)/g;
 const REGEX_FF_PRECISION = /^ff:([1-9])$/i;
+const REGEX_GO_CONFLICT = /\b(?:2006|15|04|05|01|02|03|Jan|January|Mon|Monday|MST|PM|pm)\b/;
 
 function quoteLiteral(str: string, dialect: Dialect): string {
 	if (!str) return '';
@@ -156,14 +157,26 @@ function quoteLiteral(str: string, dialect: Dialect): string {
  * Exports a native Tempo format pattern into the corresponding external dialect format model.
  */
 export function exportDialect(tempoMask: string, explicitDialect?: any): ExportResult {
-	const dialect = explicitDialect ? normalizeDialect(String(evaluate(explicitDialect))) : DIALECT.Ldml;
+	const dialect = explicitDialect !== undefined ? normalizeDialect(evaluate(explicitDialect)) : DIALECT.Ldml;
 	const tokens: ExportedToken[] = [];
 	const unsupported: string[] = [];
 	let pattern = '';
 
 	for (const match of tempoMask.matchAll(REGEX_TEMPO_TOKEN)) {
 		if (match[2] !== undefined) {
-			pattern += quoteLiteral(match[2], dialect);
+			const literal = match[2];
+			if (dialect === DIALECT.Go && REGEX_GO_CONFLICT.test(literal)) {
+				unsupported.push(literal);
+				tokens.push({
+					source: literal,
+					target: literal,
+					desc: 'Go reference date token in literal text cannot be escaped',
+					supported: false,
+				});
+				pattern += literal;
+			} else {
+				pattern += quoteLiteral(literal, dialect);
+			}
 		} else if (match[1] !== undefined) {
 			const rawKey = match[1].trim();
 			const fullToken = `{${rawKey}}`;
@@ -171,12 +184,12 @@ export function exportDialect(tempoMask: string, explicitDialect?: any): ExportR
 			let info = TEMPO_TO_DIALECT_MAP[canonicalKey] ?? TEMPO_TO_DIALECT_MAP[canonicalKey.toLowerCase()];
 
 			if (!info && REGEX_FF_PRECISION.test(canonicalKey)) {
-				const prec = canonicalKey.slice(3);
+				const prec = Number(canonicalKey.slice(3));
 				info = {
-					ldml: 'S'.repeat(Number(prec)),
-					strftime: `%${prec}f`,
+					ldml: 'S'.repeat(prec),
+					strftime: prec === 6 ? '%f' : `%${prec}f`,
 					oracle: `FF${prec}`,
-					moment: 'S'.repeat(Number(prec)),
+					moment: 'S'.repeat(prec),
 					desc: `Fractional seconds (${prec} digits)`,
 				};
 			}
