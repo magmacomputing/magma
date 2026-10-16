@@ -11,7 +11,7 @@ import { type ParseOptions as DialectOptions } from '../compiler/shared.compiler
 const RE_ORACLE_DETECTION = /\bhh(?:24|12)\b/i;
 const RE_ORACLE_UPPER = /\b(?:MI|SSSSS|FF[1-9]?|MON)\b/;
 const RE_LDML_CONFLICT = /\b(?:yyyy|YYYY|HH|mm|ss)\b/;
-const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b/;
+const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b|\b2006[/-]0?1[/-]0?2\b/;
 const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
 const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ]/;
 

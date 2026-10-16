@@ -427,9 +427,7 @@ export function parseGo(
 	let day = 1;
 	const dd = getGroup('dd');
 	const doy = getGroup('doy');
-	if (dd) {
-		day = parseInt(dd.trim(), 10);
-	} else if (doy) {
+	if (doy) {
 		const res = resolveDayOfYear(year, parseInt(doy, 10));
 		if (!res) return undefined;
 		if (mm || mon_short || mon_long) {
@@ -437,7 +435,14 @@ export function parseGo(
 		} else {
 			month = res.month;
 		}
-		day = res.day;
+		if (dd) {
+			day = parseInt(dd.trim(), 10);
+			if (res.day !== day) return undefined;
+		} else {
+			day = res.day;
+		}
+	} else if (dd) {
+		day = parseInt(dd.trim(), 10);
 	}
 
 	const timeComp = resolveTimeComponents(getGroup);

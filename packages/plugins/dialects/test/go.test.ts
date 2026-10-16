@@ -66,6 +66,15 @@ describe('Go Reference Time Dialect Engine', () => {
 		// Conflicting month (Nov with day 297) should be rejected
 		const invalidDoy = Tempo.dialects.parse('2026 Nov 297', '2006 Jan 002', DIALECT.Go, { timeZone: 'UTC', error: 'catch' });
 		expect(invalidDoy.isValid).toBe(false);
+
+		// Day of year with day of month: matching vs mismatching
+		const doyWithDd = Tempo.dialects.parse('2026-10-24 297', '2006-01-02 002', DIALECT.Go, { timeZone: 'UTC' });
+		expect(doyWithDd.isValid).toBe(true);
+		expect(doyWithDd.dd).toBe(24);
+
+		const doyWithDdMismatch = Tempo.dialects.parse('2026-10-25 297', '2006-01-02 002', DIALECT.Go, { timeZone: 'UTC', error: 'catch' });
+		expect(doyWithDdMismatch.isValid).toBe(false);
+
 		// Seconds-precision offsets (zero seconds)
 		const parsedSec = Tempo.dialects.parse('2026-10-24 15:30:45+05:30:00', '2006-01-02 15:04:05Z07:00:00', DIALECT.Go);
 		expect(parsedSec.toDateTime().offset).toBe('+05:30');
@@ -86,6 +95,7 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(res.dialect).toBe(DIALECT.Go);
 		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
 
+		expect(Tempo.dialects.explain('2006-1-2').dialect).toBe(DIALECT.Go);
 		expect(Tempo.dialects.explain('01/02/06').dialect).toBe(DIALECT.Go);
 		expect(Tempo.dialects.explain('06-01-02').dialect).toBe(DIALECT.Go);
 		expect(Tempo.dialects.explain('3:04 PM').dialect).toBe(DIALECT.Go);
