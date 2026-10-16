@@ -115,13 +115,11 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				break;
 			case 'V':
 				parts.push((z) => {
-					let w = z.weekOfYear;
-					if (w === undefined) {
-						try {
-							w = (z as any).withCalendar?.('iso8601')?.weekOfYear;
-						} catch {
-							w = undefined;
-						}
+					let w: number | undefined;
+					try {
+						w = (z as any).withCalendar?.('iso8601')?.weekOfYear;
+					} catch {
+						w = undefined;
 					}
 					if (w === undefined) return match[0];
 					return flag === '-' ? String(w) : pad(w, 2);

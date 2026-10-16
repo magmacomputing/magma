@@ -1,5 +1,6 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { DialectsPlugin, DIALECT } from '../src/index.js';
+import { compileStrftimeFormatter } from '../src/compiler/strftime.compiler.js';
 
 describe('POSIX strftime Formatting & Parsing', () => {
 	Tempo.use(DialectsPlugin);
@@ -123,4 +124,24 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(dtDouble.format('%e', { dialect: DIALECT.Strftime })).toBe('24');
 		expect(dtDouble.format('%l', { dialect: DIALECT.Strftime })).toBe('11');
 	});
+
+	it('formats ISO week of year (%V, %-V)', () => {
+		const dtWeek43 = new Tempo('2026-10-24T15:30:45');
+		expect(dtWeek43.format('%V', { dialect: DIALECT.Strftime })).toBe('43');
+		expect(dtWeek43.format('%-V', { dialect: DIALECT.Strftime })).toBe('43');
+
+		const dtWeek2 = new Tempo('2026-01-05T12:00:00');
+		expect(dtWeek2.format('%V', { dialect: DIALECT.Strftime })).toBe('02');
+		expect(dtWeek2.format('%-V', { dialect: DIALECT.Strftime })).toBe('2');
+
+		// With a non-ISO calendar, %V still derives ISO 8601 weekOfYear
+		const dtHebrew = new Tempo('2026-10-24T15:30:45', { calendar: 'hebrew' });
+		expect(dtHebrew.format('%V', { dialect: DIALECT.Strftime })).toBe('43');
+
+		// Fallback when ISO week retrieval fails
+		const formatV = compileStrftimeFormatter('%V');
+		expect(formatV({} as any)).toBe('%V');
+		expect(formatV({ withCalendar: () => { throw new Error('fail'); } } as any)).toBe('%V');
+	});
 });
+
