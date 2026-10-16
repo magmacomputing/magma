@@ -133,7 +133,7 @@ console.log(posixMask.pattern);
 // Output: "%Y-%m-%d %H:%M:%S"
 
 // Auto-detect source dialect
-const toLdml = Tempo.dialects.convert('%Y-%m-%d', undefined, 'ldml');
+const toLdml = Tempo.dialects.convert('%Y-%m-%d', 'ldml');
 console.log(toLdml.pattern);
 // Output: "yyyy-MM-dd"
 ```

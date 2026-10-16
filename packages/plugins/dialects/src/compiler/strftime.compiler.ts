@@ -340,11 +340,13 @@ export function parseStrftime(
 	const { hour, minute, second } = time;
 	let millisecond = 0;
 	let microsecond = 0;
+	let nanosecond = 0;
 	const us = getGroup('us');
 	if (us) {
-		const padded = us.padEnd(6, '0').slice(0, 6);
+		const padded = us.padEnd(9, '0').slice(0, 9);
 		millisecond = parseInt(padded.slice(0, 3), 10);
 		microsecond = parseInt(padded.slice(3, 6), 10);
+		nanosecond = parseInt(padded.slice(6, 9), 10);
 	}
 
 	try {
@@ -360,6 +362,7 @@ export function parseStrftime(
 				second,
 				millisecond,
 				microsecond,
+				nanosecond,
 			},
 			{ overflow: 'reject' }
 		);

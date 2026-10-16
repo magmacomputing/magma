@@ -9,12 +9,11 @@ import { formatGo, parseGo } from '../compiler/go.compiler.js';
 import { type ParseOptions as DialectOptions } from '../compiler/shared.compiler.js';
 
 const RE_ORACLE_DETECTION = /\bhh(?:24|12)\b/i;
-const RE_ORACLE_UPPER = /\b(?:MI|SSSSS|FF[1-9]?)\b/;
+const RE_ORACLE_UPPER = /\b(?:MI|SSSSS|FF[1-9]?|MON)\b/;
 const RE_LDML_CONFLICT = /\b(?:yyyy|YYYY|HH|mm|ss)\b/;
-const RE_GO_DETECTION =
-	/\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b/;
+const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b/;
 const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
-const RE_STRFTIME_SPECIFIERS = /%[a-zA-Z%]/;
+const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ]/;
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
@@ -26,12 +25,10 @@ export function detectDialect(mask: string, explicitDialect?: any): Dialect {
 	const clean = mask.replace(RE_QUOTED_LITERALS, '');
 
 	if (RE_STRFTIME_SPECIFIERS.test(clean)) return DIALECT.Strftime;
-
 	if (!RE_LDML_CONFLICT.test(clean) && RE_GO_DETECTION.test(clean)) return DIALECT.Go;
+	if (RE_ORACLE_DETECTION.test(clean) || RE_ORACLE_UPPER.test(clean)) return DIALECT.Oracle;
 
-	return (RE_ORACLE_DETECTION.test(clean) || RE_ORACLE_UPPER.test(clean))
-		? DIALECT.Oracle
-		: DIALECT.Ldml;
+	return DIALECT.Ldml;
 }
 
 /**

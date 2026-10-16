@@ -58,9 +58,13 @@ describe('engine.guard (Master Guard)', () => {
 		expect(guard.test('MMXXVI')).toBe(true);
 		expect(guard.test('14.X.2026')).toBe(true);
 		expect(guard.test('14-xii-2026')).toBe(true);
+		expect(guard.test('15-iv-2025')).toBe(true);
 		expect(guard.test('civil')).toBe(false);
 		expect(guard.test('mild')).toBe(false);
 		expect(guard.test('dim')).toBe(false);
+		expect(guard.test('mix')).toBe(false);
+		expect(guard.test('div')).toBe(false);
+		expect(guard.test('iv')).toBe(false);
 	});
 
 	it('should fail on empty or non-string input', () => {

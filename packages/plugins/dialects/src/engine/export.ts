@@ -37,7 +37,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	// Day of Month
 	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', desc: 'Zero-padded day of month (01-31)' },
 	'dd:raw': { ldml: 'd', strftime: '%-d', oracle: 'FMDD', moment: 'D', php: 'j', go: '2', desc: 'Unpadded day of month (1-31)' },
-	'dd:ord': { ldml: 'd', strftime: '%-d', oracle: 'DD', moment: 'Do', php: 'jS', go: '2', desc: 'Day of month with ordinal suffix' },
+	'dd:ord': { ldml: 'd', strftime: '%-d', oracle: 'DD', moment: 'Do', go: '2', desc: 'Day of month with ordinal suffix' },
 
 	// Day of Year
 	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
@@ -62,13 +62,13 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 
 	// Clock & Time
 	hh: { ldml: 'HH', strftime: '%H', oracle: 'HH24', moment: 'HH', php: 'H', go: '15', desc: '24-hour clock zero-padded (00-23)' },
-	'hh:raw': { ldml: 'H', strftime: '%-H', oracle: 'FMHH24', moment: 'H', php: 'G', go: '15', desc: '24-hour clock unpadded (0-23)' },
+	'hh:raw': { ldml: 'H', strftime: '%-H', oracle: 'FMHH24', moment: 'H', php: 'G', desc: '24-hour clock unpadded (0-23)' },
 	h12: { ldml: 'hh', strftime: '%I', oracle: 'HH12', moment: 'hh', php: 'h', go: '03', desc: '12-hour clock zero-padded (01-12)' },
 	'h12:raw': { ldml: 'h', strftime: '%-I', oracle: 'FMHH12', moment: 'h', php: 'g', go: '3', desc: '12-hour clock unpadded (1-12)' },
 	mi: { ldml: 'mm', strftime: '%M', oracle: 'MI', moment: 'mm', php: 'i', go: '04', desc: 'Zero-padded minute (00-59)' },
-	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMI', moment: 'm', php: 'i', go: '4', desc: 'Unpadded minute (0-59)' },
+	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMI', moment: 'm', go: '4', desc: 'Unpadded minute (0-59)' },
 	ss: { ldml: 'ss', strftime: '%S', oracle: 'SS', moment: 'ss', php: 's', go: '05', desc: 'Zero-padded second (00-59)' },
-	'ss:raw': { ldml: 's', strftime: '%-S', oracle: 'FMSS', moment: 's', php: 's', go: '5', desc: 'Unpadded second (0-59)' },
+	'ss:raw': { ldml: 's', strftime: '%-S', oracle: 'FMSS', moment: 's', go: '5', desc: 'Unpadded second (0-59)' },
 
 	// Fractional Seconds
 	ms: { ldml: 'SSS', strftime: '%3f', oracle: 'FF3', moment: 'SSS', php: 'v', go: '.000', desc: 'Millisecond (000-999)' },

@@ -75,11 +75,21 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 				if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')) {
 					const wordMatch = input.substring(i).match(/^[a-zA-Z]+/);
 					if (wordMatch) {
-						const val = fromRoman(wordMatch[0]);
-						if (!Number.isNaN(val)) {
-							i += wordMatch[0].length;
-							matchedAny = true;
-							continue;
+						const word = wordMatch[0];
+						const isAllUpper = word === word.toUpperCase();
+						const prev = i > 0 ? input[i - 1] : undefined;
+						const next = i + word.length < len ? input[i + word.length] : undefined;
+						const isAdjacentToSepOrDigit =
+							(prev !== undefined && (Match.separator.test(prev) || /\d/.test(prev))) ||
+							(next !== undefined && (Match.separator.test(next) || /\d/.test(next)));
+
+						if (isAllUpper || isAdjacentToSepOrDigit) {
+							const val = fromRoman(word);
+							if (!Number.isNaN(val)) {
+								i += word.length;
+								matchedAny = true;
+								continue;
+							}
 						}
 					}
 				}

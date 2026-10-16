@@ -92,4 +92,14 @@ describe('Unicode LDML Parsing', () => {
 		expect(t2.dd).toBe(24);
 		expect(t2.mm).toBe(10);
 	});
+
+	it('parses week of year and validates week limits for the given year', () => {
+		const validWeek = Tempo.fromFormat('2025-52-1', 'yyyy-ww-e');
+		expect(validWeek.isValid).toBe(true);
+		expect(validWeek.yy).toBe(2025);
+
+		// 2025 has 52 ISO weeks, so week 53 rolls into 2026 and should be rejected
+		const invalidWeek = Tempo.fromFormat('2025-53-1', 'yyyy-ww-e', { error: 'catch' });
+		expect(invalidWeek.isValid).toBe(false);
+	});
 });

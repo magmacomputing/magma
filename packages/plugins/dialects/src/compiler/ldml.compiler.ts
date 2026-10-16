@@ -47,22 +47,22 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					parts.push((z) => pad(z.year, 4));
 					break;
 				case 'YYYY':
-					parts.push((z) => pad((z as any).yearOfWeek ?? z.year, 4));
+					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).yearOfWeek, 4));
 					break;
 				case 'yy':
 					parts.push((z) => pad(z.year % 100, 2));
 					break;
 				case 'YY':
-					parts.push((z) => pad(((z as any).yearOfWeek ?? z.year) % 100, 2));
+					parts.push((z) => pad(((getIsoWeek(z.toPlainDate()).yearOfWeek % 100) + 100) % 100, 2));
 					break;
 				case 'y':
 					parts.push((z) => String(z.year));
 					break;
 				case 'ww':
-					parts.push((z) => pad((z as any).weekOfYear ?? 1, 2));
+					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).weekOfYear, 2));
 					break;
 				case 'w':
-					parts.push((z) => String((z as any).weekOfYear ?? 1));
+					parts.push((z) => String(getIsoWeek(z.toPlainDate()).weekOfYear));
 					break;
 
 				case 'MMMM':
@@ -453,6 +453,8 @@ export function parseLdml(
 		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
 		if (isoDay < 1 || isoDay > 7) return undefined;
 		const targetDate = fromIsoWeek(year, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== year || check.weekOfYear !== isoWeek) return undefined;
 		year = targetDate.year;
 		month = targetDate.month;
 		day = targetDate.day;

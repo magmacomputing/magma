@@ -56,6 +56,16 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(doyParsed.yy).toBe(2026);
 		expect(doyParsed.mm).toBe(10);
 		expect(doyParsed.dd).toBe(24);
+
+		// Day of year with month validation
+		const doyWithMonth = Tempo.dialects.parse('2026 Oct 297', '2006 Jan 002', DIALECT.Go, { timeZone: 'UTC' });
+		expect(doyWithMonth.isValid).toBe(true);
+		expect(doyWithMonth.mm).toBe(10);
+		expect(doyWithMonth.dd).toBe(24);
+
+		// Conflicting month (Nov with day 297) should be rejected
+		const invalidDoy = Tempo.dialects.parse('2026 Nov 297', '2006 Jan 002', DIALECT.Go, { timeZone: 'UTC', error: 'catch' });
+		expect(invalidDoy.isValid).toBe(false);
 		// Seconds-precision offsets (zero seconds)
 		const parsedSec = Tempo.dialects.parse('2026-10-24 15:30:45+05:30:00', '2006-01-02 15:04:05Z07:00:00', DIALECT.Go);
 		expect(parsedSec.toDateTime().offset).toBe('+05:30');

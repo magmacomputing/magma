@@ -6,6 +6,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.0] - 2026-10-16
+
+### Added & Architecture
+- **ISO Week-Numbering Getters & Tokens (`.woy` & `.yow`)**:
+  - Added canonical `.woy` (ISO week number of year, 1–53) and `.yow` (4-digit ISO week-numbering year) getters to `Tempo` instances.
+  - Native format token support for `{woy}` (zero-padded `01`–`53`), `{woy:raw}` (unpadded `1`–`53`), `{woy:ord}` (ordinal suffix `1st`–`53rd`), and `{yow}` (4-digit ISO week-numbering year).
+  - Deprecated legacy `.ww` getter in favor of `.woy` (scheduled for removal in v5.0.0), while preserving `.wy` and `.yw` for backward compatibility.
+- **Roman Numeral Date Formatting & Round-Trip Mask Parsing**:
+  - Added `:roman` modifier support to format masks (`{yyyy:roman}`, `{yy:roman}`, `{mm:roman}`, `{dd:roman}`, `{hh:roman}`) converting date/time components into Roman numerals via `toRoman`.
+  - Added symmetric `:roman` modifier support in format mask parsing (`module.parse.ts`), enabling seamless lossless round-trip date parsing (e.g. `str = t.format('{yy:roman}-{mm:roman}-{dd:roman}'); new Tempo(str, { format: '{yy:roman}-{mm:roman}-{dd:roman}' })`).
+  - Added native Roman numeral lexer tokens and patterns:
+    - `Token.Rm`: Roman month numbers (`I` through `XII`).
+    - `Token.Ry`: Roman years (1–3999, e.g. `MMXXVI`, `MCMXCIV`).
+    - `Token.dRy`: Day-RomanMonth-Year patterns (e.g. `14.X.2026`, `14-X-2026`).
+    - `Token.Ryy`: Archival Roman year patterns, including `anno domini` and copyright notices (e.g. `MMXXVI`, `Copyright © MMXXVI`, `anno domini MCMXCIV`).
+- **Engine Guard Pre-Filtering & Sequence Validation**:
+  - Enhanced `engine.guard.ts` with Roman sequence validation: accepts uppercase Roman numerals and separator/digit-adjacent Roman numerals (e.g. `14.X.2026`, `MMXXVI`), while safely filtering common lowercase English prose words (`did`, `mix`, `civil`) to prevent false-positive date parsing.
+- **Classical Roman Calendar Architecture**:
+  - Added design specification in `packages/tempo/plan/tempo-plugin-roman.md` outlining the architecture for a dedicated `@magmacomputing/tempo-plugin-roman` plugin covering AUC (*ab urbe condita*) years, Kalends, Nones, and Ides mechanics.
+
 ## [4.6.0] - 2026-10-11
 
 ### Added & Architecture

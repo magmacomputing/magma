@@ -140,6 +140,16 @@ describe('Dialect Export', () => {
 		expect(resPhp.unsupported).toContain('{doy:raw}');
 		expect(resPhp.unsupported).toContain('{doy:ord}');
 
+		// Go unsupported unpadded 24-hour clock
+		const resGoHh = Tempo.dialects.export('{hh:raw}', 'go');
+		expect(resGoHh.unsupported).toContain('{hh:raw}');
+
+		// PHP unsupported unpadded minute, second, and ordinal day tokens
+		const resPhpUnpadded = Tempo.dialects.export('{mi:raw} {ss:raw} {dd:ord}', 'php');
+		expect(resPhpUnpadded.unsupported).toContain('{mi:raw}');
+		expect(resPhpUnpadded.unsupported).toContain('{ss:raw}');
+		expect(resPhpUnpadded.unsupported).toContain('{dd:ord}');
+
 		// Go unsupported unpadded and ordinal day-of-year tokens
 		const resGoDoy = Tempo.dialects.export('{doy} {doy:raw} {doy:ord}', 'go');
 		expect(resGoDoy.pattern).toBe('002 {doy:raw} {doy:ord}');

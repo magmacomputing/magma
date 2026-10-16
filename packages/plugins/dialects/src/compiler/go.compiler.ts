@@ -17,7 +17,7 @@ const WEEKDAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursda
 const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const GO_TOKEN_REGEX =
-	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon|Jan|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
+	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
 
 function getTotalNanoseconds(zdt: Temporal.ZonedDateTime): number {
 	return zdt.millisecond * 1_000_000 + zdt.microsecond * 1_000 + zdt.nanosecond;
@@ -429,10 +429,14 @@ export function parseGo(
 	const doy = getGroup('doy');
 	if (dd) {
 		day = parseInt(dd.trim(), 10);
-	} else if (doy && !mm && !mon_short && !mon_long) {
+	} else if (doy) {
 		const res = resolveDayOfYear(year, parseInt(doy, 10));
 		if (!res) return undefined;
-		month = res.month;
+		if (mm || mon_short || mon_long) {
+			if (res.month !== month) return undefined;
+		} else {
+			month = res.month;
+		}
 		day = res.day;
 	}
 

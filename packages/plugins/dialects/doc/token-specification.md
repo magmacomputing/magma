@@ -40,7 +40,7 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | **Second** | Zero-padded (`00`-`59`) | `ss` | `ss` | `ss` | `%S` | `SS` | `s` | `05` | `{ss}` |
 | | Unpadded (`0`-`59`) | `s` | `s` | `s` | `%-S` | `FMSS` | N/A | `5` | `{ss:raw}` |
 | **Fractional** | Milliseconds (`000`-`999`) | `SSS`| `SSS` | `SSS` | `%3f*` | `FF3` | `v` | `.000` | `{ms}` |
-| | Microseconds (`6` digits) | `SSSSSS`| `u` | `SSSSSS`| `%f*` | `FF6` | `u` | `.000000`| `{ff:6}` |
+| | Microseconds (`6` digits) | `SSSSSS`| N/A | `SSSSSS`| `%f*` | `FF6` | `u` | `.000000`| `{ff:6}` |
 | | Nanoseconds (`9` digits) | `SSSSSSSSS`| N/A | `SSSSSSSSS`| `%9f*` | `FF9` | N/A | `.000000000`| `{ff:9}` |
 | **Timezone** | Short abbreviation / IANA | `z` | `z` | `zz` | `%Z` | `TZD` | `T` | `MST` | `{tz:short}` |
 | | Standard offset (`+08:00`) | `ZZZZZ`| `ZZ` | `Z` | N/A | `TZH:TZM`| `P` | `-07:00` | `{tz:offset}` |

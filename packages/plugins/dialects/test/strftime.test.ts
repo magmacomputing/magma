@@ -92,6 +92,15 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(parsed.mm).toBe(5);
 		expect(parsed.hh).toBe(9);
 		expect(parsed.ms).toBe(123);
+
+		// %9f nanosecond precision format & parse
+		const dtNano = new Tempo('2026-05-04T09:08:07.123456789');
+		expect(dtNano.format('%Y-%m-%d %H:%M:%S.%9f', { dialect: DIALECT.Strftime })).toBe('2026-05-04 09:08:07.123456789');
+		const parsedNano = Tempo.dialects.parse('2026-05-04 09:08:07.123456789', '%Y-%m-%d %H:%M:%S.%9f', DIALECT.Strftime);
+		expect(parsedNano.isValid).toBe(true);
+		expect(parsedNano.ms).toBe(123);
+		expect(parsedNano.toDateTime().microsecond).toBe(456);
+		expect(parsedNano.toDateTime().nanosecond).toBe(789);
 	});
 
 	it('formats and parses space-padded %e (day) and %l (hour)', () => {

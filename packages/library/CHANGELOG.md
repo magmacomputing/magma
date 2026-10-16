@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.0] - 2026-10-16
+
+### Added & Hardened
+- **Roman Numeral Conversion Routines (`number.library`)**:
+  - Exported `toRoman(num: number): string` in `#library/number.library.js`, converting positive integers (1–3999) to standard subtractive Roman numeral strings (e.g. `2026` → `'MMXXVI'`, `14` → `'XIV'`). Safely returns `''` for non-integers or values outside range.
+  - Exported `fromRoman(roman: string): number` in `#library/number.library.js`, parsing case-insensitive Roman numeral strings into integer values (1–3999) validated against standard strict Roman numeral syntax (`RE_ROMAN_NUMERALS`), returning `NaN` for malformed or non-numeral strings.
+  - Comprehensive unit test suite with full round-trip validation added in `packages/library/test/common/primitives/number.library.test.ts`.
+
 ## [4.6.0] - 2026-10-11
 
 ### Added & Hardened
