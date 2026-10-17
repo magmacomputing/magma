@@ -96,6 +96,7 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 
 To explore technical deep-dives, token compatibility matrices, and production patterns, consult the dedicated guides below:
 
+- **[Design Strategy & Deliberate Omissions](./design-philosophy-and-omissions.md)**: Why Tempo engineered `{token:modifier}` over historical dialects, benefits of all-lowercase tokens and getter symmetry, and why specific legacy features were omitted.
 - **[Migration & Legacy Compatibility](./migration-and-compatibility.md)**: Resolving the `YYYY` vs `yyyy` year trap, handling bracketed/quoted escaping, using `.explain()` for automated codemods, and performance benchmarks.
 - **[Token Specification & Cross-Ecosystem Matrix](./token-specification.md)**: Exhaustive token lookup table mapping LDML, Moment, strftime, and native Tempo tokens across years, months, days, sub-seconds, and timezones.
 - **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Multi-candidate webhook ingestion pipelines, enterprise POSIX syslog formatting, and zero-downtime gradual modernization recipes.
