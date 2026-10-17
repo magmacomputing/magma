@@ -10,6 +10,8 @@ import {
 	resolveTimeComponents,
 	resolveDayOfYear,
 	getIsoWeek,
+	fromIsoWeek,
+	resolveIsoCalendarYear,
 } from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
@@ -79,10 +81,16 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => formatNum(z.hour, 2, ' '));
 				break;
 			case 'G':
-				parts.push((z) => pad(getIsoWeek(z).yearOfWeek, 4));
+				parts.push((z) => {
+					const iso = (z as any).withCalendar ? (z as any).withCalendar('iso8601') : z;
+					return pad(getIsoWeek(iso).yearOfWeek, 4);
+				});
 				break;
 			case 'g':
-				parts.push((z) => pad(getIsoWeek(z).yearOfWeek % 100, 2));
+				parts.push((z) => {
+					const iso = (z as any).withCalendar ? (z as any).withCalendar('iso8601') : z;
+					return pad(getIsoWeek(iso).yearOfWeek % 100, 2);
+				});
 				break;
 			case 's':
 				parts.push((z) => Math.floor(z.epochMilliseconds / 1000).toString());
@@ -246,10 +254,13 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('hh', flag === '-' ? '\\d{1,2}' : '\\s*\\d{1,2}');
 				break;
 			case 'G':
-				pattern += '\\d{4}';
+				pattern += group('iyyy', '\\d{4}');
 				break;
 			case 'g':
-				pattern += '\\d{2}';
+				pattern += group('iyy', '\\d{2}');
+				break;
+			case 'V':
+				pattern += group('iw', '\\d{1,2}');
 				break;
 			case 'D':
 				pattern += `${group('mm', '\\d{2}')}/${group('dd', '\\d{2}')}/${group('yy', '\\d{2}')}`;
@@ -335,11 +346,21 @@ export function parseStrftime(
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
+	const iyyy = getGroup('iyyy');
+	const iyyVal = getGroup('iyy');
+	const iw = getGroup('iw');
 	if (yyyy) year = parseInt(yyyy, 10);
 	else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+	} else if (iyyy) {
+		year = parseInt(iyyy, 10);
+	} else if (iyyVal) {
+		const yy = parseInt(iyyVal, 10);
+		year = yy >= 70 ? 1900 + yy : 2000 + yy;
 	}
+
+	const hasYear = Boolean(yyyy || yyVal || iyyy || iyyVal);
 
 	let month = 1;
 	let day = 1;
@@ -354,19 +375,38 @@ export function parseStrftime(
 		if (!res) return undefined;
 		month = res.month;
 		day = res.day;
+	} else if (iw) {
+		const isoWeek = parseInt(iw, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const weekday_num = getGroup('weekday_num');
+		let isoDay = 1;
+		if (weekday_num) {
+			const wn = parseInt(weekday_num, 10);
+			isoDay = wn === 0 ? 7 : wn;
+		}
+		const isoYear = iyyy ? parseInt(iyyy, 10) : (iyyVal ? (parseInt(iyyVal, 10) >= 70 ? 1900 + parseInt(iyyVal, 10) : 2000 + parseInt(iyyVal, 10)) : year);
+		const res = fromIsoWeek(isoYear, isoWeek, isoDay);
+		year = res.year;
+		month = res.month;
+		day = res.day;
 	} else {
 		if (mm) month = parseInt(mm, 10);
 		else if (month_name || month_abbr) {
 			const m = resolveMonth(month_name || month_abbr!);
 			if (m) month = m;
 			else return undefined;
-		} else if (!yyyy && !yyVal) {
+		} else if (!hasYear) {
 			month = today.month;
 		}
 
 		if (dd) day = parseInt(dd, 10);
-		else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+		else if (!hasYear && !mm && !month_name && !month_abbr) {
 			day = today.day;
+		}
+
+		if ((iyyy || iyyVal) && mm && dd) {
+			const isoYear = iyyy ? parseInt(iyyy, 10) : (parseInt(iyyVal!, 10) >= 70 ? 1900 + parseInt(iyyVal!, 10) : 2000 + parseInt(iyyVal!, 10));
+			year = resolveIsoCalendarYear(isoYear, month, day);
 		}
 	}
 

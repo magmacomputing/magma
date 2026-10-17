@@ -27,9 +27,7 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 
 		// ISO week year
 		expect(dt.format('GGGG', { dialect: DIALECT.Moment })).toBe('2026');
-		expect(dt.format('gggg', { dialect: DIALECT.Moment })).toBe('2026');
 		expect(dt.format('GG', { dialect: DIALECT.Moment })).toBe('26');
-		expect(dt.format('gg', { dialect: DIALECT.Moment })).toBe('26');
 
 		// Quarter
 		expect(dt.format('Q', { dialect: DIALECT.Moment })).toBe('4');

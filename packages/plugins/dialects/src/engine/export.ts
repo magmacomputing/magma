@@ -24,8 +24,8 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	yy: { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
 	yow: { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', desc: '4-digit ISO week-numbering year' },
 	'yow:-3': { oracle: 'IYY', desc: 'Last 3 digits of ISO week-numbering year' },
-	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'gg', desc: '2-digit ISO week-numbering year' },
-	'yow:short': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'gg', desc: '2-digit ISO week-numbering year' },
+	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
+	'yow:short': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
 	'yow:-1': { oracle: 'I', desc: 'Last digit of ISO week-numbering year' },
 
 	// Month
@@ -195,7 +195,7 @@ const REGEX_PERCENT = /%/g;
 const REGEX_PHP_ESCAPE = /[A-Za-z\\]/g;
 const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+|\{)/g;
 const REGEX_FF_PRECISION = /^ff:([1-9])$/i;
-const REGEX_GO_CONFLICT = /\b(?:2006|002|__2|_2|15|04|05|01|02|03|06|Jan|January|Mon|Monday|MST|PM|pm|[1-5])\b/;
+const REGEX_GO_CONFLICT = /(?:2006|002|__2|_2|15|04|05|01|02|03|06|Jan|January|Mon|Monday|MST|PM|pm|[1-5])/;
 
 function quoteLiteral(str: string, dialect: Dialect): string {
 	if (!str) return '';

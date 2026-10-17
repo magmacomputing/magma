@@ -133,9 +133,7 @@ const STRFTIME_RAW_MAP: Readonly<Record<string, string>> = {
 const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	YYYY: { tempo: '{yyyy}', desc: '4-digit year' },
 	YY: { tempo: '{yy}', desc: '2-digit year' },
-	gggg: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
 	GGGG: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
-	gg: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
 	GG: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
@@ -335,7 +333,7 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 
 const LDML_REGEX = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|QQ|qq|GG|ZZ|zz|DDD|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|L|M|Q|q|Z|z)/g;
 const STRFTIME_REGEX = /%(-)?(\d+)?([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
-const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
+const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|GGGG|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'MONTH',
 	'MON',

@@ -217,4 +217,14 @@ describe('Dialect Export', () => {
 		expect(Tempo.dialects.export('{dow:0}', 'php').pattern).toBe('w');
 		expect(Tempo.dialects.export('{dow:zero}', 'moment').pattern).toBe('d');
 	});
+
+	it('exports ISO 2-digit week-year to Moment GG', () => {
+		expect(Tempo.dialects.export('{yow:-2}', 'moment').pattern).toBe('GG');
+		expect(Tempo.dialects.export('{yow:short}', 'moment').pattern).toBe('GG');
+	});
+
+	it('detects Go reference date tokens in literal words as conflicts', () => {
+		const res = Tempo.dialects.export('{yyyy} ref1', 'go');
+		expect(res.unsupported).toContain(' ref1');
+	});
 });

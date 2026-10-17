@@ -157,7 +157,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:lower` | String | Converts to lowercase | `{mon:lower}` → `october` |
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
-| `:space`| Universal | Injects leading space padding for numeric tokens (e.g. `{dd:space}` → ` 5`, `{doy:3:space}` → `  5`), or a leading space before string/meridiem elements | `{dd:space}` → ` 5`, `{h12:space:dots}` → `03:30 a.m.` |
+| `:space`| Universal | Injects leading space padding for numeric tokens (e.g. `{dd:space}` → ` 5`, `{doy:3:space}` → `  5`), or a leading space before string/meridiem elements | `{dd:space}` → ` 5`, `{h12}:{mi}{mer:space:dots}` → `03:30 a.m.` |
 | `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
 | `:short` | Universal / String | Yields a short or abbreviated style (e.g. `{mon:short}` → `Oct`, `{yow:short}` → `26`, `{dmy:short}` → `241026`) | `{mon:short}` → `Oct`, `{yow:short}` → `26` |
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |

@@ -42,7 +42,7 @@ console.log(t.zdt.monthCode);    // 'M10'
 
 > [!NOTE]
 > **Astronomical Julian Day (`.jj`) vs. Day of Year (`.doy`)**  
-> `.jj` provides the true astronomical Julian Day Number (a continuous 7-digit count of days elapsed since January 1, 4713 BC, e.g. `2461331` for 2026-10-17), matching Oracle `J` and token `{jj}`. If you need the calendar day within the current year (`1`–`366`), use `.doy` (or format token `{doy}` / `{dd:year}`).
+> `.jj` provides the true astronomical Julian Day Number (an integer day count elapsed since noon UT on January 1, 4713 BC in the proleptic Julian calendar, e.g. `2461331` for 2026-10-17), matching Oracle `J` and token `{jj}`. If you need the calendar day within the current year (`1`–`366`), use `.doy` (or format token `{doy}` / `{dd:year}`).
 
 ## ⏱️ Time Properties
 

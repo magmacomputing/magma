@@ -137,14 +137,34 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(dtWeek2.format('%V', { dialect: DIALECT.Strftime })).toBe('02');
 		expect(dtWeek2.format('%-V', { dialect: DIALECT.Strftime })).toBe('2');
 
-		// With a non-ISO calendar, %V still derives ISO 8601 weekOfYear
+		// With a non-ISO calendar, %V, %G, and %g still derive ISO 8601 values
 		const dtHebrew = new Tempo('2026-10-24T15:30:45', { calendar: 'hebrew' });
 		expect(dtHebrew.format('%V', { dialect: DIALECT.Strftime })).toBe('43');
+		expect(dtHebrew.format('%G', { dialect: DIALECT.Strftime })).toBe('2026');
+		expect(dtHebrew.format('%g', { dialect: DIALECT.Strftime })).toBe('26');
 
 		// Fallback when ISO week retrieval fails
 		const formatV = compileStrftimeFormatter('%V');
 		expect(formatV({} as any)).toBe('%V');
 		expect(formatV({ withCalendar: () => { throw new Error('fail'); } } as any)).toBe('%V');
+	});
+
+	it('parses ISO week-year and week dates (%G, %g, %V, %u, %w)', () => {
+		const parsed1 = Tempo.dialects.parse('2026-43-6', '%G-%V-%u', DIALECT.Strftime);
+		expect(parsed1.isValid).toBe(true);
+		expect(parsed1.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		const parsedSunday = Tempo.dialects.parse('2026-43-0', '%G-%V-%w', DIALECT.Strftime);
+		expect(parsedSunday.isValid).toBe(true);
+		expect(parsedSunday.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-25');
+
+		const parsed2Digit = Tempo.dialects.parse('26-43-6', '%g-%V-%u', DIALECT.Strftime);
+		expect(parsed2Digit.isValid).toBe(true);
+		expect(parsed2Digit.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		const parsedIsoCal = Tempo.dialects.parse('2026-10-24', '%G-%m-%d', DIALECT.Strftime);
+		expect(parsedIsoCal.isValid).toBe(true);
+		expect(parsedIsoCal.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
 	});
 });
 
