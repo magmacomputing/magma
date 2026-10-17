@@ -131,8 +131,8 @@ describe('Dialect Export', () => {
 		expect(resGo.unsupported).toContain('{wy}');
 
 		// Supported week-year and week-of-year in other dialects
-		const resOracle = Tempo.dialects.export('{yow}-{woy} {yw}-{wy}', 'oracle');
-		expect(resOracle.pattern).toBe('IYYY-IW IYYY-IW');
+		const resOracleWeek = Tempo.dialects.export('{yow}-{woy} {yw}-{wy}', 'oracle');
+		expect(resOracleWeek.pattern).toBe('IYYY-IW IYYY-IW');
 
 		// PHP unsupported day-of-year tokens
 		const resPhp = Tempo.dialects.export('{doy} {doy:raw} {doy:ord}', 'php');
@@ -210,5 +210,11 @@ describe('Dialect Export', () => {
 		const resLdml = Tempo.dialects.export('{wom}', 'ldml');
 		expect(resLdml.pattern).toBe('W');
 		expect(resLdml.unsupported).toHaveLength(0);
+
+	});
+
+	it('exports 0-indexed Sunday = 0 weekday tokens to PHP and Moment', () => {
+		expect(Tempo.dialects.export('{dow:0}', 'php').pattern).toBe('w');
+		expect(Tempo.dialects.export('{dow:zero}', 'moment').pattern).toBe('d');
 	});
 });

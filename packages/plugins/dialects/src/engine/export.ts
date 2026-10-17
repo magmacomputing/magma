@@ -44,13 +44,13 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', desc: 'Zero-padded day of month (01-31)' },
 	'dd:raw': { ldml: 'd', strftime: '%-d', oracle: 'FMDD', moment: 'D', php: 'j', go: '2', desc: 'Unpadded day of month (1-31)' },
 	'dd:space': { strftime: '%e', go: '_2', desc: 'Space-padded day of month ( 1-31)' },
-	'dd:ord': { ldml: 'd', strftime: '%-d', oracle: 'DD', moment: 'Do', go: '2', desc: 'Day of month with ordinal suffix' },
+	'dd:ord': { ldml: 'Do', oracle: 'DDTH', moment: 'Do', desc: 'Day of month with ordinal suffix' },
 
 	// Day of Year
 	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
 	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDD', moment: 'DDD', desc: 'Unpadded day of year (1-366)' },
 	'doy:space': { go: '__2', desc: 'Space-padded day of year (  1-366)' },
-	'doy:ord': { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDo', desc: 'Day of year with ordinal suffix' },
+	'doy:ord': { moment: 'DDDo', desc: 'Day of year with ordinal suffix' },
 
 	// Weekday
 	wkd: { ldml: 'EEEE', strftime: '%A', oracle: 'Day', moment: 'dddd', php: 'l', go: 'Monday', desc: 'Full weekday name capitalized' },
@@ -61,12 +61,12 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'www:lower': { ldml: 'EEE', strftime: '%a', oracle: 'dy', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name lowercase' },
 	dow: { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Day of week number (1-7)' },
 	'dow:locale': { ldml: 'e', strftime: '%w', oracle: 'D', moment: 'd', php: 'w', desc: 'Territory-dependent day of week' },
-	'dow:ord': { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'do', php: 'N', desc: 'Day of week with ordinal suffix' },
+	'dow:ord': { moment: 'do', desc: 'Day of week with ordinal suffix' },
 
 	// Week of Year
 	woy: { ldml: 'ww', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
 	'woy:raw': { ldml: 'w', strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
-	'woy:ord': { ldml: 'w', strftime: '%V', oracle: 'IW', moment: 'Wo', php: 'W', desc: 'ISO week of year with ordinal suffix' },
+	'woy:ord': { moment: 'Wo', desc: 'ISO week of year with ordinal suffix' },
 
 	// Era
 	era: { ldml: 'G', desc: 'Abbreviated localized era (e.g. AD)' },
@@ -101,7 +101,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	tz: { ldml: 'zzzz', strftime: '%Z', oracle: 'TZR', moment: 'z', php: 'e', go: 'MST', desc: 'Time zone region name / identifier' },
 	'tz:short': { ldml: 'z', strftime: '%Z', oracle: 'TZD', moment: 'zz', php: 'T', go: 'MST', desc: 'Time zone daylight / short abbreviation' },
 	'tz:offset': { ldml: 'ZZZZZ', strftime: '%z', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
-	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'OF', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
+	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
 	'tz:offset:hh': { oracle: 'TZH', go: '-07', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
 	'tz:offset:mi': { oracle: 'TZM', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
 	'tz:offset:ss': { go: '-07:00:00', desc: 'ISO-8601 time zone offset with seconds (e.g. +08:00:00)' },
@@ -126,13 +126,13 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'doy:zero': { php: 'z', desc: '0-indexed day of year (0-365)' },
 	'doy:raw:0': { php: 'z', desc: '0-indexed unpadded day of year (0-365)' },
 	'doy:raw:zero': { php: 'z', desc: '0-indexed unpadded day of year (0-365)' },
-	'dow:0': { strftime: '%w', desc: 'Day of week with Sunday as 0 (0-6)' },
-	'dow:zero': { strftime: '%w', desc: 'Day of week with Sunday as 0 (0-6)' },
+	'dow:0': { strftime: '%w', moment: 'd', php: 'w', desc: 'Day of week with Sunday as 0 (0-6)' },
+	'dow:zero': { strftime: '%w', moment: 'd', php: 'w', desc: 'Day of week with Sunday as 0 (0-6)' },
 
 	// Timestamps & Terms
 	ts: { strftime: '%s', moment: 'X', php: 'U', desc: 'Unix timestamp in seconds' },
 	'#quarter': { oracle: 'Q', moment: 'Q', desc: 'Quarter number 1-4' },
-	'#quarter:ord': { oracle: 'Q', moment: 'Qo', desc: 'Quarter with ordinal suffix' },
+	'#quarter:ord': { moment: 'Qo', desc: 'Quarter with ordinal suffix' },
 };
 
 /**
@@ -195,7 +195,7 @@ const REGEX_PERCENT = /%/g;
 const REGEX_PHP_ESCAPE = /[A-Za-z\\]/g;
 const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+|\{)/g;
 const REGEX_FF_PRECISION = /^ff:([1-9])$/i;
-const REGEX_GO_CONFLICT = /\b(?:2006|15|04|05|01|02|03|Jan|January|Mon|Monday|MST|PM|pm)\b/;
+const REGEX_GO_CONFLICT = /\b(?:2006|002|__2|_2|15|04|05|01|02|03|06|Jan|January|Mon|Monday|MST|PM|pm|[1-5])\b/;
 
 function quoteLiteral(str: string, dialect: Dialect): string {
 	if (!str) return '';
@@ -269,6 +269,21 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 
 			const targetToken = info?.[dialect as keyof DialectTarget];
 			if (isDefined(targetToken)) {
+				if (dialect === DIALECT.Go && targetToken.startsWith('.')) {
+					if (pattern.endsWith('.')) {
+						pattern = pattern.slice(0, -1);
+					} else {
+						unsupported.push(fullToken);
+						tokens.push({
+							source: fullToken,
+							target: fullToken,
+							desc: `${info.desc} (Go requires preceding decimal point)`,
+							supported: false,
+						});
+						pattern += fullToken;
+						continue;
+					}
+				}
 				pattern += targetToken;
 				tokens.push({
 					source: fullToken,

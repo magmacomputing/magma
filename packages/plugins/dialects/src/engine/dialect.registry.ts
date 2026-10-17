@@ -7,10 +7,11 @@ import { formatPhp, parsePhp } from '../compiler/php.compiler.js';
 import { formatGo, parseGo } from '../compiler/go.compiler.js';
 
 import { type ParseOptions as DialectOptions } from '../compiler/shared.compiler.js';
+export type { DialectOptions };
 
 const RE_ORACLE_DETECTION = /\bhh(?:24|12)\b/i;
-const RE_ORACLE_UPPER = /\b(?:MI|SSSSS|FF[1-9]?|MON)\b/;
-const RE_LDML_CONFLICT = /\b(?:yyyy|YYYY|HH|mm|ss)\b/;
+const RE_ORACLE_UPPER = /\b(?:MI|FF[1-9]?|MON)\b/;
+const RE_LDML_CONFLICT = /\b(?:yyyy|mm|ss)\b/;
 const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b|\b2006[/-]0?1[/-]0?2\b/;
 const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
 const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ]/;
@@ -29,7 +30,7 @@ export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
 
 	if (RE_STRFTIME_SPECIFIERS.test(clean)) return DIALECT.Strftime;
 	if (!RE_LDML_CONFLICT.test(clean) && RE_GO_DETECTION.test(clean)) return DIALECT.Go;
-	if (RE_ORACLE_DETECTION.test(clean) || RE_ORACLE_UPPER.test(clean)) return DIALECT.Oracle;
+	if (RE_ORACLE_DETECTION.test(clean) || (!RE_LDML_CONFLICT.test(clean) && RE_ORACLE_UPPER.test(clean))) return DIALECT.Oracle;
 
 	return DIALECT.Ldml;
 }
@@ -51,12 +52,18 @@ export function translateMomentToLdml(mask: string): string {
 			}
 		}
 		if (mask.startsWith('YYYY', i)) { out += 'yyyy'; i += 4; }
+		else if (mask.startsWith('GGGG', i) || mask.startsWith('gggg', i)) { out += 'YYYY'; i += 4; }
 		else if (mask.startsWith('YY', i)) { out += 'yy'; i += 2; }
+		else if (mask.startsWith('GG', i) || mask.startsWith('gg', i)) { out += 'YY'; i += 2; }
+		else if (mask.startsWith('DDDD', i)) { out += 'DDD'; i += 4; }
+		else if (mask.startsWith('DDD', i)) { out += 'D'; i += 3; }
 		else if (mask.startsWith('Do', i)) { out += 'Do'; i += 2; }
 		else if (mask.startsWith('DD', i)) { out += 'dd'; i += 2; }
 		else if (mask.startsWith('D', i)) { out += 'd'; i += 1; }
 		else if (mask.startsWith('dddd', i)) { out += 'EEEE'; i += 4; }
 		else if (mask.startsWith('ddd', i)) { out += 'EEE'; i += 3; }
+		else if (mask.startsWith('WW', i)) { out += 'ww'; i += 2; }
+		else if (mask.startsWith('W', i)) { out += 'w'; i += 1; }
 		else if (mask.startsWith('A', i)) { out += 'aa'; i += 1; }
 		else if (mask.startsWith('a', i)) { out += 'a'; i += 1; }
 		else {

@@ -8,8 +8,9 @@ This document tracks all formatting, parsing, and migration gaps across `@magmac
 
 - [x] **Phase 1: Dialect Plugin Tightening (Immediate, Zero Core Changes)**
 - [x] **Phase 2: Tempo Core Width Slicing & Numeric Modifiers**
-- [ ] **Phase 3: Extended Timezone Offset Modifiers in Core**
-- [ ] **Phase 4: Specialized Tokens, Calendrical Counters & Term Plugins**
+- [x] **Phase 3: Extended Timezone Offset Modifiers in Core**
+- [x] **Phase 4: Specialized Tokens, Calendrical Counters & Term Plugins**
+- [x] **Phase 5: Moment.js Translation Parity, LDML Quarters & 0-Indexed Weekday Export**
 
 ---
 
@@ -89,7 +90,7 @@ Addressing niche domain, astronomical, and non-ISO calendar counters.
   - Unlocks dimensional time-scope modifiers: `{mi:day}` (minute of day `0`–`1439`), `{ms:day}`, `{ns:day}`, and `{hh:week}` (hour of week `0`–`167`).
 - [x] **Calendar Week Starting Jan 1 (Oracle `WW`) & Week of Month (`W`)**:
   - Implement `{woy:cal}` (`Math.ceil(doy / 7)`, range `01`–`53`, resolves Oracle `WW`).
-  - Proactively mark `{woy:cal}` in v4 docs/TSdoc as `@deprecated Will be superseded by {ww} in v5.0.0 (where {ww} transitions from ISO week to Jan 1 calendar week)`.
+  - Proactively mark `{woy:cal}` in v4 docs/TSdoc as `@deprecated Will be superseded by {ww} in v5.0.0`.
   - Implement `{wom}` (Week of Month `1`–`5`, `Math.ceil(day / 7)`, resolves Oracle `W`, LDML `W`).
 - [x] **Generalized Zero-Indexed Modifier (`:zero` canonical, `:0` alias)**:
   - Promote `:zero` as canonical semantic modifier with `:0` as compact shorthand.
@@ -105,3 +106,20 @@ Addressing niche domain, astronomical, and non-ISO calendar counters.
 - [x] **Century (`%C`) vs Age**:
   - Evaluate `{cen}` / `{century}` (`Math.floor(year / 100)` → `20` for `2026`, resolves POSIX `%C`).
   - (Reserve `{age}` for elapsed duration from anchor/birthdate).
+
+---
+
+## Phase 5: Moment.js Translation Parity, LDML Quarters & 0-Indexed Weekday Export
+
+Closing high-value interoperability gaps across Moment.js translation, Unicode LDML quarters, and 0-indexed weekday dialect export.
+
+- [x] **Moment.js Translation Parity (`translateMomentToLdml`)**:
+  - In `dialect.registry.ts`, map Moment `DDDD` (padded) → `DDD` and `DDD` (unpadded) → `D` ahead of `DD`/`D`.
+  - Map Moment `WW` (padded) → `ww` and `W` (unpadded) → `w` (ISO week).
+  - Map Moment `GGGG` / `gggg` (4-digit) → `YYYY` and `GG` / `gg` (2-digit) → `YY` (ISO week-numbering year, eliminating the LDML era collision).
+- [x] **Unicode LDML Quarters (`Q`, `QQ`, `QQQ`, `QQQQ`)**:
+  - In `ldml.compiler.ts`, compile formatters for `Q` (1–4), `QQ` (01–04), `QQQ` (`Q1`–`Q4`), and `QQQQ` (`1st quarter`–`4th quarter`).
+  - Support parser group extraction defaulting unpadded/padded quarter numbers to the starting month of that quarter.
+  - In `export.ts`, align `{#quarter}` to include `ldml: 'Q'`.
+- [x] **0-Indexed Sunday = 0 Weekday Export Parity**:
+  - In `export.ts`, add `php: 'w'` and `moment: 'd'` to `{dow:0}` and `{dow:zero}` (0 = Sunday to 6 = Saturday).

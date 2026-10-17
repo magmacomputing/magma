@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `{ss:day}`: Seconds past midnight (`0`–`86399`, resolving Oracle `SSSSS`).
     - `{mi:day}`: Minute of day (`0`–`1439`).
     - `{ms:day}`: Millisecond of day (`0`–`86399999`).
-    - `{ns:day}`: Nanosecond of day (`0`–`86.399T`).
+    - `{ns:day}`: Nanosecond of day (`0`–`86,399,999,999,999 ns`).
     - `{hh:week}`: Hour of week (`0`–`167`).
     - `{dd:year}`: Day of year (`1`–`366`, resolving mainframe "Julian" date codes).
   - Added generalized zero-indexing modifier (`:zero` canonical, `:0` shorthand):

@@ -1,3 +1,4 @@
+import { WeakCache } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
@@ -10,8 +11,8 @@ import {
 	resolveDayOfYear,
 } from './shared.compiler.js';
 
-const GO_FORMATTER_CACHE = new Map<string, FormatterFn>();
-const GO_PARSER_CACHE = new Map<string, RegExp>();
+const GO_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
+const GO_PARSER_CACHE = new WeakCache<string, RegExp>();
 
 const WEEKDAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -405,7 +406,7 @@ export function parseGo(
 		year = parseInt(yyyy, 10);
 	} else if (yy) {
 		const shortYear = parseInt(yy, 10);
-		year = shortYear >= 70 ? 1900 + shortYear : 2000 + shortYear;
+		year = shortYear >= 69 ? 1900 + shortYear : 2000 + shortYear;
 	}
 
 	let month = 1;

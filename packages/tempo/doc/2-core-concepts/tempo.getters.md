@@ -31,8 +31,18 @@ console.log(t.zdt.monthCode);    // 'M10'
 | `.yy` | `number` | 4-digit Year | `2026` |
 | `.mm` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
 | `.dd` | `number` | Day of the month (1-31) | `24` |
+| `.dim` | `number` | Total days in the month (28-31; convenience alias for `.zdt.daysInMonth`) | `31` |
+| `.jj` | `number` | Astronomical Julian Day number since 4713 BC | `2461331` |
 | `.era` | `string` | Localized era string | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
 | `.eon` | `number` | Positive integer year within the current `.era` | `2026`, `4` |
+
+> [!NOTE]
+> **Days in Month (`.dim`) vs. Native `.zdt.daysInMonth`**  
+> While `.dim` is provided as a zero-cost convenience property returning the number of days in the current month (`28`–`31`, matching format token `{dim}` and PHP `t`), `t.zdt.daysInMonth` is the native standard property directly available on the underlying `Temporal.ZonedDateTime` instance.
+
+> [!NOTE]
+> **Astronomical Julian Day (`.jj`) vs. Day of Year (`.doy`)**  
+> `.jj` provides the true astronomical Julian Day Number (a continuous 7-digit count of days elapsed since January 1, 4713 BC, e.g. `2461331` for 2026-10-17), matching Oracle `J` and token `{jj}`. If you need the calendar day within the current year (`1`–`366`), use `.doy` (or format token `{doy}` / `{dd:year}`).
 
 ## ⏱️ Time Properties
 
@@ -51,9 +61,16 @@ console.log(t.zdt.monthCode);    // 'M10'
 | Getter | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
 | `.yow` | `number` | 4-digit ISO week-numbering year | `2026` |
-| `.woy` | `number` | ISO week number of the year (1-53) | `43` |
+| `.woy` | `number` | ISO week number of the year (1-53; canonical, supersedes legacy `.ww`) | `43` |
 | `.dow` | `number` | ISO weekday number (1 = Mon, 7 = Sun) | `6` |
 | `.doy` | `number` | Day of the year (1-366) | `297` |
+
+> [!NOTE]
+> **Canonical Getters & v5 Deprecation Path**  
+> To establish a clean, predictable, and collision-free API surface across getters and format tokens:
+> * **`.woy`** is canonical for ISO week of the year. The legacy `.ww` getter is marked `@deprecated` and will transition in v5.0.0 to calendar week count (weeks starting Jan 1st).
+> * **`.eon`** is canonical for the positive integer year within the era (supersedes `@deprecated` `.eraYear`).
+> * **`.dd`** is canonical for the day of the month (supersedes `@deprecated` `.day`).
 
 ## 🔤 Named String Representations
 
@@ -72,6 +89,7 @@ console.log(t.zdt.monthCode);    // 'M10'
 | `.cal` | `string` | Temporal Calendar ID | `'iso8601'` |
 | `.locale` | `string \| string[]` | Resolved BCP 47 locale | `'en-AU'`, `['en-US', 'fr-FR']` |
 | `.intl` | `TempoIntlNamespace` | Structured internationalization namespace (`.info` for cultural metadata, `.locale` for native `Intl.Locale`) | `t.intl.info.firstDay`, `t.intl.locale` |
+| `.geo` | `object \| undefined` | Resolved geographic coordinates (`latitude`, `longitude`, `elevation`, `sphere`) | `{ latitude: -33.8688, longitude: 151.2093 }` |
 | `.sphere` | `'north' \| 'south' \| undefined` | Resolved hemisphere configuration | `'south'` |
 | `.ts` | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
 | `.nano` | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |

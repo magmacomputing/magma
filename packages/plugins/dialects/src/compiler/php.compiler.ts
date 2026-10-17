@@ -1,3 +1,4 @@
+import { WeakCache, suffix } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
@@ -10,20 +11,11 @@ import {
 	resolveDayOfYear,
 } from './shared.compiler.js';
 
-const PHP_FORMATTER_CACHE = new Map<string, FormatterFn>();
-const PHP_PARSER_CACHE = new Map<string, RegExp>();
+const PHP_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
+const PHP_PARSER_CACHE = new WeakCache<string, RegExp>();
 
 const WEEKDAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-function getOrdinalSuffix(n: number): string {
-	const j = n % 10;
-	const k = n % 100;
-	if (j === 1 && k !== 11) return 'st';
-	if (j === 2 && k !== 12) return 'nd';
-	if (j === 3 && k !== 13) return 'rd';
-	return 'th';
-}
 
 /**
  * Compiles a PHP date format mask into a high-performance formatter function.
@@ -83,7 +75,7 @@ export function compilePhpFormatter(mask: string): FormatterFn {
 				parts.push((zdt) => zdt.day.toString());
 				break;
 			case 'S':
-				parts.push((zdt) => getOrdinalSuffix(zdt.day));
+				parts.push((zdt) => suffix(zdt.day).slice(-2));
 				break;
 			case 'z':
 				// PHP: 0-indexed day of year (0 through 365)

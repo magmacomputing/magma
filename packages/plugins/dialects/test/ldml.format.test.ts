@@ -43,6 +43,13 @@ describe('Unicode LDML Formatting', () => {
 		expect(dt.format('yyyy GGGG', { dialect: DIALECT.Ldml })).toBe('2026 Anno Domini');
 	});
 
+	it('formats quarter tokens (Q, QQ, QQQ, QQQQ)', () => {
+		expect(dt.format('yyyy Q', { dialect: DIALECT.Ldml })).toBe('2026 4');
+		expect(dt.format('yyyy QQ', { dialect: DIALECT.Ldml })).toBe('2026 04');
+		expect(dt.format('yyyy QQQ', { dialect: DIALECT.Ldml })).toBe('2026 Q4');
+		expect(dt.format('yyyy QQQQ', { dialect: DIALECT.Ldml })).toBe('2026 4th quarter');
+	});
+
 	it('executes compiled layout cache across 10,000 iterations efficiently', () => {
 		const mask = 'yyyy-MM-dd HH:mm:ss.SSS';
 		for (let i = 0; i < 10000; i++) {

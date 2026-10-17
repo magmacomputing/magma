@@ -332,7 +332,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				res = (zdt.eraYear ?? Math.abs(zdt.year <= 0 ? zdt.year - 1 : zdt.year)).toString();
 				break;
 			case 'cen': case 'century':
-				res = pad(Math.floor(zdt.year / 100), 2);
+				res = pad(Math.abs(Math.floor(zdt.year / 100)), 2);
 				break;
 			case 'dim':
 				res = zdt.daysInMonth.toString();
@@ -658,7 +658,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'offset':
 				case 'offsetcompact': {
 					if (token === 'tz') {
-						const isCompact = mod === 'offsetcompact' || normMods.includes('compact');
+						const isCompact = mod.toLowerCase() === 'offsetcompact' || normMods.includes('compact');
 						const isUtc = zdt.offset === '+00:00' || zdt.offset === '-00:00' || zdt.offset === 'Z' || zdt.offsetNanoseconds === 0;
 						const sign = zdt.offset.startsWith('-') ? '-' : '+';
 						const cleanOffset = (zdt.offset.startsWith('+') || zdt.offset.startsWith('-'))
@@ -666,12 +666,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							: zdt.offset === 'Z' ? '00:00' : zdt.offset;
 						const [hStr = '00', mStr = '00', sStr = '00'] = cleanOffset.split(':');
 
-						if (normMods.includes('hh') || normMods.includes('hour')) {
+						if (normMods.includes('z') && isUtc) {
+							res = 'Z';
+						} else if (normMods.includes('hh') || normMods.includes('hour')) {
 							res = `${sign}${hStr}`;
 						} else if (normMods.includes('mi') || normMods.includes('min')) {
 							res = mStr;
-						} else if (normMods.includes('z') && isUtc) {
-							res = 'Z';
 						} else if (normMods.includes('ss') || normMods.includes('sec')) {
 							res = isCompact
 								? `${sign}${hStr}${mStr}${sStr}`

@@ -420,6 +420,7 @@ describe('Tempo.format() refinements', () => {
       expect(tTarget.format('{century}')).toBe('20');
       expect(new Tempo('1999-12-31').format('{cen}')).toBe('19');
       expect(new Tempo('0750-01-01').format('{cen}')).toBe('07');
+      expect(new Tempo('-000050-01-01').format('{cen}')).toBe('01');
     });
 
     it('formats week of month ({wom}) and calendar week ({woy:cal})', () => {

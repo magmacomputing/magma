@@ -16,7 +16,7 @@ import {
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSS|MMM|LLL|EEE|ccc|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|S|a|c|e|E|w|Z|z)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aa|Do|ww|QQ|qq|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -64,6 +64,25 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'w':
 					parts.push((z) => String(getIsoWeek(z.toPlainDate()).weekOfYear));
+					break;
+				case 'W':
+					parts.push((z) => String(Math.ceil(z.day / 7)));
+					break;
+				case 'QQQQ':
+				case 'qqqq':
+					parts.push((z) => `${suffix(Math.ceil(z.month / 3))} quarter`);
+					break;
+				case 'QQQ':
+				case 'qqq':
+					parts.push((z) => `Q${Math.ceil(z.month / 3)}`);
+					break;
+				case 'QQ':
+				case 'qq':
+					parts.push((z) => pad(Math.ceil(z.month / 3), 2));
+					break;
+				case 'Q':
+				case 'q':
+					parts.push((z) => String(Math.ceil(z.month / 3)));
 					break;
 
 				case 'MMMM':
@@ -156,15 +175,22 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					parts.push((z) => String(z.second));
 					break;
 
+				case 'SSSSSSSSS':
+				case 'SSSSSSSS':
+				case 'SSSSSSS':
+				case 'SSSSSS':
+				case 'SSSSS':
+				case 'SSSS':
 				case 'SSS':
-					parts.push((z) => pad(z.millisecond, 3));
-					break;
 				case 'SS':
-					parts.push((z) => pad(Math.floor(z.millisecond / 10), 2));
+				case 'S': {
+					const prec = token.length;
+					parts.push((z) => {
+						const nsTotal = z.millisecond * 1_000_000 + z.microsecond * 1000 + z.nanosecond;
+						return pad(nsTotal, 9).slice(0, prec);
+					});
 					break;
-				case 'S':
-					parts.push((z) => String(Math.floor(z.millisecond / 100)));
-					break;
+				}
 
 				case 'aa':
 					parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
@@ -188,12 +214,14 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 
 				case 'ZZZZZ':
-				case 'ZZZZ':
-				case 'ZZZ':
-				case 'Z':
 					parts.push((z) => z.offset);
 					break;
+				case 'ZZZZ':
+					parts.push((z) => `GMT${z.offset}`);
+					break;
+				case 'ZZZ':
 				case 'ZZ':
+				case 'Z':
 					parts.push((z) => z.offset.replace(':', ''));
 					break;
 				case 'zzzz':
@@ -283,6 +311,25 @@ export function compileLdmlParser(mask: string): RegExp {
 				case 'w':
 					pattern += group('week_of_year', '\\d{1,2}');
 					break;
+				case 'W':
+					pattern += group('wom', '\\d{1}');
+					break;
+				case 'QQQQ':
+				case 'qqqq':
+					pattern += group('quarter_name', '(?:1st|2nd|3rd|4th) quarter');
+					break;
+				case 'QQQ':
+				case 'qqq':
+					pattern += group('quarter_abbr', 'Q[1-4]');
+					break;
+				case 'QQ':
+				case 'qq':
+					pattern += group('quarter', '0[1-4]');
+					break;
+				case 'Q':
+				case 'q':
+					pattern += group('quarter', '[1-4]');
+					break;
 
 				case 'MMMM':
 				case 'LLLL':
@@ -358,14 +405,16 @@ export function compileLdmlParser(mask: string): RegExp {
 					pattern += group('ss', '\\d{1,2}');
 					break;
 
+				case 'SSSSSSSSS':
+				case 'SSSSSSSS':
+				case 'SSSSSSS':
+				case 'SSSSSS':
+				case 'SSSSS':
+				case 'SSSS':
 				case 'SSS':
-					pattern += group('ms', '\\d{3}');
-					break;
 				case 'SS':
-					pattern += group('ms', '\\d{2}');
-					break;
 				case 'S':
-					pattern += group('ms', '\\d{1}');
+					pattern += group('ff', `\\d{${token.length}}`);
 					break;
 
 				case 'aa':
@@ -453,6 +502,7 @@ export function parseLdml(
 	const dd = getGroup('dd');
 	const dd_ord = getGroup('dd_ord');
 	const doy = getGroup('doy');
+	const qtrVal = getGroup('quarter') || (getGroup('quarter_abbr')?.slice(1)) || (getGroup('quarter_name') ? String(getGroup('quarter_name')![0]) : undefined);
 
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
@@ -500,6 +550,11 @@ export function parseLdml(
 			const m = resolveMonth(month_name || month_abbr!);
 			if (m) month = m;
 			else return undefined;
+		} else if (qtrVal) {
+			const cleanQtr = qtrVal.replace(/\D/g, '');
+			const q = parseInt(cleanQtr, 10);
+			if (isNaN(q) || q < 1 || q > 4) return undefined;
+			month = (q - 1) * 3 + 1;
 		} else if (!yyyy && !yyVal) {
 			month = today.month;
 		}
@@ -517,9 +572,15 @@ export function parseLdml(
 	if (!time) return undefined;
 	const { hour, minute, second } = time;
 	let millisecond = 0;
-	const ms = getGroup('ms');
-	if (ms)
-		millisecond = parseInt(ms.padEnd(3, '0').slice(0, 3), 10);
+	let microsecond = 0;
+	let nanosecond = 0;
+	const ff = getGroup('ff');
+	if (ff) {
+		const padded = ff.padEnd(9, '0');
+		millisecond = parseInt(padded.slice(0, 3), 10);
+		microsecond = parseInt(padded.slice(3, 6), 10);
+		nanosecond = parseInt(padded.slice(6, 9), 10);
+	}
 
 	try {
 		return Temporal.ZonedDateTime.from(
@@ -533,6 +594,8 @@ export function parseLdml(
 				minute,
 				second,
 				millisecond,
+				microsecond,
+				nanosecond,
 			},
 			{ overflow: 'reject' }
 		);

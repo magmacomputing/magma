@@ -137,6 +137,10 @@ Tempo.use(FormatModule);
 | `{hms}` | Compact Time (24h) | `153045` |
 | `{time}` | Time (24h, or localized format via `:locale`) | `15:30:45` |
 | `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
+| `{dim}` | Total Days in Month (28-31) | `31` |
+| `{cen}` | 2-digit Century (`{century}`) | `20` |
+| `{jj}` | Astronomical Julian Day Number (`{julian}`) | `2461331` |
+| `{wom}` | Week of Month (1-5, aliases `{ww:month}`, `{woy:month}`) | `4` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
 
@@ -159,9 +163,14 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
 | `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |
 | `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset. Supports granular sub-modifiers (`:hh`, `:mi`, `:ss`, `:z`) | `{tz:offset}` → `+10:00`, `{tz:offset:hh}` → `+10` |
+| `:zero` / `:0` | Number | Shifts 1-based counters to zero-indexed (`{doy:zero}` → `000`–`365`, `{dow:zero}` → `0`–`6` Sunday=0, `{mm:zero}` → `00`–`11`, `{woy:zero}` → `00`–`52`, `{wom:zero}` → `0`–`4`) | `{dow:0}` → `6`, `{mm:raw:0}` → `9` |
+| `:day` | Unit Scope | Expresses time units cumulatively over the day (`{ss:day}` → `0`–`86399`, `{mi:day}` → `0`–`1439`, `{ms:day}`, `{ns:day}`) | `{ss:day}` → `55845` |
+| `:week` | Unit Scope | Expresses time units cumulatively over the week (`{hh:week}` → `0`–`167`, `{mi:week}`, `{ss:week}`) or day within the week (`{dd:week}` → `1`–`7`) | `{hh:week}` → `135`, `{dd:week}` → `6` |
+| `:month` | Unit Scope | Scopes counters to the month (`{wom}` / `{woy:month}` → `1`–`5`, `{dd:month}` → `1`–`31`) | `{wom}` → `4` |
+| `:year` | Unit Scope | Scopes counters to the year (`{dd:year}` → `001`–`366`, `{mm:year}` → `01`–`12`) | `{dd:year}` → `297` |
 
 > [!TIP]
-> **Timezone Formatting & Extended Offset Variations**
+> **Timezone Formatting & Extended Offset Variations**  
 > `{tz}` defaults to the IANA timezone identifier (e.g. `Australia/Sydney`). Modifiers can be composed seamlessly:
 > * **Named Styles**: `{tz:short}` → `AEST`, `{tz:long}` → `Australian Eastern Standard Time`.
 > * **Chained Offsets**: `{tz:offset}` → `+10:00`, `{tz:offset:short}` → `+10`, `{tz:offset:compact}` → `+1000`.
@@ -170,14 +179,39 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 >   * `{tz:offset:mi}` (and alias `:min`) → Minutes without sign (e.g. `00`, `30`).
 >   * `{tz:offset:ss}` (and alias `:sec`) → Offset including seconds (e.g. `+10:00:00`, compact `{tz:offset:compact:ss}` → `+100000`).
 >   * `{tz:offset:z}` / `{tz:offset:compact:z}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else ISO offset `+10:00` (or compact `+1000`).
+> * **Canonical Naming**: Sub-modifiers `:hh`, `:mi`, and `:ss` match Tempo's core time tokens. Modifiers `:hour`, `:min`, and `:sec` are supported synonyms.
 > * **Shorthands & Aliases**: LDML aliases (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`) are supported as drop-in shorthands.
 
 > [!TIP]
-> **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**
+> **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**  
 > You can pass any integer width directly as a modifier (e.g. `{doy:3}`, `{yyyy:-3}`, `{yow:-2}`, `{ns:6}`).
 > * **Positive width (`+N`)**: Zero-pads integers to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
-> * **Negative width (`-N`)**: Slices the last $N$ characters from the right. Ideal for year variations such as 3-digit year (`{yyyy:-3}` → `'026'`), 1-digit year (`{yyyy:-1}` → `'6'`), or 2-digit ISO week-year (`{yow:-2}` / `{yow:short}` → `'26'`).
+> * **Negative width (`-N`)**: Slices the last $N$ characters from the right (`slice(-N)`). Ideal for year variations such as 3-digit year (`{yyyy:-3}` → `'026'`), 1-digit year (`{yyyy:-1}` → `'6'`), or 2-digit ISO week-year (`{yow:-2}` / `{yow:short}` → `'26'`).
 > * **Fractional seconds (`{ff}`)**: Slices the 9-digit fractional second string to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds).
+
+> [!TIP]
+> **Specialized Tokens, Calendrical Counters & Designed Composability**  
+> Rather than proliferating one-off tokens for every niche format requirement, Tempo promotes an orthogonal matrix of composable unit scopes (`:day`, `:week`, `:month`, `:year`) alongside specialized tokens:
+> * **Astronomical Julian Day (`{jj}`, `{julian}`)**: Emits continuous 7-digit day count since 4713 BC (`2461331` for 2026-10-17, matching Oracle `J`).
+> * **Julian Day vs. Day of Year**: `{jj}` is the astronomical Julian Day number, whereas `{dd:year}` (or `{doy}`) is the day of the year (`1`–`366`, matching mainframe "Julian dates" like `YYYYDDD`).
+> * **Days in Month (`{dim}`)**: Total count of days in the current month (`28`–`31`, matching PHP `t`). (Convenience alias for `.zdt.daysInMonth`).
+> * **Century (`{cen}`, `{century}`)**: 2-digit century number (`20` for `2026`, matching POSIX `%C`).
+> * **Week of Month (`{wom}`)**: 1-based week counter within the month (`1`–`5`, matching Oracle `W` and Unicode LDML `W`). Semantic aliases: `{ww:month}`, `{woy:month}`.
+> * **Calendar Week (`{woy:cal}`) & v5 Roadmap**: Week of year starting on January 1st (`01`–`53`, matching Oracle `WW`). Marked `@deprecated Will be superseded by {ww} in v5.0.0`.
+> * **Dimensional Time-Scope Modifiers**: Compose time units over a specified duration scope:
+>   * `{ss:day}`: Seconds past midnight (`0`–`86399`, matching Oracle `SSSSS`).
+>   * `{mi:day}`: Minute of the day (`0`–`1439`).
+>   * `{ms:day}`, `{ns:day}`: Milliseconds and nanoseconds of the day.
+>   * `{dd:week}`: Day of week (`1`–`7`, or `0`–`6` with `:zero`).
+>   * `{hh:week}`: Hour of the week (`0`–`167`).
+>   * `{mi:week}`, `{ss:week}`: Minute and second of the week.
+> * **Generalized Zero-Indexing (`:zero` / `:0`)**: Shifts any 1-based numeric counter to 0-based without width collisions:
+>   * `:zero` is the canonical semantic modifier; `:0` is its compact shorthand.
+>   * `{doy:zero}` / `{doy:0}`: `000`–`365` (or `{doy:raw:0}` → `0`–`365`, matching PHP `z`).
+>   * `{dow:zero}` / `{dow:0}`: `0`–`6` with Sunday = 0 (matching POSIX `%w`, JavaScript `Date.prototype.getDay()` parity).
+>   * `{mm:zero}` / `{mm:0}`: `00`–`11` (or `{mm:raw:0}` → `0`–`11`, matching JavaScript `Date.prototype.getMonth()` parity).
+>   * `{woy:zero}` / `{woy:0}`: `00`–`52`.
+>   * `{wom:zero}` / `{wom:0}`: `0`–`4`.
 
 <!-- markdownlint-disable-next-line MD028 -->
 > [!TIP]

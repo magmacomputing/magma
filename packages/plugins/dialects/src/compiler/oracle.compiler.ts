@@ -321,7 +321,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 					pattern += group('month_name', '[A-Za-z]+');
 					break;
 				case 'MON':
-					pattern += group('month_abbr', '[A-Za-z]{3,}');
+					pattern += group('month_abbr', '[A-Za-z]{3}');
 					break;
 				case 'RM':
 					pattern += group('month_roman', '[IVXLCDMivxlcdm]+');
@@ -336,7 +336,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 					pattern += group('weekday_name', '[A-Za-z]+');
 					break;
 				case 'DY':
-					pattern += group('weekday_abbr', '[A-Za-z]{3,}');
+					pattern += group('weekday_abbr', '[A-Za-z]{3}');
 					break;
 				case 'D':
 					pattern += group('weekday_num', '\\d{1}');
@@ -476,7 +476,7 @@ export function parseOracle(
 	}
 
 	if (iw) {
-		const isoYear = iyyy ? parseInt(iyyy, 10) : ((today as any).yearOfWeek ?? today.year);
+		const isoYear = iyyy ? parseInt(iyyy, 10) : (hasYear ? year : ((today as any).yearOfWeek ?? today.year));
 		const isoWeek = parseInt(iw, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
 		const dVal = getGroup('weekday_num');

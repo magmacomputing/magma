@@ -116,4 +116,21 @@ describe('Unicode LDML Parsing', () => {
 		expect(tOrd.mm).toBe(10);
 		expect(tOrd.dd).toBe(24);
 	});
+
+	it('parses quarter tokens (Q, QQ, QQQ, QQQQ)', () => {
+		const t1 = Tempo.fromFormat('2026-4', 'yyyy-Q');
+		expect(t1.isValid).toBe(true);
+		expect(t1.yy).toBe(2026);
+		expect(t1.mm).toBe(10);
+
+		const t2 = Tempo.fromFormat('2026-02', 'yyyy-QQ');
+		expect(t2.isValid).toBe(true);
+		expect(t2.yy).toBe(2026);
+		expect(t2.mm).toBe(4);
+
+		const t3 = Tempo.fromFormat('2026-Q3', 'yyyy-QQQ');
+		expect(t3.isValid).toBe(true);
+		expect(t3.yy).toBe(2026);
+		expect(t3.mm).toBe(7);
+	});
 });

@@ -16,6 +16,9 @@ describe('POSIX strftime Formatting & Parsing', () => {
 
 		const negDt = new Tempo('-000005-10-24T15:30:45Z');
 		expect(negDt.format('%y', { dialect: DIALECT.Strftime })).toBe('95');
+
+		const pre1970 = new Tempo('1969-12-31T23:59:59.500Z');
+		expect(pre1970.format('%s', { dialect: DIALECT.Strftime })).toBe('-1');
 	});
 
 	it('auto-detects strftime dialect when mask contains % specifiers', () => {

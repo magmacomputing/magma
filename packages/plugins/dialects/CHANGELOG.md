@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Automatic Dialect Inference in Parsing**:
   - `Tempo.fromFormat()`, `Tempo.fromFormats()`, and `Tempo.dialects.fromFormats()` automatically infer the dialect using `detectDialect(mask)` when omitted.
   - Exported `detectDialect` helper from the package entry point.
-- **Extended Token Transpilation & Dialect Gap Closures (Phases 2, 3 & 4)**:
+- **Extended Token Transpilation & Dialect Gap Closures (Phases 2, 3, 4 & 5)**:
+  - Added Moment.js translation parity (`DDDD`/`DDD` for day of year, `WW`/`W` for ISO week, and `GGGG`/`gggg`/`GG`/`gg` for ISO week-numbering year, eliminating the LDML era collision).
+  - Added Unicode LDML quarter formatting and parsing support (`Q`, `QQ`, `QQQ`, `QQQQ`), cleanly defaulting parsed quarters to the start month of the quarter.
+  - Added export parity for 0-indexed weekday (`{dow:0}` / `{dow:zero}` mapping to PHP `w` and Moment `d`).
   - Full explain, export, and cross-dialect conversion for Phase 4 specialized tokens:
     - Oracle `J` ↔ `{jj}` (astronomic Julian day).
     - Oracle `SSSSS` / `FMSSSSS` ↔ `{ss:day:5}` / `{ss:day:raw}` (seconds past midnight).
