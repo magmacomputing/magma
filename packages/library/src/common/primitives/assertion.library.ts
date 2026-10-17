@@ -3,7 +3,7 @@ import { getType, protoType } from '#library/type.library.js';
 import type { Type, Primitive, Nullish, Temporals, Property, GetType, ValueOf } from '#library/type.library.js';
 
 /** @internal check if an object has an own property (respects Proxy/Shadowing) */
-export { hasOwn } from '#library/primitive.library.js';
+export { hasOwn, hasKeys, hasKey } from '#library/primitive.library.js';
 
 /**
  * Asserts if a value matches one of the provided types from the Type system.

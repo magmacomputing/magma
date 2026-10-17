@@ -145,7 +145,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 
 | Modifier | Target | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `:<number>` | Number | Zero-fill pads numeric tokens (e.g. `{ns:6}` → `000005`), or slices fractional-second `{ff}` to precision length (e.g. `{ff:1}` → tenths, `{ff:2}` → hundredths) | `{doy:3}` → `045`, `{ff:1}` → `7` |
+| `:<number>` | Number | Positive integer zero-fill pads numeric tokens (e.g. `{ns:6}` → `000005`); negative integer tail-slices digits from the right (e.g. `{yyyy:-3}` → `026`, `{yow:-2}` → `26`); or slices fractional-second `{ff}` to precision length (e.g. `{ff:1}` → tenths, `{ff:2}` → hundredths) | `{doy:3}` → `045`, `{yyyy:-3}` → `026`, `{ff:1}` → `7` |
 | `:raw` | Number | Unpadded number with no meridiem | `{h12:raw}` → `3` |
 | `:ord` | Number | Unpadded number with ordinal suffix | `{dd:ord}` → `24th` |
 | `:roman` | Number | Converts integer into Roman numeral representation (supports chaining with `:lower`) | `{yyyy:roman}` → `MMXXVI`, `{mm:roman:lower}` → `x` |
@@ -153,24 +153,30 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:lower` | String | Converts to lowercase | `{mon:lower}` → `october` |
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
-| `:space`| String | Injects a leading space (used by `{h12}` auto-meridiem) | `{h12:space:dots}` → `03:30 a.m.` |
+| `:space`| Universal | Injects leading space padding for numeric tokens (e.g. `{dd:space}` → ` 5`, `{doy:3:space}` → `  5`), or a leading space before string/meridiem elements | `{dd:space}` → ` 5`, `{h12:space:dots}` → `03:30 a.m.` |
 | `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
-| `:short` | Universal / String | Yields a short or abbreviated style | `{mon:short}` → `Oct`, `{dmy:short}` → `241026` |
+| `:short` | Universal / String | Yields a short or abbreviated style (e.g. `{mon:short}` → `Oct`, `{yow:short}` → `26`, `{dmy:short}` → `241026`) | `{mon:short}` → `Oct`, `{yow:short}` → `26` |
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
 | `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |
-| `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset | `{tz:offset}` → `+10:00` |
+| `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset. Supports granular sub-modifiers (`:hh`, `:mi`, `:ss`, `:z`) | `{tz:offset}` → `+10:00`, `{tz:offset:hh}` → `+10` |
 
 > [!TIP]
-> **Timezone Formatting & Offset Variations**
+> **Timezone Formatting & Extended Offset Variations**
 > `{tz}` defaults to the IANA timezone identifier (e.g. `Australia/Sydney`). Modifiers can be composed seamlessly:
 > * **Named Styles**: `{tz:short}` → `AEST`, `{tz:long}` → `Australian Eastern Standard Time`.
 > * **Chained Offsets**: `{tz:offset}` → `+10:00`, `{tz:offset:short}` → `+10`, `{tz:offset:compact}` → `+1000`.
+> * **Granular Offset Components**:
+>   * `{tz:offset:hh}` / `{tz:offset:hour}` → Hour with sign (e.g. `+10`, `-05`, `+00`).
+>   * `{tz:offset:mi}` (and alias `:min`) → Minutes without sign (e.g. `00`, `30`).
+>   * `{tz:offset:ss}` (and alias `:sec`) → Offset including seconds (e.g. `+10:00:00`, compact `{tz:offset:compact:ss}` → `+100000`).
+>   * `{tz:offset:z}` / `{tz:offset:compact:z}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else ISO offset `+10:00` (or compact `+1000`).
 > * **Shorthands & Aliases**: LDML aliases (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`) are supported as drop-in shorthands.
 
 > [!TIP]
-> **Numeric Zero-Fill Padding & Fractional Precision Slicing**
-> You can pass any integer width directly as a modifier (e.g. `{doy:3}`, `{ns:6}`, `{yy:4}`).
-> * **Standard numeric tokens**: Zero-pads integers to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
+> **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**
+> You can pass any integer width directly as a modifier (e.g. `{doy:3}`, `{yyyy:-3}`, `{yow:-2}`, `{ns:6}`).
+> * **Positive width (`+N`)**: Zero-pads integers to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
+> * **Negative width (`-N`)**: Slices the last $N$ characters from the right. Ideal for year variations such as 3-digit year (`{yyyy:-3}` → `'026'`), 1-digit year (`{yyyy:-1}` → `'6'`), or 2-digit ISO week-year (`{yow:-2}` / `{yow:short}` → `'26'`).
 > * **Fractional seconds (`{ff}`)**: Slices the 9-digit fractional second string to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds).
 
 <!-- markdownlint-disable-next-line MD028 -->

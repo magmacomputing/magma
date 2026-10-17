@@ -140,6 +140,31 @@ export function hasOwn(obj: unknown, key: PropertyKey): boolean {
 	return Object.hasOwn(unwrap(obj as object), key);
 }
 
+/**
+ * Asserts whether an object has one or more keys (using the `in` operator, unwrapping Proxies if present).
+ * Safe against null, undefined, and non-object primitives.
+ * Narrows `obj` to a record containing the specified keys.
+ *
+ * @param obj - The target object to inspect
+ * @param keys - One or more property keys to verify
+ * @returns True if the target contains all specified keys
+ * @example
+ * ```ts
+ * if (hasKeys(config, 'dialect')) { ... }
+ * if (hasKeys(options, 'from', 'to')) { ... }
+ * ```
+ */
+export function hasKeys<K extends PropertyKey>(obj: unknown, ...keys: K[]): obj is Record<K, unknown> {
+	if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function'))
+		return false;
+
+	const target = unwrap(obj as object);
+	return keys.length === 0 || keys.every(k => k in target);
+}
+
+/** Alias for `hasKeys` */
+export const hasKey = hasKeys;
+
 const RE_BRACKET_PATH = /\[([^\[\]]*)\]/g;
 
 /**

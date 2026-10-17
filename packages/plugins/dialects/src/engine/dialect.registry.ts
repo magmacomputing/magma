@@ -1,4 +1,4 @@
-import { evaluate } from '@magmacomputing/tempo/library';
+import { evaluate, hasKeys } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import { formatLdml, parseLdml } from '../compiler/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js';
@@ -18,8 +18,11 @@ const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWy
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
  */
-export function detectDialect(mask: string, explicitDialect?: any): Dialect {
-	const resolved = evaluate(explicitDialect);
+export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
+	const raw = hasKeys(dialectOrOptions, 'dialect')
+		? dialectOrOptions.dialect
+		: dialectOrOptions;
+	const resolved = evaluate(raw);
 	if (resolved) return normalizeDialect(resolved);
 	// Strip single-quoted string literals to prevent quoted text in LDML from triggering false positives
 	const clean = mask.replace(RE_QUOTED_LITERALS, '');

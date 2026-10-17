@@ -8,6 +8,7 @@ import {
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
+	resolveDayOfYear,
 	fromIsoWeek,
 	getIsoWeek,
 } from './shared.compiler.js';
@@ -15,7 +16,7 @@ import {
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|ZZZZ|zzzz|SSS|MMM|LLL|EEE|ccc|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|ZZ|zz|y|M|L|d|H|h|k|m|s|S|a|c|e|E|w|Z|z)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSS|MMM|LLL|EEE|ccc|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|S|a|c|e|E|w|Z|z)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -90,6 +91,20 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'd':
 					parts.push((z) => String(z.day));
+					break;
+				case 'DDD':
+					parts.push((z) => pad(z.dayOfYear, 3));
+					break;
+				case 'D':
+					parts.push((z) => String(z.dayOfYear));
+					break;
+				case 'GGGG':
+					parts.push((z) => (z.year > 0 ? 'Anno Domini' : 'Before Christ'));
+					break;
+				case 'G':
+				case 'GG':
+				case 'GGG':
+					parts.push((z) => (z.year > 0 ? 'AD' : 'BC'));
 					break;
 
 				case 'HH':
@@ -295,6 +310,20 @@ export function compileLdmlParser(mask: string): RegExp {
 				case 'd':
 					pattern += group('dd', '\\d{1,2}');
 					break;
+				case 'DDD':
+					pattern += group('doy', '\\d{3}');
+					break;
+				case 'D':
+					pattern += group('doy', '\\d{1,3}');
+					break;
+				case 'GGGG':
+					pattern += group('era_long', '[A-Za-z ]+');
+					break;
+				case 'G':
+				case 'GG':
+				case 'GGG':
+					pattern += group('era', '[A-Za-z]+');
+					break;
 
 				case 'HH':
 					pattern += group('hh', '\\d{2}');
@@ -423,6 +452,7 @@ export function parseLdml(
 	const month_abbr = getGroup('month_abbr');
 	const dd = getGroup('dd');
 	const dd_ord = getGroup('dd_ord');
+	const doy = getGroup('doy');
 
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
@@ -458,6 +488,11 @@ export function parseLdml(
 		year = targetDate.year;
 		month = targetDate.month;
 		day = targetDate.day;
+	} else if (doy) {
+		const res = resolveDayOfYear(year, parseInt(doy, 10));
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
 	} else {
 		if (mm) {
 			month = parseInt(mm, 10);

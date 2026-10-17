@@ -278,6 +278,8 @@ export interface TempoFormatTokens {
 	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
+	// ── specialized tokens & counters ─────────────────
+	cen: true; century: true; dim: true; jj: true; julian: true; wom: true;
 	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
 	tzd: true;
 }

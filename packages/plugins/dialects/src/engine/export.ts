@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKeys, isDefined } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import type { ExportedToken, ExportResult } from '../types.js';
 
@@ -19,8 +19,14 @@ interface DialectTarget {
 const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	// Year
 	yyyy: { ldml: 'yyyy', strftime: '%Y', oracle: 'YYYY', moment: 'YYYY', php: 'Y', go: '2006', desc: '4-digit year' },
+	'yyyy:-3': { oracle: 'YYY', desc: 'Last 3 digits of year' },
+	'yyyy:-1': { oracle: 'Y', desc: 'Last digit of year' },
 	yy: { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
 	yow: { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', desc: '4-digit ISO week-numbering year' },
+	'yow:-3': { oracle: 'IYY', desc: 'Last 3 digits of ISO week-numbering year' },
+	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'gg', desc: '2-digit ISO week-numbering year' },
+	'yow:short': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'gg', desc: '2-digit ISO week-numbering year' },
+	'yow:-1': { oracle: 'I', desc: 'Last digit of ISO week-numbering year' },
 
 	// Month
 	mm: { ldml: 'MM', strftime: '%m', oracle: 'MM', moment: 'MM', php: 'm', go: '01', desc: 'Zero-padded month (01-12)' },
@@ -37,11 +43,13 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	// Day of Month
 	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', desc: 'Zero-padded day of month (01-31)' },
 	'dd:raw': { ldml: 'd', strftime: '%-d', oracle: 'FMDD', moment: 'D', php: 'j', go: '2', desc: 'Unpadded day of month (1-31)' },
+	'dd:space': { strftime: '%e', go: '_2', desc: 'Space-padded day of month ( 1-31)' },
 	'dd:ord': { ldml: 'd', strftime: '%-d', oracle: 'DD', moment: 'Do', go: '2', desc: 'Day of month with ordinal suffix' },
 
 	// Day of Year
 	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
 	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDD', moment: 'DDD', desc: 'Unpadded day of year (1-366)' },
+	'doy:space': { go: '__2', desc: 'Space-padded day of year (  1-366)' },
 	'doy:ord': { ldml: 'D', strftime: '%j', oracle: 'DDD', moment: 'DDDo', desc: 'Day of year with ordinal suffix' },
 
 	// Weekday
@@ -56,15 +64,21 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'dow:ord': { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'do', php: 'N', desc: 'Day of week with ordinal suffix' },
 
 	// Week of Year
-	woy: { strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
-	'woy:raw': { strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
+	woy: { ldml: 'ww', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
+	'woy:raw': { ldml: 'w', strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
 	'woy:ord': { ldml: 'w', strftime: '%V', oracle: 'IW', moment: 'Wo', php: 'W', desc: 'ISO week of year with ordinal suffix' },
+
+	// Era
+	era: { ldml: 'G', desc: 'Abbreviated localized era (e.g. AD)' },
+	'era:long': { ldml: 'GGGG', desc: 'Full localized era (e.g. Anno Domini)' },
 
 	// Clock & Time
 	hh: { ldml: 'HH', strftime: '%H', oracle: 'HH24', moment: 'HH', php: 'H', go: '15', desc: '24-hour clock zero-padded (00-23)' },
 	'hh:raw': { ldml: 'H', strftime: '%-H', oracle: 'FMHH24', moment: 'H', php: 'G', desc: '24-hour clock unpadded (0-23)' },
+	'hh:space': { strftime: '%k', desc: 'Space-padded 24-hour clock ( 0-23)' },
 	h12: { ldml: 'hh', strftime: '%I', oracle: 'HH12', moment: 'hh', php: 'h', go: '03', desc: '12-hour clock zero-padded (01-12)' },
 	'h12:raw': { ldml: 'h', strftime: '%-I', oracle: 'FMHH12', moment: 'h', php: 'g', go: '3', desc: '12-hour clock unpadded (1-12)' },
+	'h12:space': { strftime: '%l', desc: 'Space-padded 12-hour clock ( 1-12)' },
 	mi: { ldml: 'mm', strftime: '%M', oracle: 'MI', moment: 'mm', php: 'i', go: '04', desc: 'Zero-padded minute (00-59)' },
 	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMI', moment: 'm', go: '4', desc: 'Unpadded minute (0-59)' },
 	ss: { ldml: 'ss', strftime: '%S', oracle: 'SS', moment: 'ss', php: 's', go: '05', desc: 'Zero-padded second (00-59)' },
@@ -88,6 +102,32 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'tz:short': { ldml: 'z', strftime: '%Z', oracle: 'TZD', moment: 'zz', php: 'T', go: 'MST', desc: 'Time zone daylight / short abbreviation' },
 	'tz:offset': { ldml: 'ZZZZZ', strftime: '%z', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
 	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'OF', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
+	'tz:offset:hh': { oracle: 'TZH', go: '-07', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
+	'tz:offset:mi': { oracle: 'TZM', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
+	'tz:offset:ss': { go: '-07:00:00', desc: 'ISO-8601 time zone offset with seconds (e.g. +08:00:00)' },
+	'tz:offsetcompact:ss': { go: '-070000', desc: 'Compact time zone offset with seconds (e.g. +080000)' },
+	'tz:offset:z': { go: 'Z07:00', desc: 'UTC Z or ISO-8601 offset' },
+	'tz:offsetcompact:z': { go: 'Z0700', desc: 'UTC Z or compact offset' },
+	'tz:offset:ss:z': { go: 'Z07:00:00', desc: 'UTC Z or ISO-8601 offset with seconds' },
+	'tz:offsetcompact:ss:z': { go: 'Z070000', desc: 'UTC Z or compact offset with seconds' },
+
+	// Specialized & Scoped Tokens
+	jj: { oracle: 'J', desc: 'Astronomical Julian day number' },
+	'ss:day': { oracle: 'SSSSS', desc: 'Seconds past midnight (0-86399)' },
+	'ss:day:5': { oracle: 'SSSSS', desc: 'Zero-padded 5-digit seconds past midnight (00000-86399)' },
+	'ss:day:raw': { oracle: 'FMSSSSS', desc: 'Unpadded seconds past midnight (0-86399)' },
+	'woy:cal': { oracle: 'WW', desc: 'Week of year starting on Jan 1 (01-53)' },
+	'woy:cal:raw': { oracle: 'FMWW', desc: 'Unpadded week of year starting on Jan 1 (1-53)' },
+	wom: { ldml: 'W', oracle: 'W', desc: 'Week of month (1-5)' },
+	'wom:raw': { oracle: 'FMW', desc: 'Unpadded week of month (1-5)' },
+	dim: { php: 't', desc: 'Days in the given month (28-31)' },
+	cen: { strftime: '%C', desc: 'Century (00-99)' },
+	'doy:0': { php: 'z', desc: '0-indexed day of year (0-365)' },
+	'doy:zero': { php: 'z', desc: '0-indexed day of year (0-365)' },
+	'doy:raw:0': { php: 'z', desc: '0-indexed unpadded day of year (0-365)' },
+	'doy:raw:zero': { php: 'z', desc: '0-indexed unpadded day of year (0-365)' },
+	'dow:0': { strftime: '%w', desc: 'Day of week with Sunday as 0 (0-6)' },
+	'dow:zero': { strftime: '%w', desc: 'Day of week with Sunday as 0 (0-6)' },
 
 	// Timestamps & Terms
 	ts: { strftime: '%s', moment: 'X', php: 'U', desc: 'Unix timestamp in seconds' },
@@ -100,6 +140,24 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
  * Scheduled for removal in v5.0.0.
  */
 const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
+	julian: 'jj',
+	century: 'cen',
+	'dd:year': 'doy',
+	'dd:year:raw': 'doy:raw',
+	'dd:year:ord': 'doy:ord',
+	'dd:year:space': 'doy:space',
+	'dd:year:0': 'doy:0',
+	'dd:year:zero': 'doy:zero',
+	'dd:year:raw:0': 'doy:raw:0',
+	'dd:year:raw:zero': 'doy:raw:zero',
+	'ww:month': 'wom',
+	'woy:month': 'wom',
+	'ww:month:raw': 'wom:raw',
+	'woy:month:raw': 'wom:raw',
+	'ww:cal': 'woy:cal',
+	'ww:cal:raw': 'woy:cal:raw',
+	'woy:jan1': 'woy:cal',
+	'woy:jan1:raw': 'woy:cal:raw',
 	yw: 'yow',
 	month: 'mm:raw',
 	day: 'dd:raw',
@@ -116,6 +174,18 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	'tz:name': 'tz',
 	'tz:long': 'tz',
 	'tz:offset:basic': 'tz:offsetcompact',
+	'tz:offset:hour': 'tz:offset:hh',
+	'tz:offset:min': 'tz:offset:mi',
+	'tz:offset:sec': 'tz:offset:ss',
+	'tz:offset:second': 'tz:offset:ss',
+	'tz:offset:compact': 'tz:offsetcompact',
+	'tz:offset:compact:ss': 'tz:offsetcompact:ss',
+	'tz:offset:compact:sec': 'tz:offsetcompact:ss',
+	'tz:offsetcompact:sec': 'tz:offsetcompact:ss',
+	'tz:offset:compact:z': 'tz:offsetcompact:z',
+	'tz:offset:compact:ss:z': 'tz:offsetcompact:ss:z',
+	'tz:offset:sec:z': 'tz:offset:ss:z',
+	'tz:offsetcompact:sec:z': 'tz:offsetcompact:ss:z',
 };
 
 const REGEX_SINGLE_QUOTE = /'/g;
@@ -156,14 +226,17 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 /**
  * Exports a native Tempo format pattern into the corresponding external dialect format model.
  */
-export function exportDialect(tempoMask: string, explicitDialect?: any): ExportResult {
-	const dialect = explicitDialect !== undefined ? normalizeDialect(evaluate(explicitDialect)) : DIALECT.Ldml;
+export function exportDialect(tempoMask: string, dialectOrOptions?: any): ExportResult {
+	const raw = hasKeys(dialectOrOptions, 'dialect')
+		? dialectOrOptions.dialect
+		: dialectOrOptions;
+	const dialect = isDefined(raw) ? normalizeDialect(evaluate(raw)) : DIALECT.Ldml;
 	const tokens: ExportedToken[] = [];
 	const unsupported: string[] = [];
 	let pattern = '';
 
 	for (const match of tempoMask.matchAll(REGEX_TEMPO_TOKEN)) {
-		if (match[2] !== undefined) {
+		if (isDefined(match[2])) {
 			const literal = match[2];
 			if (dialect === DIALECT.Go && REGEX_GO_CONFLICT.test(literal)) {
 				unsupported.push(literal);
@@ -177,7 +250,7 @@ export function exportDialect(tempoMask: string, explicitDialect?: any): ExportR
 			} else {
 				pattern += quoteLiteral(literal, dialect);
 			}
-		} else if (match[1] !== undefined) {
+		} else if (isDefined(match[1])) {
 			const rawKey = match[1].trim();
 			const fullToken = `{${rawKey}}`;
 			const canonicalKey = V4_EXPORT_ALIASES[rawKey] ?? V4_EXPORT_ALIASES[rawKey.toLowerCase()] ?? rawKey;
@@ -195,7 +268,7 @@ export function exportDialect(tempoMask: string, explicitDialect?: any): ExportR
 			}
 
 			const targetToken = info?.[dialect as keyof DialectTarget];
-			if (targetToken !== undefined) {
+			if (isDefined(targetToken)) {
 				pattern += targetToken;
 				tokens.push({
 					source: fullToken,

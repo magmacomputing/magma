@@ -86,9 +86,9 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('translates Oracle masks preserving case rules, FM toggling, and unsupported tokens', () => {
 		const res = Tempo.dialects.explain('IYYY-IW-D J', DIALECT.Oracle);
-		expect(res.pattern).toBe('{yow}-{woy}-{dow:locale} J');
+		expect(res.pattern).toBe('{yow}-{woy}-{dow:locale} {jj}');
 		const jToken = res.tokens.find(t => t.source === 'J');
-		expect(jToken?.tempo).toBe('');
+		expect(jToken?.tempo).toBe('{jj}');
 		expect(jToken?.desc).toContain('Julian day');
 
 		// Case-insensitive token matching for recognized single letters (e.g. 'd')
@@ -132,29 +132,102 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(expLowerMask.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
 	});
 
-	it('marks PHP z as unsupported in explain mapping', () => {
+	it('translates PHP z to zero-indexed day of year in explain mapping', () => {
 		const res = Tempo.dialects.explain('z', DIALECT.Php);
-		expect(res.tokens[0].tempo).toBe('');
-		expect(res.tokens[0].desc).toContain('unsupported');
+		expect(res.tokens[0].tempo).toBe('{dd:year:raw:0}');
+		expect(res.tokens[0].desc).toContain('day of the year starting from 0');
 	});
 
-	it('marks unsupported Go tokens (__2, Z0700, Z070000, -070000) as unsupported in explain mapping', () => {
-		const res = Tempo.dialects.explain('2006-__2 Z0700 Z070000 -070000', DIALECT.Go);
+	it('translates Phase 3 extended timezone offset tokens for Go and Oracle', () => {
+		const res = Tempo.dialects.explain('2006-__2 _2 Z0700 Z070000 -070000 -07 Z07', DIALECT.Go);
 		const tokens = res.tokens;
 		const d2 = tokens.find(t => t.source === '__2');
-		expect(d2?.tempo).toBe('');
-		expect(d2?.desc).toContain('unsupported');
+		expect(d2?.tempo).toBe('{doy:space}');
+		expect(d2?.desc).toContain('Space-padded day of year');
+
+		const daySpace = tokens.find(t => t.source === '_2');
+		expect(daySpace?.tempo).toBe('{dd:space}');
 
 		const z0700 = tokens.find(t => t.source === 'Z0700');
-		expect(z0700?.tempo).toBe('');
-		expect(z0700?.desc).toContain('unsupported');
+		expect(z0700?.tempo).toBe('{tz:offsetcompact:z}');
+		expect(z0700?.desc).toContain('UTC Z or basic numeric offset');
 
 		const z070000 = tokens.find(t => t.source === 'Z070000');
-		expect(z070000?.tempo).toBe('');
-		expect(z070000?.desc).toContain('unsupported');
+		expect(z070000?.tempo).toBe('{tz:offsetcompact:ss:z}');
+		expect(z070000?.desc).toContain('offset with seconds');
 
 		const m070000 = tokens.find(t => t.source === '-070000');
-		expect(m070000?.tempo).toBe('');
-		expect(m070000?.desc).toContain('unsupported');
+		expect(m070000?.tempo).toBe('{tz:offsetcompact:ss}');
+		expect(m070000?.desc).toContain('offset with seconds');
+
+		const m07 = tokens.find(t => t.source === '-07');
+		expect(m07?.tempo).toBe('{tz:offset:hh}');
+
+		const z07 = tokens.find(t => t.source === 'Z07');
+		expect(z07?.tempo).toBe('{tz:offset:short:z}');
+
+		const oracleRes = Tempo.dialects.explain('YYYY-MM-DD TZH TZM', DIALECT.Oracle);
+		expect(oracleRes.pattern).toBe('{yyyy}-{mm}-{dd} {tz:offset:hh} {tz:offset:mi}');
+	});
+
+	it('translates Phase 2 year slicing and space-padding tokens', () => {
+		const oracleRes = Tempo.dialects.explain('YYY Y IYY IY I', DIALECT.Oracle);
+		expect(oracleRes.pattern).toBe('{yyyy:-3} {yyyy:-1} {yow:-3} {yow:-2} {yow:-1}');
+
+		const strftimeRes = Tempo.dialects.explain('%e %k %l %g', DIALECT.Strftime);
+		expect(strftimeRes.pattern).toBe('{dd:space} {hh:space} {h12:space} {yow:-2}');
+	});
+
+	it('translates LDML DDD, Do, and G/GGGG era tokens', () => {
+		const res = Tempo.dialects.explain('yyyy-DDD Do G GGGG', DIALECT.Ldml);
+		expect(res.pattern).toBe('{yyyy}-{doy} {dd:ord} {era} {era:long}');
+		expect(res.tokens.find(t => t.source === 'DDD')?.tempo).toBe('{doy}');
+		expect(res.tokens.find(t => t.source === 'Do')?.tempo).toBe('{dd:ord}');
+		expect(res.tokens.find(t => t.source === 'G')?.tempo).toBe('{era}');
+		expect(res.tokens.find(t => t.source === 'GGGG')?.tempo).toBe('{era:long}');
+	});
+
+	it('translates PHP compound ordinal jS / dS and resolves t', () => {
+		const res = Tempo.dialects.explain('jS F Y \\d\\a\\y\\s t', DIALECT.Php);
+		expect(res.pattern).toBe('{dd:ord} {mon} {yyyy} days {dim}');
+		expect(res.tokens.find(t => t.source === 'jS')?.tempo).toBe('{dd:ord}');
+		const tToken = res.tokens.find(t => t.source === 't');
+		expect(tToken?.tempo).toBe('{dim}');
+		expect(tToken?.desc).toContain('Number of days in given month');
+
+		const resD = Tempo.dialects.explain('dS \\o\\f M', DIALECT.Php);
+		expect(resD.pattern).toBe('{dd:ord} of {mmm}');
+		expect(resD.tokens.find(t => t.source === 'dS')?.tempo).toBe('{dd:ord}');
+	});
+
+	it('translates Phase 4 specialized tokens across Oracle, PHP, Strftime, and LDML', () => {
+		// Oracle J, SSSSS, WW, W
+		const resOracle = Tempo.dialects.explain('J SSSSS WW W', DIALECT.Oracle);
+		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {woy:cal} {wom}');
+
+		// Oracle unpadded FM
+		const resOracleFm = Tempo.dialects.explain('FMJ SSSSS WW W', DIALECT.Oracle);
+		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {woy:cal:raw} {wom}');
+
+		// PHP z and t
+		const resPhp = Tempo.dialects.explain('z t', DIALECT.Php);
+		expect(resPhp.pattern).toBe('{dd:year:raw:0} {dim}');
+
+		// Strftime %C and %w
+		const resStrftime = Tempo.dialects.explain('%C %w', DIALECT.Strftime);
+		expect(resStrftime.pattern).toBe('{cen} {dow:0}');
+
+		// LDML W (week of month)
+		const resLdml = Tempo.dialects.explain('yyyy-MM W', DIALECT.Ldml);
+		expect(resLdml.pattern).toBe('{yyyy}-{mm} {wom}');
+	});
+
+	it('accepts options object as second argument { dialect: ... }', () => {
+		const res = Tempo.dialects.explain('YYYY-MM-DD', { dialect: DIALECT.Moment });
+		expect(res.dialect).toBe(DIALECT.Moment);
+		expect(res.pattern).toBe('{yyyy}-{mm}-{dd}');
+
+		const resInst = new Tempo('2026-10-24').dialects.explain('YYYY-MM-DD', { dialect: 'moment' });
+		expect(resInst.pattern).toBe('{yyyy}-{mm}-{dd}');
 	});
 });

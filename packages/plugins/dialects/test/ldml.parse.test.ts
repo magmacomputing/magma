@@ -102,4 +102,18 @@ describe('Unicode LDML Parsing', () => {
 		const invalidWeek = Tempo.fromFormat('2025-53-1', 'yyyy-ww-e', { error: 'catch' });
 		expect(invalidWeek.isValid).toBe(false);
 	});
+
+	it('parses day of year (DDD) and ordinal day (Do)', () => {
+		const tDoy = Tempo.fromFormat('2026-297', 'yyyy-DDD');
+		expect(tDoy.isValid).toBe(true);
+		expect(tDoy.yy).toBe(2026);
+		expect(tDoy.mm).toBe(10);
+		expect(tDoy.dd).toBe(24);
+
+		const tOrd = Tempo.fromFormat('24th October 2026', 'Do MMMM yyyy');
+		expect(tOrd.isValid).toBe(true);
+		expect(tOrd.yy).toBe(2026);
+		expect(tOrd.mm).toBe(10);
+		expect(tOrd.dd).toBe(24);
+	});
 });

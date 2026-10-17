@@ -62,10 +62,14 @@ describe('Dialects Cross-Dialect Converter (.convert)', () => {
 		const res = Tempo.dialects.convert('%Y-%m-%d %s', DIALECT.Strftime, DIALECT.Oracle);
 		expect(res.unsupported).toContain('{ts}');
 
-		// Oracle WW has no tempo mapping (tempo: '') -> tracked as unsupported, while FM is excluded
+		// Oracle WW translates to Tempo {woy:cal:raw}, which has no direct POSIX strftime token
 		const resOracle = Tempo.dialects.convert('FM"Week "WW', DIALECT.Oracle, DIALECT.Strftime);
-		expect(resOracle.unsupported).toContain('WW');
+		expect(resOracle.unsupported).toContain('{woy:cal:raw}');
 		expect(resOracle.unsupported).not.toContain('FM');
+
+		// Standalone PHP S has no tempo mapping (tempo: '') -> tracked as unsupported
+		const resPhp = Tempo.dialects.convert('j S', DIALECT.Php, DIALECT.Oracle);
+		expect(resPhp.unsupported).toContain('S');
 	});
 
 	it('cross-converts between PHP date() and Go reference layouts', () => {
@@ -90,5 +94,26 @@ describe('Dialects Cross-Dialect Converter (.convert)', () => {
 		const t = new Tempo('2026-10-24T12:00:00Z');
 		const res = t.dialects.convert('%Y-%m-%d', DIALECT.Strftime, DIALECT.Oracle);
 		expect(res.pattern).toBe('YYYY-MM-DD');
+	});
+
+	it('cross-converts compound PHP jS and LDML DDD with zero unsupported tokens', () => {
+		const resPhp = Tempo.dialects.convert('jS F Y', DIALECT.Php, DIALECT.Moment);
+		expect(resPhp.pattern).toBe('Do MMMM YYYY');
+		expect(resPhp.unsupported).toHaveLength(0);
+
+		const resLdml = Tempo.dialects.convert('yyyy-DDD', DIALECT.Ldml, DIALECT.Strftime);
+		expect(resLdml.pattern).toBe('%Y-%j');
+		expect(resLdml.unsupported).toHaveLength(0);
+	});
+
+	it('accepts options object { from, to } in convert', () => {
+		const res = Tempo.dialects.convert('YYYY-MM-DD', { from: DIALECT.Moment, to: DIALECT.Oracle });
+		expect(res.pattern).toBe('YYYY-MM-DD');
+		expect(res.from).toBe(DIALECT.Moment);
+		expect(res.to).toBe(DIALECT.Oracle);
+
+		const resAuto = Tempo.dialects.convert('%Y-%m-%d', { to: DIALECT.Oracle });
+		expect(resAuto.pattern).toBe('YYYY-MM-DD');
+		expect(resAuto.from).toBe(DIALECT.Strftime);
 	});
 });

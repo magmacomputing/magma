@@ -385,4 +385,120 @@ Documentation and developer onboarding guides should instruct users on how to co
 | **Tempo v5.x (Latest)** | `https://tempo.dev/llms.txt` | `@https://tempo.dev/llms.txt Use modern Tempo v5 syntax with @tempo-dev/core` |
 | **Tempo v4.x (Legacy LTS)** | `https://tempo.dev/v4/llms.txt` | `@https://tempo.dev/v4/llms.txt Use legacy Tempo v4 syntax with @magmacomputing/tempo` |
 
+---
+
+## 7. Format Token Architecture: Revisit and Rationalize `{tz}` & Remove Fused Modifiers
+
+### Classification
+* **Type:** Architectural Rationalization & Deprecation of Fused Modifiers.
+* **Target Milestone:** `v5.0.0`
+* **Affected API:** Format engine `{tz:...}` token resolution (`packages/tempo/src/module/module.format.ts`)
+
+---
+
+### Problem Statement & Architectural Flaws in `v4.x`
+
+1. **Violation of Orthogonal Modifier Chaining (Fused Words)**:
+   - In early `v4.x`, concatenated modifier keywords like `{tz:offsetcompact}` and `{tz:offsetshort}` were introduced.
+   - Fused keywords violate Tempo's core design philosophy: **independent, orthogonal modifier composition** (e.g., `{token:mod1:mod2:...}`).
+   - Having both `{tz:offset:compact}` and `{tz:offsetcompact}` creates cognitive friction, redundant switch branches in the format engine, and inconsistent user expectations.
+
+2. **Inconsistent Component Token Naming**:
+   - Throughout Tempo Core, hour, minute, and second time components are standardized on `{hh}`, `{mi}`, and `{ss}` (`{mm}` is reserved exclusively for month numbers).
+   - Early implementations of offset sub-components loosely allowed `:mm` and `:sec`. This conflicts with Tempo's standard time tokens.
+
+3. **Ad-Hoc LDML Shorthand Pollution (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`)**:
+   - Single-letter pseudo-modifiers borrowed from LDML UTS #35 (`z`, `zz`, `zzz`, `zzzz`) were grafted directly into `{tz}` handling in Core.
+   - This creates syntactic ambiguity and collisions: for example, `:z` as an LDML shorthand meant "short offset", while in ISO-8601 / RFC-3339 `:z` means "emit 'Z' if UTC".
+   - External dialect conventions belong in `@magmacomputing/tempo-plugin-dialects`, while native Tempo Core tokens must remain clean, explicit, and self-documenting.
+
+---
+
+### Planned Architecture for `v5.0.0`
+
+#### 1. Canonical Base Token & Roles
+* `{tz}` strictly represents the time zone identifier or localized name:
+  * `{tz}` &rarr; IANA time zone identifier (e.g. `'Australia/Sydney'`, `'UTC'`).
+  * `{tz:short}` &rarr; Short localized time zone abbreviation (e.g. `'AEST'`).
+  * `{tz:long}` / `{tz:name}` &rarr; Full localized time zone name (e.g. `'Australian Eastern Standard Time'`).
+
+#### 2. Orthogonal Composition for Offsets (`{tz:offset:...}`)
+All numeric time zone offsets are rooted in the single `:offset` modifier, with fully orthogonal chained sub-modifiers:
+
+| Sub-Modifier | Category | Role | Example Output |
+| :--- | :--- | :--- | :--- |
+| **(none)** | Default | Full standard ISO-8601 offset (`±HH:MM`) | `+10:00`, `-05:00`, `+00:00` |
+| **`:hh`** | Component | Signed hour component only (`±HH`) | `+10`, `-05`, `+00` |
+| **`:mi`** | Component | Unsigned minute component only (`MM`) | `00`, `30`, `45` |
+| **`:ss`** | Component | Include seconds component (`±HH:MM:SS`) | `+10:00:00`, `+05:30:00` |
+| **`:compact`**| Formatting | Strip colon separators | `+1000`, `+100000` |
+| **`:short`** | Formatting | Omit `:00` when minutes and seconds are zero | `+10` (if `+10:00`), `+10:30` |
+| **`:z`** | Indicator | Emit `'Z'` when UTC, else standard offset | `'Z'` (if `+00:00`), else `+10:00` |
+
+#### 3. Seamless Chained Composition in v5
+Developers can compose these modifiers orthogonally in any logical combination:
+```typescript
+t.format('{tz:offset}');            // "+10:00"
+t.format('{tz:offset:compact}');    // "+1000"     (replaces legacy {tz:offsetcompact})
+t.format('{tz:offset:short}');      // "+10"       (replaces legacy {tz:offsetshort})
+t.format('{tz:offset:ss}');         // "+10:00:00" (replaces legacy {tz:offset:sec})
+t.format('{tz:offset:compact:ss}'); // "+100000"
+t.format('{tz:offset:z}');          // "Z" (if UTC) or "+10:00"
+t.format('{tz:offset:compact:z}');  // "Z" (if UTC) or "+1000"
+t.format('{tz:offset:short:z}');    // "Z" (if UTC) or "+10"
+t.format('{tz:offset:compact:ss:z}');// "Z" (if UTC) or "+100000"
+```
+
+---
+
+### Removal & Migration Pathway for v5.0.0
+
+1. **Remove Fused Modifier Words**:
+   - `offsetcompact` &rarr; Migrate to `{tz:offset:compact}`.
+   - `offsetshort` &rarr; Migrate to `{tz:offset:short}`.
+2. **Remove Raw LDML Shorthands from Core**:
+   - `{tz:z}` &rarr; Migrate to `{tz:offset:short}`.
+   - `{tz:zz}` &rarr; Migrate to `{tz:offset}`.
+   - `{tz:zzz}` &rarr; Migrate to `{tz:offset:compact}`.
+   - Codebases requiring raw LDML masks (`z`, `ZZ`, `ZZZZZ`) use `@magmacomputing/tempo-plugin-dialects`.
+3. **Deprecate Sub-Modifier Aliases**:
+   - `:sec` &rarr; Normalized to canonical `:ss`.
+   - `:mm` (in offset context) &rarr; Normalized to canonical `:mi` to eliminate confusion with month `{mm}`.
+
+---
+
+## 8. Week Token Architecture: Formalizing `{woy}` (ISO Week) and Reclaiming `{ww}` for Calendar Week
+
+### Classification
+* **Type:** Semantic Reassignment of Legacy Token Alias & Getter Cleanup.
+* **Target Milestone:** `v5.0.0`
+* **Affected API:** `{ww}` format token and `t.ww` instance getter.
+
+---
+
+### Problem Statement & Architectural Flaws in `v4.x`
+
+1. **Redundant Aliasing of ISO Week in v4**:
+   - In `v4.x`, `{woy}`, `{wy}`, and `{ww}` all point to the same ISO 8601 week calculation (`getISOWeekOfYear`).
+   - The instance getter `t.ww` was already deprecated in `tempo.class.ts` with the notice:
+     `@deprecated Use woy (Tempo canonical) or zdt.weekOfYear instead. To be removed in v5.0.0.`
+2. **Missing Native Token for Calendar Week (Jan 1 Basis)**:
+   - Non-ISO database engines (such as Oracle SQL `WW`) define week of year where Week 1 begins on January 1st and ends on January 7th (`Math.ceil(doy / 7)`).
+   - In v4, this is temporarily provided via `{woy:cal}` with a deprecation notice.
+
+---
+
+### Planned Architecture for `v5.0.0`
+
+| Token / API | Role in `v4.x` | Role in `v5.0.0` |
+| :--- | :--- | :--- |
+| **`{woy}`** | Canonical ISO Week of Year (`01`–`53`) | Canonical ISO Week of Year (`01`–`53`) |
+| **`t.woy`** | Canonical ISO Week instance getter | Canonical ISO Week instance getter |
+| **`{ww}`** | Legacy alias for `{woy}` (ISO week) | **Reclaimed for Calendar Week (Jan 1 Basis, Oracle `WW`)** |
+| **`t.ww`** | Deprecated getter | Removed (or remapped to calendar week) |
+| **`{woy:cal}`** | Transitory format token in v4.7.0 | Deprecated in favor of native `{ww}` |
+| **`{wom}`** | Week of Month (`1`–`5`, Oracle `W`, LDML `W`) | Week of Month (`1`–`5`) |
+
+
+
 

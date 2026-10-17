@@ -79,16 +79,16 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`t.dialects.php(mask)`** | Instance | PHP date mask | `string` | Fast-path formatter for PHP `date()` specifiers (`Y`, `m`, `d`, `H`, `i`, `s`, etc.). |
 | **`t.dialects.go(mask)`** | Instance | Go reference mask | `string` | Fast-path formatter for Go reference time layout (`2006`, `01`, `02`, `15`, `04`, `05`). |
 | **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%`, Go, and SQL specifiers. |
-| **`t.dialects.explain(mask, dialect?)`** | Instance | External format mask | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
-| **`t.dialects.export(pattern, dialect?)`** | Instance | Native Tempo pattern, target dialect | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
-| **`t.dialects.convert(mask, to)`** / **`convert(mask, from, to)`** | Instance | Mask, target (or source + target) | `ConvertResult` | Converts a format mask directly from one dialect to another. |
-| **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask. |
-| **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser (first matching mask succeeds). |
+| **`t.dialects.explain(mask, dialectOrOptions?)`** | Instance | External format mask, dialect name or `{ dialect }` | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
+| **`t.dialects.export(pattern, dialectOrOptions?)`** | Instance | Native Tempo pattern, target dialect name or `{ dialect }` | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
+| **`t.dialects.convert(mask, toOrOptions)`** / **`convert(mask, from, to)`** | Instance | Mask, target dialect, or `{ from, to }` options | `ConvertResult` | Converts a format mask directly from one dialect to another (source dialect auto-inferred if omitted). |
+| **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask (or auto-detected dialect). |
+| **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser with auto-dialect detection (first matching mask succeeds). |
 | **`Tempo.dialects.parse(input, mask, dialect?)`** | Static | Date string, mask, dialect | `Tempo` | Explicit dialect parser. |
 | **`Tempo.dialects.fromFormats(input, masks[], ...)`**| Static | Date string, candidate masks | `Tempo` | Explicit multi-candidate fallback parser. |
-| **`Tempo.dialects.explain(mask, dialect?)`** | Static | External format mask | `ExplainResult` | AST analyzer translating legacy masks into native Tempo `{token}` syntax. |
-| **`Tempo.dialects.export(pattern, dialect?)`** | Static | Native Tempo pattern, target dialect | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
-| **`Tempo.dialects.convert(mask, to)`** / **`convert(mask, from, to)`** | Static | Mask, target (or source + target) | `ConvertResult` | Converts a format mask directly from one dialect to another. |
+| **`Tempo.dialects.explain(mask, dialectOrOptions?)`** | Static | External format mask, dialect name or `{ dialect }` | `ExplainResult` | AST analyzer translating legacy masks into native Tempo `{token}` syntax. |
+| **`Tempo.dialects.export(pattern, dialectOrOptions?)`** | Static | Native Tempo pattern, target dialect name or `{ dialect }` | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
+| **`Tempo.dialects.convert(mask, toOrOptions)`** / **`convert(mask, from, to)`** | Static | Mask, target dialect, or `{ from, to }` options | `ConvertResult` | Transpiles a format mask directly between dialects (source dialect auto-inferred if omitted). |
 
 ---
 

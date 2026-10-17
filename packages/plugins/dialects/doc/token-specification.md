@@ -23,7 +23,9 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Full name (`October`) | `MMMM` | `LLLL` | `MMMM` | `%B` | `Month` | `F` | `January` | `{mon}` |
 | **Day** | Zero-padded day (`01`-`31`) | `dd` | `dd` | `DD` | `%d` | `DD` | `d` | `02` | `{dd}` |
 | | Unpadded day (`1`-`31`) | `d` | `d` | `D` | `%-d` | `FMDD` | `j` | `2` | `{dd:raw}` |
-| | Ordinal day (`24th`) | N/A | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
+| | Ordinal day (`24th`) | `Do` | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
+| **Era** | Era abbreviated (`AD` / `BC`) | `G` | `G` | N/A | N/A | N/A | N/A | N/A | `{era}` |
+| | Era full (`Anno Domini`) | `GGGG` | `GGGG` | N/A | N/A | N/A | N/A | N/A | `{era:long}` |
 | **Day of Year** | Day of year (`001`-`366`) | `DDD` | `ooo` | `DDDD` | `%j` | `DDD` | N/A | `002` | `{doy}` |
 | **Week of Year**| ISO week (`01`-`53`) | `ww` | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
 | **Weekday** | Full name (`Saturday`) | `EEEE` | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
@@ -45,6 +47,14 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | **Timezone** | Short abbreviation / IANA | `z` | `z` | `zz` | `%Z` | `TZD` | `T` | `MST` | `{tz:short}` |
 | | Standard offset (`+08:00`) | `ZZZZZ`| `ZZ` | `Z` | N/A | `TZH:TZM`| `P` | `-07:00` | `{tz:offset}` |
 | | Compact offset (`+0800`) | `ZZ` | `ZZZ` | `ZZ` | `%z` | `OF` | `O` | `-0700` | `{tz:offsetcompact}` |
+| | Offset hours with sign (`+08`) | N/A | N/A | N/A | N/A | `TZH` | N/A | `-07` | `{tz:offset:hh}` |
+| | Offset minutes (`00`, `30`) | N/A | N/A | N/A | N/A | `TZM` | N/A | N/A | `{tz:offset:mi}` |
+| | Offset with seconds (`+08:00:00`) | N/A | N/A | N/A | N/A | N/A | N/A | `-07:00:00` | `{tz:offset:ss}` |
+| | Compact offset with seconds (`+080000`) | N/A | N/A | N/A | N/A | N/A | N/A | `-070000` | `{tz:offsetcompact:ss}` |
+| | UTC `Z` or ISO offset | N/A | N/A | N/A | N/A | N/A | N/A | `Z07:00` | `{tz:offset:z}` |
+| | UTC `Z` or compact offset | N/A | N/A | N/A | N/A | N/A | N/A | `Z0700` | `{tz:offsetcompact:z}` |
+| | UTC `Z` or offset with seconds | N/A | N/A | N/A | N/A | N/A | N/A | `Z07:00:00` | `{tz:offset:ss:z}` |
+| | UTC `Z` or compact with seconds | N/A | N/A | N/A | N/A | N/A | N/A | `Z070000` | `{tz:offsetcompact:ss:z}` |
 | **Timestamp** | Unix epoch (seconds) | N/A | N/A | `X` | `%s` | N/A | `U` | N/A | `{ts}` |
 | | Quarter with ordinal (`3rd`) | N/A | N/A | `Qo` | N/A | N/A | N/A | N/A | `{#quarter:ord}` |
 | | Full quarter name (`3rd quarter`) | `QQQQ` | `qqqq` | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |

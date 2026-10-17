@@ -36,6 +36,13 @@ describe('Unicode LDML Formatting', () => {
 		expect(tEdge.format('w', { dialect: DIALECT.Ldml })).toBe('1');
 	});
 
+	it('formats day-of-year (DDD), ordinal day (Do), and era (G, GGGG)', () => {
+		expect(dt.format('yyyy-DDD', { dialect: DIALECT.Ldml })).toBe('2026-297');
+		expect(dt.format('Do MMMM', { dialect: DIALECT.Ldml })).toBe('24th October');
+		expect(dt.format('yyyy G', { dialect: DIALECT.Ldml })).toBe('2026 AD');
+		expect(dt.format('yyyy GGGG', { dialect: DIALECT.Ldml })).toBe('2026 Anno Domini');
+	});
+
 	it('executes compiled layout cache across 10,000 iterations efficiently', () => {
 		const mask = 'yyyy-MM-dd HH:mm:ss.SSS';
 		for (let i = 0; i < 10000; i++) {

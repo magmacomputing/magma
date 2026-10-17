@@ -1917,6 +1917,11 @@ export class Tempo {
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
+	/** Total days in current month (28-31) */								get dim() { return this.toDateTime().daysInMonth }
+	/** Astronomical Julian Day number */											get jj() {
+		const pd = this.toDateTime().toPlainDate().withCalendar('iso8601');
+		return 2440588 + Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
+	}
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDateTime().toInstant().toString() }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }

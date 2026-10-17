@@ -1,9 +1,9 @@
-import { evaluate, deepFreeze } from '@magmacomputing/tempo/library';
+import { deepFreeze } from '@magmacomputing/tempo/library';
 import { DIALECT } from '../constants.js';
 import { detectDialect } from './dialect.registry.js';
-import type { ExplainResult, ExplainedToken } from '../types.js';
+import type { ExplainResult, ExplainedToken, ExplainOptions } from '../types.js';
 
-export type { ExplainedToken, ExplainResult };
+export type { ExplainedToken, ExplainResult, ExplainOptions };
 
 const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	yyyy: { tempo: '{yyyy}', desc: '4-digit year' },
@@ -21,6 +21,13 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	L: { tempo: '{mm:raw}', desc: 'Unpadded standalone month number (1-12)' },
 	dd: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	d: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	Do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
+	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
+	D: { tempo: '{doy:raw}', desc: 'Unpadded day of year (1-366)' },
+	GGGG: { tempo: '{era:long}', desc: 'Full localized era (e.g. Anno Domini)' },
+	GGG: { tempo: '{era}', desc: 'Abbreviated localized era (e.g. AD)' },
+	GG: { tempo: '{era}', desc: 'Abbreviated localized era (e.g. AD)' },
+	G: { tempo: '{era}', desc: 'Abbreviated localized era (e.g. AD)' },
 	HH: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
 	H: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
 	hh: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
@@ -45,6 +52,7 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	e: { tempo: '{dow}', desc: 'Day of week (1-7)' },
 	ww: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
 	w: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
+	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	QQQQ: { tempo: '{#quarter}', desc: 'Full quarter name (via #quarter Term)' },
 	qqqq: { tempo: '{#quarter}', desc: 'Full standalone quarter name (via #quarter Term)' },
 	QQQ: { tempo: '{#quarter}', desc: 'Quarter abbreviation (via #quarter Term)' },
@@ -67,17 +75,17 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	Y: { tempo: '{yyyy}', desc: '4-digit year' },
 	y: { tempo: '{yy}', desc: '2-digit year' },
-	C: { tempo: '{yy}', desc: 'Century' },
+	C: { tempo: '{cen}', desc: 'Century (00-99)' },
 	B: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	b: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
 	h: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
 	m: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
 	d: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
-	e: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	e: { tempo: '{dd:space}', desc: 'Space-padded day of month ( 1-31)' },
 	H: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
-	k: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
+	k: { tempo: '{hh:space}', desc: 'Space-padded 24-hour clock ( 0-23)' },
 	I: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
-	l: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	l: { tempo: '{h12:space}', desc: 'Space-padded 12-hour clock ( 1-12)' },
 	M: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
 	S: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
 	s: { tempo: '{ts}', desc: 'Seconds since UNIX epoch' },
@@ -86,14 +94,14 @@ const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; re
 	P: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	A: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
 	a: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
-	w: { tempo: '{dow}', desc: 'Day of week number (0-6 in POSIX; note: Tempo dow is 1-7 ISO)' },
+	w: { tempo: '{dow:0}', desc: 'Day of week number where Sunday is 0 (0-6)' },
 	u: { tempo: '{dow}', desc: 'ISO Day of week number (1-7)' },
 	j: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	V: { tempo: '{woy}', desc: 'Zero-padded ISO week number (01-53)' },
 	W: { tempo: '{woy}', desc: 'Zero-padded week of year' },
 	U: { tempo: '{woy}', desc: 'Zero-padded week of year' },
 	G: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
-	g: { tempo: '{yy}', desc: '2-digit ISO week-numbering year' },
+	g: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
 	z: { tempo: '{tz:offsetcompact}', desc: 'Numeric time zone offset (e.g. -0800)' },
 	Z: { tempo: '{tz:short}', desc: 'Time zone abbreviation / name (e.g. PST)' },
 	F: { tempo: '{yyyy}-{mm}-{dd}', desc: 'ISO 8601 date' },
@@ -107,8 +115,8 @@ const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	YY: { tempo: '{yy}', desc: '2-digit year' },
 	gggg: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
 	GGGG: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
-	gg: { tempo: '{yy}', desc: '2-digit ISO week-numbering year' },
-	GG: { tempo: '{yy}', desc: '2-digit ISO week-numbering year' },
+	gg: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
+	GG: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
 	MM: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
@@ -155,14 +163,14 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	YYYY: { tempo: '{yyyy}', desc: '4-digit year' },
 	RRRR: { tempo: '{yyyy}', desc: '4-digit year (with 2000 pivot)' },
 	IYYY: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
-	IYY: { tempo: '', desc: 'Last 3 digits of ISO week-numbering year (unsupported width in Tempo)' },
-	IY: { tempo: '', desc: 'Last 2 digits of ISO week-numbering year (unsupported width in Tempo)' },
-	I: { tempo: '', desc: 'Last digit of ISO week-numbering year (unsupported width in Tempo)' },
-	YYY: { tempo: '', desc: 'Last 3 digits of year (unsupported width in Tempo)' },
+	IYY: { tempo: '{yow:-3}', desc: 'Last 3 digits of ISO week-numbering year' },
+	IY: { tempo: '{yow:-2}', desc: 'Last 2 digits of ISO week-numbering year' },
+	I: { tempo: '{yow:-1}', desc: 'Last digit of ISO week-numbering year' },
+	YYY: { tempo: '{yyyy:-3}', desc: 'Last 3 digits of year' },
 	YY: { tempo: '{yy}', desc: '2-digit year' },
 	RR: { tempo: '{yy}', desc: '2-digit year (with 2000 pivot)' },
-	Y: { tempo: '', desc: 'Last digit of year (unsupported width in Tempo)' },
-	J: { tempo: '', desc: 'Julian day (unsupported native token in Tempo)' },
+	Y: { tempo: '{yyyy:-1}', desc: 'Last digit of year' },
+	J: { tempo: '{jj}', desc: 'Astronomical Julian day number' },
 	MM: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
 	MONTH: { tempo: '{mon:upper}', desc: 'Full month name uppercase (e.g. OCTOBER)' },
 	Month: { tempo: '{mon}', desc: 'Full month name capitalized (e.g. October)' },
@@ -186,7 +194,7 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	HH: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
 	MI: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
 	SS: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
-	SSSSS: { tempo: '', desc: 'Seconds past midnight (0-86399; unsupported standalone token in Tempo)' },
+	SSSSS: { tempo: '{ss:day:5}', desc: 'Seconds past midnight (00000-86399)' },
 	FF3: { tempo: '{ms}', desc: 'Millisecond (000-999)' },
 	FF6: { tempo: '{ff:6}', desc: 'Fractional seconds / microseconds (000000-999999)' },
 	FF: { tempo: '{ff:6}', desc: 'Fractional seconds / microseconds (000000-999999)' },
@@ -199,12 +207,12 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	'a.m.': { tempo: '{mer:dots}', desc: 'a.m./p.m. marker' },
 	'p.m.': { tempo: '{mer:dots}', desc: 'a.m./p.m. marker' },
 	IW: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
-	WW: { tempo: '', desc: 'Week of year (01-53, starting Jan 1; unsupported standalone token in Tempo)' },
-	W: { tempo: '', desc: 'Week of month (1-5; unsupported standalone token in Tempo)' },
+	WW: { tempo: '{woy:cal}', desc: 'Week of year starting on Jan 1 (01-53)' },
+	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	Q: { tempo: '{#quarter}', desc: 'Quarter number 1-4 (via #quarter Term)' },
 	'TZH:TZM': { tempo: '{tz:offset}', desc: 'Time zone offset (e.g. +08:00)' },
-	TZH: { tempo: '', desc: 'Time zone offset hours (unsupported standalone token in Tempo)' },
-	TZM: { tempo: '', desc: 'Time zone offset minutes (unsupported standalone token in Tempo)' },
+	TZH: { tempo: '{tz:offset:hh}', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
+	TZM: { tempo: '{tz:offset:mi}', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
 	TZR: { tempo: '{tz:name}', desc: 'Time zone region name (e.g. UTC, America/New_York)' },
 	TZD: { tempo: '{tz:short}', desc: 'Time zone daylight saving abbreviation' },
 	OF: { tempo: '{tz:offset}', desc: 'Time zone offset (e.g. +02)' },
@@ -219,7 +227,11 @@ const ORACLE_UNPADDED_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: str
 	HH: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
 	MI: { tempo: '{mi:raw}', desc: 'Unpadded minute (0-59)' },
 	SS: { tempo: '{ss:raw}', desc: 'Unpadded second (0-59)' },
+	SSSSS: { tempo: '{ss:day:raw}', desc: 'Unpadded seconds past midnight (0-86399)' },
 	IW: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
+	WW: { tempo: '{woy:cal:raw}', desc: 'Unpadded week of year starting Jan 1 (1-53)' },
+	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
+	J: { tempo: '{jj}', desc: 'Astronomical Julian day number' },
 };
 
 const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
@@ -232,8 +244,9 @@ const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonl
 	F: { tempo: '{mon}', desc: 'Full month name (e.g. January)' },
 	d: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	j: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	t: { tempo: '{dim}', desc: 'Number of days in given month (28-31)' },
 	S: { tempo: '', desc: 'English ordinal suffix (st, nd, rd, th)' },
-	z: { tempo: '', desc: 'The day of the year starting from 0 (0-365; unsupported in 1-based Tempo)' },
+	z: { tempo: '{dd:year:raw:0}', desc: 'The day of the year starting from 0 (0-365)' },
 	l: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Sunday)' },
 	D: { tempo: '{www}', desc: 'Short weekday name (e.g. Sun)' },
 	N: { tempo: '{dow}', desc: 'ISO-8601 day of week (1 for Monday to 7 for Sunday)' },
@@ -266,10 +279,10 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	'01': { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
 	1: { tempo: '{mm:raw}', desc: 'Unpadded month number (1-12)' },
 	'02': { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
-	_2: { tempo: '{dd:raw}', desc: 'Space-padded day of month ( 1-31)' },
+	_2: { tempo: '{dd:space}', desc: 'Space-padded day of month ( 1-31)' },
 	2: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
 	'002': { tempo: '{doy}', desc: 'Day of year (001-366)' },
-	__2: { tempo: '', desc: 'Space-padded day of year (  1-366; unsupported in Tempo)' },
+	__2: { tempo: '{doy:space}', desc: 'Space-padded day of year (  1-366)' },
 	Monday: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Monday)' },
 	Mon: { tempo: '{www}', desc: 'Short weekday name (e.g. Mon)' },
 	15: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
@@ -287,21 +300,21 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	'.999': { tempo: '.{ms}', desc: 'Trailing millisecond' },
 	'.999999': { tempo: '.{ff:6}', desc: 'Trailing microsecond' },
 	'.999999999': { tempo: '.{ff:9}', desc: 'Trailing nanosecond' },
-	'Z07:00': { tempo: '{tz:offset}', desc: 'UTC Z or ISO-8601 offset' },
-	'Z07:00:00': { tempo: '{tz:offset}', desc: 'UTC Z or ISO-8601 offset with seconds' },
-	Z0700: { tempo: '', desc: 'UTC Z or basic numeric offset (unsupported in Tempo)' },
-	Z070000: { tempo: '', desc: 'UTC Z or basic numeric offset with seconds (unsupported in Tempo)' },
+	'Z07:00': { tempo: '{tz:offset:z}', desc: 'UTC Z or ISO-8601 offset' },
+	'Z07:00:00': { tempo: '{tz:offset:ss:z}', desc: 'UTC Z or ISO-8601 offset with seconds' },
+	Z0700: { tempo: '{tz:offsetcompact:z}', desc: 'UTC Z or basic numeric offset' },
+	Z070000: { tempo: '{tz:offsetcompact:ss:z}', desc: 'UTC Z or basic numeric offset with seconds' },
 	'-07:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset' },
-	'-07:00:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset with seconds' },
+	'-07:00:00': { tempo: '{tz:offset:ss}', desc: 'ISO-8601 numeric offset with seconds' },
 	'-0700': { tempo: '{tz:offsetcompact}', desc: 'Basic numeric offset' },
-	'-070000': { tempo: '', desc: 'Basic numeric offset with seconds (unsupported in Tempo)' },
-	'-07': { tempo: '', desc: 'Hour-only numeric offset (unsupported in Tempo)' },
-	Z07: { tempo: '', desc: 'UTC Z or hour-only numeric offset (unsupported in Tempo)' },
+	'-070000': { tempo: '{tz:offsetcompact:ss}', desc: 'Basic numeric offset with seconds' },
+	'-07': { tempo: '{tz:offset:hh}', desc: 'Hour-only numeric offset with sign' },
+	Z07: { tempo: '{tz:offset:short:z}', desc: 'UTC Z or hour-only numeric offset' },
 	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },
 };
 
-const LDML_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|ww|QQ|qq|ZZ|zz|a|d|H|h|k|m|s|S|c|e|E|w|y|L|M|Q|q|Z|z)/g;
-const STRFTIME_REGEX = /%([%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
+const LDML_REGEX = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|QQ|qq|GG|ZZ|zz|DDD|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|L|M|Q|q|Z|z)/g;
+const STRFTIME_REGEX = /%([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
 const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'MONTH',
@@ -324,8 +337,8 @@ const GO_EXPLAIN_REGEX =
  * Translates an external date format mask into native Tempo {token} syntax
  * and returns detailed token explanations to aid incremental migration.
  */
-export function explain(mask: string, explicitDialect?: any): ExplainResult {
-	const dialect = detectDialect(mask, evaluate(explicitDialect));
+export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
+	const dialect = detectDialect(mask, dialectOrOptions);
 	const tokens: ExplainedToken[] = [];
 	let pattern = '';
 
@@ -434,6 +447,18 @@ export function explain(mask: string, explicitDialect?: any): ExplainResult {
 				const char = mask[i];
 				if (char === '\\' && i + 1 < mask.length) {
 					pattern += mask[i + 1];
+					i += 2;
+					continue;
+				}
+
+				// Match compound day + ordinal suffix (e.g. 'jS' -> '{dd:ord}', 'dS' -> '{dd:ord}')
+				if ((char === 'j' || char === 'd') && i + 1 < mask.length && mask[i + 1] === 'S') {
+					pattern += '{dd:ord}';
+					tokens.push({
+						source: char + 'S',
+						tempo: '{dd:ord}',
+						desc: 'Day of month with ordinal suffix (e.g. 1st, 2nd)',
+					});
 					i += 2;
 					continue;
 				}

@@ -163,4 +163,52 @@ describe('Dialect Export', () => {
 		const res = t.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}', 'oracle');
 		expect(res.pattern).toBe('YYYY-MM-DD HH24:MI');
 	});
+
+	it('accepts options object { dialect: ... } and exports era and woy to LDML', () => {
+		const res = Tempo.dialects.export('{yyyy}-{mm}-{dd} {woy} {era} {era:long}', { dialect: DIALECT.Ldml });
+		expect(res.pattern).toBe('yyyy-MM-dd ww G GGGG');
+		expect(res.unsupported).toHaveLength(0);
+	});
+
+	it('exports Phase 3 extended timezone offset tokens to Go and Oracle', () => {
+		const resOracle = Tempo.dialects.export('{tz:offset:hh} {tz:offset:mi}', 'oracle');
+		expect(resOracle.pattern).toBe('TZH TZM');
+		expect(resOracle.unsupported).toHaveLength(0);
+
+		// Also verify alias tz:offset:min
+		expect(Tempo.dialects.export('{tz:offset:min}', 'oracle').pattern).toBe('TZM');
+
+		const resGo = Tempo.dialects.export('{tz:offset:z} {tz:offsetcompact:z} {tz:offset:ss:z} {tz:offsetcompact:ss:z} {tz:offset:ss} {tz:offsetcompact:ss} {tz:offset:hh}', 'go');
+		expect(resGo.pattern).toBe('Z07:00 Z0700 Z07:00:00 Z070000 -07:00:00 -070000 -07');
+		expect(resGo.unsupported).toHaveLength(0);
+
+		// Also verify aliases :sec
+		expect(Tempo.dialects.export('{tz:offset:sec:z} {tz:offsetcompact:sec}', 'go').pattern).toBe('Z07:00:00 -070000');
+	});
+
+	it('exports Phase 4 specialized and scoped tokens to target dialects', () => {
+		// Oracle J, SSSSS, WW, W
+		const resOracle = Tempo.dialects.export('{jj} {ss:day} {ss:day:5} {ss:day:raw} {woy:cal} {wom}', 'oracle');
+		expect(resOracle.pattern).toBe('J SSSSS SSSSS FMSSSSS WW W');
+		expect(resOracle.unsupported).toHaveLength(0);
+
+		// Aliases julian, ww:cal, ww:month
+		const resOracleAliases = Tempo.dialects.export('{julian} {ww:cal} {ww:month}', 'oracle');
+		expect(resOracleAliases.pattern).toBe('J WW W');
+
+		// PHP t and z
+		const resPhp = Tempo.dialects.export('{dim} {doy:0} {dd:year:raw:0}', 'php');
+		expect(resPhp.pattern).toBe('t z z');
+		expect(resPhp.unsupported).toHaveLength(0);
+
+		// Strftime %C and %w
+		const resStrftime = Tempo.dialects.export('{cen} {dow:0}', 'strftime');
+		expect(resStrftime.pattern).toBe('%C %w');
+		expect(resStrftime.unsupported).toHaveLength(0);
+
+		// LDML W
+		const resLdml = Tempo.dialects.export('{wom}', 'ldml');
+		expect(resLdml.pattern).toBe('W');
+		expect(resLdml.unsupported).toHaveLength(0);
+	});
 });

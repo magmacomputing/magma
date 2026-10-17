@@ -46,6 +46,9 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 			case 'y':
 				parts.push((z) => pad(((z.year % 100) + 100) % 100, 2));
 				break;
+			case 'C':
+				parts.push((z) => pad(Math.floor(z.year / 100), 2));
+				break;
 			case 'm':
 				parts.push((z) => (flag === '-' ? String(z.month) : pad(z.month, 2)));
 				break;
@@ -202,6 +205,9 @@ export function compileStrftimeParser(mask: string): RegExp {
 				break;
 			case 'y':
 				pattern += group('yy', '\\d{2}');
+				break;
+			case 'C':
+				pattern += group('century', '\\d{2}');
 				break;
 			case 'm':
 				pattern += group('mm', '\\d{1,2}');

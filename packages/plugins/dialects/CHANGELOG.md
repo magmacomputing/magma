@@ -8,6 +8,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-10-14
 
 ### Added
+- **Direct Dialect-to-Dialect Conversion (`convertDialect`)**:
+  - Added `convertDialect(mask, { from, to })`, `convertDialect(mask, from, to)`, and `convertDialect(mask, to)` with automatic source dialect detection.
+  - Mounted onto instance (`t.dialects.convert`) and static namespace (`Tempo.dialects.convert`).
+  - Returns structured `ConvertResult` tracking source, target, converted pattern, and any unmappable tokens.
+- **Unified Options Object Signatures**:
+  - Added `{ dialect }` and `{ from, to }` options overloads to `explain(mask, options)`, `exportDialect(pattern, options)`, and `convertDialect(mask, options)`.
+  - Exported `ConvertOptions`, `ExplainOptions`, and `ExportOptions` interfaces.
+- **Automatic Dialect Inference in Parsing**:
+  - `Tempo.fromFormat()`, `Tempo.fromFormats()`, and `Tempo.dialects.fromFormats()` automatically infer the dialect using `detectDialect(mask)` when omitted.
+  - Exported `detectDialect` helper from the package entry point.
+- **Extended Token Transpilation & Dialect Gap Closures (Phases 2, 3 & 4)**:
+  - Full explain, export, and cross-dialect conversion for Phase 4 specialized tokens:
+    - Oracle `J` ↔ `{jj}` (astronomic Julian day).
+    - Oracle `SSSSS` / `FMSSSSS` ↔ `{ss:day:5}` / `{ss:day:raw}` (seconds past midnight).
+    - Oracle `WW` / `FMWW` ↔ `{woy:cal}` / `{woy:cal:raw}` (calendar week starting Jan 1).
+    - Oracle `W` / `FMW` & Unicode LDML `W` ↔ `{wom}` (week of month).
+    - PHP `t` ↔ `{dim}` (days in month).
+    - PHP `z` ↔ `{dd:year:raw:0}` (0-indexed day of year).
+    - POSIX `%C` ↔ `{cen}` (century).
+    - POSIX `%w` ↔ `{dow:0}` (0-indexed weekday with Sunday as 0).
+  - Full reverse export mappings for numeric tail slicing (`{yow:short}`, `{yow:-2}`, `{yow:-3}`, `{yyyy:-3}`, `{yyyy:-1}`) and space padding (`{dd:space}`, `{doy:space}`, `{hh:space}`, `{h12:space}`).
+  - Full explain and export mappings for granular timezone offsets: `{tz:offset:hh}` (Oracle `TZH`, Go `-07`), `{tz:offset:mi}` (Oracle `TZM`), `{tz:offset:ss}` / `{tz:offsetcompact:ss}` (Go `-07:00:00`, `-070000`), and UTC `Z` indicators `{tz:offset:z}` / `{tz:offsetcompact:z}` (Go `Z07:00`, `Z0700`, `Z07`, `Z07:00:00`, `Z070000`).
 - **Oracle / SQL TO_CHAR Format Dialect**:
   - Full support for Oracle, PostgreSQL, Snowflake, and AWS Redshift date/time format models (`TO_CHAR`, `TO_DATE`, `TO_TIMESTAMP`).
   - Added `DIALECT.Oracle = 'oracle'` to `DIALECT` enum.

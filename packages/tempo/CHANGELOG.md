@@ -9,6 +9,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.7.0] - 2026-10-16
 
 ### Added & Architecture
+- **Specialized Tokens, Scope Modifiers & Generalized Zero-Indexing**:
+  - Added `{jj}` (and semantic alias `{julian}`) for astronomical Julian Day count since 4713 BC (`2461331` for 2026-10-17, resolving Oracle `J`), with companion `t.jj` instance getter.
+  - Added `{dim}` for total days in the month (`28`–`31`, resolving PHP `t`), with companion `t.dim` instance getter.
+  - Added `{cen}` (and `{century}`) for 2-digit century representation (`00`–`99`, resolving POSIX `%C`).
+  - Added `{wom}` for week of month (`1`–`5`, resolving Oracle `W` and Unicode LDML `W`), with `{ww:month}` / `{woy:month}` as semantic aliases.
+  - Added `{woy:cal}` for week of year starting January 1st (`01`–`53`, resolving Oracle `WW`).
+  - Added dimensional time-scope modifiers:
+    - `{ss:day}`: Seconds past midnight (`0`–`86399`, resolving Oracle `SSSSS`).
+    - `{mi:day}`: Minute of day (`0`–`1439`).
+    - `{ms:day}`: Millisecond of day (`0`–`86399999`).
+    - `{ns:day}`: Nanosecond of day (`0`–`86.399T`).
+    - `{hh:week}`: Hour of week (`0`–`167`).
+    - `{dd:year}`: Day of year (`1`–`366`, resolving mainframe "Julian" date codes).
+  - Added generalized zero-indexing modifier (`:zero` canonical, `:0` shorthand):
+    - `{doy:zero}` / `{doy:0}` (and `{dd:year:zero}` / `{dd:year:0}`): `000`–`365` (or `{doy:raw:0}`: `0`–`365`, resolving PHP `z`).
+    - `{dow:zero}` / `{dow:0}`: `0`–`6` with Sunday = 0 (resolving POSIX `%w`, JS `Date.getDay()` parity).
+    - `{mm:zero}` / `{mm:0}`: `00`–`11` (or `{mm:raw:0}`: `0`–`11`, resolving JS `Date.getMonth()` parity).
+    - `{woy:zero}` / `{woy:0}`: `00`–`52`.
+- **Numeric Tail-Slicing & Space-Padding Format Modifiers**:
+  - Added negative-number tail slicing (`{token:-N}`) to format masks:
+    - `{yyyy:-3}` (last 3 digits of calendar year, e.g. `'026'`)
+    - `{yyyy:-1}` (last digit of calendar year, e.g. `'6'`)
+    - `{yow:-3}` (last 3 digits of ISO week-numbering year)
+    - `{yow:-2}` and semantic alias `{yow:short}` (2-digit ISO week-numbering year)
+    - `{yow:-1}` (last digit of ISO week-numbering year)
+    - Retains left-to-right precision slicing for fractional seconds (`{ff:N}`).
+  - Added `:space` modifier support to numeric tokens (`padStart(width, ' ')`):
+    - `{dd:space}` / `{dd:2:space}` → Space-padded day of month ` 1`–`31` (resolves Go `_2`, Strftime `%e`).
+    - `{doy:space}` / `{doy:3:space}` → Space-padded day of year `  1`–`366` (resolves Go `__2`).
+    - `{hh:space}` / `{hh:2:space}` → Space-padded 24-hour ` 0`–`23` (resolves Strftime `%k`).
+    - `{h12:space}` / `{h12:2:space}` → Space-padded 12-hour ` 1`–`12` (resolves Strftime `%l`).
+  - Updated `Match.formatBraces` in `support.default.ts` to support chained hyphenated modifiers (`:[\w-]+`).
+- **Extended Timezone Offset Modifiers (`{tz:...}`)**:
+  - Expanded `{tz:offset...}` with granular component modifiers:
+    - `{tz:offset:hh}` / `{tz:offset:hour}` → Hour with sign (e.g. `+08`, `-05`, `+00`) (resolves Oracle `TZH`, Go `-07`).
+    - `{tz:offset:mi}` (and alias `:min`) → Minutes without sign (e.g. `00`, `30`) (resolves Oracle `TZM`).
+    - `{tz:offset:ss}` (and alias `:sec`) → Offset with seconds (`+08:00:00`, or compact `{tz:offset:compact:ss}` → `+080000`) (resolves Go `-07:00:00`, `-070000`).
+    - `{tz:offset:z}` / `{tz:offset:compact:z}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else numeric offset (resolves Go `Z07:00`, `Z0700`, `Z07`, `Z07:00:00`, `Z070000`).
 - **ISO Week-Numbering Getters & Tokens (`.woy` & `.yow`)**:
   - Added canonical `.woy` (ISO week number of year, 1–53) and `.yow` (4-digit ISO week-numbering year) getters to `Tempo` instances.
   - Native format token support for `{woy}` (zero-padded `01`–`53`), `{woy:raw}` (unpadded `1`–`53`), `{woy:ord}` (ordinal suffix `1st`–`53rd`), and `{yow}` (4-digit ISO week-numbering year).

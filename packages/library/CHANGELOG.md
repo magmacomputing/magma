@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.7.0] - 2026-10-16
 
 ### Added & Hardened
+- **Safe Object Key Assertion (`hasKeys` & `hasKey`)**:
+  - Exported `hasKeys<K extends PropertyKey>(obj: unknown, ...keys: K[]): obj is Record<K, unknown>` and alias `hasKey` in `#library/primitive.library.js` and `#library/assertion.library.js`.
+  - Asserts whether an object has one or more property keys (using the `in` operator, safely unwrapping Proxies if present).
+  - Safe against `null`, `undefined`, and non-object primitives without throwing exceptions, providing TypeScript type narrowing to `Record<K, unknown>`.
+  - Added test suite in `packages/library/test/common/primitives/assertion.library.test.ts`.
 - **Roman Numeral Conversion Routines (`number.library`)**:
   - Exported `toRoman(num: number): string` in `#library/number.library.js`, converting positive integers (1–3999) to standard subtractive Roman numeral strings (e.g. `2026` → `'MMXXVI'`, `14` → `'XIV'`). Safely returns `''` for non-integers or values outside range.
   - Exported `fromRoman(roman: string): number` in `#library/number.library.js`, parsing case-insensitive Roman numeral strings into integer values (1–3999) validated against standard strict Roman numeral syntax (`RE_ROMAN_NUMERALS`), returning `NaN` for malformed or non-numeral strings.

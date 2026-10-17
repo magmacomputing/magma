@@ -43,6 +43,19 @@ export interface ConvertResult {
 
 export type DialectInput = Evaluable<string>;
 
+export interface ExplainOptions {
+	readonly dialect?: DialectInput;
+}
+
+export interface ExportOptions {
+	readonly dialect?: DialectInput;
+}
+
+export interface ConvertOptions {
+	readonly from?: DialectInput;
+	readonly to: DialectInput;
+}
+
 export interface DialectsInstanceNamespace {
 	/**
 	 * Formats this instance using Unicode LDML / Luxon tokens (e.g. 'yyyy-MM-dd HH:mm').
@@ -76,15 +89,16 @@ export interface DialectsInstanceNamespace {
 	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
 	 * with detailed token mappings to guide incremental migration.
 	 */
-	explain(mask: string, dialect?: DialectInput): ExplainResult;
+	explain(mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult;
 	/**
 	 * Exports a native Tempo format pattern into the corresponding external dialect format model.
 	 */
-	export(mask: string, dialect?: DialectInput): ExportResult;
+	export(mask: string, dialectOrOptions?: DialectInput | ExportOptions): ExportResult;
 	/**
 	 * Converts a format mask directly from one dialect to another.
 	 * If fromDialect is omitted, it will be automatically detected.
 	 */
+	convert(mask: string, options: ConvertOptions): ConvertResult;
 	convert(mask: string, toDialect: DialectInput): ConvertResult;
 	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
@@ -104,15 +118,16 @@ export interface DialectsStaticNamespace {
 	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
 	 * with detailed token mappings to guide incremental migration.
 	 */
-	explain(mask: string, dialect?: DialectInput): ExplainResult;
+	explain(mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult;
 	/**
 	 * Exports a native Tempo format pattern into the corresponding external dialect format model.
 	 */
-	export(mask: string, dialect?: DialectInput): ExportResult;
+	export(mask: string, dialectOrOptions?: DialectInput | ExportOptions): ExportResult;
 	/**
 	 * Converts a format mask directly from one dialect to another.
 	 * If fromDialect is omitted, it will be automatically detected.
 	 */
+	convert(mask: string, options: ConvertOptions): ConvertResult;
 	convert(mask: string, toDialect: DialectInput): ConvertResult;
 	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
