@@ -20,10 +20,12 @@ const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const GO_TOKEN_REGEX =
 	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
 
+/** Returns the fractional second in nanoseconds, excluding whole seconds. */
 function getTotalNanoseconds(zdt: Temporal.ZonedDateTime): number {
 	return zdt.millisecond * 1_000_000 + zdt.microsecond * 1_000 + zdt.nanosecond;
 }
 
+/** Joins signed HH:mm[:ss] offset fields with `sep` (empty by default), supplying 00 seconds when omitted. */
 function formatOffsetSeconds(offset: string, sep: string = ''): string {
 	const [hh, mm, ss = '00'] = offset.split(':');
 	return `${hh}${sep}${mm}${sep}${ss}`;
@@ -31,6 +33,8 @@ function formatOffsetSeconds(offset: string, sep: string = ''): string {
 
 /**
  * Compiles a Go reference time format mask into a formatter function.
+ * Fractional layouts with zeros keep their width; layouts with nines trim trailing zeros and omit an empty fraction.
+ * Month and weekday names are English; an unavailable zone abbreviation falls back to the zone identifier.
  */
 export function compileGoFormatter(mask: string): FormatterFn {
 	const cached = GO_FORMATTER_CACHE.get(mask);
@@ -385,6 +389,13 @@ export function compileGoParser(mask: string): RegExp {
 
 /**
  * Parses an input string using a Go reference format mask into a Temporal.ZonedDateTime.
+ * Matching is case-insensitive without trimming input. Missing date fields default to the reference year, January,
+ * and day 1; missing time fields default to zero. Two-digit years 00-68 mean 2000-2068 and 69-99 mean 1969-1999.
+ *
+ * @param options - `today` supplies the reference year; otherwise uses the current date in the resolved zone.
+ * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601.
+ * @returns The parsed date-time, or undefined for a mismatch, conflicting day-of-year fields, nonzero offset seconds,
+ * or rejected date/time fields. Temporal construction errors are caught and return undefined.
  */
 export function parseGo(
 	input: string,

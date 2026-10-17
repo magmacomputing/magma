@@ -30,10 +30,12 @@ const ROMAN_MAP: Readonly<Record<string, number>> = {
 
 const JULIAN_DAY_OFFSET_1970 = 2_440_588;
 let epochPlainDate: Temporal.PlainDate | undefined;
+/** Returns the ISO date corresponding to Julian day number 2440588. */
 function getEpochPlainDate(): Temporal.PlainDate {
 	return (epochPlainDate ??= Temporal.PlainDate.from('1970-01-01'));
 }
 
+/** Uses uppercase or lowercase for uniform-case tokens and initial capitalization for mixed-case tokens. */
 function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
 	if (token === token.toLowerCase()) return str.toLowerCase();
@@ -42,6 +44,8 @@ function applyCase(str: string, token: string): string {
 
 /**
  * Compiles an Oracle/PostgreSQL SQL format model into a fast formatter function.
+ * Double quotes delimit literals. FM toggles padding for supported numeric fields; FX emits no text.
+ * Month and weekday names are English and follow token casing; FF defaults to six fractional digits.
  */
 export function compileOracleFormatter(mask: string): FormatterFn {
 	const cached = ORACLE_FORMAT_CACHE.get(mask);
@@ -273,6 +277,7 @@ const ORACLE_UNSUPPORTED_PARSE_TOKENS: ReadonlySet<string> = new Set([
 /**
  * Compiles an Oracle format model into a regular expression for parsing.
  * Returns undefined if the mask contains unsupported reverse-parse tokens.
+ * Matching is anchored and case-insensitive; FM and FX do not change parsing strictness.
  */
 export function compileOracleParser(mask: string): RegExp | undefined {
 	const cached = ORACLE_PARSE_CACHE.get(mask);
@@ -397,7 +402,16 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 }
 
 /**
- * Parses an input string with an Oracle TO_CHAR / TO_DATE format model.
+ * Parses trimmed input with an Oracle TO_CHAR / TO_DATE format model.
+ * Missing year uses the reference year; an explicit year defaults missing month/day to January 1,
+ * and an explicit month defaults missing day to 1. Missing time fields default to zero.
+ * YY uses the reference century. RR uses the previous century for 50-99 when the reference year ends in 00-49,
+ * or the next century for 00-49 when it ends in 50-99; otherwise RR uses the reference century.
+ *
+ * @param options - `today` supplies date defaults and the year pivot; otherwise uses the current date in the resolved zone.
+ * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601.
+ * @returns The parsed date-time, or undefined for a mismatch, unsupported parse token, or rejected fields.
+ * Temporal construction errors, including invalid time zones or calendars, are caught and return undefined.
  */
 export function parseOracle(
 	input: string,

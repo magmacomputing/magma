@@ -130,8 +130,8 @@ const RE_ROMAN_NUMERALS = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3
 /**
  * Converts a positive integer into its Roman numeral string representation.
  * 
- * @param num - The number to convert
- * @returns The Roman numeral string
+ * @param num - An integer from 1 through 3999
+ * @returns Uppercase subtractive Roman numerals, or an empty string for non-integers or values outside that range
  * @example
  * ```ts
  * toRoman(2026); // 'MMXXVI'
@@ -158,7 +158,7 @@ export function toRoman(num: number): string {
 /**
  * Converts a Roman numeral string into its numeric integer value.
  *
- * @param roman - The Roman numeral string to convert (case-insensitive)
+ * @param roman - Standard subtractive Roman numerals; matching is case-insensitive and surrounding whitespace is ignored
  * @returns The integer value (1-3999), or NaN if invalid
  * @example
  * ```ts

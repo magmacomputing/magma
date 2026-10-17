@@ -13,6 +13,9 @@ export type { ConvertOptions };
  * @param mask - Format mask string in the source dialect
  * @param fromOrToOrOptions - Source dialect name/alias, target dialect, or ConvertOptions object
  * @param maybeToDialect - Target dialect name/alias (when fromDialect is explicitly provided)
+ * @returns A deeply frozen result whose string form is the converted pattern. `unsupported` lists distinct
+ * source tokens with empty Tempo mappings (except FM/FX), plus tokens or literals flagged during export.
+ * @throws Errors from evaluating source or target dialect suppliers propagate to the caller.
  */
 export function convertDialect(
 	mask: string,

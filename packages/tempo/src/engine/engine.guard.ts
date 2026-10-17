@@ -11,6 +11,9 @@ export interface MasterGuard {
 
 /**
  * Create a new Master Guard scanner based on a list of allowed tokens.
+ * Accepts case-insensitive tokens, bracketed content, digits, and permitted punctuation.
+ * Valid Roman numerals are also accepted when uppercase or adjacent to a separator or digit.
+ * Empty, whitespace-only, and unrecognized input return false.
  * 
  * @param words - List of strings or symbols that are valid in the current context.
  * @returns An object with a .test() method that performs a greedy scan-and-consume validation.

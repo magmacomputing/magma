@@ -60,7 +60,11 @@ function buildOrdinalTermPattern(ordWords?: string): RegExp {
 	return new RegExp(`^\\s*(?<ord>${ordPattern})\\s+(?:day\\s+of\\s+)?(?<term>${RE_TERM_ID.source})\\s*$`, 'i');
 }
 
-/** Compiles a native braced format mask into a cached parsing expression. */
+/**
+ * Compiles a native braced format mask into a cached parsing expression.
+ * The roman modifier accepts numeral text for year, month, day, and 24-hour tokens.
+ * @throws Error if the mask contains an unknown braced token.
+ */
 function compileBracedPattern(fmt: string): RegExp {
 	let cached = BRACED_CACHE.get(fmt);
 	if (cached) return cached;
@@ -170,7 +174,12 @@ function resolveMonthNum(str: string): number | undefined {
 	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
-/** Parses input with a native braced mask, using the supplied date and calendar defaults. */
+/**
+ * Parses input with a native braced mask, using the supplied date and calendar defaults.
+ * Roman year, month, day, and 24-hour captures are converted to numbers; short years use a cutoff of 70.
+ * Returns undefined for a mismatch or a caught Temporal date, time zone, or calendar construction error.
+ * @throws Error for unknown braced tokens; mask compilation errors propagate to the caller.
+ */
 function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
 	const rx = compileBracedPattern(fmt);
 	const match = rx.exec(input);

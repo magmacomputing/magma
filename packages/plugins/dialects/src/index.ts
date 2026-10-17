@@ -46,6 +46,7 @@ export type { ConvertOptions, ConvertResult, Dialect, DialectAlias, DialectsInst
  */
 export const DialectsPlugin: TempoPlugin = definePlugin({
 	name: 'dialects',
+	/** Registers dialect routing, static and instance namespaces, and compatibility shims on the supplied Tempo class. */
 	install(this: any, TempoClass: any) {
 		const installedClass = TempoClass || this;
 
@@ -102,6 +103,10 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 			Object.defineProperty(installedClass.prototype, 'dialects', {
 				get: function (this: Tempo): DialectsInstanceNamespace {
 					const self = this;
+					/**
+					 * Formats this instance with the selected or detected dialect.
+					 * @throws Error when FormatModule is absent; date resolution and formatter errors also propagate.
+					 */
 					const format = (mask: string, dialect?: string) => {
 						if (isFunction((self as any).hasModule) && !(self as any).hasModule('FormatModule'))
 							throw new Error("[Tempo Dialects] Formatting requires 'FormatModule'. Call 'Tempo.use(FormatModule)' first.");

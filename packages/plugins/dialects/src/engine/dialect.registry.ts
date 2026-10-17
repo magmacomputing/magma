@@ -18,6 +18,11 @@ const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWy
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
+ * Checks strftime, Go, then Oracle heuristics outside single-quoted literals, falling back to LDML.
+ * PHP and Moment require an explicit dialect.
+ *
+ * @param dialectOrOptions - A dialect name or zero-argument supplier, or an object with a `dialect` value
+ * @throws Errors from evaluating a dialect supplier propagate to the caller.
  */
 export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
 	const raw = hasKeys(dialectOrOptions, 'dialect')
@@ -101,7 +106,11 @@ export function formatWithDialect(
 }
 
 /**
- * Parses an input string with a dialect mask.
+ * Parses an input string with a dialect mask, detecting the dialect when omitted.
+ * Returns undefined when the selected parser rejects input, including unsupported Oracle parse tokens.
+ *
+ * @param options - Dialect and parser defaults, including `today`, `timeZone` (UTC by default), and `calendar` (iso8601 by default)
+ * @throws Errors from evaluating a dialect supplier propagate; Temporal construction failures return undefined.
  */
 export function parseWithDialect(
 	input: string,
