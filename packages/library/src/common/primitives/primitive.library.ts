@@ -146,8 +146,9 @@ export function hasOwn(obj: unknown, key: PropertyKey): boolean {
  * Narrows `obj` to a record containing the specified keys.
  *
  * @param obj - The target object to inspect
- * @param keys - One or more property keys to verify
- * @returns True if the target contains all specified keys
+ * @param keys - Property keys to verify, including inherited properties
+ * @returns True if the target contains all specified keys; with no keys, true for objects and functions
+ * @throws Errors from proxy traps or getters used while unwrapping or checking keys propagate to the caller.
  * @example
  * ```ts
  * if (hasKeys(config, 'dialect')) { ... }

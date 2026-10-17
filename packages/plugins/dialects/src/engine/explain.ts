@@ -354,6 +354,12 @@ const GO_EXPLAIN_REGEX =
 /**
  * Translates an external date format mask into native Tempo {token} syntax
  * and returns detailed token explanations to aid incremental migration.
+ * Unmapped text is retained; Oracle FM/FX modifiers are omitted from the pattern.
+ *
+ * @param dialectOrOptions - A dialect name or supplier, or an object with `dialect`; omitted values use detection
+ * @returns A deeply frozen result whose string form is the translated pattern. An empty `tempo` mapping
+ * identifies a recognized token without a native equivalent or an Oracle FM/FX modifier.
+ * @throws Errors from evaluating a dialect supplier propagate to the caller.
  */
 export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 	const dialect = detectDialect(mask, dialectOrOptions);

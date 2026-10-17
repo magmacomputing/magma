@@ -69,6 +69,7 @@ export type DialectAlias = KeyOf<typeof DIALECT_ALIAS>;
 
 /**
  * Normalizes a dialect name or alias to its canonical dialect identifier.
+ * Ignores surrounding whitespace and case; missing or unrecognized names resolve to LDML.
  */
 export function normalizeDialect(input?: string): Dialect {
 	if (!input) return DIALECT.Ldml;

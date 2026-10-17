@@ -408,12 +408,15 @@ export function parseOrdinalDate(
  * Resolves date, relative-unit, and ordinal captures against a reference date.
  *
  * When both `ord` and `nth` ordinal captures are present, `ord` takes precedence. The function removes consumed captures or replaces them with normalized year, month, and day values.
+ * Roman month/year captures are normalized to numbers; a Roman year without month or day defaults to January 1.
  *
  * @param groups - Mutable lexer capture groups containing the date expression.
  * @param dateTime - Date and time used as the resolution context.
  * @param config - Tempo configuration used for anchors, modifiers, and two-digit-year resolution.
  * @param pivot - Fallback pivot for resolving two-digit years.
- * @returns The resolved date and time, or the original value when the captures are invalid or unsupported.
+ * @returns The resolved date and time, or the original value for unsupported captures or handled validation failures.
+ * @throws Errors reported through the configured error boundary unless `config.catch` is enabled;
+ * Temporal errors from date resolution propagate regardless of that setting.
  */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 

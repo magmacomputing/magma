@@ -19,6 +19,8 @@ const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /**
  * Compiles a PHP date format mask into a high-performance formatter function.
+ * A backslash makes the next character literal; unrecognized characters are retained.
+ * Month and weekday names are English; an unavailable zone abbreviation falls back to the zone identifier.
  */
 export function compilePhpFormatter(mask: string): FormatterFn {
 	const cached = PHP_FORMATTER_CACHE.get(mask);
@@ -337,6 +339,14 @@ export function compilePhpParser(mask: string): RegExp {
 
 /**
  * Parses an input string using a PHP date format mask into a Temporal.ZonedDateTime.
+ * Matching is case-insensitive without trimming input. Missing date fields default to the reference year, January,
+ * and day 1; missing time fields default to zero. Two-digit years 00-69 mean 2000-2069 and 70-99 mean 1970-1999.
+ * `U` takes precedence over other date/time fields and denotes signed Unix seconds, producing an ISO calendar result.
+ *
+ * @param options - `today` supplies the reference year; otherwise uses the current date in the resolved zone.
+ * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601 for non-epoch input.
+ * @returns The parsed date-time, or undefined for a mismatch or rejected fields, time zone, or calendar.
+ * Temporal construction errors are caught and return undefined.
  */
 export function parsePhp(
 	input: string,

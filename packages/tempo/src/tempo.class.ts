@@ -1917,8 +1917,8 @@ export class Tempo {
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
-	/** Total days in current month (28-31) */								get dim() { return this.toDateTime().daysInMonth }
-	/** Astronomical Julian Day number */											get jj() {
+	/** Total days in the current month, using the instance calendar. */								get dim() { return this.toDateTime().daysInMonth }
+	/** Integer Julian day number for the local ISO calendar date, ignoring time of day (1970-01-01 = 2440588). */											get jj() {
 		const pd = this.toDateTime().toPlainDate().withCalendar('iso8601');
 		return 2440588 + Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
 	}

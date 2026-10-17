@@ -42,6 +42,8 @@ function shiftToIsoYear(currZdt: Temporal.ZonedDateTime, targetYear: number): Te
  * @param args - A mutation value, mutation object, term expression, or date-time input
  * @param options - Time zone, calendar, and sphere overrides
  * @returns A new mutated `Tempo` instance, or the original instance when no valid date-time exists
+ * @throws Temporal errors from zone/calendar changes or arithmetic, and errors from mutation hooks propagate.
+ * Validation errors use the configured error boundary; when caught, they produce an invalid instance.
  */
 function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus' | 'sub', args?: any, options: t.Options = {}) {
 	if (type === 'plus') type = 'add';

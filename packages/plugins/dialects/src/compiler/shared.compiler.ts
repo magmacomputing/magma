@@ -50,8 +50,10 @@ export function createGroupExtractor(match: RegExpExecArray): (name: string) => 
 }
 
 /**
- * Resolves timezone, calendar, and today ZonedDateTime safely from options and parsed timezone tokens.
- * Returns undefined if an invalid timezone is encountered.
+ * Resolves parser defaults, preferring a parsed offset over a parsed zone name and `options.timeZone`.
+ * Defaults to UTC and the iso8601 calendar. Uses `options.today` as-is, or reads the current date in the resolved zone.
+ * Returns undefined if that current-date lookup fails or an offset includes nonzero seconds.
+ * A supplied `today` bypasses time zone validation here; calendar validation is left to the caller.
  */
 export function resolveParseContext(
 	getGroup: (name: string) => string | undefined,
@@ -91,6 +93,7 @@ export function resolveParseContext(
 
 /**
  * Parses and validates hour, minute, second, and meridiem markers from matched groups.
+ * Missing fields default to zero. The `h24` range is 1-24; 24 becomes midnight without advancing the date.
  * Returns undefined if any component is out of valid range.
  */
 export function resolveTimeComponents(getGroup: (name: string) => string | undefined): ParsedTime | undefined {
@@ -145,6 +148,7 @@ const MONTH_DAYS_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 /**
  * Resolves 1-indexed day-of-year (1..366) to month (1..12) and day (1..31) using pure integer arithmetic.
+ * Returns undefined for a day outside the given year, including day 366 in a non-leap year.
  */
 export function resolveDayOfYear(year: number, dayOfYear: number): { month: number; day: number } | undefined {
 	const leap = isLeapYear(year);
@@ -162,8 +166,8 @@ export function resolveDayOfYear(year: number, dayOfYear: number): { month: numb
 }
 
 /**
- * Computes ISO week and week-year for a given date, prioritizing native ZonedDateTime getters
- * and falling back to fast integer math with zero Temporal object allocations.
+ * Returns numeric week and week-year fields when both are supplied; otherwise computes them
+ * from the Gregorian year, month, and day.
  */
 export function getIsoWeek(z: { year: number; month: number; day: number; weekOfYear?: number | undefined; yearOfWeek?: number | undefined }): { weekOfYear: number; yearOfWeek: number } {
 	if (typeof z.weekOfYear === 'number' && typeof z.yearOfWeek === 'number') {
@@ -182,7 +186,8 @@ export function getIsoWeek(z: { year: number; month: number; day: number; weekOf
 
 /**
  * Resolves an ISO week date (isoYear, isoWeek, isoDay) into calendar year, month, and day
- * using lightweight UTC Date calculations.
+ * using lightweight UTC Date calculations. `isoDay` uses Monday=1 through Sunday=7 and defaults to Monday.
+ * Out-of-range week and day values roll into adjacent dates rather than being rejected.
  */
 export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1): { year: number; month: number; day: number } {
 	const jan4 = new Date(Date.UTC(isoYear, 0, 4));

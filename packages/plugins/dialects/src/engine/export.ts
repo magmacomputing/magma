@@ -197,6 +197,7 @@ const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+|\{)/g;
 const REGEX_FF_PRECISION = /^ff:([1-9])$/i;
 const REGEX_GO_CONFLICT = /(?:2006|002|__2|_2|15|04|05|01|02|03|06|Jan|January|Mon|Monday|MST|PM|pm|[1-5])/;
 
+/** Escapes literal text for the target dialect; Go text is returned unchanged because layouts have no escape syntax. */
 function quoteLiteral(str: string, dialect: Dialect): string {
 	if (!str) return '';
 	switch (dialect) {
@@ -225,6 +226,12 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 
 /**
  * Exports a native Tempo format pattern into the corresponding external dialect format model.
+ * Unsupported tokens remain in the pattern. Go literal conflicts and fractional tokens without
+ * a preceding decimal point are also reported as unsupported.
+ *
+ * @param dialectOrOptions - Target dialect name or supplier, or an object with `dialect`; defaults to LDML
+ * @returns A deeply frozen result with token mappings and an `unsupported` list; its string form is the pattern
+ * @throws Errors from evaluating a dialect supplier propagate to the caller.
  */
 export function exportDialect(tempoMask: string, dialectOrOptions?: any): ExportResult {
 	const raw = hasKeys(dialectOrOptions, 'dialect')

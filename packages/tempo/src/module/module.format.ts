@@ -130,11 +130,16 @@ export function format(obj: any, options: FormatOptions): string;
 export function format(obj: any, fmt: string | symbol, options?: any): string;
 /**
  * Formats a supported date-time value using a named format, template, or internationalization options.
+ * Scoped day/week time fields count wall-clock units from local midnight or Monday, independent of offset transitions.
+ * The roman modifier converts integers 1-3999 and leaves other values unchanged.
  *
  * @param obj - The value to format; omitted values use the current date and time.
  * @param fmt - A registered format name or literal format template.
  * @param options - Formatting and configuration overrides.
- * @returns The formatted date-time string, a format proxy when no format or options are supplied, or an empty string for invalid date-time values.
+ * @returns The formatted date-time string, a format proxy when no format or options are supplied, or an empty string
+ * when a format is supplied and the resolved value is not a ZonedDateTime.
+ * @throws Error when a requested dialect formatter is unavailable. Temporal input conversion errors,
+ * formatter or custom token callback errors, and Intl errors when no fallback succeeds also propagate.
  */
 export function format(obj?: any, fmt?: any, options?: any): any {
 	const state = getRuntime().state;
