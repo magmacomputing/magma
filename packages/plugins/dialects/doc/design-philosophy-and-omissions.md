@@ -25,7 +25,7 @@ Tempo's format syntax is founded on four core principles:
 In historical dialects, a single shift-key difference changes the entire semantic target of a format string. This is the single largest source of date-formatting bugs in modern software:
 
 * **Month vs. Minute (`MM` vs `mm`)**: In Moment, LDML, and SQL, `MM` is month and `mm` is minute. An accidental typo like `HH:MM:ss` silently formats the month where minutes should appear.
-* **The New Year Billing Catastrophe (`YYYY` vs `yyyy`)**: In Unicode LDML (Luxon, date-fns), `yyyy` is calendar year while `YYYY` is **ISO week-numbering year**. A format mask like `YYYY-MM-dd` outputs `2026-12-31` on December 31, 2025 because that day belongs to Week 1 of 2026. This bug has repeatedly broken payment gateways, reporting systems, and billing pipelines across the tech industry.
+* **The New Year Billing Catastrophe (`YYYY` vs `yyyy`)**: In Unicode LDML (Luxon, date-fns), `yyyy` is the standard calendar year, while `YYYY` represents a **locale-dependent week-based year** (which resolves to the ISO week-numbering year under ISO/European week rules, or the local week year in US locales). Under ISO rules, a format mask like `YYYY-MM-dd` outputs `2026-12-31` on December 31, 2025 because that day belongs to Week 1 of 2026. This bug has repeatedly broken payment gateways, reporting systems, and billing pipelines across the tech industry.
 * **Day of Month vs. Day of Week (`D` vs `d`)**: In Moment, `D` is day of month (`1-31`) and `d` is day of week (`0-6`). In LDML, `d` is day of month (`1-31`) and `e` / `c` is day of week.
 
 **The Tempo Solution**:  
@@ -120,8 +120,8 @@ To print literal braces, simply double them: `{{` produces `{` and `}}` produces
 
 When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, we identified several legacy dialect behaviors that we deliberately chose **not** to adopt into native Tempo or promote as best practices:
 
-### 1. Non-ISO Locale Week-Numbering Years (Moment `gggg` / `gg`, PHP `o`)
-* **The Legacy Behavior**: Moment's `gggg` computes a 4-digit week-numbering year based on the local first day of the week (e.g. Sunday in the US, Monday in ISO, Saturday in the Middle East).
+### 1. Non-ISO Locale Week-Numbering Years (Moment `gggg` / `gg`)
+* **The Legacy Behavior**: Moment's `gggg` and `gg` compute week-numbering years based on the locale's first day of the week (e.g. Sunday in the US, Monday in ISO, Saturday in the Middle East). In contrast, PHP `o` and POSIX `%G` strictly compute the ISO 8601 week-numbering year, which Tempo directly supports via `{yow}`.
 * **Why We Omitted It**: Locale-dependent week-year calculations lack an unambiguous international standard. In the US, week 1 is often defined simply as the week containing January 1st, whereas ISO 8601 requires week 1 to contain the first Thursday (or 4 days in January). This divergence creates non-deterministic calendar drift across client machines depending on their browser locale. Tempo anchors strictly to the international ISO 8601 standard (`{yow}`, `{woy}`, `{dow}`), guaranteeing consistent results across all runtime environments.
 
 ### 2. Confusing 1–24 and 0–11 Hour Systems (LDML `k` / `K`)

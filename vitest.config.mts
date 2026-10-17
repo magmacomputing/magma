@@ -4,6 +4,7 @@ import { defineConfig } from 'vitest/config'
 import swc from 'unplugin-swc'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const isDist = process.env.TEST_DIST === 'true';
 
 export default defineConfig({
   esbuild: false,
@@ -17,7 +18,58 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: [
+    alias: isDist ? [
+      { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.index.js') },
+      { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.sdk.js') },
+      { find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/$1.js') },
+      { find: /^@magmacomputing\/tempo\/term$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/term.index.js') },
+      { find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/term.$1.js') },
+      { find: /^@magmacomputing\/tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/dist/core.index.js') },
+      { find: /^@magmacomputing\/tempo\/config$/, replacement: path.resolve(__dirname, './packages/tempo/dist/config/config.index.js') },
+      { find: /^@magmacomputing\/tempo\/library$/, replacement: path.resolve(__dirname, './packages/tempo/dist/library.index.js') },
+      { find: /^@magmacomputing\/tempo\/(parse|format|mutate|duration)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/module/module.$1.js') },
+      { find: /^@magmacomputing\/tempo\/module\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/module/$1.js') },
+      { find: /^@magmacomputing\/tempo\/support$/, replacement: path.resolve(__dirname, './packages/tempo/dist/support/support.index.js') },
+      { find: /^@magmacomputing\/tempo\/enums$/, replacement: path.resolve(__dirname, './packages/tempo/dist/support/support.enum.js') },
+      { find: /^@magmacomputing\/tempo$/, replacement: path.resolve(__dirname, './packages/tempo/dist/tempo.index.js') },
+      { find: /^@magmacomputing\/tempo-fns$/, replacement: path.resolve(__dirname, './packages/functions/src/index.ts') },
+      { find: /^@magmacomputing\/tempo-fns\/(.*)$/, replacement: path.resolve(__dirname, './packages/functions/src/$1.ts') },
+      { find: /^@magmacomputing\/tempo-plugin-([^/]+)$/, replacement: path.resolve(__dirname, './packages/plugins/$1/src/index.ts') },
+      { find: /^@magmacomputing\/tempo-plugin-([^/]+)\/(.*)$/, replacement: path.resolve(__dirname, './packages/plugins/$1/src/$2.ts') },
+      { find: /^@magmacomputing\/library$/, replacement: path.resolve(__dirname, './packages/library/dist/common.index.js') },
+      { find: /^@magmacomputing\/library\/(primitives|temporal|security|scheduling|runtime)\/(.*)$/, replacement: path.resolve(__dirname, './packages/library/dist/common/$1/$2') },
+      { find: /^@magmacomputing\/library\/(browser|server)\/(.*)$/, replacement: path.resolve(__dirname, './packages/library/dist/$1/$2') },
+      { find: /^@magmacomputing\/library\/(.*)$/, replacement: path.resolve(__dirname, './packages/library/dist/$1') },
+      { find: /^#library\/(primitives|temporal|security|scheduling|runtime)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/$1/$2.js') },
+      { find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/$1/$2.js') },
+      { find: /^#library\/(array|assertion|coercion|number|object|primitive|string|symbol|type)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/primitives/$1.library.js') },
+      { find: /^#library\/(cron|rrule|schedule)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/scheduling/$1.library.js') },
+      { find: /^#library\/(buffer|cipher|webtoken)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/security/$1.library.js') },
+      { find: /^#library\/(calendar|temporal)\.library\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/temporal/$1.library.js') },
+      { find: /^#library\/temporal\.polyfill\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/temporal/temporal.polyfill.js') },
+      { find: /^#library\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/library/dist/common/runtime/$1.js') },
+      { find: /^#library$/, replacement: path.resolve(__dirname, './packages/library/dist/common.index.js') },
+      { find: /^#tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/dist/core.index.js') },
+      { find: /^#tempo\/config\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/config/$1.js') },
+      { find: /^#tempo\/config$/, replacement: path.resolve(__dirname, './packages/tempo/dist/config/config.index.js') },
+      { find: /^#tempo\/term$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/term.index.js') },
+      { find: /^#tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/$1') },
+      { find: /^#tempo\/(parse|format|mutate|duration)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/module/module.$1.js') },
+      { find: /^#tempo\/module$/, replacement: path.resolve(__dirname, './packages/tempo/dist/module/module.index.js') },
+      { find: /^#tempo\/support$/, replacement: path.resolve(__dirname, './packages/tempo/dist/support/support.index.js') },
+      { find: /^#tempo\/scripts\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/scripts/$1.js') },
+      { find: /^#tempo\/plugin\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.$1.js') },
+      { find: /^#tempo\/plugin\/extend\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/extend/$1.js') },
+      { find: /^#tempo\/engine\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/engine/$1.js') },
+      { find: /^#tempo\/module\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/module/$1.js') },
+      { find: /^#tempo\/plugin\/term\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/$1.js') },
+      { find: /^#tempo\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.$1.js') },
+      { find: /^#tempo\/plugin\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/$1.js') },
+      { find: /^#tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.index.js') },
+      { find: /^#tempo\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/$1.js') },
+      { find: /^#tempo\/std$/, replacement: path.resolve(__dirname, './packages/tempo/dist/term/index.js') },
+      { find: /^#tempo$/, replacement: path.resolve(__dirname, './packages/tempo/dist/tempo.index.js') }
+    ] : [
       { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/$1.ts') },

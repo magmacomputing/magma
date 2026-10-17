@@ -165,6 +165,33 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		const parsedIsoCal = Tempo.dialects.parse('2026-10-24', '%G-%m-%d', DIALECT.Strftime);
 		expect(parsedIsoCal.isValid).toBe(true);
 		expect(parsedIsoCal.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		// Ambiguous %G-%m-%d on boundary dates without weekday returns invalid
+		const ambiguousBoundary = Tempo.dialects.parse('2026-12-29', '%G-%m-%d', DIALECT.Strftime, { error: 'catch' });
+		expect(ambiguousBoundary.isValid).toBe(false);
+
+		// Disambiguated %G-%m-%d with weekday succeeds (2025-12-29 is Monday=1; 2026-12-29 is Tuesday=2)
+		const disambiguated1 = Tempo.dialects.parse('2026-12-29-1', '%G-%m-%d-%u', DIALECT.Strftime);
+		expect(disambiguated1.isValid).toBe(true);
+		expect(disambiguated1.format('{yyyy}-{mm}-{dd}')).toBe('2025-12-29');
+
+		const disambiguated2 = Tempo.dialects.parse('2026-12-29-2', '%G-%m-%d-%u', DIALECT.Strftime);
+		expect(disambiguated2.isValid).toBe(true);
+		expect(disambiguated2.format('{yyyy}-{mm}-{dd}')).toBe('2026-12-29');
+
+		// Rejects week 53 in a year that has only 52 weeks (2025 has 52 weeks)
+		const invalidWeek53 = Tempo.dialects.parse('2025-53-1', '%G-%V-%u', DIALECT.Strftime, { error: 'catch' });
+		expect(invalidWeek53.isValid).toBe(false);
+
+		// Rejects out-of-range weekdays
+		const invalidWeekdayU = Tempo.dialects.parse('2026-43-8', '%G-%V-%u', DIALECT.Strftime, { error: 'catch' });
+		expect(invalidWeekdayU.isValid).toBe(false);
+
+		// Parses with non-ISO calendar correctly converting after ISO construction
+		const parsedHebrew = Tempo.dialects.parse('2026-43-6', '%G-%V-%u', DIALECT.Strftime, { calendar: 'hebrew' });
+		expect(parsedHebrew.isValid).toBe(true);
+		expect(parsedHebrew.cal).toBe('hebrew');
+		expect(parsedHebrew.toDateTime().year).toBeGreaterThan(5700);
 	});
 });
 

@@ -287,8 +287,10 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('weekday_abbr', '[A-Za-z]{3,}');
 				break;
 			case 'w':
+				pattern += group('weekday_w', '[0-6]');
+				break;
 			case 'u':
-				pattern += group('weekday_num', '\\d{1}');
+				pattern += group('weekday_u', '[1-7]');
 				break;
 			case 'j':
 				pattern += group('day_of_year', '\\d{1,3}');
@@ -378,14 +380,24 @@ export function parseStrftime(
 	} else if (iw) {
 		const isoWeek = parseInt(iw, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
-		const weekday_num = getGroup('weekday_num');
+		const weekday_u = getGroup('weekday_u');
+		const weekday_w = getGroup('weekday_w');
 		let isoDay = 1;
-		if (weekday_num) {
-			const wn = parseInt(weekday_num, 10);
-			isoDay = wn === 0 ? 7 : wn;
+		if (weekday_u) {
+			const u = parseInt(weekday_u, 10);
+			if (u < 1 || u > 7) return undefined;
+			isoDay = u;
+		} else if (weekday_w) {
+			const w = parseInt(weekday_w, 10);
+			if (w < 0 || w > 6) return undefined;
+			isoDay = w === 0 ? 7 : w;
 		}
 		const isoYear = iyyy ? parseInt(iyyy, 10) : (iyyVal ? (parseInt(iyyVal, 10) >= 70 ? 1900 + parseInt(iyyVal, 10) : 2000 + parseInt(iyyVal, 10)) : year);
 		const res = fromIsoWeek(isoYear, isoWeek, isoDay);
+		const check = getIsoWeek(res);
+		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek)
+			return undefined;
+
 		year = res.year;
 		month = res.month;
 		day = res.day;
@@ -406,7 +418,34 @@ export function parseStrftime(
 
 		if ((iyyy || iyyVal) && mm && dd) {
 			const isoYear = iyyy ? parseInt(iyyy, 10) : (parseInt(iyyVal!, 10) >= 70 ? 1900 + parseInt(iyyVal!, 10) : 2000 + parseInt(iyyVal!, 10));
-			year = resolveIsoCalendarYear(isoYear, month, day);
+			if ((month === 12 && day >= 29) || (month === 1 && day <= 3)) {
+				const cand1 = isoYear;
+				const cand2 = month === 12 ? isoYear - 1 : isoYear + 1;
+				const match1 = getIsoWeek({ year: cand1, month, day }).yearOfWeek === isoYear;
+				const match2 = getIsoWeek({ year: cand2, month, day }).yearOfWeek === isoYear;
+				if (match1 && match2) {
+					const weekday_u = getGroup('weekday_u');
+					const weekday_w = getGroup('weekday_w');
+					const wn = weekday_u ? parseInt(weekday_u, 10) : (weekday_w ? (parseInt(weekday_w, 10) === 0 ? 7 : parseInt(weekday_w, 10)) : undefined);
+					if (wn !== undefined) {
+						const d1 = new Date(Date.UTC(cand1, month - 1, day)).getUTCDay() || 7;
+						const d2 = new Date(Date.UTC(cand2, month - 1, day)).getUTCDay() || 7;
+						if (d1 === wn && d2 !== wn) year = cand1;
+						else if (d2 === wn && d1 !== wn) year = cand2;
+						else return undefined;
+					} else {
+						return undefined;
+					}
+				} else if (match1) {
+					year = cand1;
+				} else if (match2) {
+					year = cand2;
+				} else {
+					return undefined;
+				}
+			} else {
+				year = isoYear;
+			}
 		}
 	}
 
@@ -425,10 +464,10 @@ export function parseStrftime(
 	}
 
 	try {
-		return Temporal.ZonedDateTime.from(
+		const isoZdt = Temporal.ZonedDateTime.from(
 			{
 				timeZone: tz,
-				calendar: cal,
+				calendar: 'iso8601',
 				year,
 				month,
 				day,
@@ -441,6 +480,7 @@ export function parseStrftime(
 			},
 			{ overflow: 'reject' }
 		);
+		return cal === 'iso8601' ? isoZdt : isoZdt.withCalendar(cal);
 	} catch {
 		return undefined;
 	}
