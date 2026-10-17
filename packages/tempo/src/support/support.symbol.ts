@@ -110,6 +110,8 @@ export const Token = looseIndex<string, symbol>()({
 	tzd: Symbol('tzd'),
 	/** historical era */																			era: Symbol('era'),
 	/** ordinal index (1st, 2nd, 3rd, last, etc) */						nth: Symbol('nth'),
+	/** Roman month (I-XII) */																Rm: Symbol('romanMonth'),
+	/** Roman year (e.g. MMXXVI) */														Ry: Symbol('romanYear'),
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Layout Symbols
 	/** date */																								dt: Symbol('date'),
 	/** time */																								tm: Symbol('time'),
@@ -130,5 +132,7 @@ export const Token = looseIndex<string, symbol>()({
 	/** era and year (leading) */															ey: Symbol('eraYearLeading'),
 	/** ordinal weekday layout */															ordWkd: Symbol('ordinalWeekday'),
 	/** ordinal unit/day layout */														ordUnt: Symbol('ordinalUnit'),
+	/** day-RomanMonth-year (e.g. 14.X.2026) */								dRy: Symbol('dayRomanMonthYear'),
+	/** archival / inscription Roman year (e.g. MMXXVI) */		Ryy: Symbol('romanYearOnly'),
 });
 export type Token = typeof Token;

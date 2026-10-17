@@ -1,4 +1,5 @@
 import '#library/temporal.polyfill.js';
+import { fromRoman } from '#library/number.library.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
 import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
@@ -49,6 +50,8 @@ const RE_SIGNED_LEADING_DIGITS = /^-?\d+/;
 const RE_ORDINAL_SUFFIX = /(?:st|nd|rd|th)/;
 const RE_TERM_ID = /#[\w.]+/;
 
+const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
+
 /** Constructs a regular expression to match ordinal term expressions (e.g. "3rd day of #qtr.2"). */
 function buildOrdinalTermPattern(ordWords?: string): RegExp {
 	const ordPattern = isText(ordWords)
@@ -57,7 +60,11 @@ function buildOrdinalTermPattern(ordWords?: string): RegExp {
 	return new RegExp(`^\\s*(?<ord>${ordPattern})\\s+(?:day\\s+of\\s+)?(?<term>${RE_TERM_ID.source})\\s*$`, 'i');
 }
 
-/** Compiles a native braced format mask into a cached parsing expression. */
+/**
+ * Compiles a native braced format mask into a cached parsing expression.
+ * The roman modifier accepts numeral text for year, month, day, and 24-hour tokens.
+ * @throws Error if the mask contains an unknown braced token.
+ */
 function compileBracedPattern(fmt: string): RegExp {
 	let cached = BRACED_CACHE.get(fmt);
 	if (cached) return cached;
@@ -80,20 +87,22 @@ function compileBracedPattern(fmt: string): RegExp {
 				continue;
 			}
 			const rawToken = fmt.slice(i + 1, end).trim();
-			const [tok] = rawToken.split(':');
+			const [tok, ...modifiers] = rawToken.split(':');
 			const token = tok.toLowerCase();
+			const isRoman = modifiers.some(m => m.toLowerCase() === 'roman');
+			const romanOr = (fallback: string) => isRoman ? RE_ROMAN_DIGITS : fallback;
 
 			switch (token) {
 				case 'yyyy':
 				case 'year':
-					pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
+					pattern += group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'));
 					break;
 				case 'yy':
-					pattern += group('yy', '\\d{2}');
+					pattern += group('yy', romanOr('\\d{2}'));
 					break;
 				case 'mm':
 				case 'month':
-					pattern += group('mm', '\\d{1,2}');
+					pattern += group('mm', romanOr('\\d{1,2}'));
 					break;
 				case 'mmm':
 					pattern += group('mmm', '[A-Za-z]{3,}');
@@ -103,12 +112,12 @@ function compileBracedPattern(fmt: string): RegExp {
 					break;
 				case 'dd':
 				case 'day':
-					pattern += group('dd', '\\d{1,2}(?:st|nd|rd|th)?');
+					pattern += group('dd', romanOr('\\d{1,2}(?:st|nd|rd|th)?'));
 					break;
 				case 'hh':
 				case 'h24':
 				case 'hour':
-					pattern += group('hh', '\\d{1,2}');
+					pattern += group('hh', romanOr('\\d{1,2}'));
 					break;
 				case 'h12':
 					pattern += group('h12', '1[0-2]|0?[1-9]');
@@ -165,7 +174,12 @@ function resolveMonthNum(str: string): number | undefined {
 	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
 }
 
-/** Parses input with a native braced mask, using the supplied date and calendar defaults. */
+/**
+ * Parses input with a native braced mask, using the supplied date and calendar defaults.
+ * Roman year, month, day, and 24-hour captures are converted to numbers; short years use a cutoff of 70.
+ * Returns undefined for a mismatch or a caught Temporal date, time zone, or calendar construction error.
+ * @throws Error for unknown braced tokens; mask compilation errors propagate to the caller.
+ */
 function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDateTime, tz: string, cal: string): Temporal.ZonedDateTime | undefined {
 	const rx = compileBracedPattern(fmt);
 	const match = rx.exec(input);
@@ -177,18 +191,23 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
-	if (yyyy) year = parseInt(yyyy, 10);
-	else if (yyVal) {
-		const yy = parseInt(yyVal, 10);
-		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+	if (yyyy) {
+		const rYear = fromRoman(yyyy);
+		year = Number.isFinite(rYear) ? rYear : parseInt(yyyy, 10);
+	} else if (yyVal) {
+		const rYear = fromRoman(yyVal);
+		const yy = Number.isFinite(rYear) ? rYear : parseInt(yyVal, 10);
+		year = yy < 100 ? (yy >= 70 ? 1900 + yy : 2000 + yy) : yy;
 	}
 
 	let month = 1;
 	const mm = getGroup('mm');
 	const mmm = getGroup('mmm');
 	const mon = getGroup('mon');
-	if (mm) month = parseInt(mm, 10);
-	else if (mmm || mon) {
+	if (mm) {
+		const rMonth = fromRoman(mm);
+		month = Number.isFinite(rMonth) ? rMonth : parseInt(mm, 10);
+	} else if (mmm || mon) {
 		const mNum = resolveMonthNum(mmm || mon!);
 		if (mNum) month = mNum;
 		else return undefined;
@@ -198,8 +217,10 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 
 	let day = 1;
 	const dd = getGroup('dd');
-	if (dd) day = parseInt(dd.replace(/[^0-9]/g, ''), 10);
-	else if (!yyyy && !yyVal && !mm && !mmm && !mon) {
+	if (dd) {
+		const rDay = fromRoman(dd);
+		day = Number.isFinite(rDay) ? rDay : parseInt(dd.replace(/[^0-9]/g, ''), 10);
+	} else if (!yyyy && !yyVal && !mm && !mmm && !mon) {
 		day = today.day;
 	}
 
@@ -210,8 +231,10 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 
 	const hh = getGroup('hh');
 	const h12 = getGroup('h12');
-	if (hh) hour = parseInt(hh, 10);
-	else if (h12) hour = parseInt(h12, 10);
+	if (hh) {
+		const rHour = fromRoman(hh);
+		hour = Number.isFinite(rHour) ? rHour : parseInt(hh, 10);
+	} else if (h12) hour = parseInt(h12, 10);
 
 	const mer = getGroup('mer');
 	if (mer) {

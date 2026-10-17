@@ -154,66 +154,88 @@ GitHub Pages deploys a single build artifact per repository. If pushes to `maint
 
 ---
 
-## 5. Dialects Engine Native Inclusion (`src/plugin/dialect/`)
+## 5. Dialects Strategy: Standalone Plugin with Zero-Config Opt-In Separation (`@tempo-dev/plugin-dialects`)
 
-### Strategic Context
-Rather than requiring developers to discover and install a separate community plugin (`@magmacomputing/tempo-plugin-dialects`), Tempo v5 will bundle the formatting and parsing dialects engine directly into the standard Tempo package.
+### Strategic Context: Preserving Core Purity Without the "Greenfield Tax"
+After deep architectural evaluation, Tempo v5 will **not** embed the dialects engine directly into Core Tempo. Instead, Dialects will remain a dedicated, first-class standalone plugin published as `@tempo-dev/plugin-dialects` (with `@magmacomputing/tempo-plugin-dialects` maintained for backwards compatibility).
 
-This provides instant, drop-in compatibility for migrating codebases from **Moment.js, Day.js, Luxon, date-fns, and POSIX `strftime`**, advancing Tempo's core mission of "Humanizing Temporal" with zero onboarding friction.
+#### Why Dialects Remain Standalone
+1. **No "Greenfield Tax" on Modern Codebases**:
+   Tempo's native braced syntax (`{YYYY}-{MM}-{DD}`, `{HH}:{mm}:{ss}`) is modern, unambiguous, and fast. Embedding legacy layout compilers and regex tables for Oracle `TO_CHAR`, PHP `date()`, and Go reference formats into core would penalize new greenfield projects that never need legacy ecosystem shims.
+2. **Edge & Serverless Runtime Efficiency**:
+   In modern edge isolates (Cloudflare Workers, V8 isolates, AWS Lambda@Edge), bundle size and cold-start execution times are critical. Keeping dialects opt-in guarantees that Core Tempo remains hyper-lean and competitive with ultra-light alternatives.
+3. **Separation of Core Identity vs. Migration Bridging**:
+   Core Tempo's mission is "Humanizing Temporal" through clean, immutable primitives. Dialects serve primarily as a transition bridge for teams migrating from **Moment.js, Day.js, Luxon, date-fns, and POSIX `strftime`**. A standalone plugin honors both concerns without conflating them.
 
-### Architectural Location: `src/plugin/dialect/`
-To maintain a clean internal project structure and avoid top-level `src/` directory clutter, the dialect engine will live alongside other built-in plugin subsystems under `src/plugin/` (aligning with `src/plugin/term/` and `src/plugin/extend/`):
+---
 
+### The "Zero-Config Import, Opt-In Separation" Architecture
+To eliminate onboarding friction while keeping Core Tempo completely pristine, `@tempo-dev/plugin-dialects` implements a 4-tier modular consumption model:
+
+#### 1. Zero-Config Drop-In (Side-Effect Auto-Registration)
+For maximum developer ergonomic convenience during migrations, a simple side-effect import automatically mounts shims and registers all 5 compilers onto global `Tempo` and instance prototypes without configuration boilerplate:
+
+```typescript
+import { Tempo } from '@tempo-dev/core';
+import '@tempo-dev/plugin-dialects'; // Zero-config drop-in
+
+// Immediately available across the application:
+const t = Tempo.now();
+
+// 1. Luxon / Moment convenience shims
+t.toFormat('yyyy-MM-dd HH:mm:ss');
+Tempo.fromFormat('2026-10-15', 'YYYY-MM-DD');
+
+// 2. Direct dialect instance methods
+t.dialects.sql('YYYY-MM-DD HH24:MI:SS'); // Oracle / SQL TO_CHAR
+t.dialects.php('Y-m-d H:i:s');           // PHP date()
+t.dialects.go('2006-01-02 15:04:05');    // Go reference layout
 ```
-packages/tempo/src/plugin/dialect/
-├── dialect.constants.ts       # DIALECT and DIALECT_ALIAS enums
-├── dialect.type.ts            # DialectsStaticNamespace, DialectsInstanceNamespace types
-├── dialect.registry.ts        # formatWithDialect, parseWithDialect, translateMomentToLdml
-├── compiler/
-│   ├── ldml.compiler.ts       # Unicode LDML layout compiler & cache
-│   ├── strftime.compiler.ts   # POSIX strftime formatter and parser
-│   └── explain.ts             # .explain() token breakdown and migration assistant
-├── shims/
-│   └── luxon.shim.ts          # t.toFormat() and Tempo.fromFormat() convenience shims
-├── dialect.plugin.ts          # DialectsPlugin definition
-└── dialect.index.ts           # Public exports
+
+#### 2. Explicit Registration for Scoped / Containerized Lifecycles
+For enterprise applications, micro-frontends, or environments enforcing strict dependency injection without global prototype augmentation:
+
+```typescript
+import { Tempo } from '@tempo-dev/core';
+import { DialectsPlugin } from '@tempo-dev/plugin-dialects';
+
+Tempo.use(DialectsPlugin);
 ```
 
-### Full vs. Core Modularity
-* **Standard Tempo (`tempo.index.ts`)**: Auto-registers `DialectsPlugin` on startup alongside `StandardTerms`, `FormatModule`, and `ParseModule`. Setting `Tempo.init({ dialect: 'moment' })` works instantly with zero manual plugin wiring.
-* **Tempo Core (`core.index.ts`)**: Dialects remains completely **unregistered** in `@magmacomputing/tempo/core` (or `@tempo-dev/core`), preserving zero-overhead and tree-shakeability for minimalist applications and library authors.
+#### 3. Granular Sub-Dialect Imports (Maximum Tree-Shaking)
+Developers migrating from a single ecosystem (e.g., only Luxon or only Moment) can import specific compilers, incurring only ~1–2 KB rather than the full dialect suite:
 
-### Package Exports & Type Augmentation
-* **Subpath Exports (`package.json`)**:
-  ```json
-  "./dialect": {
-    "types": "./dist/plugin/dialect/dialect.index.d.ts",
-    "import": "./dist/plugin/dialect/dialect.index.js",
-    "default": "./dist/plugin/dialect/dialect.index.js"
-  }
-  ```
-* **Type Declaration Merging (`tempo.type.ts`)**:
-  - `Tempo.dialects` attached to `TempoStatic`.
-  - `t.dialects` and `t.toFormat(mask, options)` attached to `interface Tempo`.
-  - `Tempo.fromFormat(input, mask, options)` attached to `TempoStatic`.
+```typescript
+// Only imports and registers the LDML compiler and .toFormat() shim:
+import '@tempo-dev/plugin-dialects/luxon';
+```
 
-### Monorepo Retirement & npm Deprecation
-Following the precedent set when `packages/plugins/astro` was retired and migrated to `packages/plugins/celestial`:
-1. The standalone `packages/plugins/dialects/` directory in the monorepo will be retired upon the v5 release.
-2. The npm package `@magmacomputing/tempo-plugin-dialects` will be marked as `@deprecated` on npmjs:
-   ```text
-   npm deprecate @magmacomputing/tempo-plugin-dialects "Dialects are now built directly into Tempo v5. Use @magmacomputing/tempo or @tempo-dev/core."
-   ```
-3. Existing unit tests (38 tests) will be migrated to `packages/tempo/test/plugin/dialect/`.
+#### 4. Introspection & Migration Tooling Separation (`/migrate`)
+Developer introspection and egress utilities are kept in a dedicated subpath to avoid bundling ~28 KB minified (~8.4 KB gzipped) of human-readable AST tokens and egress translation dictionaries into production runtimes:
+
+```typescript
+import { explain, exportDialect, convert } from '@tempo-dev/plugin-dialects/migrate';
+
+// AST breakdown:
+const breakdown = explain('YYYY-MM-DD HH:mm:ss', 'moment');
+
+// Cross-dialect transpilation:
+const ldmlMask = convert('YYYY-MM-DD', 'moment', 'ldml');
+```
+
+---
+
+### Monorepo Architecture & Long-Term Support
+* **Workspace Status**: `packages/plugins/dialects/` remains an active, first-class workspace package in the monorepo and will **not** be deprecated upon v5.
+* **Dual Publishing**: The package will be dual-published under `@tempo-dev/plugin-dialects` and `@magmacomputing/tempo-plugin-dialects`.
+* **TypeScript Types**: Automated type augmentation via `declare module '@tempo-dev/core'` ensures seamless autocomplete on `t.dialects`, `t.toFormat()`, and `Tempo.fromFormat()`.
 
 ---
 
 ## 6. Core Byte-Budget Optimization: Extracting Low-Use Features
 
-### Strategic Context: Net-Negative Byte Budget
-Adding native format dialects to standard Tempo in v5 introduces ~4–5 KB of minified code (layout compilers, translation maps, and regex shims). To offset this and ensure Tempo v5 remains lean, fast, and competitive with ultra-light alternatives, v5 should audit and extract niche, high-complexity features into opt-in plugins.
-
-This achieves a **net-negative byte impact**: standard users gain the universal formatting features they expect (Moment/LDML masks), while shedding niche code paths they rarely touch.
+### Strategic Context: Maximizing Core Leanliness
+Because format dialects will remain a standalone plugin rather than being embedded into Core Tempo, Core Tempo does not need to absorb any compiler or regex overhead. By additionally auditing and extracting niche, high-complexity features into opt-in plugins, Tempo v5 achieves a **substantial net-negative byte impact** compared to v4.
 
 ---
 
@@ -246,9 +268,9 @@ The "Slick" engine is a domain-specific mini-language inside Tempo designed for 
   t.set({ wkd: '>Fri' });
   ```
 * **Net Byte Savings**:
-  - Extracting Slick saves ~8–12 KB.
-  - Adding Dialects adds ~4–5 KB.
-  - **Net Result for Core Tempo v5:** **~4–7 KB reduction in total package bundle size**, with significantly simpler core mutation and term resolution code paths.
+  - Extracting Slick saves **~8–12 KB**.
+  - Dialects remains a standalone plugin (**0 KB added to Core**).
+  - **Net Result for Core Tempo v5:** **~8–12 KB reduction in total package bundle size**, with significantly simpler core mutation and term resolution code paths.
 
 ---
 
@@ -270,7 +292,7 @@ When a documentation build hosts both the latest v5 docs at root `/` and archive
    If the full-text bundle ([`llms-full.txt`](file:///home/michael/Project/magma/packages/tempo/public/llms-full.txt)) recursively merges all Markdown documents across the site, an AI model (in Cursor, VS Code / GitHub Copilot, Antigravity, Claude, or ChatGPT) ingests conflicting rules side-by-side:
    - **`Tempo.now()`**: Returns a `bigint` nanosecond timestamp in v4 vs. a `Tempo` instance in v5.
    - **Package Scopes**: `@magmacomputing/tempo` in v4 vs. `@tempo-dev/core` in v5.
-   - **Dialects**: External community plugin `@magmacomputing/tempo-plugin-dialects` in v4 vs. native built-in `Tempo.dialects` / `t.toFormat()` in v5.
+   - **Dialects**: Legacy plugin setup with manual registration in v4 vs. first-class standalone plugin with zero-config drop-in import (`import '@tempo-dev/plugin-dialects'`) in v5.
    - **Slick Syntax**: Built-in core grammar (`#qtr.>q1`, `{ mm: '>2' }`) in v4 vs. external `@tempo-dev/plugin-slick` in v5.
 2. **Degraded AI Output Quality**:
    An AI assistant ingesting mixed-version documentation cannot reliably deduce which paradigm the developer's project targets, leading to subtle bugs, broken imports, and hallucinated hybrid syntax.
@@ -292,7 +314,7 @@ tempo.dev/
 
 #### 1. Root Files (`/llms.txt` and `/llms-full.txt`)
 * **Target Audience**: New projects and teams upgrading to v5.
-* **Scope**: Exclusively documents v5 syntax, `@tempo-dev/core` imports, `Tempo.now()` as an instance factory, and native format dialects.
+* **Scope**: Exclusively documents v5 syntax, `@tempo-dev/core` imports, `Tempo.now()` as an instance factory, and first-class standalone plugins (such as `@tempo-dev/plugin-dialects`).
 * **Header Metadata**:
   ```markdown
   # Tempo: Immutable Date-Time Engine & AI Syntax Rules (v5.x - Latest)
@@ -319,7 +341,7 @@ tempo.dev/
   > **Key Breaking Differences in this v4.x Archive:**
   > 1. `Tempo.now()` returns primitive `bigint` nanoseconds (in v5, `Tempo.now()` returns an immutable `Tempo` instance).
   > 2. Package namespace is `@magmacomputing/tempo` (in v5, core is `@tempo-dev/core`).
-  > 3. Dialects require the external plugin `@magmacomputing/tempo-plugin-dialects` (built into standard v5).
+  > 3. Dialects require external plugin `@magmacomputing/tempo-plugin-dialects` (in v5, streamlined via `@tempo-dev/plugin-dialects` zero-config import).
   > 4. Slick shorthand syntax (`#qtr.>q1`) is built-in (in v5, extracted to `@tempo-dev/plugin-slick`).
   ```
 * **Full-Text Bundle Headline (`/v4/llms-full.txt`)**:
@@ -362,5 +384,121 @@ Documentation and developer onboarding guides should instruct users on how to co
 | :--- | :--- | :--- |
 | **Tempo v5.x (Latest)** | `https://tempo.dev/llms.txt` | `@https://tempo.dev/llms.txt Use modern Tempo v5 syntax with @tempo-dev/core` |
 | **Tempo v4.x (Legacy LTS)** | `https://tempo.dev/v4/llms.txt` | `@https://tempo.dev/v4/llms.txt Use legacy Tempo v4 syntax with @magmacomputing/tempo` |
+
+---
+
+## 7. Format Token Architecture: Revisit and Rationalize `{tz}` & Remove Fused Modifiers
+
+### Classification
+* **Type:** Architectural Rationalization & Deprecation of Fused Modifiers.
+* **Target Milestone:** `v5.0.0`
+* **Affected API:** Format engine `{tz:...}` token resolution (`packages/tempo/src/module/module.format.ts`)
+
+---
+
+### Problem Statement & Architectural Flaws in `v4.x`
+
+1. **Violation of Orthogonal Modifier Chaining (Fused Words)**:
+   - In early `v4.x`, concatenated modifier keywords like `{tz:offsetcompact}` and `{tz:offsetshort}` were introduced.
+   - Fused keywords violate Tempo's core design philosophy: **independent, orthogonal modifier composition** (e.g., `{token:mod1:mod2:...}`).
+   - Having both `{tz:offset:compact}` and `{tz:offsetcompact}` creates cognitive friction, redundant switch branches in the format engine, and inconsistent user expectations.
+
+2. **Inconsistent Component Token Naming**:
+   - Throughout Tempo Core, hour, minute, and second time components are standardized on `{hh}`, `{mi}`, and `{ss}` (`{mm}` is reserved exclusively for month numbers).
+   - Early implementations of offset sub-components loosely allowed `:mm` and `:sec`. This conflicts with Tempo's standard time tokens.
+
+3. **Ad-Hoc LDML Shorthand Pollution (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`)**:
+   - Single-letter pseudo-modifiers borrowed from LDML UTS #35 (`z`, `zz`, `zzz`, `zzzz`) were grafted directly into `{tz}` handling in Core.
+   - This creates syntactic ambiguity and collisions: for example, `:z` as an LDML shorthand meant "short offset", while in ISO-8601 / RFC-3339 `:z` means "emit 'Z' if UTC".
+   - External dialect conventions belong in `@magmacomputing/tempo-plugin-dialects`, while native Tempo Core tokens must remain clean, explicit, and self-documenting.
+
+---
+
+### Planned Architecture for `v5.0.0`
+
+#### 1. Canonical Base Token & Roles
+* `{tz}` strictly represents the time zone identifier or localized name:
+  * `{tz}` &rarr; IANA time zone identifier (e.g. `'Australia/Sydney'`, `'UTC'`).
+  * `{tz:short}` &rarr; Short localized time zone abbreviation (e.g. `'AEST'`).
+  * `{tz:long}` / `{tz:name}` &rarr; Full localized time zone name (e.g. `'Australian Eastern Standard Time'`).
+
+#### 2. Orthogonal Composition for Offsets (`{tz:offset:...}`)
+All numeric time zone offsets are rooted in the single `:offset` modifier, with fully orthogonal chained sub-modifiers:
+
+| Sub-Modifier | Category | Role | Example Output |
+| :--- | :--- | :--- | :--- |
+| **(none)** | Default | Full standard ISO-8601 offset (`±HH:MM`) | `+10:00`, `-05:00`, `+00:00` |
+| **`:hh`** | Component | Signed hour component only (`±HH`) | `+10`, `-05`, `+00` |
+| **`:mi`** | Component | Unsigned minute component only (`MM`) | `00`, `30`, `45` |
+| **`:ss`** | Component | Include seconds component (`±HH:MM:SS`) | `+10:00:00`, `+05:30:00` |
+| **`:compact`**| Formatting | Strip colon separators | `+1000`, `+100000` |
+| **`:short`** | Formatting | Omit `:00` when minutes and seconds are zero | `+10` (if `+10:00`), `+10:30` |
+| **`:z`** | Indicator | Emit `'Z'` when UTC, else standard offset | `'Z'` (if `+00:00`), else `+10:00` |
+
+#### 3. Seamless Chained Composition in v5
+Developers can compose these modifiers orthogonally in any logical combination:
+```typescript
+t.format('{tz:offset}');            // "+10:00"
+t.format('{tz:offset:compact}');    // "+1000"     (replaces legacy {tz:offsetcompact})
+t.format('{tz:offset:short}');      // "+10"       (replaces legacy {tz:offsetshort})
+t.format('{tz:offset:ss}');         // "+10:00:00" (replaces legacy {tz:offset:sec})
+t.format('{tz:offset:compact:ss}'); // "+100000"
+t.format('{tz:offset:z}');          // "Z" (if UTC) or "+10:00"
+t.format('{tz:offset:compact:z}');  // "Z" (if UTC) or "+1000"
+t.format('{tz:offset:short:z}');    // "Z" (if UTC) or "+10"
+t.format('{tz:offset:compact:ss:z}');// "Z" (if UTC) or "+100000"
+```
+
+---
+
+### Removal & Migration Pathway for v5.0.0
+
+1. **Remove Fused Modifier Words**:
+   - `offsetcompact` &rarr; Migrate to `{tz:offset:compact}`.
+   - `offsetshort` &rarr; Migrate to `{tz:offset:short}`.
+2. **Remove Raw LDML Shorthands from Core**:
+   - `{tz:z}` &rarr; Migrate to `{tz:offset:short}`.
+   - `{tz:zz}` &rarr; Migrate to `{tz:offset}`.
+   - `{tz:zzz}` &rarr; Migrate to `{tz:offset:compact}`.
+   - Codebases requiring raw LDML masks (`z`, `ZZ`, `ZZZZZ`) use `@magmacomputing/tempo-plugin-dialects`.
+3. **Deprecate Sub-Modifier Aliases**:
+   - `:sec` &rarr; Normalized to canonical `:ss`.
+   - `:mm` (in offset context) &rarr; Normalized to canonical `:mi` to eliminate confusion with month `{mm}`.
+
+---
+
+## 8. Week Token Architecture: Formalizing `{woy}` (ISO Week) and Reclaiming `{ww}` for Calendar Week
+
+### Classification
+* **Type:** Semantic Reassignment of Legacy Token Alias & Getter Cleanup.
+* **Target Milestone:** `v5.0.0`
+* **Affected API:** `{ww}` format token and `t.ww` instance getter.
+
+---
+
+### Problem Statement & Architectural Flaws in `v4.x`
+
+1. **Redundant Aliasing of ISO Week in v4**:
+   - In `v4.x`, `{woy}`, `{wy}`, and `{ww}` all point to the same ISO 8601 week calculation (`getISOWeekOfYear`).
+   - The instance getter `t.ww` was already deprecated in `tempo.class.ts` with the notice:
+     `@deprecated Use woy (Tempo canonical) or zdt.weekOfYear instead. To be removed in v5.0.0.`
+2. **Missing Native Token for Calendar Week (Jan 1 Basis)**:
+   - Non-ISO database engines (such as Oracle SQL `WW`) define week of year where Week 1 begins on January 1st and ends on January 7th (`Math.ceil(doy / 7)`).
+   - In v4, this is temporarily provided via `{woy:cal}` with a deprecation notice.
+
+---
+
+### Planned Architecture for `v5.0.0`
+
+| Token / API | Role in `v4.x` | Role in `v5.0.0` |
+| :--- | :--- | :--- |
+| **`{woy}`** | Canonical ISO Week of Year (`01`–`53`) | Canonical ISO Week of Year (`01`–`53`) |
+| **`t.woy`** | Canonical ISO Week instance getter | Canonical ISO Week instance getter |
+| **`{ww}`** | Legacy alias for `{woy}` (ISO week) | **Reclaimed for Calendar Week (Jan 1 Basis, Oracle `WW`)** |
+| **`t.ww`** | Deprecated getter | Removed (or remapped to calendar week) |
+| **`{woy:cal}`** | Transitory format token in v4.7.0 | Deprecated in favor of native `{ww}` |
+| **`{wom}`** | Week of Month (`1`–`5`, Oracle `W`, LDML `W`) | Week of Month (`1`–`5`) |
+
+
 
 

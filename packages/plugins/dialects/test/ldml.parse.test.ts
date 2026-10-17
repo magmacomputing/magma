@@ -92,4 +92,45 @@ describe('Unicode LDML Parsing', () => {
 		expect(t2.dd).toBe(24);
 		expect(t2.mm).toBe(10);
 	});
+
+	it('parses week of year and validates week limits for the given year', () => {
+		const validWeek = Tempo.fromFormat('2025-52-1', 'yyyy-ww-e');
+		expect(validWeek.isValid).toBe(true);
+		expect(validWeek.yy).toBe(2025);
+
+		// 2025 has 52 ISO weeks, so week 53 rolls into 2026 and should be rejected
+		const invalidWeek = Tempo.fromFormat('2025-53-1', 'yyyy-ww-e', { error: 'catch' });
+		expect(invalidWeek.isValid).toBe(false);
+	});
+
+	it('parses day of year (DDD) and ordinal day (Do)', () => {
+		const tDoy = Tempo.fromFormat('2026-297', 'yyyy-DDD');
+		expect(tDoy.isValid).toBe(true);
+		expect(tDoy.yy).toBe(2026);
+		expect(tDoy.mm).toBe(10);
+		expect(tDoy.dd).toBe(24);
+
+		const tOrd = Tempo.fromFormat('24th October 2026', 'Do MMMM yyyy');
+		expect(tOrd.isValid).toBe(true);
+		expect(tOrd.yy).toBe(2026);
+		expect(tOrd.mm).toBe(10);
+		expect(tOrd.dd).toBe(24);
+	});
+
+	it('parses quarter tokens (Q, QQ, QQQ, QQQQ)', () => {
+		const t1 = Tempo.fromFormat('2026-4', 'yyyy-Q');
+		expect(t1.isValid).toBe(true);
+		expect(t1.yy).toBe(2026);
+		expect(t1.mm).toBe(10);
+
+		const t2 = Tempo.fromFormat('2026-02', 'yyyy-QQ');
+		expect(t2.isValid).toBe(true);
+		expect(t2.yy).toBe(2026);
+		expect(t2.mm).toBe(4);
+
+		const t3 = Tempo.fromFormat('2026-Q3', 'yyyy-QQQ');
+		expect(t3.isValid).toBe(true);
+		expect(t3.yy).toBe(2026);
+		expect(t3.mm).toBe(7);
+	});
 });

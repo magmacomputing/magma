@@ -6,9 +6,9 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-The **Dialects Plugin** enables Tempo to seamlessly format and parse dates using established external formatting standards, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime` (C, Python, Linux)**.
+The **Dialects Plugin** enables Tempo to seamlessly format and parse dates using established external formatting standards, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **POSIX `strftime` (C, Python, Linux)**, **Moment.js / Day.js**, and **Oracle / SQL `TO_CHAR` (PostgreSQL, Snowflake, Redshift)**.
 
-It provides transparent drop-in compatibility shims, multi-candidate fallback parsing, and an automated `.explain()` translation engine to assist incremental migrations to native Tempo `{token}` syntax.
+It provides transparent drop-in compatibility shims, multi-candidate fallback parsing, an automated `.explain()` ingestion engine, `.export()` for emitting dialect models from Tempo tokens, and `.convert()` for direct bidirectional transpilation between external ecosystems.
 
 ---
 
@@ -53,8 +53,11 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 | Dialect Identifier | Canonical Constant | Common Aliases | Format Example | Primary Ecosystems |
 | :--- | :--- | :--- | :--- | :--- |
 | `'ldml'` | `DIALECT.Ldml` | `'luxon'`, `'datefns'`, `'cldr'` | `yyyy-MM-dd HH:mm:ss.SSS` | Luxon, date-fns, CLDR, Unicode UTS #35 |
-| `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog, SQL |
+| `'strftime'` | `DIALECT.Strftime` | `'posix'`, `'c'`, `'python'` | `%Y-%m-%d %H:%M:%S` | POSIX C, Python datetime, Linux Syslog |
 | `'moment'` | `DIALECT.Moment` | `'dayjs'` | `YYYY-MM-DD HH:mm:ss` | Moment.js, Day.js |
+| `'oracle'` | `DIALECT.Oracle` | `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'` | `YYYY-MM-DD HH24:MI:SS` | Oracle, PostgreSQL, Snowflake, AWS Redshift |
+| `'php'` | `DIALECT.Php` | `'laravel'`, `'wordpress'` | `Y-m-d H:i:s` | PHP, Laravel, WordPress, Symfony |
+| `'go'` | `DIALECT.Go` | `'golang'` | `2006-01-02 15:04:05` | Go (`time.Format`, `time.Parse`) |
 
 > [!TIP]
 > **Native Tempo Syntax is Optimal**
@@ -71,13 +74,21 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`t.toFormat(mask, options?)`** | Instance | Format mask string, options | `string` | **Luxon Drop-In Formatter**. Formats the instance using LDML (or explicit dialect). |
 | **`t.dialects.ldml(mask)`** | Instance | Unicode LDML mask | `string` | Fast-path formatter for Unicode LDML / Luxon / date-fns masks. |
 | **`t.dialects.strftime(mask)`** | Instance | POSIX strftime mask | `string` | Fast-path formatter for POSIX strftime specifiers (`%Y`, `%m`, `%d`, etc.). |
-| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%` specifiers. |
-| **`t.dialects.explain(mask, dialect?)`** | Instance | External format mask | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
-| **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask. |
-| **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser (first matching mask succeeds). |
+| **`t.dialects.oracle(mask)`** | Instance | Oracle / SQL mask | `string` | Fast-path formatter for Oracle / PostgreSQL / Snowflake format models (`YYYY`, `HH24`, `MI`, etc.). |
+| **`t.dialects.sql(mask)`** | Instance | SQL / Oracle mask | `string` | Convenience alias for `t.dialects.oracle(mask)`. |
+| **`t.dialects.php(mask)`** | Instance | PHP date mask | `string` | Fast-path formatter for PHP `date()` specifiers (`Y`, `m`, `d`, `H`, `i`, `s`, etc.). |
+| **`t.dialects.go(mask)`** | Instance | Go reference mask | `string` | Fast-path formatter for Go reference time layout (`2006`, `01`, `02`, `15`, `04`, `05`). |
+| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%`, Go, and SQL specifiers. |
+| **`t.dialects.explain(mask, dialectOrOptions?)`** | Instance | External format mask, dialect name or `{ dialect }` | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
+| **`t.dialects.export(pattern, dialectOrOptions?)`** | Instance | Native Tempo pattern, target dialect name or `{ dialect }` | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
+| **`t.dialects.convert(mask, toOrOptions)`** / **`convert(mask, from, to)`** | Instance | Mask, target dialect, or `{ from, to }` options | `ConvertResult` | Converts a format mask directly from one dialect to another (source dialect auto-inferred if omitted). |
+| **`Tempo.fromFormat(input, mask, options?)`** | Static | Date string, mask, options | `Tempo` | **Luxon Drop-In Parser**. Parses an input string using an LDML mask (or auto-detected dialect). |
+| **`Tempo.fromFormats(input, masks[], options?)`** | Static | Date string, candidate masks | `Tempo` | Multi-candidate fallback parser with auto-dialect detection (first matching mask succeeds). |
 | **`Tempo.dialects.parse(input, mask, dialect?)`** | Static | Date string, mask, dialect | `Tempo` | Explicit dialect parser. |
 | **`Tempo.dialects.fromFormats(input, masks[], ...)`**| Static | Date string, candidate masks | `Tempo` | Explicit multi-candidate fallback parser. |
-| **`Tempo.dialects.explain(mask, dialect?)`** | Static | External format mask | `ExplainResult` | AST analyzer translating legacy masks into native Tempo `{token}` syntax. |
+| **`Tempo.dialects.explain(mask, dialectOrOptions?)`** | Static | External format mask, dialect name or `{ dialect }` | `ExplainResult` | AST analyzer translating legacy masks into native Tempo `{token}` syntax. |
+| **`Tempo.dialects.export(pattern, dialectOrOptions?)`** | Static | Native Tempo pattern, target dialect name or `{ dialect }` | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
+| **`Tempo.dialects.convert(mask, toOrOptions)`** / **`convert(mask, from, to)`** | Static | Mask, target dialect, or `{ from, to }` options | `ConvertResult` | Transpiles a format mask directly between dialects (source dialect auto-inferred if omitted). |
 
 ---
 
@@ -85,6 +96,7 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 
 To explore technical deep-dives, token compatibility matrices, and production patterns, consult the dedicated guides below:
 
+- **[Design Strategy & Deliberate Omissions](./design-philosophy-and-omissions.md)**: Why Tempo engineered `{token:modifier}` over historical dialects, benefits of all-lowercase tokens and getter symmetry, and why specific legacy features were omitted.
 - **[Migration & Legacy Compatibility](./migration-and-compatibility.md)**: Resolving the `YYYY` vs `yyyy` year trap, handling bracketed/quoted escaping, using `.explain()` for automated codemods, and performance benchmarks.
 - **[Token Specification & Cross-Ecosystem Matrix](./token-specification.md)**: Exhaustive token lookup table mapping LDML, Moment, strftime, and native Tempo tokens across years, months, days, sub-seconds, and timezones.
 - **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Multi-candidate webhook ingestion pipelines, enterprise POSIX syslog formatting, and zero-downtime gradual modernization recipes.

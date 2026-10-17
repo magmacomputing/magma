@@ -24,7 +24,7 @@ export default defineConfig({
 	test: {
 		globals: true,
 		pool: 'forks',
-		maxWorkers: 2,
+		maxWorkers: process.env.CI ? 2 : undefined,
 		slowTestThreshold: 2_000,
 		include: ['test/**/*.{test,spec}.ts'],
 		exclude: [

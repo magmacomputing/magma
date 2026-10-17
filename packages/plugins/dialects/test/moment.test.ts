@@ -12,6 +12,26 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		expect(dt.format('MMMM Do YYYY', { dialect: DIALECT.Moment })).toBe('October 24th 2026');
 		expect(dt.format('hh:mm A', { dialect: DIALECT.Moment })).toBe('03:30 PM');
 		expect(dt.format('hh:mm a', { dialect: DIALECT.Moment })).toBe('03:30 pm');
+
+		// Day of year
+		const jan5 = new Tempo('2026-01-05');
+		expect(jan5.format('DDDD', { dialect: DIALECT.Moment })).toBe('005');
+		expect(jan5.format('DDD', { dialect: DIALECT.Moment })).toBe('5');
+		expect(dt.format('DDDD', { dialect: DIALECT.Moment })).toBe('297');
+
+		// ISO week
+		const feb1 = new Tempo('2026-02-01');
+		expect(feb1.format('WW', { dialect: DIALECT.Moment })).toBe('05');
+		expect(feb1.format('W', { dialect: DIALECT.Moment })).toBe('5');
+		expect(dt.format('WW', { dialect: DIALECT.Moment })).toBe('43');
+
+		// ISO week year
+		expect(dt.format('GGGG', { dialect: DIALECT.Moment })).toBe('2026');
+		expect(dt.format('GG', { dialect: DIALECT.Moment })).toBe('26');
+
+		// Quarter
+		expect(dt.format('Q', { dialect: DIALECT.Moment })).toBe('4');
+		expect(dt.format('[Q]Q', { dialect: DIALECT.Moment })).toBe('Q4');
 	});
 
 	it('parses Moment.js masks with token translation', () => {
@@ -27,5 +47,21 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		expect(t2.yy).toBe(2026);
 		expect(t2.mm).toBe(10);
 		expect(t2.dd).toBe(24);
+
+		const tDoy = Tempo.dialects.parse('2026-005', 'YYYY-DDDD', DIALECT.Moment);
+		expect(tDoy.isValid).toBe(true);
+		expect(tDoy.yy).toBe(2026);
+		expect(tDoy.mm).toBe(1);
+		expect(tDoy.dd).toBe(5);
+
+		const tWeek = Tempo.dialects.parse('2026-W43', 'GGGG-[W]WW', DIALECT.Moment);
+		expect(tWeek.isValid).toBe(true);
+		expect(tWeek.yy).toBe(2026);
+		expect(tWeek.mm).toBe(10);
+
+		const tQtr = Tempo.dialects.parse('2026-Q4', 'YYYY-[Q]Q', DIALECT.Moment);
+		expect(tQtr.isValid).toBe(true);
+		expect(tQtr.yy).toBe(2026);
+		expect(tQtr.mm).toBe(10);
 	});
 });

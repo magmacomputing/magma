@@ -1,12 +1,22 @@
 import { pad, suffix, WeakCache } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
-
-type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
+import {
+	type FormatterFn,
+	type ParseOptions,
+	escapeRegex,
+	resolveMonth,
+	createGroupExtractor,
+	resolveParseContext,
+	resolveTimeComponents,
+	resolveDayOfYear,
+	fromIsoWeek,
+	getIsoWeek,
+} from './shared.compiler.js';
 
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(yyyy|YYYY|MMMM|LLLL|EEEE|cccc|SSS|MMM|LLL|EEE|ccc|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|a|Do|d|H|h|k|m|s|S|c|e|E|y|L|M|ZZZZZ|ZZZZ|ZZZ|ZZ|Z|zzzz|zzz|zz|z)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aa|Do|ww|QQ|qq|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -38,16 +48,41 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					parts.push((z) => pad(z.year, 4));
 					break;
 				case 'YYYY':
-					parts.push((z) => pad((z as any).yearOfWeek ?? z.year, 4));
+					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).yearOfWeek, 4));
 					break;
 				case 'yy':
 					parts.push((z) => pad(z.year % 100, 2));
 					break;
 				case 'YY':
-					parts.push((z) => pad(((z as any).yearOfWeek ?? z.year) % 100, 2));
+					parts.push((z) => pad(((getIsoWeek(z.toPlainDate()).yearOfWeek % 100) + 100) % 100, 2));
 					break;
 				case 'y':
 					parts.push((z) => String(z.year));
+					break;
+				case 'ww':
+					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).weekOfYear, 2));
+					break;
+				case 'w':
+					parts.push((z) => String(getIsoWeek(z.toPlainDate()).weekOfYear));
+					break;
+				case 'W':
+					parts.push((z) => String(Math.ceil(z.day / 7)));
+					break;
+				case 'QQQQ':
+				case 'qqqq':
+					parts.push((z) => `${suffix(Math.ceil(z.month / 3))} quarter`);
+					break;
+				case 'QQQ':
+				case 'qqq':
+					parts.push((z) => `Q${Math.ceil(z.month / 3)}`);
+					break;
+				case 'QQ':
+				case 'qq':
+					parts.push((z) => pad(Math.ceil(z.month / 3), 2));
+					break;
+				case 'Q':
+				case 'q':
+					parts.push((z) => String(Math.ceil(z.month / 3)));
 					break;
 
 				case 'MMMM':
@@ -75,6 +110,20 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'd':
 					parts.push((z) => String(z.day));
+					break;
+				case 'DDD':
+					parts.push((z) => pad(z.dayOfYear, 3));
+					break;
+				case 'D':
+					parts.push((z) => String(z.dayOfYear));
+					break;
+				case 'GGGG':
+					parts.push((z) => (z.year > 0 ? 'Anno Domini' : 'Before Christ'));
+					break;
+				case 'G':
+				case 'GG':
+				case 'GGG':
+					parts.push((z) => (z.year > 0 ? 'AD' : 'BC'));
 					break;
 
 				case 'HH':
@@ -126,15 +175,22 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					parts.push((z) => String(z.second));
 					break;
 
+				case 'SSSSSSSSS':
+				case 'SSSSSSSS':
+				case 'SSSSSSS':
+				case 'SSSSSS':
+				case 'SSSSS':
+				case 'SSSS':
 				case 'SSS':
-					parts.push((z) => pad(z.millisecond, 3));
-					break;
 				case 'SS':
-					parts.push((z) => pad(Math.floor(z.millisecond / 10), 2));
+				case 'S': {
+					const prec = token.length;
+					parts.push((z) => {
+						const nsTotal = z.millisecond * 1_000_000 + z.microsecond * 1000 + z.nanosecond;
+						return pad(nsTotal, 9).slice(0, prec);
+					});
 					break;
-				case 'S':
-					parts.push((z) => String(Math.floor(z.millisecond / 100)));
-					break;
+				}
 
 				case 'aa':
 					parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
@@ -158,12 +214,14 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 
 				case 'ZZZZZ':
-				case 'ZZZZ':
-				case 'ZZZ':
-				case 'Z':
 					parts.push((z) => z.offset);
 					break;
+				case 'ZZZZ':
+					parts.push((z) => `GMT${z.offset}`);
+					break;
+				case 'ZZZ':
 				case 'ZZ':
+				case 'Z':
 					parts.push((z) => z.offset.replace(':', ''));
 					break;
 				case 'zzzz':
@@ -221,7 +279,7 @@ export function compileLdmlParser(mask: string): RegExp {
 		const index = match.index!;
 		if (index > lastIndex) {
 			const literal = mask.slice(lastIndex, index);
-			pattern += literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(literal);
 		}
 
 		const token = match[0];
@@ -229,19 +287,48 @@ export function compileLdmlParser(mask: string): RegExp {
 			const unquoted = token.length === 2 && token === "''"
 				? "'"
 				: token.slice(1, -1).replace(/''/g, "'");
-			pattern += unquoted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(unquoted);
 		} else {
 			switch (token) {
 				case 'yyyy':
-				case 'YYYY':
 					pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
 					break;
+				case 'YYYY':
+					pattern += group('yyyy_week', '[+-]?\\d{4,6}|\\d{4}');
+					break;
 				case 'yy':
-				case 'YY':
 					pattern += group('yy', '\\d{2}');
+					break;
+				case 'YY':
+					pattern += group('yy_week', '\\d{2}');
 					break;
 				case 'y':
 					pattern += group('yyyy', '\\d{1,6}');
+					break;
+				case 'ww':
+					pattern += group('week_of_year', '\\d{2}');
+					break;
+				case 'w':
+					pattern += group('week_of_year', '\\d{1,2}');
+					break;
+				case 'W':
+					pattern += group('wom', '\\d{1}');
+					break;
+				case 'QQQQ':
+				case 'qqqq':
+					pattern += group('quarter_name', '(?:1st|2nd|3rd|4th) quarter');
+					break;
+				case 'QQQ':
+				case 'qqq':
+					pattern += group('quarter_abbr', 'Q[1-4]');
+					break;
+				case 'QQ':
+				case 'qq':
+					pattern += group('quarter', '0[1-4]');
+					break;
+				case 'Q':
+				case 'q':
+					pattern += group('quarter', '[1-4]');
 					break;
 
 				case 'MMMM':
@@ -269,6 +356,20 @@ export function compileLdmlParser(mask: string): RegExp {
 					break;
 				case 'd':
 					pattern += group('dd', '\\d{1,2}');
+					break;
+				case 'DDD':
+					pattern += group('doy', '\\d{3}');
+					break;
+				case 'D':
+					pattern += group('doy', '\\d{1,3}');
+					break;
+				case 'GGGG':
+					pattern += group('era_long', '[A-Za-z ]+');
+					break;
+				case 'G':
+				case 'GG':
+				case 'GGG':
+					pattern += group('era', '[A-Za-z]+');
 					break;
 
 				case 'HH':
@@ -304,19 +405,21 @@ export function compileLdmlParser(mask: string): RegExp {
 					pattern += group('ss', '\\d{1,2}');
 					break;
 
+				case 'SSSSSSSSS':
+				case 'SSSSSSSS':
+				case 'SSSSSSS':
+				case 'SSSSSS':
+				case 'SSSSS':
+				case 'SSSS':
 				case 'SSS':
-					pattern += group('ms', '\\d{3}');
-					break;
 				case 'SS':
-					pattern += group('ms', '\\d{2}');
-					break;
 				case 'S':
-					pattern += group('ms', '\\d{1}');
+					pattern += group('ff', `\\d{${token.length}}`);
 					break;
 
 				case 'aa':
 				case 'a':
-					pattern += group('mer', '[AaPp][Mm]?');
+					pattern += group('mer', '[AaPp][Mm]');
 					break;
 
 				case 'EEEE':
@@ -348,7 +451,7 @@ export function compileLdmlParser(mask: string): RegExp {
 					break;
 
 				default:
-					pattern += token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+					pattern += escapeRegex(token);
 					break;
 			}
 		}
@@ -358,7 +461,7 @@ export function compileLdmlParser(mask: string): RegExp {
 
 	if (lastIndex < mask.length) {
 		const trailing = mask.slice(lastIndex);
-		pattern += trailing.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		pattern += escapeRegex(trailing);
 	}
 
 	const rx = new RegExp(`^${pattern}$`, 'i');
@@ -366,119 +469,132 @@ export function compileLdmlParser(mask: string): RegExp {
 	return rx;
 }
 
-/** Resolves a localized full or abbreviated English month name to its month number. */
-function resolveMonth(str: string): number | undefined {
-	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
-}
-
 /**
  * Parses an input string with an LDML mask.
+ * Input is trimmed and matching is case-insensitive. Missing time fields default to zero.
+ * For calendar date masks, an explicit year defaults missing month/day to January 1;
+ * an explicit month defaults missing day to 1. Two-digit years use a cutoff of 70 (1970-2069).
+ *
+ * @param options - `today` supplies missing date fields; otherwise uses the current date in the resolved zone.
+ * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601.
+ * @returns The parsed date-time, or undefined for a mismatch or rejected fields.
+ * Temporal construction errors, including invalid time zones or calendars, are caught and return undefined.
  */
 export function parseLdml(
 	input: string,
 	mask: string,
-	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
+	options: ParseOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileLdmlParser(mask);
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
-	const g = match.groups;
-	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
-
-	let tz = options.timeZone ?? 'UTC';
-	const tz_offset = getGroup('tz_offset');
-	const tz_name = getGroup('tz_name');
-	if (tz_offset) {
-		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
-	} else if (tz_name) {
-		tz = tz_name;
-	}
-
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
-	const cal = options.calendar ?? 'iso8601';
+	const getGroup = createGroupExtractor(match);
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+	const { tz, today, cal } = ctx;
 
 	let year = today.year;
+	let month = 1;
+	let day = 1;
+
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
-	if (yyyy) year = parseInt(yyyy, 10);
-	else if (yyVal) {
+	const yyyyWeek = getGroup('yyyy_week');
+	const yyWeek = getGroup('yy_week');
+	const weekOfYear = getGroup('week_of_year');
+	const weekdayNum = getGroup('weekday_num');
+	const mm = getGroup('mm');
+	const month_name = getGroup('month_name');
+	const month_abbr = getGroup('month_abbr');
+	const dd = getGroup('dd');
+	const dd_ord = getGroup('dd_ord');
+	const doy = getGroup('doy');
+	const qtrVal = getGroup('quarter') || (getGroup('quarter_abbr')?.slice(1)) || (getGroup('quarter_name') ? String(getGroup('quarter_name')![0]) : undefined);
+
+	if (yyyy) {
+		year = parseInt(yyyy, 10);
+	} else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
 	}
 
-	let month = 1;
-	const mm = getGroup('mm');
-	const month_name = getGroup('month_name');
-	const month_abbr = getGroup('month_abbr');
-	if (mm) month = parseInt(mm, 10);
-	else if (month_name || month_abbr) {
-		const m = resolveMonth(month_name || month_abbr!);
-		if (m) month = m;
-		else return undefined;
-	} else if (!yyyy && !yyVal) {
-		month = today.month;
+	if (yyyyWeek || yyWeek) {
+		if (!weekOfYear) return undefined;
+		let isoYear = yyyyWeek ? parseInt(yyyyWeek, 10) : parseInt(yyWeek!, 10);
+		if (yyWeek && !yyyyWeek)
+			isoYear = isoYear >= 70 ? 1900 + isoYear : 2000 + isoYear;
+
+		const isoWeek = parseInt(weekOfYear, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
+		if (isoDay < 1 || isoDay > 7) return undefined;
+		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else if (weekOfYear) {
+		const isoWeek = parseInt(weekOfYear, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
+		if (isoDay < 1 || isoDay > 7) return undefined;
+		const targetDate = fromIsoWeek(year, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== year || check.weekOfYear !== isoWeek) return undefined;
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else if (doy) {
+		const res = resolveDayOfYear(year, parseInt(doy, 10));
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
+	} else {
+		if (mm) {
+			month = parseInt(mm, 10);
+		} else if (month_name || month_abbr) {
+			const m = resolveMonth(month_name || month_abbr!);
+			if (m) month = m;
+			else return undefined;
+		} else if (qtrVal) {
+			const cleanQtr = qtrVal.replace(/\D/g, '');
+			const q = parseInt(cleanQtr, 10);
+			if (isNaN(q) || q < 1 || q > 4) return undefined;
+			month = (q - 1) * 3 + 1;
+		} else if (!yyyy && !yyVal) {
+			month = today.month;
+		}
+
+		if (dd) {
+			day = parseInt(dd, 10);
+		} else if (dd_ord) {
+			day = parseInt(dd_ord, 10);
+		} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+			day = today.day;
+		}
 	}
 
-	let day = 1;
-	const dd = getGroup('dd');
-	const dd_ord = getGroup('dd_ord');
-	if (dd) day = parseInt(dd, 10);
-	else if (dd_ord) day = parseInt(dd_ord, 10);
-	else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
-		day = today.day;
-	}
-
-	let hour = 0;
-	let minute = 0;
-	let second = 0;
+	const time = resolveTimeComponents(getGroup);
+	if (!time) return undefined;
+	const { hour, minute, second } = time;
 	let millisecond = 0;
-
-	const hh = getGroup('hh');
-	const h24 = getGroup('h24');
-	const h12 = getGroup('h12');
-	if (hh) {
-		const val = parseInt(hh, 10);
-		if (val < 0 || val > 23) return undefined;
-		hour = val;
-	} else if (h24) {
-		const val = parseInt(h24, 10);
-		if (val < 1 || val > 24) return undefined;
-		hour = val === 24 ? 0 : val;
-	} else if (h12) {
-		const val = parseInt(h12, 10);
-		if (val < 1 || val > 12) return undefined;
-		hour = val;
-	}
-
-	const mer = getGroup('mer');
-	if (mer) {
-		const isPm = mer.toLowerCase().startsWith('p');
-		if (isPm && hour < 12) hour += 12;
-		else if (!isPm && hour === 12) hour = 0;
-	}
-
-	const mi = getGroup('mi');
-	if (mi) {
-		const val = parseInt(mi, 10);
-		if (val < 0 || val > 59) return undefined;
-		minute = val;
-	}
-	const ss = getGroup('ss');
-	if (ss) {
-		const val = parseInt(ss, 10);
-		if (val < 0 || val > 59) return undefined;
-		second = val;
-	}
-	const ms = getGroup('ms');
-	if (ms) {
-		millisecond = parseInt(ms.padEnd(3, '0').slice(0, 3), 10);
+	let microsecond = 0;
+	let nanosecond = 0;
+	const ff = getGroup('ff');
+	if (ff) {
+		const padded = ff.padEnd(9, '0');
+		millisecond = parseInt(padded.slice(0, 3), 10);
+		microsecond = parseInt(padded.slice(3, 6), 10);
+		nanosecond = parseInt(padded.slice(6, 9), 10);
 	}
 
 	try {
-		return Temporal.PlainDateTime.from(
+		return Temporal.ZonedDateTime.from(
 			{
+				timeZone: tz,
+				calendar: cal,
 				year,
 				month,
 				day,
@@ -486,10 +602,12 @@ export function parseLdml(
 				minute,
 				second,
 				millisecond,
+				microsecond,
+				nanosecond,
 			},
 			{ overflow: 'reject' }
-		).toZonedDateTime(tz).withCalendar(cal);
-	} catch (e) {
+		);
+	} catch {
 		return undefined;
 	}
 }

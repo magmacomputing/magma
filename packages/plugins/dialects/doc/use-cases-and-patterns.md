@@ -168,3 +168,37 @@ console.log(migrationResult.nativeTempoPattern);
 console.log(now.format(migrationResult.nativeTempoPattern, { dialect: null }));
 // Output: "2026-10-24 at 03:30:45 PM"
 ```
+
+---
+
+## 4. Cross-Ecosystem Format Transpilation (`.convert()` & `.export()`)
+
+### Problem Statement
+In distributed architectures, different subsystems require different date token conventions. For example, a React frontend may define display masks in Moment or Luxon format, an Oracle or PostgreSQL database query requires `TO_CHAR(..., 'YYYY-MM-DD HH24:MI:SS')`, and a Linux syslog forwarder uses POSIX `strftime` (`%Y-%m-%d %H:%M:%S`). Maintaining synchronized format strings across these boundaries manually leads to subtle drift and formatting bugs.
+
+### Architectural Solution
+Use Tempo as a format Intermediate Representation (IR). You can either convert legacy masks directly between ecosystems via `.convert()`, or define application templates in canonical Tempo syntax and export target masks dynamically with `.export()`.
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+
+Tempo.use(DialectsPlugin);
+
+// 1. Cross-compile frontend Moment mask directly to database TO_CHAR model
+const clientMask = 'YYYY-MM-DD HH:mm:ss';
+const sqlModel = Tempo.dialects.convert(clientMask, DIALECT.Moment, DIALECT.Oracle);
+console.log(sqlModel.pattern);
+// Output: "YYYY-MM-DD HH24:MI:SS"
+
+// 2. Export canonical backend template to POSIX syslog and SQL models
+const canonicalMask = '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}';
+
+const syslogFormat = Tempo.dialects.export(canonicalMask, DIALECT.Strftime);
+console.log(syslogFormat.pattern);
+// Output: "%Y-%m-%d %H:%M:%S"
+
+const dbFormat = Tempo.dialects.export(canonicalMask, DIALECT.Oracle);
+console.log(dbFormat.pattern);
+// Output: "YYYY-MM-DD HH24:MI:SS"
+```

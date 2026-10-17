@@ -1,5 +1,5 @@
-import { enumify } from '@magmacomputing/tempo/library';
-import type { ValueOf, KeyOf, Enum } from '@magmacomputing/tempo/library';
+import { enumify, Enum } from '@magmacomputing/tempo/library';
+import type { ValueOf, KeyOf } from '@magmacomputing/tempo/library';
 
 /**
  * ## DIALECT
@@ -9,10 +9,16 @@ export const DIALECT: Enum.wrap<{
 	Ldml: 'ldml';
 	Strftime: 'strftime';
 	Moment: 'moment';
+	Oracle: 'oracle';
+	Php: 'php';
+	Go: 'go';
 }> = enumify({
 	Ldml: 'ldml',
 	Strftime: 'strftime',
 	Moment: 'moment',
+	Oracle: 'oracle',
+	Php: 'php',
+	Go: 'go',
 });
 
 export type Dialect = ValueOf<typeof DIALECT>;
@@ -29,6 +35,16 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	c: 'strftime';
 	python: 'strftime';
 	dayjs: 'moment';
+	sql: 'oracle';
+	postgres: 'oracle';
+	postgresql: 'oracle';
+	snowflake: 'oracle';
+	redshift: 'oracle';
+	to_char: 'oracle';
+	tochar: 'oracle';
+	laravel: 'php';
+	wordpress: 'php';
+	golang: 'go';
 }> = enumify({
 	luxon: 'ldml',
 	datefns: 'ldml',
@@ -37,24 +53,36 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	c: 'strftime',
 	python: 'strftime',
 	dayjs: 'moment',
+	sql: 'oracle',
+	postgres: 'oracle',
+	postgresql: 'oracle',
+	snowflake: 'oracle',
+	redshift: 'oracle',
+	to_char: 'oracle',
+	tochar: 'oracle',
+	laravel: 'php',
+	wordpress: 'php',
+	golang: 'go',
 });
 
 export type DialectAlias = KeyOf<typeof DIALECT_ALIAS>;
 
 /**
  * Normalizes a dialect name or alias to its canonical dialect identifier.
+ * Ignores surrounding whitespace and case; missing or unrecognized names resolve to LDML.
  */
 export function normalizeDialect(input?: string): Dialect {
 	if (!input) return DIALECT.Ldml;
-	const lower = input.trim().toLowerCase();
-	if (DIALECT_ALIAS.has(lower as any))
-		return (DIALECT_ALIAS as any)[lower] as Dialect;
+	const trimmed = String(input).trim() as KeyOf<typeof DIALECT>;
+	const lower = trimmed.toLowerCase() as KeyOf<typeof DIALECT_ALIAS>;
 
-	if (DIALECT.includes(lower as any))
+	if (Enum.has(DIALECT_ALIAS, lower))
+		return DIALECT_ALIAS[lower] as Dialect;
+
+	if (Enum.includes(DIALECT, lower))
 		return lower as Dialect;
 
-	if (DIALECT.has(input.trim() as any))
-		return (DIALECT as any)[input.trim()] as Dialect;
-
-	return DIALECT.Ldml;
+	return Enum.has(DIALECT, trimmed)
+		? DIALECT[trimmed]
+		: DIALECT.Ldml;
 }

@@ -126,12 +126,13 @@ export default defineConfig({
         } as any
       },
       {
-        extends: './packages/tempo/vitest.config.ts',
+        extends: './packages/plugins/vitest.shared.ts',
         test: {
           name: 'Plugins',
           color: 'green',
           include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**'],
+          maxWorkers: process.env.CI ? 2 : undefined,
           setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       }

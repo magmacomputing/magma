@@ -1,8 +1,8 @@
 import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
-import { suffix } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits } from '#library/assertion.library.js';
+import { suffix, toRoman } from '#library/number.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
@@ -130,11 +130,16 @@ export function format(obj: any, options: FormatOptions): string;
 export function format(obj: any, fmt: string | symbol, options?: any): string;
 /**
  * Formats a supported date-time value using a named format, template, or internationalization options.
+ * Scoped day/week time fields count wall-clock units from local midnight or Monday, independent of offset transitions.
+ * The roman modifier converts integers 1-3999 and leaves other values unchanged.
  *
  * @param obj - The value to format; omitted values use the current date and time.
  * @param fmt - A registered format name or literal format template.
  * @param options - Formatting and configuration overrides.
- * @returns The formatted date-time string, a format proxy when no format or options are supplied, or an empty string for invalid date-time values.
+ * @returns The formatted date-time string, a format proxy when no format or options are supplied, or an empty string
+ * when a format is supplied and the resolved value is not a ZonedDateTime.
+ * @throws Error when a requested dialect formatter is unavailable. Temporal input conversion errors,
+ * formatter or custom token callback errors, and Intl errors when no fallback succeeds also propagate.
  */
 export function format(obj?: any, fmt?: any, options?: any): any {
 	const state = getRuntime().state;
@@ -291,9 +296,30 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy': res = pad(zdt.year % 100); break;
-			case 'yw': res = pad(getISOWeekOfYear(zdt).yearOfWeek, 4); break;
-			case 'ww': case 'wy': res = pad(getISOWeekOfYear(zdt).weekOfYear); break;
-			case 'yyww': case 'yywy': {
+			case 'yw': case 'yow': {
+				const yow = getISOWeekOfYear(zdt).yearOfWeek;
+				res = normMods.includes('short') ? pad(Math.abs(yow) % 100) : pad(yow, 4);
+				break;
+			}
+			case 'ww': case 'wy': case 'woy': {
+				if (normMods.includes('cal')) {
+					const w = Math.ceil(zdt.dayOfYear / 7);
+					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
+				} else if (normMods.includes('month')) {
+					const w = Math.ceil(zdt.day / 7);
+					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
+				} else {
+					const w = getISOWeekOfYear(zdt).weekOfYear;
+					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
+				}
+				break;
+			}
+			case 'wom': {
+				const w = Math.ceil(zdt.day / 7);
+				res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
+				break;
+			}
+			case 'yyww': case 'yywy': case 'yywoy': {
 				const { weekOfYear, yearOfWeek } = getISOWeekOfYear(zdt);
 				res = pad(yearOfWeek, 4) + pad(weekOfYear);
 				break;
@@ -310,13 +336,42 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'eon':
 				res = (zdt.eraYear ?? Math.abs(zdt.year <= 0 ? zdt.year - 1 : zdt.year)).toString();
 				break;
-			case 'mm': res = pad(zdt.month); break;
+			case 'cen': case 'century':
+				res = pad(Math.abs(Math.floor(zdt.year / 100)), 2);
+				break;
+			case 'dim':
+				res = zdt.daysInMonth.toString();
+				break;
+			case 'jj': case 'julian': {
+				const pd = zdt.toPlainDate().withCalendar('iso8601');
+				const epochDays = Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
+				res = (2440588 + epochDays).toString();
+				break;
+			}
+			case 'mm': {
+				const m = (normMods.includes('zero') || normMods.includes('0')) ? zdt.month - 1 : zdt.month;
+				res = pad(m);
+				break;
+			}
 			case 'mon': res = enums.MONTHS.keyOf(zdt.month as any); break;
 			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
-			case 'dd': res = pad(zdt.day); break;
-			case 'day': res = zdt.day.toString(); break;
+			case 'dd':
+			case 'day': {
+				if (normMods.includes('year')) {
+					const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.dayOfYear - 1 : zdt.dayOfYear;
+					res = pad(d, 3);
+				} else if (normMods.includes('week')) {
+					res = (normMods.includes('zero') || normMods.includes('0')) ? (zdt.dayOfWeek % 7).toString() : zdt.dayOfWeek.toString();
+				} else {
+					const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.day - 1 : zdt.day;
+					res = token === 'day' ? d.toString() : pad(d);
+				}
+				break;
+			}
 			case 'dow': {
-				if (normMods.includes('locale')) {
+				if (normMods.includes('zero') || normMods.includes('0')) {
+					res = (zdt.dayOfWeek % 7).toString();
+				} else if (normMods.includes('locale')) {
 					const firstDay = li.firstDay;
 					const localDow = ((zdt.dayOfWeek - firstDay + 7) % 7) + 1;
 					res = localDow.toString();
@@ -325,11 +380,17 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}
 				break;
 			}
-			case 'doy': res = zdt.dayOfYear.toString(); break;
+			case 'doy': {
+				const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.dayOfYear - 1 : zdt.dayOfYear;
+				res = pad(d, 3);
+				break;
+			}
 			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
 			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
 			case 'h24': case 'hh': {
-				if (normMods.includes('locale') && token === 'hh') {
+				if (normMods.includes('week')) {
+					res = ((zdt.dayOfWeek - 1) * 24 + zdt.hour).toString();
+				} else if (normMods.includes('locale') && token === 'hh') {
 					const hc = li.hourCycle;
 					if (hc === 'h12') {
 						res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12);
@@ -347,11 +408,44 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'h12': res = pad(zdt.hour > 12 ? zdt.hour % 12 : zdt.hour || 12); break;
 			case 'mer': res = zdt.hour >= 12 ? 'pm' : 'am'; break;
-			case 'mi': res = pad(zdt.minute); break;
-			case 'ss': res = pad(zdt.second); break;
-			case 'ms': res = pad(zdt.millisecond, 3); break;
+			case 'mi': {
+				if (normMods.includes('day')) {
+					res = (zdt.hour * 60 + zdt.minute).toString();
+				} else if (normMods.includes('week')) {
+					res = (((zdt.dayOfWeek - 1) * 1440) + (zdt.hour * 60 + zdt.minute)).toString();
+				} else {
+					res = pad(zdt.minute);
+				}
+				break;
+			}
+			case 'ss': {
+				if (normMods.includes('day')) {
+					res = (zdt.hour * 3600 + zdt.minute * 60 + zdt.second).toString();
+				} else if (normMods.includes('week')) {
+					res = (((zdt.dayOfWeek - 1) * 86400) + (zdt.hour * 3600 + zdt.minute * 60 + zdt.second)).toString();
+				} else {
+					res = pad(zdt.second);
+				}
+				break;
+			}
+			case 'ms': {
+				if (normMods.includes('day')) {
+					res = ((zdt.hour * 3600 + zdt.minute * 60 + zdt.second) * 1000 + zdt.millisecond).toString();
+				} else {
+					res = pad(zdt.millisecond, 3);
+				}
+				break;
+			}
 			case 'us': res = pad(zdt.microsecond, 3); break;
-			case 'ns': res = pad(zdt.nanosecond, 3); break;
+			case 'ns': {
+				if (normMods.includes('day')) {
+					const totalNs = BigInt((zdt.hour * 3600 + zdt.minute * 60 + zdt.second) * 1000 + zdt.millisecond) * 1000000n + BigInt(zdt.microsecond * 1000 + zdt.nanosecond);
+					res = totalNs.toString();
+				} else {
+					res = pad(zdt.nanosecond, 3);
+				}
+				break;
+			}
 			case 'ff': res = `${pad(zdt.millisecond, 3)}${pad(zdt.microsecond, 3)}${pad(zdt.nanosecond, 3)}`; break;
 			case 'dmy':
 			case 'mdy':
@@ -482,6 +576,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					if (RE_DIGITS.test(String(res)))
 						res = BigInt(String(res)).toString();
 					break;
+				case 'roman': {
+					const roman = toRoman(Number(res));
+					if (roman) res = roman;
+					break;
+				}
 				case 'dots': {
 					if (token === 'mer' || token === 'era')
 						res = String(res).replace(RE_DOT, '').split('').join('.') + '.';
@@ -542,8 +641,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'longgeneric': {
 					const modKey = mod.toLowerCase();
 					if (token === 'tz') {
-						if (modKey === 'short' && normMods.includes('offset')) {
-							res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
+						if (normMods.includes('offset') || normMods.includes('offsetcompact')) {
+							// Handled by case 'offset' / 'offsetcompact'
 						} else {
 							const styleMap: Record<string, any> = { short: 'short', long: 'long', shortoffset: 'shortOffset', longoffset: 'longOffset', shortgeneric: 'shortGeneric', longgeneric: 'longGeneric' };
 							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: styleMap[modKey] }).formatToParts(zdt.epochMilliseconds);
@@ -562,25 +661,52 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'offset':
+				case 'offsetcompact': {
 					if (token === 'tz') {
-						let off = normMods.includes('short')
-							? (zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset)
-							: zdt.offset;
-						if (normMods.includes('compact')) off = off.replace(RE_COLON, '');
-						res = off;
+						const isCompact = mod.toLowerCase() === 'offsetcompact' || normMods.includes('compact');
+						const isUtc = zdt.offset === '+00:00' || zdt.offset === '-00:00' || zdt.offset === 'Z' || zdt.offsetNanoseconds === 0;
+						const sign = zdt.offset.startsWith('-') ? '-' : '+';
+						const cleanOffset = (zdt.offset.startsWith('+') || zdt.offset.startsWith('-'))
+							? zdt.offset.slice(1)
+							: zdt.offset === 'Z' ? '00:00' : zdt.offset;
+						const [hStr = '00', mStr = '00', sStr = '00'] = cleanOffset.split(':');
+
+						if (normMods.includes('z') && isUtc) {
+							res = 'Z';
+						} else if (normMods.includes('hh') || normMods.includes('hour')) {
+							res = `${sign}${hStr}`;
+						} else if (normMods.includes('mi') || normMods.includes('min')) {
+							res = mStr;
+						} else if (normMods.includes('ss') || normMods.includes('sec')) {
+							res = isCompact
+								? `${sign}${hStr}${mStr}${sStr}`
+								: `${sign}${hStr}:${mStr}:${sStr}`;
+						} else if (normMods.includes('short')) {
+							if (mStr === '00' && sStr === '00') {
+								res = `${sign}${hStr}`;
+							} else {
+								res = isCompact ? `${sign}${hStr}${mStr}` : `${sign}${hStr}:${mStr}`;
+							}
+						} else {
+							res = isCompact
+								? `${sign}${hStr}${mStr}`
+								: `${sign}${hStr}:${mStr}`;
+						}
 					}
 					break;
+				}
 				case 'compact':
-					res = String(res).replace(RE_COLON, '');
+					if (token !== 'tz' || (!normMods.includes('offset') && !normMods.includes('offsetcompact')))
+						res = String(res).replace(RE_COLON, '');
 					break;
 				case 'offsetshort': // @deprecated, will remove in v5.0.0
 					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
 					break;
-				case 'offsetcompact': // @deprecated, will remove in v5.0.0
-					if (token === 'tz') res = zdt.offset.replace(':', '');
-					break;
 				case 'z':
-					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
+					if (token === 'tz') {
+						if (!normMods.includes('offset') && !normMods.includes('offsetcompact'))
+							res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
+					}
 					break;
 				case 'zz':
 					if (token === 'tz') res = zdt.offset;
@@ -600,17 +726,53 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 					}
 					break;
+				case 'space': {
+					if (!normMods.some(m => RE_INTEGER.test(m) && m !== '0')) {
+						const defaultWidth = (token === 'doy' || (token === 'dd' && normMods.includes('year'))) ? 3
+							: (token === 'ss' && normMods.includes('day')) ? 5
+								: 2;
+						const strVal = String(res);
+						if (RE_SIGNED_DIGITS.test(strVal)) {
+							const unpadded = (strVal.startsWith('-'))
+								? '-' + BigInt(strVal.slice(1)).toString()
+								: BigInt(strVal).toString();
+							res = (unpadded.startsWith('-'))
+								? '-' + unpadded.slice(1).padStart(Math.max(1, defaultWidth - 1), ' ')
+								: unpadded.padStart(defaultWidth, ' ');
+						}
+					}
+					break;
+				}
+				case 'zero':
+				case '0':
+				case 'day':
+				case 'week':
+				case 'month':
+				case 'year':
+				case 'cal':
+					break;
 				default: {
-					if (isDigits(mod)) {
+					if (RE_INTEGER.test(mod) && mod !== '0') {
 						const width = parseInt(mod, 10);
 						const strVal = String(res);
 						if (RE_SIGNED_DIGITS.test(strVal)) {
 							if (token === 'ff') {
 								res = width > 0 ? strVal.slice(0, width) : strVal;
 							} else if (width > 0) {
-								res = (strVal.startsWith('-'))
-									? '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0')
-									: strVal.padStart(width, '0');
+								if (normMods.includes('space')) {
+									const unpadded = (strVal.startsWith('-'))
+										? '-' + BigInt(strVal.slice(1)).toString()
+										: BigInt(strVal).toString();
+									res = (unpadded.startsWith('-'))
+										? '-' + unpadded.slice(1).padStart(Math.max(1, width - 1), ' ')
+										: unpadded.padStart(width, ' ');
+								} else {
+									res = (strVal.startsWith('-'))
+										? '-' + strVal.slice(1).padStart(Math.max(1, width - 1), '0')
+										: strVal.padStart(width, '0');
+								}
+							} else if (width < 0) {
+								res = strVal.slice(width);
 							}
 						}
 					}

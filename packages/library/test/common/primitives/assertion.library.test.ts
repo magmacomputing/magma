@@ -1,7 +1,7 @@
 import {
-	isNumber, isNumeric, isText, isArrayLike, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
-	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid, hasOwn,
-	RE_DIGITS, RE_INTEGER, RE_HTTP_URL, RE_FILE_URL, RE_WHITESPACE, RE_WHITESPACES, RE_COMBINING_MARKS, RE_HEX, RE_HEX_8, RE_BASE64, RE_BASE64URL, RE_UUID
+	isNumber, isNumeric, isText, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
+	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid, hasOwn, hasKeys, hasKey,
+	RE_DIGITS, RE_WHITESPACE, RE_WHITESPACES, RE_COMBINING_MARKS, RE_HEX_8, RE_BASE64URL
 } from '#library/assertion.library.js';
 
 describe('Assertion Library', () => {
@@ -151,11 +151,11 @@ describe('Assertion Library', () => {
 
 	describe('isFunction', () => {
 		it('should return true for functions, async functions, generator functions, and async generator functions', () => {
-			function fn() {}
-			const arrow = () => {};
-			async function asyncFn() {}
-			function* genFn() {}
-			async function* asyncGenFn() {}
+			function fn() { }
+			const arrow = () => { };
+			async function asyncFn() { }
+			function* genFn() { }
+			async function* asyncGenFn() { }
 
 			expect(isFunction(fn)).toBe(true);
 			expect(isFunction(arrow)).toBe(true);
@@ -165,7 +165,7 @@ describe('Assertion Library', () => {
 		});
 
 		it('should return false for ES6 class constructors and non-function values', () => {
-			class MyClass {}
+			class MyClass { }
 
 			expect(isFunction(MyClass)).toBe(false);
 			expect(isFunction({})).toBe(false);
@@ -179,12 +179,12 @@ describe('Assertion Library', () => {
 
 	describe('isCallable', () => {
 		it('should return true for all function types and ES6 classes', () => {
-			function fn() {}
-			const arrow = () => {};
-			async function asyncFn() {}
-			function* genFn() {}
-			async function* asyncGenFn() {}
-			class MyClass {}
+			function fn() { }
+			const arrow = () => { };
+			async function asyncFn() { }
+			function* genFn() { }
+			async function* asyncGenFn() { }
+			class MyClass { }
 
 			expect(isCallable(fn)).toBe(true);
 			expect(isCallable(arrow)).toBe(true);
@@ -364,6 +364,47 @@ describe('Assertion Library', () => {
 			const record: Record<string, any> = { provider: { name: 'geo' } };
 			if (hasOwn(record, 'provider')) {
 				expect(record.provider.name).toBe('geo');
+			}
+		});
+	});
+
+	describe('hasKeys / hasKey', () => {
+		it('should return true when target contains all specified keys', () => {
+			const obj = { a: 1, b: 2, c: 3 };
+			expect(hasKey(obj, 'a')).toBe(true);
+			expect(hasKeys(obj, 'a', 'b')).toBe(true);
+			expect(hasKeys(obj, 'a', 'b', 'c')).toBe(true);
+			expect(hasKeys(obj)).toBe(true);
+		});
+
+		it('should return false if any specified key is missing', () => {
+			const obj = { a: 1, b: 2 };
+			expect(hasKey(obj, 'c')).toBe(false);
+			expect(hasKeys(obj, 'a', 'c')).toBe(false);
+		});
+
+		it('should return true for keys present via prototype or getters', () => {
+			class Base {
+				get dialect() { return 'ldml'; }
+			}
+			const instance = new Base();
+			expect(hasKey(instance, 'dialect')).toBe(true);
+			expect(hasOwn(instance, 'dialect')).toBe(false); // hasOwn ignores prototype
+		});
+
+		it('should return false for primitives and nullish values without throwing', () => {
+			expect(hasKeys(null, 'a')).toBe(false);
+			expect(hasKeys(undefined, 'a')).toBe(false);
+			expect(hasKeys(123, 'a')).toBe(false);
+			expect(hasKeys('str', 'a')).toBe(false);
+			expect(hasKeys(true, 'a')).toBe(false);
+		});
+
+		it('should narrow object type in TypeScript', () => {
+			const input: unknown = { dialect: 'strftime', format: '%Y' };
+			if (hasKeys(input, 'dialect', 'format')) {
+				expect(input.dialect).toBe('strftime');
+				expect(input.format).toBe('%Y');
 			}
 		});
 	});

@@ -6,7 +6,7 @@
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/dialects.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
-Community plugin for Tempo providing seamless support for external date formatting standards and library dialects, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, and **POSIX `strftime` (C, Python, SQL)**.
+Community plugin for Tempo providing seamless support for external date formatting standards and library dialects, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **Moment.js / Day.js**, **POSIX `strftime` (C, Python)**, and **Oracle / SQL `TO_CHAR` (PostgreSQL, Snowflake, Redshift)**.
 
 ## Installation
 
@@ -27,17 +27,22 @@ Tempo.use(DialectsPlugin);
 const t = new Tempo('2026-10-24T15:30:45');
 
 // 1. Unicode LDML / Luxon formatting
-t.format('yyyy-MM-dd HH:mm:ss', { dialect: DIALECT.Ldml }); // "2026-10-24 15:30:45"
-t.dialects.ldml('dd LLL yyyy');                             // "24 Oct 2026"
-t.toFormat('yyyy-MM-dd');                                   // Luxon drop-in alias
+t.format('yyyy-MM-dd HH:mm:ss', { dialect: DIALECT.Ldml });   // "2026-10-24 15:30:45"
+t.dialects.ldml('dd LLL yyyy');                               // "24 Oct 2026"
+t.toFormat('yyyy-MM-dd');                                     // Luxon drop-in alias
 
 // 2. POSIX strftime formatting
 t.format('%Y-%m-%d %H:%M:%S', { dialect: DIALECT.Strftime }); // "2026-10-24 15:30:45"
 t.dialects.strftime('%B %d, %Y');                             // "October 24, 2026"
 
-// 3. Dialect-based Parsing
+// 3. Oracle / SQL TO_CHAR formatting (PostgreSQL, Snowflake, Redshift)
+t.dialects.sql('YYYY-MM-DD HH24:MI:SS');                      // "2026-10-24 15:30:45"
+t.dialects.oracle('FMMonth DD, YYYY');                        // "October 24, 2026"
+t.format('YYYY-MM-DD HH24:MI:SS', { dialect: 'postgres' });   // "2026-10-24 15:30:45"
+
+// 4. Dialect-based Parsing
 Tempo.fromFormat('24/10/2026', 'dd/MM/yyyy');
-Tempo.dialects.parse('2026-10-24 15:30', 'yyyy-MM-dd HH:mm');
+Tempo.dialects.parse('2026-10-24 15:30:45', 'YYYY-MM-DD HH24:MI:SS', 'sql');
 ```
 
 > ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=dialects)**

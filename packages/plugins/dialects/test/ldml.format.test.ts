@@ -26,6 +26,30 @@ describe('Unicode LDML Formatting', () => {
 		expect(dt.format("''yyyy''", { dialect: DIALECT.Ldml })).toBe("'2026'");
 	});
 
+	it('formats ISO week-year (YYYY, YY) and week-of-year (ww, w)', () => {
+		// 2024-12-30 belongs to ISO week 1 of week-year 2025
+		const tEdge = new Tempo('2024-12-30T10:00:00', { timeZone: 'UTC' });
+		expect(tEdge.format('yyyy', { dialect: DIALECT.Ldml })).toBe('2024');
+		expect(tEdge.format('YYYY', { dialect: DIALECT.Ldml })).toBe('2025');
+		expect(tEdge.format('YY', { dialect: DIALECT.Ldml })).toBe('25');
+		expect(tEdge.format('ww', { dialect: DIALECT.Ldml })).toBe('01');
+		expect(tEdge.format('w', { dialect: DIALECT.Ldml })).toBe('1');
+	});
+
+	it('formats day-of-year (DDD), ordinal day (Do), and era (G, GGGG)', () => {
+		expect(dt.format('yyyy-DDD', { dialect: DIALECT.Ldml })).toBe('2026-297');
+		expect(dt.format('Do MMMM', { dialect: DIALECT.Ldml })).toBe('24th October');
+		expect(dt.format('yyyy G', { dialect: DIALECT.Ldml })).toBe('2026 AD');
+		expect(dt.format('yyyy GGGG', { dialect: DIALECT.Ldml })).toBe('2026 Anno Domini');
+	});
+
+	it('formats quarter tokens (Q, QQ, QQQ, QQQQ)', () => {
+		expect(dt.format('yyyy Q', { dialect: DIALECT.Ldml })).toBe('2026 4');
+		expect(dt.format('yyyy QQ', { dialect: DIALECT.Ldml })).toBe('2026 04');
+		expect(dt.format('yyyy QQQ', { dialect: DIALECT.Ldml })).toBe('2026 Q4');
+		expect(dt.format('yyyy QQQQ', { dialect: DIALECT.Ldml })).toBe('2026 4th quarter');
+	});
+
 	it('executes compiled layout cache across 10,000 iterations efficiently', () => {
 		const mask = 'yyyy-MM-dd HH:mm:ss.SSS';
 		for (let i = 0; i < 10000; i++) {

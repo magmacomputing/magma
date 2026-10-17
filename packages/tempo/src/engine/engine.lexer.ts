@@ -3,6 +3,7 @@ import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
+import { fromRoman } from '#library/number.library.js';
 import { Match, enums, Enum, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
@@ -407,16 +408,40 @@ export function parseOrdinalDate(
  * Resolves date, relative-unit, and ordinal captures against a reference date.
  *
  * When both `ord` and `nth` ordinal captures are present, `ord` takes precedence. The function removes consumed captures or replaces them with normalized year, month, and day values.
+ * Roman month/year captures are normalized to numbers; a Roman year without month or day defaults to January 1.
  *
  * @param groups - Mutable lexer capture groups containing the date expression.
  * @param dateTime - Date and time used as the resolution context.
  * @param config - Tempo configuration used for anchors, modifiers, and two-digit-year resolution.
  * @param pivot - Fallback pivot for resolving two-digit years.
- * @returns The resolved date and time, or the original value when the captures are invalid or unsupported.
+ * @returns The resolved date and time, or the original value for unsupported captures or handled validation failures.
+ * @throws Errors reported through the configured error boundary unless `config.catch` is enabled;
+ * Temporal errors from date resolution propagate regardless of that setting.
  */
 export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
+
+	if (groups.Rm) {
+		const parsedMonth = fromRoman(groups.Rm);
+		if (Number.isFinite(parsedMonth)) {
+			groups.mm = String(parsedMonth);
+		}
+		delete groups.Rm;
+	}
+
+	if (groups.Ry) {
+		const parsedYear = fromRoman(groups.Ry);
+		if (Number.isFinite(parsedYear)) {
+			groups.yy = String(parsedYear);
+			if (isUndefined(groups.mm) && isUndefined(groups.dd)) {
+				groups.mm = '1';
+				groups.dd = '1';
+			}
+		}
+		delete groups.Ry;
+	}
+
 	let yy = groups.yy || undefined;
 	if (isUndefined(yy) && isDefined(groups.yy2)) {
 		let yy2Num = parseInt(groups.yy2, 10);

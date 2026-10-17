@@ -16,7 +16,45 @@ export interface ExplainResult {
 	toString(): string;
 }
 
+export interface ExportedToken {
+	readonly source: string;
+	readonly target: string;
+	readonly desc: string;
+	readonly supported: boolean;
+}
+
+export interface ExportResult {
+	readonly dialect: Dialect;
+	readonly source: string;
+	readonly pattern: string;
+	readonly tokens: readonly ExportedToken[];
+	readonly unsupported: readonly string[];
+	toString(): string;
+}
+
+export interface ConvertResult {
+	readonly from: Dialect;
+	readonly to: Dialect;
+	readonly source: string;
+	readonly pattern: string;
+	readonly unsupported: readonly string[];
+	toString(): string;
+}
+
 export type DialectInput = Evaluable<string>;
+
+export interface ExplainOptions {
+	readonly dialect?: DialectInput;
+}
+
+export interface ExportOptions {
+	readonly dialect?: DialectInput;
+}
+
+export interface ConvertOptions {
+	readonly from?: DialectInput;
+	readonly to: DialectInput;
+}
 
 export interface DialectsInstanceNamespace {
 	/**
@@ -28,6 +66,22 @@ export interface DialectsInstanceNamespace {
 	 */
 	strftime(mask: string): string;
 	/**
+	 * Formats this instance using Oracle / SQL TO_CHAR format models (e.g. 'YYYY-MM-DD HH24:MI:SS').
+	 */
+	oracle(mask: string): string;
+	/**
+	 * Convenience helper for formatting using SQL / Oracle format models (e.g. 'YYYY-MM-DD HH24:MI:SS').
+	 */
+	sql(mask: string): string;
+	/**
+	 * Formats this instance using PHP date format specifiers (e.g. 'Y-m-d H:i:s').
+	 */
+	php(mask: string): string;
+	/**
+	 * Formats this instance using Go reference time format layout (e.g. '2006-01-02 15:04:05').
+	 */
+	go(mask: string): string;
+	/**
 	 * Formats this instance using a specified dialect mask.
 	 */
 	format(mask: string, dialect?: DialectInput): string;
@@ -35,7 +89,18 @@ export interface DialectsInstanceNamespace {
 	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
 	 * with detailed token mappings to guide incremental migration.
 	 */
-	explain(mask: string, dialect?: DialectInput): ExplainResult;
+	explain(mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult;
+	/**
+	 * Exports a native Tempo format pattern into the corresponding external dialect format model.
+	 */
+	export(mask: string, dialectOrOptions?: DialectInput | ExportOptions): ExportResult;
+	/**
+	 * Converts a format mask directly from one dialect to another.
+	 * If fromDialect is omitted, it will be automatically detected.
+	 */
+	convert(mask: string, options: ConvertOptions): ConvertResult;
+	convert(mask: string, toDialect: DialectInput): ConvertResult;
+	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
 
 export interface DialectsStaticNamespace {
@@ -53,7 +118,18 @@ export interface DialectsStaticNamespace {
 	 * Explains an external dialect mask, translating it into native Tempo {token} syntax
 	 * with detailed token mappings to guide incremental migration.
 	 */
-	explain(mask: string, dialect?: DialectInput): ExplainResult;
+	explain(mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult;
+	/**
+	 * Exports a native Tempo format pattern into the corresponding external dialect format model.
+	 */
+	export(mask: string, dialectOrOptions?: DialectInput | ExportOptions): ExportResult;
+	/**
+	 * Converts a format mask directly from one dialect to another.
+	 * If fromDialect is omitted, it will be automatically detected.
+	 */
+	convert(mask: string, options: ConvertOptions): ConvertResult;
+	convert(mask: string, toDialect: DialectInput): ConvertResult;
+	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
 
 declare module '@magmacomputing/tempo' {

@@ -1,12 +1,23 @@
 import { pad, WeakCache } from '@magmacomputing/tempo/library';
 import { enums, Enum } from '@magmacomputing/tempo/support';
-
-type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
+import {
+	type FormatterFn,
+	type ParseOptions,
+	escapeRegex,
+	resolveMonth,
+	createGroupExtractor,
+	resolveParseContext,
+	resolveTimeComponents,
+	resolveDayOfYear,
+	getIsoWeek,
+	fromIsoWeek,
+	resolveIsoCalendarYear,
+} from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const STRFTIME_PARSE_CACHE = new WeakCache<string, RegExp>();
 
-const STRFTIME_SPECIFIER_REGEX = /%([a-zA-Z%])/g;
+const STRFTIME_SPECIFIER_REGEX = /%(-)?(\d+)?([a-zA-Z%])/g;
 
 /**
  * Compiles a POSIX strftime format string into a fast formatter function.
@@ -25,7 +36,9 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 			parts.push(() => literal);
 		}
 
-		const specifier = match[1];
+		const [, flag, width, specifier] = match;
+		const formatNum = (val: number, len = 2, padChar = '0') => (flag === '-' ? String(val) : pad(val, len, padChar));
+
 		switch (specifier) {
 			case '%':
 				parts.push(() => '%');
@@ -34,10 +47,13 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => pad(z.year, 4));
 				break;
 			case 'y':
-				parts.push((z) => pad(z.year % 100, 2));
+				parts.push((z) => pad(((z.year % 100) + 100) % 100, 2));
+				break;
+			case 'C':
+				parts.push((z) => pad(Math.abs(Math.floor(z.year / 100)), 2));
 				break;
 			case 'm':
-				parts.push((z) => pad(z.month, 2));
+				parts.push((z) => formatNum(z.month));
 				break;
 			case 'B':
 				parts.push((z) => Enum.keyOf(enums.MONTHS, z.month) ?? String(z.month));
@@ -47,36 +63,53 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => Enum.keyOf(enums.MONTH, z.month) ?? String(z.month));
 				break;
 			case 'd':
-				parts.push((z) => pad(z.day, 2));
+				parts.push((z) => formatNum(z.day));
 				break;
 			case 'e':
-				parts.push((z) => String(z.day));
+				parts.push((z) => formatNum(z.day, 2, ' '));
 				break;
 			case 'H':
-				parts.push((z) => pad(z.hour, 2));
+				parts.push((z) => formatNum(z.hour));
 				break;
-			case 'I': {
+			case 'I':
+				parts.push((z) => formatNum(z.hour % 12 || 12));
+				break;
+			case 'l':
+				parts.push((z) => formatNum(z.hour % 12 || 12, 2, ' '));
+				break;
+			case 'k':
+				parts.push((z) => formatNum(z.hour, 2, ' '));
+				break;
+			case 'G':
 				parts.push((z) => {
-					const h = z.hour % 12 || 12;
-					return pad(h, 2);
+					const iso = (z as any).withCalendar ? (z as any).withCalendar('iso8601') : z;
+					return pad(getIsoWeek(iso).yearOfWeek, 4);
 				});
 				break;
-			}
-			case 'l': {
+			case 'g':
 				parts.push((z) => {
-					const h = z.hour % 12 || 12;
-					return String(h);
+					const iso = (z as any).withCalendar ? (z as any).withCalendar('iso8601') : z;
+					return pad(getIsoWeek(iso).yearOfWeek % 100, 2);
 				});
 				break;
-			}
+			case 's':
+				parts.push((z) => Math.floor(z.epochMilliseconds / 1000).toString());
+				break;
+			case 'D':
+				parts.push((z) => `${pad(z.month, 2)}/${pad(z.day, 2)}/${pad(z.year % 100, 2)}`);
+				break;
 			case 'M':
-				parts.push((z) => pad(z.minute, 2));
+				parts.push((z) => formatNum(z.minute));
 				break;
 			case 'S':
-				parts.push((z) => pad(z.second, 2));
+				parts.push((z) => formatNum(z.second));
 				break;
 			case 'f':
-				parts.push((z) => pad(z.millisecond * 1000 + z.microsecond, 6));
+				parts.push((z) => {
+					const w = width ? Math.min(9, Math.max(1, Number(width))) : 6;
+					const nsTotal = z.millisecond * 1_000_000 + z.microsecond * 1000 + z.nanosecond;
+					return pad(nsTotal, 9).slice(0, w);
+				});
 				break;
 			case 'p':
 				parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
@@ -97,7 +130,19 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => String(z.dayOfWeek));
 				break;
 			case 'j':
-				parts.push((z) => pad(z.dayOfYear, 3));
+				parts.push((z) => formatNum(z.dayOfYear, 3));
+				break;
+			case 'V':
+				parts.push((z) => {
+					let w: number | undefined;
+					try {
+						w = (z as any).withCalendar?.('iso8601')?.weekOfYear;
+					} catch {
+						w = undefined;
+					}
+					if (w === undefined) return match[0];
+					return formatNum(w);
+				});
 				break;
 			case 'F':
 				parts.push((z) => `${pad(z.year, 4)}-${pad(z.month, 2)}-${pad(z.day, 2)}`);
@@ -107,6 +152,12 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				break;
 			case 'R':
 				parts.push((z) => `${pad(z.hour, 2)}:${pad(z.minute, 2)}`);
+				break;
+			case 'z':
+				parts.push((z) => z.offset.replace(':', ''));
+				break;
+			case 'Z':
+				parts.push((z) => z.timeZoneId);
 				break;
 			default:
 				parts.push(() => match[0]);
@@ -155,19 +206,24 @@ export function compileStrftimeParser(mask: string): RegExp {
 		const index = match.index!;
 		if (index > lastIndex) {
 			const literal = mask.slice(lastIndex, index);
-			pattern += literal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			pattern += escapeRegex(literal);
 		}
 
-		const specifier = match[1];
+		const flag = match[1];
+		const width = match[2];
+		const specifier = match[3];
 		switch (specifier) {
 			case '%':
 				pattern += '%';
 				break;
 			case 'Y':
-				pattern += group('yyyy', '[+-]?\\d{4,6}|\\d{4}');
+				pattern += group('yyyy', '[+-]\\d{4,6}|\\d{4}');
 				break;
 			case 'y':
 				pattern += group('yy', '\\d{2}');
+				break;
+			case 'C':
+				pattern += group('century', '\\d{2}');
 				break;
 			case 'm':
 				pattern += group('mm', '\\d{1,2}');
@@ -180,15 +236,34 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('month_abbr', '[A-Za-z]{3,}');
 				break;
 			case 'd':
-			case 'e':
 				pattern += group('dd', '\\d{1,2}');
+				break;
+			case 'e':
+				pattern += group('dd', '\\s?\\d{1,2}');
 				break;
 			case 'H':
 				pattern += group('hh', '\\d{1,2}');
 				break;
 			case 'I':
-			case 'l':
 				pattern += group('h12', '\\d{1,2}');
+				break;
+			case 'l':
+				pattern += group('h12', '\\s?\\d{1,2}');
+				break;
+			case 'k':
+				pattern += group('hh', flag === '-' ? '\\d{1,2}' : '\\s*\\d{1,2}');
+				break;
+			case 'G':
+				pattern += group('iyyy', '\\d{4}');
+				break;
+			case 'g':
+				pattern += group('iyy', '\\d{2}');
+				break;
+			case 'V':
+				pattern += group('iw', '\\d{1,2}');
+				break;
+			case 'D':
+				pattern += `${group('mm', '\\d{2}')}/${group('dd', '\\d{2}')}/${group('yy', '\\d{2}')}`;
 				break;
 			case 'M':
 				pattern += group('mi', '\\d{1,2}');
@@ -196,9 +271,11 @@ export function compileStrftimeParser(mask: string): RegExp {
 			case 'S':
 				pattern += group('ss', '\\d{1,2}');
 				break;
-			case 'f':
-				pattern += group('us', '\\d{1,6}');
+			case 'f': {
+				const w = width ? Math.min(9, Math.max(1, Number(width))) : 6;
+				pattern += group('us', `\\d{1,${w}}`);
 				break;
+			}
 			case 'p':
 			case 'P':
 				pattern += group('mer', '[AaPp][Mm]?');
@@ -232,7 +309,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += `${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}`;
 				break;
 			default:
-				pattern += match[0].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+				pattern += escapeRegex(match[0]);
 				break;
 		}
 
@@ -241,7 +318,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 
 	if (lastIndex < mask.length) {
 		const trailing = mask.slice(lastIndex);
-		pattern += trailing.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+		pattern += escapeRegex(trailing);
 	}
 
 	const rx = new RegExp(`^${pattern}$`, 'i');
@@ -249,47 +326,49 @@ export function compileStrftimeParser(mask: string): RegExp {
 	return rx;
 }
 
-/** Resolves a localized full or abbreviated English month name to its month number. */
-function resolveMonth(str: string): number | undefined {
-	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap) ?? Enum.get(enums.MONTH, cap.slice(0, 3));
-}
-
 /**
  * Parses an input string with a POSIX strftime mask.
+ * Input is trimmed and matching is case-insensitive. Missing time fields default to zero.
+ * For calendar date masks, an explicit year defaults missing month/day to January 1;
+ * an explicit month defaults missing day to 1. Two-digit years use a cutoff of 70 (1970-2069).
+ *
+ * @param options - `today` supplies missing date fields; otherwise uses the current date in the resolved zone.
+ * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601.
+ * @returns The parsed date-time, or undefined for a mismatch or rejected fields.
+ * Temporal construction errors, including invalid time zones or calendars, are caught and return undefined.
  */
 export function parseStrftime(
 	input: string,
 	mask: string,
-	options: { timeZone?: any; calendar?: any; today?: Temporal.ZonedDateTime | undefined;[key: string]: any } = {}
+	options: ParseOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileStrftimeParser(mask);
 	const match = rx.exec(input.trim());
 	if (!match || !match.groups) return undefined;
 
-	const g = match.groups;
-	const getGroup = (name: string) => g[name] ?? Object.entries(g).find(([k]) => k === name || k.startsWith(`${name}_`))?.[1];
-
-	let tz = options.timeZone ?? 'UTC';
-	const tz_offset = getGroup('tz_offset');
-	const tz_name = getGroup('tz_name');
-	if (tz_offset) {
-		tz = tz_offset.toUpperCase() === 'Z' ? 'UTC' : tz_offset;
-	} else if (tz_name) {
-		tz = tz_name;
-	}
-
-	const today = options.today ?? Temporal.Now.zonedDateTimeISO(tz);
-	const cal = options.calendar ?? 'iso8601';
+	const getGroup = createGroupExtractor(match);
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+	const { tz, today, cal } = ctx;
 
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
+	const iyyy = getGroup('iyyy');
+	const iyyVal = getGroup('iyy');
+	const iw = getGroup('iw');
 	if (yyyy) year = parseInt(yyyy, 10);
 	else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+	} else if (iyyy) {
+		year = parseInt(iyyy, 10);
+	} else if (iyyVal) {
+		const yy = parseInt(iyyVal, 10);
+		year = yy >= 70 ? 1900 + yy : 2000 + yy;
 	}
+
+	const hasYear = Boolean(yyyy || yyVal || iyyy || iyyVal);
 
 	let month = 1;
 	let day = 1;
@@ -297,67 +376,67 @@ export function parseStrftime(
 	const mm = getGroup('mm');
 	const month_name = getGroup('month_name');
 	const month_abbr = getGroup('month_abbr');
-	const dd = getGroup('dd');
+	const dd = getGroup('dd')?.trim();
 
 	if (day_of_year) {
-		const doy = parseInt(day_of_year, 10);
-		if (doy < 1 || doy > 366) return undefined;
-		try {
-			const pDate = Temporal.PlainDate.from({ year, month: 1, day: 1 }).add({ days: doy - 1 });
-			if (pDate.year !== year) return undefined;
-			month = pDate.month;
-			day = pDate.day;
-		} catch {
-			return undefined;
+		const res = resolveDayOfYear(year, parseInt(day_of_year, 10));
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
+	} else if (iw) {
+		const isoWeek = parseInt(iw, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const weekday_num = getGroup('weekday_num');
+		let isoDay = 1;
+		if (weekday_num) {
+			const wn = parseInt(weekday_num, 10);
+			isoDay = wn === 0 ? 7 : wn;
 		}
+		const isoYear = iyyy ? parseInt(iyyy, 10) : (iyyVal ? (parseInt(iyyVal, 10) >= 70 ? 1900 + parseInt(iyyVal, 10) : 2000 + parseInt(iyyVal, 10)) : year);
+		const res = fromIsoWeek(isoYear, isoWeek, isoDay);
+		year = res.year;
+		month = res.month;
+		day = res.day;
 	} else {
 		if (mm) month = parseInt(mm, 10);
 		else if (month_name || month_abbr) {
-			const m = resolveMonth(month_name || month_abbr);
+			const m = resolveMonth(month_name || month_abbr!);
 			if (m) month = m;
 			else return undefined;
-		} else if (!yyyy && !yyVal) {
+		} else if (!hasYear) {
 			month = today.month;
 		}
 
 		if (dd) day = parseInt(dd, 10);
-		else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+		else if (!hasYear && !mm && !month_name && !month_abbr) {
 			day = today.day;
+		}
+
+		if ((iyyy || iyyVal) && mm && dd) {
+			const isoYear = iyyy ? parseInt(iyyy, 10) : (parseInt(iyyVal!, 10) >= 70 ? 1900 + parseInt(iyyVal!, 10) : 2000 + parseInt(iyyVal!, 10));
+			year = resolveIsoCalendarYear(isoYear, month, day);
 		}
 	}
 
-	let hour = 0;
-	let minute = 0;
-	let second = 0;
+	const time = resolveTimeComponents(getGroup);
+	if (!time) return undefined;
+	const { hour, minute, second } = time;
 	let millisecond = 0;
 	let microsecond = 0;
-
-	const hh = getGroup('hh');
-	const h12 = getGroup('h12');
-	if (hh) hour = parseInt(hh, 10);
-	else if (h12) hour = parseInt(h12, 10);
-
-	const mer = getGroup('mer');
-	if (mer) {
-		const isPm = mer.toLowerCase().startsWith('p');
-		if (isPm && hour < 12) hour += 12;
-		else if (!isPm && hour === 12) hour = 0;
-	}
-
-	const mi = getGroup('mi');
-	if (mi) minute = parseInt(mi, 10);
-	const ss = getGroup('ss');
-	if (ss) second = parseInt(ss, 10);
+	let nanosecond = 0;
 	const us = getGroup('us');
 	if (us) {
-		const padded = us.padEnd(6, '0').slice(0, 6);
+		const padded = us.padEnd(9, '0').slice(0, 9);
 		millisecond = parseInt(padded.slice(0, 3), 10);
 		microsecond = parseInt(padded.slice(3, 6), 10);
+		nanosecond = parseInt(padded.slice(6, 9), 10);
 	}
 
 	try {
-		return Temporal.PlainDateTime.from(
+		return Temporal.ZonedDateTime.from(
 			{
+				timeZone: tz,
+				calendar: cal,
 				year,
 				month,
 				day,
@@ -366,10 +445,11 @@ export function parseStrftime(
 				second,
 				millisecond,
 				microsecond,
+				nanosecond,
 			},
 			{ overflow: 'reject' }
-		).toZonedDateTime(tz).withCalendar(cal);
-	} catch (e) {
+		);
+	} catch {
 		return undefined;
 	}
 }
