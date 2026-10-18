@@ -1,14 +1,12 @@
 import {
 	Aborter,
-	isAbortSignal,
-	isAbortController,
 	onAbort,
 	timeoutSignal,
 	anySignal,
 	cleanupSignal,
 	NOOP,
 } from '#library/aborter.library.js';
-import { isCallable } from '#library/assertion.library.js';
+import { isCallable, isAbortSignal, isAbortController } from '#library/assertion.library.js';
 import { TIMEOUT_MAX } from '#library/number.library.js';
 
 describe('Aborter & Signal Utilities', () => {

@@ -68,7 +68,7 @@ console.log(t.zdt.monthCode);    // 'M10'
 > [!NOTE]
 > **Canonical Getters & v5 Deprecation Path**  
 > To establish a clean, predictable, and collision-free API surface across getters and format tokens:
-> * **`.woy`** is canonical for ISO week of the year. The legacy `.ww` getter is marked `@deprecated` and will transition in v5.0.0 to calendar week count (weeks starting Jan 1st).
+> * **`.woy`** is canonical for ISO week of the year. The legacy `.ww` getter is marked `@deprecated` and will be removed in v5.0.0.
 > * **`.eon`** is canonical for the positive integer year within the era (supersedes `@deprecated` `.eraYear`).
 > * **`.dd`** is canonical for the day of the month (supersedes `@deprecated` `.day`).
 

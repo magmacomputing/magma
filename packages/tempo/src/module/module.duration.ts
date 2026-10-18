@@ -1,5 +1,6 @@
 import { getTemporalIds } from '#library/temporal.library.js';
 import { isString, isObject, isDefined, isUndefined, isFunction } from '#library/assertion.library.js';
+import { hasKey } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
@@ -109,7 +110,7 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 				return ctx.durationFormat(this);
 
 			// 1. Native Intl.DurationFormat
-			if ('DurationFormat' in Intl)
+			if (hasKey(Intl, 'DurationFormat', 'function'))
 				return formatDuration(this, locale, { ...(ctx.durationFormat || {}), ...intlOpts });
 
 			// 2. Fallback Polyfill (combine all non-zero units)

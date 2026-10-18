@@ -7,7 +7,8 @@ import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
-import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, hasOwn } from '#library/primitive.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
 import { resolveTermValue } from '../engine/engine.term.js';
@@ -19,8 +20,8 @@ import { getRange, getTermRange, findTermPlugin } from '../plugin/term/term.util
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange, TermParseContext } from '../plugin/term/term.type.js';
 
-import { sym, isTempo, TermError, TermHook, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Enum, Token, Snippet, hasNativeFormatBraces } from '#tempo/support';
-import { setProperty, logError, logDebug, hasOwn } from '#tempo/support/support.util.js';
+import { sym, isTempo, TermError, TermHook, getRuntime, Match, TempoError, $setEvents, $setPeriods, markConfig, setPatterns, init, extendState, enums, Token, Snippet, hasNativeFormatBraces } from '#tempo/support';
+import { setProperty, logError, logDebug } from '#tempo/support/support.util.js';
 import * as t from '../tempo.type.js';
 
 /**

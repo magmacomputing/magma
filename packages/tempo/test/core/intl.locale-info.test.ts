@@ -433,6 +433,58 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(t.format('{dow:locale}', { locale: 'en-GB' })).toBe('1');
 		});
 
+		it('supports modifier chaining for zero-indexed local day-of-week ({dow:locale:0})', () => {
+			// 2026-09-13 is Sunday (ISO dow = 7)
+			const sun = new Tempo('2026-09-13T10:00:00Z', { locale: 'en-US' });
+			expect(sun.format('{dow}')).toBe('7'); // ISO Sunday = 7
+			expect(sun.format('{dow:0}')).toBe('0'); // Classical JS/POSIX Sunday = 0
+			expect(sun.format('{dow:locale}')).toBe('1'); // en-US Sunday = 1
+			expect(sun.format('{dow:locale:0}')).toBe('0'); // en-US Sunday = 0
+			expect(sun.format('{dow:0:locale}')).toBe('0'); // Chaining in reverse order
+
+			// 2026-09-14 is Monday (ISO dow = 1)
+			const mon = new Tempo('2026-09-14T10:00:00Z', { locale: 'en-US' });
+			expect(mon.format('{dow:locale:0}')).toBe('1'); // en-US Monday = 1
+			expect(mon.format('{dow:locale:0}', { locale: 'en-GB' })).toBe('0'); // en-GB Monday = 0
+
+			// 2026-09-12 is Saturday (ISO dow = 6)
+			const sat = new Tempo('2026-09-12T10:00:00Z', { locale: 'en-US' });
+			expect(sat.format('{dow:locale:0}')).toBe('6'); // en-US Saturday = 6
+			expect(sat.format('{dow:locale:0}', { locale: 'ar-EG-u-nu-latn' })).toBe('0'); // ar-EG Saturday = 0
+			expect(sat.format('{dow:locale:0}', { locale: 'ar-EG' })).toBe('٠'); // Transliterated to Arabic-Indic zero
+		});
+
+		it('formats locale-based week-of-year and week-year ({woy:locale}, {yow:locale})', () => {
+			// 2025-12-27 is Saturday
+			// Under US rules (firstDay=7, minimalDays=1), this is the last week of 2025 (Week 52)
+			const satUS = new Tempo('2025-12-27T12:00:00Z', { locale: 'en-US' });
+			expect(satUS.format('{woy:locale}')).toBe('52');
+			expect(satUS.format('{yow:locale}')).toBe('2025');
+
+			// 2025-12-28 is Sunday
+			// Under US rules, the week containing Jan 1st is Week 1, starting on Sunday Dec 28
+			const sunUS = new Tempo('2025-12-28T12:00:00Z', { locale: 'en-US' });
+			expect(sunUS.format('{woy:locale}')).toBe('01');
+			expect(sunUS.format('{woy:locale:raw}')).toBe('1');
+			expect(sunUS.format('{woy:locale:0}')).toBe('00');
+			expect(sunUS.format('{yow:locale}')).toBe('2026');
+			expect(sunUS.format('{yow:locale:short}')).toBe('26');
+			expect(sunUS.format('{yywoy:locale}')).toBe('202601');
+
+			// Under ISO rules (en-GB, minimalDays=4), 2025-12-28 is still Week 52 of 2025
+			expect(sunUS.format('{woy:locale}', { locale: 'en-GB' })).toBe('52');
+			expect(sunUS.format('{yow:locale}', { locale: 'en-GB' })).toBe('2025');
+
+			// Monday 2025-12-29 is Week 1 under ISO rules
+			const monISO = new Tempo('2025-12-29T12:00:00Z', { locale: 'en-GB' });
+			expect(monISO.format('{woy:locale}')).toBe('01');
+			expect(monISO.format('{yow:locale}')).toBe('2026');
+
+			// Standard {woy} and {yow} remain strictly ISO 8601
+			expect(sunUS.format('{woy}')).toBe('52');
+			expect(sunUS.format('{yow}')).toBe('2025');
+		});
+
 		it('uses the primary locale when an array is configured', () => {
 			const t = new Tempo('2026-09-13T10:00:00Z', { locale: ['en-GB', 'en-US'] });
 			expect(t.format('{dow:locale}')).toBe('7');
@@ -484,10 +536,17 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 		it('exposes t.intl.info cultural metadata', () => {
 			const t = new Tempo('2026-09-16', { locale: 'en-US' });
 			expect(t.intl.info.firstDay).toBe(7);
+			expect(t.intl.info.minimalDays).toBe(1);
+			expect(t.intl.minimalDays).toBe(1);
 			expect(t.intl.info.weekend).toEqual([6, 7]);
 			expect(t.intl.info.direction).toBe('ltr');
 			expect(t.intl.info.region).toBe('US');
 			expect(t.intl.info.baseName).toBe('en-US');
+
+			const tGB = new Tempo('2026-09-16', { locale: 'en-GB' });
+			expect(tGB.intl.info.firstDay).toBe(1);
+			expect(tGB.intl.info.minimalDays).toBe(4);
+			expect(tGB.intl.minimalDays).toBe(4);
 		});
 
 		it('exposes t.intl.locale native Intl.Locale instance', () => {

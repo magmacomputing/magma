@@ -333,5 +333,3 @@ export default {
 	LOCALE,
 	Enum,
 }
-
-export { Enum } from '#library/enumerate.library.js';

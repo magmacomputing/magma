@@ -1,5 +1,5 @@
-import { isLeapYear, toPlainDate, toZonedDateTime, getDaysInMonth } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import { isLeapYear, toPlainDate, toZonedDateTime, getDaysInMonth, Enum } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
 
 export { isLeapYear, toPlainDate, toZonedDateTime, getDaysInMonth };
 

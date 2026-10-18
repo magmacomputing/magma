@@ -4,10 +4,11 @@ import { deepMerge } from '#library/object.library.js';
 import { suffix, toRoman } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
+import { hasOwn } from '#library/primitive.library.js';
 
-import { isTempo, enums, Match, getRuntime, hasOwn, $Internal, TermHook, hasNativeFormatBraces } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -297,7 +298,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy': res = pad(zdt.year % 100); break;
 			case 'yw': case 'yow': {
-				const yow = getISOWeekOfYear(zdt).yearOfWeek;
+				const yow = normMods.includes('locale')
+					? getLocaleWeekOfYear(zdt, li).yearOfWeek
+					: getISOWeekOfYear(zdt).yearOfWeek;
 				res = normMods.includes('short') ? pad(Math.abs(yow) % 100) : pad(yow, 4);
 				break;
 			}
@@ -308,6 +311,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				} else if (normMods.includes('month')) {
 					const w = Math.ceil(zdt.day / 7);
 					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
+				} else if (normMods.includes('locale')) {
+					const w = getLocaleWeekOfYear(zdt, li).weekOfYear;
+					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
 				} else {
 					const w = getISOWeekOfYear(zdt).weekOfYear;
 					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
@@ -320,7 +326,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'yyww': case 'yywy': case 'yywoy': {
-				const { weekOfYear, yearOfWeek } = getISOWeekOfYear(zdt);
+				const { weekOfYear, yearOfWeek } = normMods.includes('locale')
+					? getLocaleWeekOfYear(zdt, li)
+					: getISOWeekOfYear(zdt);
 				res = pad(yearOfWeek, 4) + pad(weekOfYear);
 				break;
 			}
@@ -369,12 +377,14 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'dow': {
-				if (normMods.includes('zero') || normMods.includes('0')) {
-					res = (zdt.dayOfWeek % 7).toString();
-				} else if (normMods.includes('locale')) {
+				const isZero = normMods.includes('zero') || normMods.includes('0');
+				const isLocale = normMods.includes('locale');
+				if (isLocale) {
 					const firstDay = li.firstDay;
 					const localDow = ((zdt.dayOfWeek - firstDay + 7) % 7) + 1;
-					res = localDow.toString();
+					res = (isZero ? localDow - 1 : localDow).toString();
+				} else if (isZero) {
+					res = (zdt.dayOfWeek % 7).toString();
 				} else {
 					res = zdt.dayOfWeek.toString();
 				}
@@ -500,12 +510,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					const pluginHook = (plugin as any)?.[TermHook.format];
 					let hookRes: any;
 					if (isFunction(pluginHook))
-						hookRes = pluginHook.call(plugin, token, obj as Tempo);
+						hookRes = pluginHook.call(plugin, token, obj as unknown as Tempo);
 
 					if (!isDefined(hookRes)) {
 						const instanceHook = ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
 						if (isFunction(instanceHook))
-							hookRes = instanceHook.call(((obj as any)?.term?.[termName]), token, obj as Tempo);
+							hookRes = instanceHook.call(((obj as any)?.term?.[termName]), token, obj as unknown as Tempo);
 					}
 					if (isDefined(hookRes)) {
 						res = hookRes;
@@ -727,7 +737,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				case 'space': {
-					if (!normMods.some(m => RE_INTEGER.test(m) && m !== '0')) {
+					if (token !== 'h12' && !normMods.some(m => RE_INTEGER.test(m) && m !== '0')) {
 						const defaultWidth = (token === 'doy' || (token === 'dd' && normMods.includes('year'))) ? 3
 							: (token === 'ss' && normMods.includes('day')) ? 5
 								: 2;

@@ -15,6 +15,7 @@ export { getContext, CONTEXT, deepFreeze } from '#library/utility.library.js';
 export { Interval } from '#library/scheduling/interval.class.js';
 
 export * from '#library/proxy.library.js';
+export * from '#library/primitive.library.js';
 export * from '#library/coercion.library.js';
 export * from '#library/assertion.library.js';
 export * from '#library/evaluation.library.js';
@@ -33,4 +34,5 @@ export * from '#library/finalizer.class.js';
 export * from '#library/reactive.class.js';
 export * from '#library/aborter.library.js';
 export * from '#library/type.library.js';
+export { getISOWeekOfYear } from '#library/international.library.js';
 

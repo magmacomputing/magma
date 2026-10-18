@@ -1,4 +1,4 @@
-import { evaluate, hasKeys } from '@magmacomputing/tempo/library';
+import { evaluate, hasKey } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import { formatLdml, parseLdml } from '../compiler/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js';
@@ -25,7 +25,7 @@ const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWy
  * @throws Errors from evaluating a dialect supplier propagate to the caller.
  */
 export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
-	const raw = hasKeys(dialectOrOptions, 'dialect')
+	const raw = hasKey(dialectOrOptions, 'dialect')
 		? dialectOrOptions.dialect
 		: dialectOrOptions;
 	const resolved = evaluate(raw);

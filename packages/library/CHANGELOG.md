@@ -8,11 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.7.0] - 2026-10-16
 
 ### Added & Hardened
-- **Safe Object Key Assertion (`hasKeys` & `hasKey`)**:
-  - Exported `hasKeys<K extends PropertyKey>(obj: unknown, ...keys: K[]): obj is Record<K, unknown>` and alias `hasKey` in `#library/primitive.library.js` and `#library/assertion.library.js`.
-  - Asserts whether an object has one or more property keys (using the `in` operator, safely unwrapping Proxies if present).
-  - Safe against `null`, `undefined`, and non-object primitives without throwing exceptions, providing TypeScript type narrowing to `Record<K, unknown>`.
-  - Added test suite in `packages/library/test/common/primitives/assertion.library.test.ts`.
+- **Safe Object Key Assertions (`hasKey`, `hasOwn`, `hasKeys`, `hasAnyOf`, `hasNoneOf`)**:
+  - Exported `hasKey(obj, key, ...guards)` with TypeScript overloads supporting key existence narrowing and spread type assertions via case-insensitive type tags (`'String'`, `'number'`, `'unknown'`, `'any'`) and predicate functions (`isString`, `isNumber`, `isFunction<T>`).
+  - Overloaded `hasOwn(obj, key, ...guards)` with matching spread type assertions for own properties.
+  - Exported `hasKeys(obj, ...keys)` for conjunction (`AND` across all keys).
+  - Exported `hasAnyOf(obj, ...keys)` for disjunction (`OR` across candidate keys).
+  - Exported `hasNoneOf(obj, ...keys)` for exclusion (`NOT` / none of candidate keys).
+  - Asserts property existence via `in` operator (or `Object.hasOwn`), safely unwrapping Proxies, safe against `null`, `undefined`, and non-object primitives without throwing exceptions.
+  - Added comprehensive test suites in `packages/library/test/common/primitives/assertion.library.test.ts`.
 - **Roman Numeral Conversion Routines (`number.library`)**:
   - Exported `toRoman(num: number): string` in `#library/number.library.js`, converting positive integers (1–3999) to standard subtractive Roman numeral strings (e.g. `2026` → `'MMXXVI'`, `14` → `'XIV'`). Safely returns `''` for non-integers or values outside range.
   - Exported `fromRoman(roman: string): number` in `#library/number.library.js`, parsing case-insensitive Roman numeral strings into integer values (1–3999) validated against standard strict Roman numeral syntax (`RE_ROMAN_NUMERALS`), returning `NaN` for malformed or non-numeral strings.

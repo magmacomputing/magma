@@ -5,7 +5,7 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage, isTestEnvironment } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
-import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, ownValues, unwrap, hasKey, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
@@ -17,13 +17,13 @@ import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getI
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
+import { Enum } from '#library/enumerate.library.js';
 import { LOG } from '#library/logger.class.js';
 import type { Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term/term.util.js';
-import type { PluginFactory } from './plugin/plugin.type.js';
-import type { TermPlugin, TermFactory } from './plugin/term/term.type.js';
+import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
@@ -31,10 +31,11 @@ import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
 import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
+import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
-import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
+import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, Enum, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
@@ -454,12 +455,11 @@ export class Tempo {
 		}
 
 		// 4. Process Plugins & Plugin Options
-		if (discovery.pluginOptions && isPlainObject(discovery.pluginOptions)) {
+		if (discovery.pluginOptions && isPlainObject(discovery.pluginOptions))
 			opts = { ...opts, pluginOptions: isPlainObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
-		}
 
 		/** @deprecated Providing configuration dictionaries under 'discovery.plugins' is deprecated. Use 'discovery.pluginOptions' instead. */
-		if (discovery.plugins && isPlainObject(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
+		if (discovery.plugins && isPlainObject(discovery.plugins) && hasNoneOf(discovery.plugins, 'install', 'key')) {
 			opts = {
 				...opts,
 				plugins: isPlainObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
@@ -582,12 +582,12 @@ export class Tempo {
 		const isPluginLike = (arg: any): boolean =>
 			Array.isArray(arg) ||
 			isFunction(arg) ||
-			(isObject(arg) && ('install' in arg || 'define' in arg || sym.$PluginType in arg));
+			hasAnyOf(arg, 'install', 'define', sym.$PluginType);
 
 		const isPlainConfigDict = (arg: any) =>
 			isPlainObject(arg) &&
 			!ownKeys(arg).some(key => DISCOVERY.has(key as any)) &&
-			!('name' in arg) && !('key' in arg) && !('install' in arg) && !('define' in arg) && !(sym.$PluginType in arg) &&
+			hasNoneOf(arg, 'name', 'key', 'install', 'define', sym.$PluginType) &&
 			ownKeys(arg).length > 0 &&
 			ownKeys(arg).every(k => isObject(arg[k]));
 
@@ -646,18 +646,18 @@ export class Tempo {
 					} else if (plugin.length === 0 && callSiteOptions !== undefined) {
 						// Potential factory function passed in tuple: [factoryFn, opts]
 						const res = (plugin as any)(callSiteOptions);
-						if (res && (isObject(res) || isFunction(res)) && ((res as any).install || (res as any).define || (sym.$PluginType in res))) {
+						if (hasAnyOf(res, 'install', 'define', sym.$PluginType)) {
 							plugin = res;
 							callSiteOptions = { ...((res as any).options ?? {}), ...(callSiteOptions ?? {}) };
 						}
 					}
-				} else if (isObject(plugin) && (plugin as any).options) {
+				} else if (hasKey(plugin, 'options') && plugin.options) {
 					callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
 				}
 
 				let pluginType = (plugin as any)?.[sym.$PluginType] || (plugin as any)?.type;
-				if (!pluginType && isFunction((plugin as any)?.define) && (plugin as any)?.key) pluginType = 'term';
-				if (!pluginType && isFunction((plugin as any)?.install)) pluginType = 'plugin';
+				if (!pluginType && hasKey(plugin, 'define', isFunction) && hasKey(plugin, 'key')) pluginType = 'term';
+				if (!pluginType && hasKey(plugin, 'install', isFunction)) pluginType = 'plugin';
 
 				if (!pluginType && isFunction(plugin)) {
 					// Legacy Standard Plugin registration callback: (Tempo, options, rehydrator)
@@ -885,7 +885,7 @@ export class Tempo {
 							// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
 							const isPlainConfigDict = isPlainObject(discovery) &&
 								!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
-								!('name' in discovery) && !('key' in discovery) && !('install' in discovery);
+								hasNoneOf(discovery, 'name', 'key', 'install');
 							if (isPlainConfigDict) {
 								const state = this[$Internal]();
 								/** @deprecated Supplying plain configuration dictionaries in the plugins array is deprecated. Use 'pluginOptions' instead. */
@@ -893,7 +893,7 @@ export class Tempo {
 								state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...discovery };
 							}
 
-							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
+							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || hasAnyOf(discovery.plugins, 'name', 'key', 'install')))
 								this.use(discovery.plugins);
 
 							// only trigger init if we're assigning a new discovery object to a symbol
@@ -1034,13 +1034,13 @@ export class Tempo {
 		);
 
 		const pluginsToInstall = options.plugins ?? data?.plugins;
-		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || (isObject(pluginsToInstall) && ('name' in pluginsToInstall || 'key' in pluginsToInstall || 'install' in pluginsToInstall || sym.$PluginType in pluginsToInstall || (pluginsToInstall as any).type)))) {
+		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || hasAnyOf(pluginsToInstall, 'name', 'key', 'install', sym.$PluginType, 'type'))) {
 			let toInstall = pluginsToInstall;
 			if (Array.isArray(pluginsToInstall)) {
 				const isPlainConfigDict = (item: any) =>
 					isPlainObject(item) &&
 					!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
-					!('name' in item) && !('key' in item) && !('install' in item) && !('define' in item) && !(sym.$PluginType in item);
+					hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
 
 				const remaining: any[] = [];
 				for (const item of pluginsToInstall) {
@@ -1191,12 +1191,12 @@ export class Tempo {
 			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
 
 			const isInstallable = (item: any) =>
-				Array.isArray(item) || isFunction(item) || (isObject(item) && ('name' in item || 'key' in item || 'install' in item || sym.$PluginType in item || item.type));
+				Array.isArray(item) || isFunction(item) || hasAnyOf(item, 'name', 'key', 'install', sym.$PluginType, 'type');
 
 			const isPlainConfigDict = (item: any) =>
 				isPlainObject(item) &&
 				!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
-				!('name' in item) && !('key' in item) && !('install' in item) && !('define' in item) && !(sym.$PluginType in item);
+				hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
 
 			const extractConfigDicts = (plugins: any): any => {
 				if (!Array.isArray(plugins)) return plugins;

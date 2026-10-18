@@ -1,6 +1,6 @@
 import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import { getRuntime } from '@magmacomputing/tempo/support';
-import { isFunction } from '@magmacomputing/tempo/library';
+import { isDefined, isFunction, isObject } from '@magmacomputing/tempo/library';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAlias } from './constants.js';
@@ -64,7 +64,7 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 		if (!hasOwn(installedClass, 'dialects')) {
 			const staticNamespace: DialectsStaticNamespace = {
 				parse: (input: string, mask: string, dialectOrOptions?: string | any, options?: any): Tempo => {
-					const opts = typeof dialectOrOptions === 'object' && dialectOrOptions !== null ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
+					const opts = isObject(dialectOrOptions) ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
 					return (installedClass as any).from(input, {
 						...opts,
 						format: mask,
@@ -72,11 +72,31 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 					});
 				},
 				fromFormats: (input: string, masks: string[], dialectOrOptions?: string | any, options?: any): Tempo => {
-					const opts = typeof dialectOrOptions === 'object' && dialectOrOptions !== null ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
-					return (installedClass as any).from(input, {
+					const opts = isObject(dialectOrOptions) ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
+					if (isDefined(opts.dialect)) {
+						return (installedClass as any).from(input, {
+							...opts,
+							format: masks,
+						});
+					}
+					let lastInstance: any;
+					for (const mask of masks) {
+						try {
+							const t = (installedClass as any).from(input, {
+								...opts,
+								format: mask,
+								dialect: detectDialect(mask),
+							});
+							if (t?.isValid) return t;
+							lastInstance = t;
+						} catch {
+							// continue to next candidate mask
+						}
+					}
+					return lastInstance ?? (installedClass as any).from(input, {
 						...opts,
 						format: masks,
-						dialect: opts.dialect ?? (masks && masks[0] ? detectDialect(masks[0]) : DIALECT.Ldml),
+						dialect: DIALECT.Ldml,
 					});
 				},
 				explain: (mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult => {

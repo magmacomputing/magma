@@ -1,5 +1,5 @@
-import { pad, WeakCache } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import { pad, WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type ParseOptions,
@@ -310,6 +310,9 @@ export function compileStrftimeParser(mask: string): RegExp {
 			case 'R':
 				pattern += `${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}`;
 				break;
+			case 's':
+				pattern += group('epoch_sec', '[+-]?\\d+');
+				break;
 			default:
 				pattern += escapeRegex(match[0]);
 				break;
@@ -353,16 +356,29 @@ export function parseStrftime(
 	if (!ctx) return undefined;
 	const { tz, today, cal } = ctx;
 
+	const epoch_sec = getGroup('epoch_sec');
+	if (epoch_sec) {
+		try {
+			const instantZdt = Temporal.Instant.fromEpochMilliseconds(Number(epoch_sec) * 1000).toZonedDateTimeISO(tz);
+			return cal === 'iso8601' ? instantZdt : instantZdt.withCalendar(cal);
+		} catch {
+			return undefined;
+		}
+	}
+
 	let year = today.year;
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
+	const century = getGroup('century');
 	const iyyy = getGroup('iyyy');
 	const iyyVal = getGroup('iyy');
 	const iw = getGroup('iw');
 	if (yyyy) year = parseInt(yyyy, 10);
 	else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
-		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+		year = century
+			? parseInt(century, 10) * 100 + yy
+			: (yy >= 70 ? 1900 + yy : 2000 + yy);
 	} else if (iyyy) {
 		year = parseInt(iyyy, 10);
 	} else if (iyyVal) {

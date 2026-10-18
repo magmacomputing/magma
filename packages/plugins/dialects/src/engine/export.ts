@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze, hasKeys, isDefined } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKey, isDefined } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import type { ExportedToken, ExportResult } from '../types.js';
 
@@ -44,7 +44,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', desc: 'Zero-padded day of month (01-31)' },
 	'dd:raw': { ldml: 'd', strftime: '%-d', oracle: 'FMDD', moment: 'D', php: 'j', go: '2', desc: 'Unpadded day of month (1-31)' },
 	'dd:space': { strftime: '%e', go: '_2', desc: 'Space-padded day of month ( 1-31)' },
-	'dd:ord': { ldml: 'Do', oracle: 'DDTH', moment: 'Do', desc: 'Day of month with ordinal suffix' },
+	'dd:ord': { oracle: 'DDTH', moment: 'Do', desc: 'Day of month with ordinal suffix' },
 
 	// Day of Year
 	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
@@ -64,8 +64,8 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'dow:ord': { moment: 'do', desc: 'Day of week with ordinal suffix' },
 
 	// Week of Year
-	woy: { ldml: 'ww', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
-	'woy:raw': { ldml: 'w', strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
+	woy: { ldml: 'II', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
+	'woy:raw': { ldml: 'I', strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
 	'woy:ord': { moment: 'Wo', desc: 'ISO week of year with ordinal suffix' },
 
 	// Era
@@ -78,7 +78,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'hh:space': { strftime: '%k', desc: 'Space-padded 24-hour clock ( 0-23)' },
 	h12: { ldml: 'hh', strftime: '%I', oracle: 'HH12', moment: 'hh', php: 'h', go: '03', desc: '12-hour clock zero-padded (01-12)' },
 	'h12:raw': { ldml: 'h', strftime: '%-I', oracle: 'FMHH12', moment: 'h', php: 'g', go: '3', desc: '12-hour clock unpadded (1-12)' },
-	'h12:space': { strftime: '%l', desc: 'Space-padded 12-hour clock ( 1-12)' },
+	'h12:space': { desc: '12-hour clock with space before meridiem' },
 	mi: { ldml: 'mm', strftime: '%M', oracle: 'MI', moment: 'mm', php: 'i', go: '04', desc: 'Zero-padded minute (00-59)' },
 	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMI', moment: 'm', go: '4', desc: 'Unpadded minute (0-59)' },
 	ss: { ldml: 'ss', strftime: '%S', oracle: 'SS', moment: 'ss', php: 's', go: '05', desc: 'Zero-padded second (00-59)' },
@@ -100,7 +100,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	// Timezone
 	tz: { ldml: 'zzzz', strftime: '%Z', oracle: 'TZR', moment: 'z', php: 'e', go: 'MST', desc: 'Time zone region name / identifier' },
 	'tz:short': { ldml: 'z', strftime: '%Z', oracle: 'TZD', moment: 'zz', php: 'T', go: 'MST', desc: 'Time zone daylight / short abbreviation' },
-	'tz:offset': { ldml: 'ZZZZZ', strftime: '%z', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
+	'tz:offset': { ldml: 'ZZZZZ', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
 	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
 	'tz:offset:hh': { oracle: 'TZH', go: '-07', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
 	'tz:offset:mi': { oracle: 'TZM', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
@@ -195,14 +195,15 @@ const REGEX_PERCENT = /%/g;
 const REGEX_PHP_ESCAPE = /[A-Za-z\\]/g;
 const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+|\{)/g;
 const REGEX_FF_PRECISION = /^ff:([1-9])$/i;
-const REGEX_GO_CONFLICT = /(?:2006|002|__2|_2|15|04|05|01|02|03|06|Jan|January|Mon|Monday|MST|PM|pm|[1-5])/;
+const REGEX_GO_CONFLICT =
+	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|[1-5])/;
 
 /** Escapes literal text for the target dialect; Go text is returned unchanged because layouts have no escape syntax. */
 function quoteLiteral(str: string, dialect: Dialect): string {
 	if (!str) return '';
 	switch (dialect) {
 		case DIALECT.Ldml:
-			return str.replace(REGEX_SINGLE_QUOTE, "''").replace(REGEX_ALPHA, (m) => `'${m}'`);
+			return /[A-Za-z']/.test(str) ? `'${str.replace(REGEX_SINGLE_QUOTE, "''")}'` : str;
 
 		case DIALECT.Moment:
 			return str.replace(REGEX_ALPHA, (m) => `[${m}]`);
@@ -227,14 +228,15 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 /**
  * Exports a native Tempo format pattern into the corresponding external dialect format model.
  * Unsupported tokens remain in the pattern. Go literal conflicts and fractional tokens without
- * a preceding decimal point are also reported as unsupported.
+ * a preceding decimal point are also reported as unsupported. Adjacency conflicts between
+ * successive tokens are not detected.
  *
  * @param dialectOrOptions - Target dialect name or supplier, or an object with `dialect`; defaults to LDML
  * @returns A deeply frozen result with token mappings and an `unsupported` list; its string form is the pattern
  * @throws Errors from evaluating a dialect supplier propagate to the caller.
  */
 export function exportDialect(tempoMask: string, dialectOrOptions?: any): ExportResult {
-	const raw = hasKeys(dialectOrOptions, 'dialect')
+	const raw = hasKey(dialectOrOptions, 'dialect')
 		? dialectOrOptions.dialect
 		: dialectOrOptions;
 	const dialect = isDefined(raw) ? normalizeDialect(evaluate(raw)) : DIALECT.Ldml;
@@ -317,9 +319,7 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 		pattern,
 		tokens,
 		unsupported,
-		toString() {
-			return pattern;
-		},
+		toString: () => pattern,
 	};
 
 	return deepFreeze(result);

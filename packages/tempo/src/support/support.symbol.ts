@@ -1,6 +1,5 @@
 import { looseIndex } from '#library/object.library.js';
-import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity } from '#library/symbol.library.js';
-export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity };
+import { sym as lib } from '#library/symbol.library.js';
 
 /**
  * Checks if the given value is a valid Tempo instance.

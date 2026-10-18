@@ -166,7 +166,7 @@ describe('Dialect Export', () => {
 
 	it('accepts options object { dialect: ... } and exports era and woy to LDML', () => {
 		const res = Tempo.dialects.export('{yyyy}-{mm}-{dd} {woy} {era} {era:long}', { dialect: DIALECT.Ldml });
-		expect(res.pattern).toBe('yyyy-MM-dd ww G GGGG');
+		expect(res.pattern).toBe('yyyy-MM-dd II G GGGG');
 		expect(res.unsupported).toHaveLength(0);
 	});
 

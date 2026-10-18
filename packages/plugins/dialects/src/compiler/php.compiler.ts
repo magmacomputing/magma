@@ -1,5 +1,5 @@
-import { WeakCache, suffix } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import { WeakCache, suffix, Enum, getISOWeekOfYear } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type ParseOptions,
@@ -49,7 +49,7 @@ export function compilePhpFormatter(mask: string): FormatterFn {
 				parts.push((zdt) => (Math.abs(zdt.year) % 100).toString().padStart(2, '0'));
 				break;
 			case 'o':
-				parts.push((zdt) => (zdt.yearOfWeek ?? zdt.year).toString().padStart(4, '0'));
+				parts.push((zdt) => getISOWeekOfYear(zdt).yearOfWeek.toString().padStart(4, '0'));
 				break;
 
 			// Month
@@ -98,7 +98,7 @@ export function compilePhpFormatter(mask: string): FormatterFn {
 				parts.push((zdt) => (zdt.dayOfWeek % 7).toString());
 				break;
 			case 'W': // ISO-8601 week number
-				parts.push((zdt) => (zdt.weekOfYear ?? 1).toString().padStart(2, '0'));
+				parts.push((zdt) => getISOWeekOfYear(zdt).weekOfYear.toString().padStart(2, '0'));
 				break;
 
 			// Clock & Time

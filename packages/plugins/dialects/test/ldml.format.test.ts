@@ -14,6 +14,7 @@ describe('Unicode LDML Formatting', () => {
 	it('formats 12-hour clocks with AM/PM markers', () => {
 		expect(dt.format('hh:mm:ss a', { dialect: DIALECT.Ldml })).toBe('03:30:45 pm');
 		expect(dt.format('h:mm aa', { dialect: DIALECT.Ldml })).toBe('3:30 PM');
+		expect(dt.format('h:mm aaa', { dialect: DIALECT.Ldml })).toBe('3:30 pm');
 	});
 
 	it('formats month and weekday names', () => {

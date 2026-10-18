@@ -193,5 +193,19 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(parsedHebrew.cal).toBe('hebrew');
 		expect(parsedHebrew.toDateTime().year).toBeGreaterThan(5700);
 	});
+
+	it('parses %s epoch seconds and %C century specifiers', () => {
+		const parsedEpoch = Tempo.dialects.parse('1729780800', '%s', DIALECT.Strftime);
+		expect(parsedEpoch.isValid).toBe(true);
+		expect(parsedEpoch.ts).toBe(1729780800000);
+		expect(parsedEpoch.format('%s', { dialect: 'strftime' })).toBe('1729780800');
+
+		// With %C = 20 and %y = 84, year is 2084 (overriding the 70 cutoff that would yield 1984)
+		const parsedCentury = Tempo.dialects.parse('2084-05-10', '%C%y-%m-%d', DIALECT.Strftime);
+		expect(parsedCentury.isValid).toBe(true);
+		expect(parsedCentury.yy).toBe(2084);
+		expect(parsedCentury.mm).toBe(5);
+		expect(parsedCentury.dd).toBe(10);
+	});
 });
 

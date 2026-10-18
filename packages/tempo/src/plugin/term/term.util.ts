@@ -646,7 +646,7 @@ export function resolveRangeFormat(
 	if (isNullish(curr) || isFunction(curr)) return undefined;
 
 	if (isTempo(curr))
-		return (curr as Tempo).format('{yyyy}-{mm}-{dd}');
+		return (curr as unknown as Tempo).format('{yyyy}-{mm}-{dd}');
 
 	return isObject(curr)
 		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)

@@ -41,7 +41,7 @@ export default defineConfig({
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, '../tempo/dist/module/module.index.js') },
 			{ find: /^#tempo\/support$/, replacement: resolve(__dirname, '../tempo/dist/support/support.index.js') },
 			{ find: /^#tempo\/tempo\.class\.js$/, replacement: resolve(__dirname, '../tempo/dist/tempo.index.js') },
-			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../tempo/dist/term/index.js') },
+			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../tempo/dist/plugin/term/term.index.js') },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, '../tempo/dist/$1.js') },
 			{ find: /^#tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/dist/$1.js') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, '../tempo/dist/tempo.index.js') },

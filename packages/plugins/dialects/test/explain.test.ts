@@ -134,7 +134,7 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('translates PHP z to zero-indexed day of year in explain mapping', () => {
 		const res = Tempo.dialects.explain('z', DIALECT.Php);
-		expect(res.tokens[0].tempo).toBe('{dd:year:raw:0}');
+		expect(res.tokens[0].tempo).toBe('{doy:raw:0}');
 		expect(res.tokens[0].desc).toContain('day of the year starting from 0');
 	});
 
@@ -211,7 +211,7 @@ describe('Dialect Explain & Migration Helper', () => {
 
 		// PHP z and t
 		const resPhp = Tempo.dialects.explain('z t', DIALECT.Php);
-		expect(resPhp.pattern).toBe('{dd:year:raw:0} {dim}');
+		expect(resPhp.pattern).toBe('{doy:raw:0} {dim}');
 
 		// Strftime %C and %w
 		const resStrftime = Tempo.dialects.explain('%C %w', DIALECT.Strftime);
@@ -229,5 +229,26 @@ describe('Dialect Explain & Migration Helper', () => {
 
 		const resInst = new Tempo('2026-10-24').dialects.explain('YYYY-MM-DD', { dialect: 'moment' });
 		expect(resInst.pattern).toBe('{yyyy}-{mm}-{dd}');
+	});
+
+	it('translates LDML fractional seconds across various widths (SSSS, SSSSS, SSSSSSSS)', () => {
+		const res4 = Tempo.dialects.explain('HH:mm:ss.SSSS', DIALECT.Ldml);
+		expect(res4.pattern).toBe('{hh}:{mi}:{ss}.{ff:4}');
+		expect(res4.tokens.find(t => t.source === 'SSSS')).toEqual({
+			source: 'SSSS',
+			tempo: '{ff:4}',
+			desc: 'Fractional seconds (4 digits)',
+		});
+
+		const res5 = Tempo.dialects.explain('ss.SSSSS', DIALECT.Ldml);
+		expect(res5.pattern).toBe('{ss}.{ff:5}');
+
+		const res8 = Tempo.dialects.explain('ss.SSSSSSSS', DIALECT.Ldml);
+		expect(res8.pattern).toBe('{ss}.{ff:8}');
+		expect(res8.tokens.find(t => t.source === 'SSSSSSSS')).toEqual({
+			source: 'SSSSSSSS',
+			tempo: '{ff:8}',
+			desc: 'Fractional seconds (8 digits)',
+		});
 	});
 });

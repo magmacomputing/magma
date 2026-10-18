@@ -1,6 +1,7 @@
 import type { Tempo } from '@magmacomputing/tempo';
-import { formatWithDialect } from '../engine/dialect.registry.js';
+import { formatWithDialect, detectDialect } from '../engine/dialect.registry.js';
 import { DIALECT } from '../constants.js';
+import { isDefined } from '@magmacomputing/tempo/library';
 
 /**
  * Attaches convenience shims for developers migrating from Luxon or Moment.
@@ -46,10 +47,30 @@ export function attachDialectShims(TempoClass: any): void {
 	if (!TempoClass.fromFormats) {
 		Object.defineProperty(TempoClass, 'fromFormats', {
 			value: function fromFormats(input: string, masks: string[], options: Tempo.Options = {}): Tempo {
-				return (TempoClass as any).from(input, {
+				if (isDefined(options.dialect)) {
+					return (TempoClass as any).from(input, {
+						...options,
+						format: masks,
+					});
+				}
+				let lastInstance: any;
+				for (const mask of masks) {
+					try {
+						const t = (TempoClass as any).from(input, {
+							...options,
+							format: mask,
+							dialect: detectDialect(mask),
+						});
+						if (t && t.isValid) return t;
+						lastInstance = t;
+					} catch {
+						// continue to next candidate mask
+					}
+				}
+				return lastInstance ?? (TempoClass as any).from(input, {
 					...options,
 					format: masks,
-					dialect: options.dialect ?? DIALECT.Ldml,
+					dialect: DIALECT.Ldml,
 				});
 			},
 			writable: false,

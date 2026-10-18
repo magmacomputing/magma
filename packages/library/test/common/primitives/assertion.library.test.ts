@@ -1,8 +1,9 @@
 import {
-	isNumber, isNumeric, isText, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
-	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid, hasOwn, hasKeys, hasKey,
+	isString, isNumber, isNumeric, isText, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
+	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid,
 	RE_DIGITS, RE_WHITESPACE, RE_WHITESPACES, RE_COMBINING_MARKS, RE_HEX_8, RE_BASE64URL
 } from '#library/assertion.library.js';
+import { hasOwn, hasKeys, hasKey, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 
 describe('Assertion Library', () => {
 
@@ -366,6 +367,31 @@ describe('Assertion Library', () => {
 				expect(record.provider.name).toBe('geo');
 			}
 		});
+
+		it('should assert own property types using type tags and assertion functions in hasOwn', () => {
+			const data = { id: 101, title: 'demo' };
+
+			expect(hasOwn(data, 'id', 'Number')).toBe(true);
+			expect(hasOwn(data, 'id', 'string')).toBe(false);
+			expect(hasOwn(data, 'id', 'string', 'number')).toBe(true);
+			expect(hasOwn(data, 'title', isString)).toBe(true);
+			expect(hasOwn(data, 'title', 'any')).toBe(true);
+			expect(hasOwn(data, 'title', 'unknown')).toBe(true);
+
+			// Ignores prototype properties even if type matches
+			class Base {
+				get dialect() { return 'ldml'; }
+			}
+			const instance = new Base();
+			expect(hasKey(instance, 'dialect', 'string')).toBe(true);
+			expect(hasOwn(instance, 'dialect', 'string')).toBe(false);
+
+			// Type narrowing
+			const config: unknown = { timeout: 3000 };
+			if (hasOwn(config, 'timeout', 'number')) {
+				expect(config.timeout.toFixed()).toBe('3000');
+			}
+		});
 	});
 
 	describe('hasKeys / hasKey', () => {
@@ -406,6 +432,187 @@ describe('Assertion Library', () => {
 				expect(input.dialect).toBe('strftime');
 				expect(input.format).toBe('%Y');
 			}
+		});
+
+		it('should assert value types using TypeofTag in hasKey', () => {
+			const data = {
+				str: 'hello',
+				num: 42,
+				bool: true,
+				fn: () => 'ok',
+				big: 100n,
+				sym: Symbol('test'),
+				undef: undefined,
+				arr: [1, 2, 3],
+				nul: null,
+				obj: { nested: true }
+			};
+
+			expect(hasKey(data, 'str', 'string')).toBe(true);
+			expect(hasKey(data, 'str', 'number')).toBe(false);
+
+			expect(hasKey(data, 'num', 'number')).toBe(true);
+			expect(hasKey(data, 'num', 'string')).toBe(false);
+
+			expect(hasKey(data, 'bool', 'boolean')).toBe(true);
+			expect(hasKey(data, 'fn', 'function')).toBe(true);
+			expect(hasKey(data, 'big', 'bigint')).toBe(true);
+			expect(hasKey(data, 'sym', 'symbol')).toBe(true);
+
+			expect(hasKey(data, 'undef', 'undefined')).toBe(true);
+			expect(hasKey(data, 'missing', 'undefined')).toBe(false); // key missing entirely
+
+			expect(hasKey(data, 'arr', 'array')).toBe(true);
+			expect(hasKey(data, 'arr', 'object')).toBe(false); // array is not a plain object
+
+			expect(hasKey(data, 'nul', 'null')).toBe(true);
+			expect(hasKey(data, 'nul', 'object')).toBe(false); // null is not an object
+
+			expect(hasKey(data, 'obj', 'object')).toBe(true);
+			expect(hasKey(data, 'obj', 'array')).toBe(false);
+
+			// Missing keys return false regardless of expected type
+			expect(hasKey(data, 'nonexistent', 'string')).toBe(false);
+			expect(hasKey(null, 'str', 'string')).toBe(false);
+			expect(hasKey(undefined, 'str', 'string')).toBe(false);
+		});
+
+		it('should assert value types using custom assertion / predicate functions in hasKey', () => {
+			const payload = {
+				id: '123e4567-e89b-12d3-a456-426614174000',
+				code: '12345',
+				count: 25,
+				invalidUuid: 'not-a-uuid'
+			};
+
+			expect(hasKey(payload, 'id', isUuid)).toBe(true);
+			expect(hasKey(payload, 'invalidUuid', isUuid)).toBe(false);
+			expect(hasKey(payload, 'code', isDigits)).toBe(true);
+
+			// Boolean predicate
+			expect(hasKey(payload, 'count', (val): val is number => typeof val === 'number' && val > 10)).toBe(true);
+			expect(hasKey(payload, 'count', (val): val is number => typeof val === 'number' && val > 50)).toBe(false);
+
+			// Type narrowing with guard
+			const target: unknown = { id: '123e4567-e89b-12d3-a456-426614174000', timeout: 5000 };
+			if (hasKey(target, 'id', isUuid) && hasKey(target, 'timeout', 'number')) {
+				expect(target.id.length).toBe(36);
+				expect(target.timeout.toFixed()).toBe('5000');
+			}
+		});
+
+		it('should assert spread type tags and assertion functions in hasKey', () => {
+			const err1 = { code: 'ERR_TIMEOUT', status: 404 };
+			const err2 = { code: 500, status: null };
+
+			// Case-insensitive string type tags
+			expect(hasKey(err1, 'code', 'String', 'number')).toBe(true);
+			expect(hasKey(err2, 'code', 'string', 'NUMBER')).toBe(true);
+			expect(hasKey(err1, 'code', 'NUMBER', 'Boolean')).toBe(false);
+
+			// Real assertion functions
+			expect(hasKey(err1, 'code', isString, isNumber)).toBe(true);
+			expect(hasKey(err2, 'code', isString, isNumber)).toBe(true);
+
+			// Mixed string tags and assertion functions
+			expect(hasKey(err1, 'code', isNumber, 'String')).toBe(true);
+			expect(hasKey(err2, 'status', 'number', 'null')).toBe(true);
+			expect(hasKey(err1, 'status', 'String', 'null')).toBe(false);
+
+			// Multi-member spreads
+			const complex = { val: true };
+			expect(hasKey(complex, 'val', 'String', 'Number', 'Boolean')).toBe(true);
+			expect(hasKey(complex, 'val', 'String', 'Number', 'Symbol')).toBe(false);
+
+			// Type narrowing verification in TypeScript
+			const item: unknown = { code: 'E101', retries: 3 };
+			if (hasKey(item, 'code', 'String', 'number') && hasKey(item, 'retries', 'number', 'undefined')) {
+				const c: string | number = item.code;
+				const r: number | undefined = item.retries;
+				expect(typeof c).toBe('string');
+				expect(r).toBe(3);
+			}
+
+			// Type narrowing with assertion functions
+			const payload: unknown = { id: '123e4567-e89b-12d3-a456-426614174000', count: 10 };
+			if (hasKey(payload, 'id', isUuid, isNumber) && hasKey(payload, 'count', isNumber)) {
+				const id: string | number = payload.id;
+				const count: number = payload.count;
+				expect((id as string).length).toBe(36);
+				expect(count).toBe(10);
+			}
+
+			// Type narrowing with isFunction<ReturnType> instantiation expression
+			const service: unknown = { compute: () => 42, label: () => 'result' };
+			if (hasKey(service, 'compute', isFunction<number>) && hasKey(service, 'label', isFunction<() => string>)) {
+				const computed: number = service.compute();
+				const label: string = service.label();
+				expect(computed).toBe(42);
+				expect(label).toBe('result');
+			}
+		});
+	});
+
+	describe('hasAnyOf', () => {
+		it('should return true if target has at least one of the specified keys', () => {
+			const obj = { a: 1, b: 2 };
+			expect(hasAnyOf(obj, 'a', 'x', 'y')).toBe(true);
+			expect(hasAnyOf(obj, 'x', 'b')).toBe(true);
+			expect(hasAnyOf(obj, 'a')).toBe(true);
+		});
+
+		it('should return false if target has none of the specified keys', () => {
+			const obj = { a: 1, b: 2 };
+			expect(hasAnyOf(obj, 'x', 'y', 'z')).toBe(false);
+		});
+
+		it('should return false if no keys are provided', () => {
+			expect(hasAnyOf({ a: 1 })).toBe(false);
+		});
+
+		it('should return false for primitives and nullish values', () => {
+			expect(hasAnyOf(null, 'a')).toBe(false);
+			expect(hasAnyOf(undefined, 'a')).toBe(false);
+			expect(hasAnyOf(123, 'a')).toBe(false);
+			expect(hasAnyOf('str', 'a')).toBe(false);
+			expect(hasAnyOf(true, 'a')).toBe(false);
+		});
+
+		it('should return true for inherited prototype keys', () => {
+			const proto = { inherited: 'yes' };
+			const child = Object.create(proto);
+			expect(hasAnyOf(child, 'inherited', 'other')).toBe(true);
+		});
+	});
+
+	describe('hasNoneOf', () => {
+		it('should return true if target has none of the specified keys', () => {
+			const obj = { a: 1, b: 2 };
+			expect(hasNoneOf(obj, 'x', 'y', 'z')).toBe(true);
+		});
+
+		it('should return false if target has any of the specified keys', () => {
+			const obj = { a: 1, b: 2 };
+			expect(hasNoneOf(obj, 'a', 'x')).toBe(false);
+			expect(hasNoneOf(obj, 'b')).toBe(false);
+		});
+
+		it('should return true if no keys are provided', () => {
+			expect(hasNoneOf({ a: 1 })).toBe(true);
+		});
+
+		it('should return true for primitives and nullish values (they possess none of the keys)', () => {
+			expect(hasNoneOf(null, 'a')).toBe(true);
+			expect(hasNoneOf(undefined, 'a')).toBe(true);
+			expect(hasNoneOf(123, 'a')).toBe(true);
+			expect(hasNoneOf('str', 'a')).toBe(true);
+		});
+
+		it('should return false for inherited prototype keys if present', () => {
+			const proto = { inherited: 'yes' };
+			const child = Object.create(proto);
+			expect(hasNoneOf(child, 'inherited')).toBe(false);
+			expect(hasNoneOf(child, 'other')).toBe(true);
 		});
 	});
 });

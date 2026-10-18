@@ -1,11 +1,12 @@
 import { isFunction, isString, isUndefined, isCallable, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
+import { hasKey, hasOwn } from '#library/primitive.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
 import { cast } from '#library/type.library.js';
 
 import { sym, isTempo } from '../support/support.symbol.js';
 import { TempoError } from '../support/support.error.js';
 import { getRuntime } from '../support/support.runtime.js';
-import { hasOwn, logError } from '#tempo/support/support.util.js';
+import { logError } from '#tempo/support/support.util.js';
 import type { Tempo } from '../tempo.class.js';
 import type { Plugin, Module, PluginFactory } from './plugin.type.js';
 import { TEMPO_VERSION } from '../tempo.version.js';
@@ -95,9 +96,9 @@ export function interpret(t: any, module: string, methodOrFallback?: any, silent
 		if (isFunction(methodOrFallback)) return methodOrFallback.apply(t, args);
 
 		// Special case: if hostLogic is an object and the first arg is a valid method name
-		if (isObject(hostLogic) && isString(args[0]) && isFunction((hostLogic as any)[args[0]])) {
-			const method = args.shift();
-			return (hostLogic as any)[method].apply(t, args);
+		if (isString(args[0]) && hasKey(hostLogic, args[0], isFunction)) {
+			const method = args.shift() as string;
+			return hostLogic[method].apply(t, args);
 		}
 
 		const msg = `${module} method '${String(methodOrFallback)}' not found`;
@@ -145,15 +146,17 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 			if (desc) {
 				if (!isDescriptor && desc.value === val) continue;
 				if (isDescriptor) {
-					const isAccessor = ('get' in val && isFunction(val.get)) || ('set' in val && isFunction(val.set));
+					const isAccessor = hasKey(val, 'get', isFunction) || hasKey(val, 'set', isFunction);
 					if (isAccessor) {
-						if (desc.get === val.get && desc.set === val.set) continue;
-					} else if ('value' in val) {
+						const v = val as PropertyDescriptor;
+						if (desc.get === v.get && desc.set === v.set) continue;
+					} else if (hasKey(val, 'value')) {
+						const v = val as PropertyDescriptor;
 						if (
-							desc.value === val.value &&
-							desc.writable === (val.writable ?? true) &&
-							desc.enumerable === (val.enumerable ?? false) &&
-							desc.configurable === (val.configurable ?? true)
+							desc.value === v.value &&
+							desc.writable === (v.writable ?? true) &&
+							desc.enumerable === (v.enumerable ?? false) &&
+							desc.configurable === (v.configurable ?? true)
 						) continue;
 					}
 				}

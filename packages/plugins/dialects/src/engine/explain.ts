@@ -22,6 +22,7 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	dd: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	d: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
 	Do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
+	do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
 	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	D: { tempo: '{doy:raw}', desc: 'Unpadded day of year (1-366)' },
 	GGGG: { tempo: '{era:long}', desc: 'Full localized era (e.g. Anno Domini)' },
@@ -43,8 +44,9 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	SSS: { tempo: '{ms}', desc: 'Millisecond (000-999)' },
 	SS: { tempo: '{ff:2}', desc: 'Fractional seconds (hundredths: 00-99)' },
 	S: { tempo: '{ff:1}', desc: 'Fractional seconds (tenths: 0-9)' },
+	aaa: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	aa: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
-	a: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	a: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	EEEE: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
 	cccc: { tempo: '{wkd}', desc: 'Full standalone weekday name' },
 	EEE: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
@@ -52,8 +54,10 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	E: { tempo: '{www}', desc: 'Short weekday name' },
 	c: { tempo: '{dow}', desc: 'ISO Day of week (1-7)' },
 	e: { tempo: '{dow}', desc: 'Day of week (1-7)' },
-	ww: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
-	w: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
+	II: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
+	I: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
+	ww: { tempo: '{woy}', desc: 'Zero-padded locale-dependent week of year (01-53)' },
+	w: { tempo: '{woy:raw}', desc: 'Unpadded locale-dependent week of year (1-53)' },
 	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	QQQQ: { tempo: '{#quarter}', desc: 'Full quarter name (via #quarter Term)' },
 	qqqq: { tempo: '{#quarter}', desc: 'Full standalone quarter name (via #quarter Term)' },
@@ -264,7 +268,7 @@ const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonl
 	j: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
 	t: { tempo: '{dim}', desc: 'Number of days in given month (28-31)' },
 	S: { tempo: '', desc: 'English ordinal suffix (st, nd, rd, th)' },
-	z: { tempo: '{dd:year:raw:0}', desc: 'The day of the year starting from 0 (0-365)' },
+	z: { tempo: '{doy:raw:0}', desc: 'The day of the year starting from 0 (0-365)' },
 	l: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Sunday)' },
 	D: { tempo: '{www}', desc: 'Short weekday name (e.g. Sun)' },
 	N: { tempo: '{dow}', desc: 'ISO-8601 day of week (1 for Monday to 7 for Sunday)' },
@@ -331,7 +335,7 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },
 };
 
-const LDML_REGEX = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aa|Do|ww|QQ|qq|GG|ZZ|zz|DDD|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|L|M|Q|q|Z|z)/g;
+const LDML_REGEX = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|L|M|Q|q|Z|z|I)/g;
 const STRFTIME_REGEX = /%(-)?(\d+)?([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
 const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|GGGG|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
@@ -353,6 +357,16 @@ const GO_EXPLAIN_REGEX =
 
 /**
  * Translates an external date format mask into native Tempo {token} syntax
+/**
+ * Escapes literal text before appending to native Tempo patterns so literal braces are not
+ * misinterpreted as token delimiters.
+ */
+function appendLiteral(text: string): string {
+	return text ? text.replace(/[{}]/g, (m) => (m === '{' ? '{{' : '}}')) : '';
+}
+
+/**
+ * Translates external dialect masks into native Tempo format patterns (`{yyyy}-{mm}-{dd}`)
  * and returns detailed token explanations to aid incremental migration.
  * Unmapped text is retained; Oracle FM/FX modifiers are omitted from the pattern.
  *
@@ -373,12 +387,12 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			for (const match of mask.matchAll(ORACLE_REGEX)) {
 				const index = match.index!;
 				if (index > lastIndex)
-					pattern += mask.slice(lastIndex, index);
+					pattern += appendLiteral(mask.slice(lastIndex, index));
 
 				const raw = match[0];
 				const upper = raw.toUpperCase();
 				if (raw.startsWith('"') && raw.endsWith('"')) {
-					pattern += raw.slice(1, -1);
+					pattern += appendLiteral(raw.slice(1, -1));
 				} else if (upper === 'FM') {
 					fillMode = !fillMode;
 					tokens.push({ source: raw, tempo: '', desc: 'Fill Mode toggle (suppresses padding)' });
@@ -398,17 +412,17 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					if (info) {
 						pattern += (info.tempo)
 							? info.tempo
-							: raw
+							: appendLiteral(raw);
 
 						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 					} else {
-						pattern += raw;
+						pattern += appendLiteral(raw);
 					}
 				}
 				lastIndex = index + raw.length;
 			}
 			if (lastIndex < mask.length)
-				pattern += mask.slice(lastIndex);
+				pattern += appendLiteral(mask.slice(lastIndex));
 			break;
 		}
 
@@ -417,7 +431,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			for (const match of mask.matchAll(STRFTIME_REGEX)) {
 				const index = match.index!;
 				if (index > lastIndex)
-					pattern += mask.slice(lastIndex, index);
+					pattern += appendLiteral(mask.slice(lastIndex, index));
 
 				const [raw, flag, width, spec] = match;
 				if (spec === '%') {
@@ -434,21 +448,21 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 						pattern += tempo;
 						tokens.push({ source: raw, tempo, desc: `Unpadded ${baseDesc.toLowerCase()}` });
 					} else {
-						pattern += raw;
+						pattern += appendLiteral(raw);
 					}
 				} else {
 					const info = STRFTIME_EXPLAIN_MAP[spec];
 					if (info) {
-						pattern += info.tempo || raw;
+						pattern += info.tempo || appendLiteral(raw);
 						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 					} else {
-						pattern += raw;
+						pattern += appendLiteral(raw);
 					}
 				}
 				lastIndex = index + raw.length;
 			}
 			if (lastIndex < mask.length)
-				pattern += mask.slice(lastIndex);
+				pattern += appendLiteral(mask.slice(lastIndex));
 			break;
 		}
 
@@ -457,24 +471,24 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			for (const match of mask.matchAll(MOMENT_REGEX)) {
 				const index = match.index!;
 				if (index > lastIndex)
-					pattern += mask.slice(lastIndex, index);
+					pattern += appendLiteral(mask.slice(lastIndex, index));
 
 				const raw = match[0];
 				if (raw.startsWith('[')) {
-					pattern += match[1] ?? raw.slice(1, -1);
+					pattern += appendLiteral(match[1] ?? raw.slice(1, -1));
 				} else {
 					const info = MOMENT_EXPLAIN_MAP[raw];
 					if (info) {
-						pattern += info.tempo || raw;
+						pattern += info.tempo || appendLiteral(raw);
 						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 					} else {
-						pattern += raw;
+						pattern += appendLiteral(raw);
 					}
 				}
 				lastIndex = index + raw.length;
 			}
 			if (lastIndex < mask.length)
-				pattern += mask.slice(lastIndex);
+				pattern += appendLiteral(mask.slice(lastIndex));
 			break;
 		}
 
@@ -483,7 +497,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			while (i < mask.length) {
 				const char = mask[i];
 				if (char === '\\' && i + 1 < mask.length) {
-					pattern += mask[i + 1];
+					pattern += appendLiteral(mask[i + 1]);
 					i += 2;
 					continue;
 				}
@@ -502,10 +516,10 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 
 				const info = PHP_EXPLAIN_MAP[char];
 				if (info) {
-					pattern += info.tempo || char;
+					pattern += info.tempo || appendLiteral(char);
 					tokens.push({ source: char, tempo: info.tempo, desc: info.desc });
 				} else {
-					pattern += char;
+					pattern += appendLiteral(char);
 				}
 				i++;
 			}
@@ -517,20 +531,20 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			for (const match of mask.matchAll(GO_EXPLAIN_REGEX)) {
 				const index = match.index!;
 				if (index > lastIndex)
-					pattern += mask.slice(lastIndex, index);
+					pattern += appendLiteral(mask.slice(lastIndex, index));
 
 				const raw = match[0];
 				const info = GO_EXPLAIN_MAP[raw];
 				if (info) {
-					pattern += info.tempo || raw;
+					pattern += info.tempo || appendLiteral(raw);
 					tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 				} else {
-					pattern += raw;
+					pattern += appendLiteral(raw);
 				}
 				lastIndex = index + raw.length;
 			}
 			if (lastIndex < mask.length)
-				pattern += mask.slice(lastIndex);
+				pattern += appendLiteral(mask.slice(lastIndex));
 			break;
 		}
 
@@ -540,25 +554,28 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			for (const match of mask.matchAll(LDML_REGEX)) {
 				const index = match.index!;
 				if (index > lastIndex)
-					pattern += mask.slice(lastIndex, index);
+					pattern += appendLiteral(mask.slice(lastIndex, index));
 
 				const raw = match[0];
 				if (raw.startsWith("'")) {
 					const unquoted = raw.length === 2 && raw === "''" ? "'" : raw.slice(1, -1).replace(/''/g, "'");
-					pattern += unquoted;
+					pattern += appendLiteral(unquoted);
 				} else {
-					const info = LDML_EXPLAIN_MAP[raw];
+					let info = LDML_EXPLAIN_MAP[raw];
+					if (!info && /^S{1,9}$/.test(raw))
+						info = { tempo: `{ff:${raw.length}}`, desc: `Fractional seconds (${raw.length} digits)` };
+
 					if (info) {
 						pattern += info.tempo;
 						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
 					} else {
-						pattern += raw;
+						pattern += appendLiteral(raw);
 					}
 				}
 				lastIndex = index + raw.length;
 			}
 			if (lastIndex < mask.length)
-				pattern += mask.slice(lastIndex);
+				pattern += appendLiteral(mask.slice(lastIndex));
 			break;
 		}
 	}
@@ -568,9 +585,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 		source: mask,
 		pattern,
 		tokens,
-		toString() {
-			return pattern;
-		},
+		toString: () => pattern,
 	};
 
 	return deepFreeze(result);

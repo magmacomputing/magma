@@ -158,12 +158,12 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:title` | String | Converts to titlecase | `{mon:locale:title}` → `Octobre` |
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
 | `:space`| Universal | Injects leading space padding for numeric tokens (e.g. `{dd:space}` → ` 5`, `{doy:3:space}` → `  5`), or a leading space before string/meridiem elements | `{dd:space}` → ` 5`, `{h12}:{mi}{mer:space:dots}` → `03:30 a.m.` |
-| `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
+| `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{woy:locale}` / `{yow:locale}` to locale week rules, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{dow:locale:0}` → `0`, `{woy:locale}` → `01`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
 | `:short` | Universal / String | Yields a short or abbreviated style (e.g. `{mon:short}` → `Oct`, `{yow:short}` → `26`, `{dmy:short}` → `241026`) | `{mon:short}` → `Oct`, `{yow:short}` → `26` |
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
 | `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |
 | `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset. Supports granular sub-modifiers (`:hh`, `:mi`, `:ss`, `:z`) | `{tz:offset}` → `+10:00`, `{tz:offset:hh}` → `+10` |
-| `:zero` / `:0` | Number | Shifts 1-based counters to zero-indexed (`{doy:zero}` → `000`–`365`, `{dow:zero}` → `0`–`6` Sunday=0, `{mm:zero}` → `00`–`11`, `{woy:zero}` → `00`–`52`, `{wom:zero}` → `0`–`4`) | `{dow:0}` → `6`, `{mm:raw:0}` → `9` |
+| `:zero` / `:0` | Number | Shifts 1-based counters to zero-indexed (`{doy:zero}` → `000`–`365`, `{dow:zero}` → `0`–`6` Sunday=0, `{dow:locale:0}` → `0`–`6` locale week start=0, `{mm:zero}` → `00`–`11`, `{woy:zero}` → `00`–`52`, `{wom:zero}` → `0`–`4`) | `{dow:0}` → `6`, `{dow:locale:0}` → `0`, `{mm:raw:0}` → `9` |
 | `:day` | Unit Scope | Expresses time units cumulatively over the day (`{ss:day}` → `0`–`86399`, `{mi:day}` → `0`–`1439`, `{ms:day}`, `{ns:day}`) | `{ss:day}` → `55845` |
 | `:week` | Unit Scope | Expresses time units cumulatively over the week (`{hh:week}` → `0`–`167`, `{mi:week}`, `{ss:week}`) or day within the week (`{dd:week}` → `1`–`7`) | `{hh:week}` → `135`, `{dd:week}` → `6` |
 | `:month` | Unit Scope | Scopes counters to the month (`{wom}` / `{woy:month}` → `1`–`5`, `{dd:month}` → `1`–`31`) | `{wom}` → `4` |

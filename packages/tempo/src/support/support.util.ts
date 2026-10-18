@@ -5,15 +5,12 @@ import { raise as boundaryRaise } from '#library/boundary.library.js';
 import { sym, Token } from './support.symbol.js';
 import { asType, getType } from '#library/type.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
-import { isSymbol, isUndefined, isDefined, isString, isObject, isReference, RE_COMBINING_MARKS, RE_HEX_8 } from '#library/assertion.library.js';
+import { isSymbol, isUndefined, isDefined, isString, isObject, RE_COMBINING_MARKS, RE_HEX_8 } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { getDTF, getLC } from '#library/international.library.js';
 import { getRuntime } from './support.runtime.js';
 import type * as t from '../tempo.type.js';
-
-/** @internal check if an object has an own property (respects Proxy/Shadowing) */
-export { hasOwn } from '#library/primitive.library.js';
 
 /** @internal normalize layout-order options into a clean string array */
 export function normalizeLayoutOrder(value: unknown): string[] {

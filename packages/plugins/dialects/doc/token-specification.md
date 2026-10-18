@@ -23,11 +23,11 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Full name (`October`) | `MMMM` | `LLLL` | `MMMM` | `%B` | `Month` | `F` | `January` | `{mon}` |
 | **Day** | Zero-padded day (`01`-`31`) | `dd` | `dd` | `DD` | `%d` | `DD` | `d` | `02` | `{dd}` |
 | | Unpadded day (`1`-`31`) | `d` | `d` | `D` | `%-d` | `FMDD` | `j` | `2` | `{dd:raw}` |
-| | Ordinal day (`24th`) | `Do` | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
+| | Ordinal day (`24th`) | `do`* | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
 | **Era** | Era abbreviated (`AD` / `BC`) | `G` | `G` | N/A | N/A | N/A | N/A | N/A | `{era}` |
-| | Era full (`Anno Domini`) | `GGGG` | `GGGG` | N/A | N/A | N/A | N/A | N/A | `{era:long}` |
+| | Era full (`Anno Domini`) | `GGGG` | `GG` | N/A | N/A | N/A | N/A | N/A | `{era:long}` |
 | **Day of Year** | Day of year (`001`-`366`) | `DDD` | `ooo` | `DDDD` | `%j` | `DDD` | N/A | `002` | `{doy}` |
-| **Week of Year**| ISO week (`01`-`53`) | `ww` | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
+| **Week of Year**| ISO week (`01`-`53`) | `II`* | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
 | **Weekday** | Full name (`Saturday`) | `EEEE` | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
 | | Short name (`Sat`) | `EEE` | `EEE` | `ddd` | `%a` | `Dy` | `D` | `Mon` | `{www}` |
 | | ISO day of week (`1`-`7`) | `e`* | `E` | `E` | `%u` | `D`* | `N` | N/A | `{dow}` |
@@ -37,7 +37,7 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | **Hour (12h)** | Zero-padded (`01`-`12`) | `hh` | `hh` | `hh` | `%I` | `HH12` | `h` | `03` | `{h12}` |
 | | Unpadded (`1`-`12`) | `h` | `h` | `h` | `%-I` | `FMHH12`| `g` | `3` | `{h12:raw}` |
 | **Meridiem** | Uppercase (`AM` / `PM`) | `aa` | `a` | `A` | `%p` | `AM` | `A` | `PM` | `{mer:upper}` |
-| | Lowercase (`am` / `pm`) | `a` | `a` | `a` | `%P` | `am` | `a` | `pm` | `{mer}` |
+| | Lowercase (`am` / `pm`) | `aaa` | N/A | `a` | `%P` | `am` | `a` | `pm` | `{mer}` |
 | **Minute** | Zero-padded (`00`-`59`) | `mm` | `mm` | `mm` | `%M` | `MI` | `i` | `04` | `{mi}` |
 | | Unpadded (`0`-`59`) | `m` | `m` | `m` | `%-M` | `FMMI` | N/A | `4` | `{mi:raw}` |
 | **Second** | Zero-padded (`00`-`59`) | `ss` | `ss` | `ss` | `%S` | `SS` | `s` | `05` | `{ss}` |
@@ -56,14 +56,14 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | UTC `Z` or compact offset | N/A | N/A | N/A | N/A | N/A | N/A | `Z0700` | `{tz:offsetcompact:z}` |
 | | UTC `Z` or offset with seconds | N/A | N/A | N/A | N/A | N/A | N/A | `Z07:00:00` | `{tz:offset:ss:z}` |
 | | UTC `Z` or compact with seconds | N/A | N/A | N/A | N/A | N/A | N/A | `Z070000` | `{tz:offsetcompact:ss:z}` |
-| **Timestamp** | Unix epoch (seconds) | N/A | N/A | `X` | `%s` | N/A | `U` | N/A | `{ts}` |
+| **Timestamp** | Unix epoch (seconds) | N/A | `X` | `X` | `%s` | N/A | `U` | N/A | `{ts}` (emits ms by default; requires `timeStamp: 'ss'`) |
 | **Quarter** | Quarter number (`1`-`4`) | `Q` | `q` | `Q` | N/A | `Q` | N/A | N/A | `{#quarter}` |
 | | Quarter zero-padded (`01`-`04`) | `QQ` | `qq` | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
 | | Quarter with ordinal (`3rd`) | N/A | N/A | `Qo` | N/A | N/A | N/A | N/A | `{#quarter:ord}` |
-| | Full quarter name (`3rd quarter`) | `QQQQ` | `qqqq` | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
+| | Full quarter name (`3rd quarter`) | `QQQQ` | N/A | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
 
 > [!NOTE]
-> `*` In LDML (`e`) and Oracle (`D`), day-of-week numeric indexing is territory/locale-dependent; Moment uses `E` for standard ISO weekdays (1–7). Go’s `15` layout always zero-pads 24-hour hours (no unpadded equivalent). `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month, not an ordinal suffix.
+> `*` In LDML (`e`) and Oracle (`D`), day-of-week numeric indexing is territory/locale-dependent; Moment uses `E` for standard ISO weekdays (1–7). In LDML, `ww` is locale-dependent week of year (date-fns uses `II` for ISO week of year). Go’s `15` layout always zero-pads 24-hour hours (no unpadded equivalent). `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month; date-fns adds `do` for ordinal day of month, while Moment supports `Do`.
 
 ---
 

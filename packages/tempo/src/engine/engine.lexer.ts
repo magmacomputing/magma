@@ -4,7 +4,8 @@ import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
 import { fromRoman } from '#library/number.library.js';
-import { Match, enums, Enum, isTempo, logError, logWarn, logDebug } from '#tempo/support';
+import { Enum } from '#library/enumerate.library.js';
+import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
 
 const RE_LEADING_DIGITS = /^(\d+)/;

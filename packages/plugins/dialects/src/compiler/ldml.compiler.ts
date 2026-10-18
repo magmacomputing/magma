@@ -1,5 +1,5 @@
-import { pad, suffix, WeakCache } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import { pad, suffix, WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type ParseOptions,
@@ -16,7 +16,7 @@ import {
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aa|Do|ww|QQ|qq|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z|I)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -59,9 +59,11 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 				case 'y':
 					parts.push((z) => String(z.year));
 					break;
+				case 'II':
 				case 'ww':
 					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).weekOfYear, 2));
 					break;
+				case 'I':
 				case 'w':
 					parts.push((z) => String(getIsoWeek(z.toPlainDate()).weekOfYear));
 					break;
@@ -106,6 +108,7 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					parts.push((z) => pad(z.day, 2));
 					break;
 				case 'Do':
+				case 'do':
 					parts.push((z) => suffix(z.day));
 					break;
 				case 'd':
@@ -192,11 +195,12 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				}
 
-				case 'aa':
-					parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
-					break;
+				case 'aaa':
 				case 'a':
 					parts.push((z) => (z.hour < 12 ? 'am' : 'pm'));
+					break;
+				case 'aa':
+					parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
 					break;
 
 				case 'EEEE':
@@ -305,9 +309,11 @@ export function compileLdmlParser(mask: string): RegExp {
 				case 'y':
 					pattern += group('yyyy', '\\d{1,6}');
 					break;
+				case 'II':
 				case 'ww':
 					pattern += group('week_of_year', '\\d{2}');
 					break;
+				case 'I':
 				case 'w':
 					pattern += group('week_of_year', '\\d{1,2}');
 					break;
@@ -352,6 +358,7 @@ export function compileLdmlParser(mask: string): RegExp {
 					pattern += group('dd', '\\d{2}');
 					break;
 				case 'Do':
+				case 'do':
 					pattern += group('dd_ord', '\\d{1,2}(?:st|nd|rd|th)');
 					break;
 				case 'd':
@@ -417,6 +424,7 @@ export function compileLdmlParser(mask: string): RegExp {
 					pattern += group('ff', `\\d{${token.length}}`);
 					break;
 
+				case 'aaa':
 				case 'aa':
 				case 'a':
 					pattern += group('mer', '[AaPp][Mm]');
@@ -571,7 +579,7 @@ export function parseLdml(
 			day = parseInt(dd, 10);
 		} else if (dd_ord) {
 			day = parseInt(dd_ord, 10);
-		} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr) {
+		} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr && !qtrVal) {
 			day = today.day;
 		}
 	}
@@ -594,7 +602,7 @@ export function parseLdml(
 		return Temporal.ZonedDateTime.from(
 			{
 				timeZone: tz,
-				calendar: cal,
+				calendar: 'iso8601',
 				year,
 				month,
 				day,
@@ -606,7 +614,7 @@ export function parseLdml(
 				nanosecond,
 			},
 			{ overflow: 'reject' }
-		);
+		).withCalendar(cal);
 	} catch {
 		return undefined;
 	}

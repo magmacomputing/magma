@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze, hasKeys, isDefined } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKey, isDefined } from '@magmacomputing/tempo/library';
 import { normalizeDialect } from '../constants.js';
 import { explain } from './explain.js';
 import { exportDialect } from './export.js';
@@ -25,7 +25,7 @@ export function convertDialect(
 	let fromInput: DialectInput | undefined;
 	let toInput: DialectInput;
 
-	if (hasKeys(fromOrToOrOptions, 'to')) {
+	if (hasKey(fromOrToOrOptions, 'to')) {
 		fromInput = fromOrToOrOptions.from;
 		toInput = fromOrToOrOptions.to;
 	} else if (isDefined(maybeToDialect)) {
@@ -55,9 +55,7 @@ export function convertDialect(
 		source: mask,
 		pattern: exported.pattern,
 		unsupported: Array.from(unsupportedSet),
-		toString() {
-			return exported.pattern;
-		},
+		toString: () => exported.pattern,
 	};
 
 	return deepFreeze(result);

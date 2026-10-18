@@ -8,7 +8,7 @@ import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
 import { isString, isObject, isPlainObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
-import { ownEntries } from '#library/primitive.library.js';
+import { ownEntries, hasOwn, hasNoneOf } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { coerceGeo } from '#library/mapper.library.js';
@@ -16,7 +16,7 @@ import { BoundedCache } from '#library/cache.class.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 import { getRuntime } from './support.runtime.js';
-import { setProperty, setProperties, hasOwn, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
+import { setProperty, setProperties, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
 import { STATE } from './support.enum.js';
@@ -549,7 +549,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'plugins':
 				/** @deprecated Passing configuration dictionaries in 'plugins' is deprecated. Use 'pluginOptions' instead. */
-				if (isPlainObject(arg.value) && !('install' in arg.value) && !('key' in arg.value)) {
+				if (isPlainObject(arg.value) && hasNoneOf(arg.value, 'install', 'key')) {
 					const existing = state.config.plugins ?? {};
 					setProperty(state.config, 'plugins', { ...existing, ...arg.value });
 					const existingOpts = state.config.pluginOptions ?? {};

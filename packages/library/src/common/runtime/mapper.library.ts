@@ -1,5 +1,6 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isText, isFunction, isDefined, isCallable, isBoolean, hasOwn } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isText, isFunction, isDefined, isCallable, isBoolean } from '#library/assertion.library.js';
+import { hasOwn } from '#library/primitive.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 

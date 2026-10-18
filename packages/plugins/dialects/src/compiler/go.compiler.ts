@@ -1,5 +1,5 @@
-import { WeakCache } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import { WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type ParseOptions,

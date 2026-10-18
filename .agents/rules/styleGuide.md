@@ -99,5 +99,24 @@ This style guide defines common coding conventions, formatting standards, and Ty
   ```
   This reads clearer, avoids multiple exit points interspersed through the function, and makes the terminal branches immediately obvious.
 
+---
 
+## 8. Avoid Internal Re-Exports (Use Root Barrels)
+- **Avoid Cross-Module Re-Exports**: Do not re-export types or utility functions across internal submodules (e.g. avoid re-exporting types from `type.library.ts` inside `primitive.library.ts` or `assertion.library.ts`) unless specifically mandated to satisfy an external public packaging contract.
+- **Import from Canonical Module or Curated Package Barrel**:
+  - **Internal modules**: Import directly from the canonical defining module (e.g. import types from `#library/type.library.js`, primitives from `#library/primitive.library.js`).
+  - **External / Package Consumers**: Import from the top-level package entry or curated barrel (e.g. `@magmacomputing/tempo/library` or `#library`) rather than hunting through internal submodules.
+- **Benefits**:
+  - **Prevents Circular Dependencies**: Eliminates subtle cycle loops between peer submodules.
+  - **Clean Autocomplete**: Prevents IDEs from suggesting multiple duplicate import paths for the same symbol.
+  - **Maintainability**: Makes symbol ownership clear and avoids proxy-re-export churn when refactoring internal file structures.
 
+---
+
+## 9. Avoid Overly Generous `export` Statements (Scope Discipline)
+- **Evaluate Necessity**: Avoid reflexively prefixing declarations with `export`. Before exporting any symbol (`function`, `type`, `interface`, `const`, `enum`, `class`), evaluate whether it is genuinely required outside of its defining module.
+- **Default to Module-Private**: Keep helper functions, internal assertion predicates, regex patterns, intermediate state types, and implementation details local to the file (unexported).
+- **Public API Surface Protection**: An exported symbol becomes part of the module’s surface and attracts external coupling. Restricting exports:
+  - **Minimizes Bundle Size & Dead Code**: Prevents tree-shaking ambiguities and unused symbols leaking into distribution bundles.
+  - **Prevents Accidental Coupling**: Guarantees that internal implementation details can be refactored freely without breaking dependent modules.
+  - **Keeps Autocomplete Focused**: Keeps IDE suggestion lists clean and relevant for consumers.

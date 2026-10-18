@@ -25,7 +25,7 @@ Tempo's format syntax is founded on four core principles:
 In historical dialects, a single shift-key difference changes the entire semantic target of a format string. This is the single largest source of date-formatting bugs in modern software:
 
 * **Month vs. Minute (`MM` vs `mm`)**: In Moment, LDML, and SQL, `MM` is month and `mm` is minute. An accidental typo like `HH:MM:ss` silently formats the month where minutes should appear.
-* **The New Year Billing Catastrophe (`YYYY` vs `yyyy`)**: In Unicode LDML (Luxon, date-fns), `yyyy` is the standard calendar year, while `YYYY` represents a **locale-dependent week-based year** (which resolves to the ISO week-numbering year under ISO/European week rules, or the local week year in US locales). Under ISO rules, a format mask like `YYYY-MM-dd` outputs `2026-12-31` on December 31, 2025 because that day belongs to Week 1 of 2026. This bug has repeatedly broken payment gateways, reporting systems, and billing pipelines across the tech industry.
+* **The New Year Billing Catastrophe (`YYYY` vs `yyyy`)**: In Unicode LDML specifications, `yyyy` represents the standard calendar year, while `YYYY` represents a **week-numbering year**. Implementations diverge significantly: Luxon uses `kkkk` for the ISO week-numbering year, while date-fns throws an error on `YYYY` by default unless its `useAdditionalWeekYearTokens` option is explicitly enabled. Under ISO week rules, an erroneous format mask using a week-numbering year like `YYYY-MM-dd` outputs `2026-12-31` on December 31, 2025 because that day belongs to Week 1 of 2026. This subtle discrepancy has repeatedly broken payment gateways, reporting systems, and billing pipelines across the tech industry.
 * **Day of Month vs. Day of Week (`D` vs `d`)**: In Moment, `D` is day of month (`1-31`) and `d` is day of week (`0-6`). In LDML, `d` is day of month (`1-31`) and `e` / `c` is day of week.
 
 **The Tempo Solution**:  
@@ -50,7 +50,7 @@ In legacy libraries, there is a total disconnect between how you read a property
 
 | Concept | Native JS / Moment Method | Legacy Format Token | Tempo Getter Property | Native Tempo Format Token |
 | :--- | :--- | :--- | :--- | :--- |
-| **Year** | `d.getFullYear()` | `YYYY` / `yyyy` / `%Y` | `t.yy` | `{yy}` / `{yyyy}` |
+| **Year** | `d.getFullYear()` | `YYYY` / `yyyy` / `%Y` | `t.yy` | `{yyyy}` (`{yy}` for 2-digit) |
 | **Month** | `d.getMonth() + 1` | `MM` / `%m` / `m` | `t.mm` | `{mm}` |
 | **Day** | `d.getDate()` | `DD` / `dd` / `%d` | `t.dd` | `{dd}` |
 | **Hour (24h)** | `d.getHours()` | `HH` / `%H` / `H` | `t.hh` | `{hh}` |
@@ -61,7 +61,7 @@ In legacy libraries, there is a total disconnect between how you read a property
 | **ISO Week** | `d.isoWeek()` | `WW` / `ww` / `%V` | `t.woy` | `{woy}` |
 | **Weekday** | `d.isoWeekday()` | `E` / `%u` / `N` | `t.dow` | `{dow}` |
 
-When you learn Tempo's instance properties, you have already learned the format tokens. There is zero mental translation required between writing business logic (`if (t.hh >= 12)`) and writing format strings (`"{hh}:{mi}"`).
+When you learn Tempo's instance properties, you have already learned the format tokens. There is zero mental translation required between writing business logic (`if (t.hh >= 12)`) and writing format strings (`"{hh}:{mi}"`). Note that while `t.yy` yields the full year number in code, `{yyyy}` formats the 4-digit year and `{yy}` formats the 2-digit year.
 
 ---
 
@@ -122,7 +122,7 @@ When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, 
 
 ### 1. Non-ISO Locale Week-Numbering Years (Moment `gggg` / `gg`)
 * **The Legacy Behavior**: Moment's `gggg` and `gg` compute week-numbering years based on the locale's first day of the week (e.g. Sunday in the US, Monday in ISO, Saturday in the Middle East). In contrast, PHP `o` and POSIX `%G` strictly compute the ISO 8601 week-numbering year, which Tempo directly supports via `{yow}`.
-* **Why We Omitted It**: Locale-dependent week-year calculations lack an unambiguous international standard. In the US, week 1 is often defined simply as the week containing January 1st, whereas ISO 8601 requires week 1 to contain the first Thursday (or 4 days in January). This divergence creates non-deterministic calendar drift across client machines depending on their browser locale. Tempo anchors strictly to the international ISO 8601 standard (`{yow}`, `{woy}`, `{dow}`), guaranteeing consistent results across all runtime environments.
+* **Why We Omitted It**: Locale-dependent week-year calculations lack an unambiguous international standard. In the US, week 1 is often defined simply as the week containing January 1st, whereas ISO 8601 requires week 1 to contain the first Thursday (or 4 days in January). This divergence creates non-deterministic calendar drift across client machines depending on their browser locale. Tempo anchors strictly to the international ISO 8601 standard (`{yow}`, `{woy}`, `{dow}`) by default, guaranteeing consistent results across all runtime environments, while allowing explicit opt-in to locale-based week numbering via `{yow:locale}` and `{woy:locale}`.
 
 ### 2. Confusing 1–24 and 0–11 Hour Systems (LDML `k` / `K`)
 * **The Legacy Behavior**: LDML defines `k` (hours 1–24, where midnight is `24`) and `K` (hours 0–11 for 12-hour clocks, where midnight is `0` AM and noon is `0` PM).
@@ -147,10 +147,10 @@ When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, 
 | Feature / Trait | Legacy Dialects (LDML, Moment, strftime) | Native Tempo Approach |
 | :--- | :--- | :--- |
 | **Case Sensitivity** | Critical (typos silently alter data targets) | All lowercase primary tokens (`{yyyy}`, `{mm}`, `{dd}`, `{hh}`) |
-| **API Alignment** | Methods and tokens use completely different vocabularies | Direct mirror (`t.yy` $\longleftrightarrow$ `{yy}` / `{yyyy}`, `t.mm` $\longleftrightarrow$ `{mm}`) |
+| **API Alignment** | Methods and tokens use completely different vocabularies | Direct mirror (`t.yy` $\longleftrightarrow$ `{yyyy}` / `{yy}`, `t.mm` $\longleftrightarrow$ `{mm}`) |
 | **Variations & Styling**| Hundreds of arbitrary single-character tokens | Orthogonal, chainable modifiers (`:upper`, `:lower`, `:ord`, `:roman`, `:locale`) |
 | **Literal Text** | Requires quotes (`'...'`), brackets (`[...]`), or is unescapable (Go) | Literal by default; doubled braces (`{{`, `}}`) for escape |
-| **Week-Year Standard**| Mixes ISO and divergent locale-based week years | Anchored strictly to deterministic ISO 8601 (`{yow}`, `{woy}`) |
+| **Week-Year Standard**| Mixes ISO and divergent locale-based week years | Anchored strictly to deterministic ISO 8601 by default (`{yow}`, `{woy}`), with explicit `:locale` opt-in (`{yow:locale}`, `{woy:locale}`) |
 | **Grammatical Inflection**| Duplicate token families (`LLLL` vs `MMMM`, `cccc` vs `EEEE`) | Automatic via standard `Intl` integration (`{mon:locale}`) |
 | **Domain Terms** | Rigid, static token sets | Extensible Terms (`#quarter`, `#isoWeek`, `#dayOfYear`) |
 

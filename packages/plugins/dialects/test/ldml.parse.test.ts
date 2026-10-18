@@ -132,5 +132,17 @@ describe('Unicode LDML Parsing', () => {
 		expect(t3.isValid).toBe(true);
 		expect(t3.yy).toBe(2026);
 		expect(t3.mm).toBe(7);
+
+		// Quarter-only mask leaves day at 1 (start of quarter) rather than today.day
+		const tQtrOnly = Tempo.dialects.parse('Q2', 'QQQ');
+		expect(tQtrOnly.isValid).toBe(true);
+		expect(tQtrOnly.mm).toBe(4);
+		expect(tQtrOnly.dd).toBe(1);
+	});
+
+	it('parses LDML with custom calendar option converting from ISO', () => {
+		const parsed = Tempo.dialects.parse('2026-10-24 12:00:00', 'yyyy-MM-dd HH:mm:ss', { calendar: 'hebrew' });
+		expect(parsed.isValid).toBe(true);
+		expect(parsed.zdt.calendarId).toBe('hebrew');
 	});
 });

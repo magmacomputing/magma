@@ -2,9 +2,6 @@ import { sym } from '#library/symbol.library.js';
 import { getType, protoType } from '#library/type.library.js';
 import type { Type, Primitive, Nullish, Temporals, Property, GetType, ValueOf } from '#library/type.library.js';
 
-/** @internal check if an object has an own property (respects Proxy/Shadowing) */
-export { hasOwn, hasKeys, hasKey } from '#library/primitive.library.js';
-
 /**
  * Asserts if a value matches one of the provided types from the Type system.
  * 
@@ -157,7 +154,14 @@ export const isUndefined = (obj: unknown): obj is undefined => obj === undefined
 export const isDefined = <T>(obj: T): obj is NonNullable<T> => obj !== null && obj !== undefined && !isNullish(obj);
 
 export const isClass = (obj: unknown): obj is Function => isType<Function>(obj, 'Class');
-export const isFunction = (obj: unknown): obj is Function => isType<Function>(obj, 'Function', 'AsyncFunction', 'GeneratorFunction', 'AsyncGeneratorFunction');
+type NarrowFunction<T = Function> = T extends (...args: any[]) => any
+	? T
+	: [T] extends [Function]
+	? Function
+	: (...args: any[]) => T;
+
+export const isFunction = <T = Function>(obj: unknown): obj is NarrowFunction<T> =>
+	isType<Function>(obj, 'Function', 'AsyncFunction', 'GeneratorFunction', 'AsyncGeneratorFunction');
 export const isCallable = (obj: unknown): obj is Function => typeof obj === 'function';
 export const isPromise = <T = any>(obj: unknown): obj is Promise<T> => isType<Promise<T>>(obj, 'Promise');
 export const isMap = <T = any, K = any>(obj: unknown): obj is Map<K, T> => isType<Map<K, T>>(obj, 'Map');
