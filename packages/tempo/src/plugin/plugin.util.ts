@@ -366,10 +366,11 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
  */
 export function autoInstall(plugin: any): void {
 	const host = getHost(null);
-	if (host && isFunction(host.use)) {
+	const globalTempo = (globalThis as any).Tempo;
+	if (hasKey(host, 'use', isFunction)) {
 		host.use(plugin);
-	} else if (typeof globalThis !== 'undefined' && isFunction((globalThis as any).Tempo?.use)) {
-		(globalThis as any).Tempo.use(plugin);
+	} else if (hasKey(globalTempo, 'use', isFunction)) {
+		globalTempo.use(plugin);
 	} else {
 		const rt = getRuntime();
 		if (!Array.isArray(rt.modules['$pendingAutoInstalls']))

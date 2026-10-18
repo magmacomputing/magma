@@ -149,12 +149,12 @@ export function hasOwn<K extends PropertyKey>(
 
 /**
  * Asserts that an object possesses a specific own property whose value matches at least one of the
- * specified type tags (case-insensitive, e.g. `'string'`, `'String'`, `'Number'`) or assertion/predicate functions.
+ * specified type tags (case-insensitive, e.g. `'string'`, `'String'`, `'Number'`) or predicate functions.
  * Safe against null, undefined, and non-object primitives.
  *
  * @param obj - The target object to inspect
  * @param key - The property key to verify
- * @param guards - One or more type tags or assertion/predicate functions
+ * @param guards - One or more type tags or predicate functions
  * @returns True if the target possesses the own property and its value satisfies at least one guard
  * @example
  * ```ts
@@ -278,11 +278,11 @@ export function hasKey<K extends PropertyKey>(
 
 /**
  * Asserts that an object contains a specified key whose value matches at least one of the specified
- * type tags (case-insensitive, e.g. `'string'`, `'String'`, `'Number'`) or assertion/predicate functions.
+ * type tags (case-insensitive, e.g. `'string'`, `'String'`, `'Number'`) or predicate functions.
  *
  * @param obj - The target object to inspect
  * @param key - The property key to verify
- * @param guards - One or more type tags or assertion/predicate functions
+ * @param guards - One or more type tags or predicate functions
  * @returns True if the target contains the key and its value satisfies at least one guard
  * @example
  * ```ts

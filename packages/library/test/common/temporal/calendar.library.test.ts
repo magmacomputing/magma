@@ -10,6 +10,10 @@ import {
 	isValidDate,
 	addUtcDays,
 	withUtcParts,
+	resolveDayOfYear,
+	getIsoWeek,
+	fromIsoWeek,
+	resolveIsoCalendarYear,
 } from '#library/calendar.library.js';
 import type {
 	UtcPartsOptions,
@@ -224,5 +228,57 @@ describe('calendar.library', () => {
 		// Combined update
 		const fullUpdate = withUtcParts(base, { year: 2028, hours: 23, minutes: 59, seconds: 59, milliseconds: 999 });
 		expect(fullUpdate.toISOString()).toBe('2028-05-15T23:59:59.999Z');
+	});
+
+	test('resolveDayOfYear resolves day of year to month and day', () => {
+		expect(resolveDayOfYear(2026, 1)).toEqual({ month: 1, day: 1 });
+		expect(resolveDayOfYear(2026, 32)).toEqual({ month: 2, day: 1 });
+		expect(resolveDayOfYear(2026, 365)).toEqual({ month: 12, day: 31 });
+		expect(resolveDayOfYear(2026, 366)).toBeUndefined(); // non-leap year
+
+		// Leap year
+		expect(resolveDayOfYear(2024, 60)).toEqual({ month: 2, day: 29 });
+		expect(resolveDayOfYear(2024, 366)).toEqual({ month: 12, day: 31 });
+
+		// Out of range
+		expect(resolveDayOfYear(2026, 0)).toBeUndefined();
+		expect(resolveDayOfYear(2026, 400)).toBeUndefined();
+	});
+
+	test('getIsoWeek computes ISO week and week-year', () => {
+		// Both fields supplied
+		expect(getIsoWeek({ year: 2026, month: 1, day: 1, weekOfYear: 1, yearOfWeek: 2026 })).toEqual({
+			weekOfYear: 1,
+			yearOfWeek: 2026,
+		});
+
+		// 2026-01-01 was Thursday -> week 1 of 2026
+		expect(getIsoWeek({ year: 2026, month: 1, day: 1 })).toEqual({
+			weekOfYear: 1,
+			yearOfWeek: 2026,
+		});
+
+		// 2024-12-30 was Monday -> week 1 of 2025
+		expect(getIsoWeek({ year: 2024, month: 12, day: 30 })).toEqual({
+			weekOfYear: 1,
+			yearOfWeek: 2025,
+		});
+	});
+
+	test('fromIsoWeek resolves ISO week date to calendar year, month, and day', () => {
+		// Week 1 of 2026, day 1 (Monday)
+		expect(fromIsoWeek(2026, 1, 1)).toEqual({ year: 2025, month: 12, day: 29 });
+		// Week 1 of 2026, day 4 (Thursday) -> 2026-01-01
+		expect(fromIsoWeek(2026, 1, 4)).toEqual({ year: 2026, month: 1, day: 1 });
+	});
+
+	test('resolveIsoCalendarYear handles year boundaries', () => {
+		// Dec 30 with targetIsoYear 2025 -> calendar year 2024
+		expect(resolveIsoCalendarYear(2025, 12, 30)).toBe(2024);
+		// Normal date inside the year
+		expect(resolveIsoCalendarYear(2026, 6, 15)).toBe(2026);
+		// Boundary dates that belong to targetIsoYear
+		expect(resolveIsoCalendarYear(2026, 1, 1)).toBe(2026);
+		expect(resolveIsoCalendarYear(2026, 12, 31)).toBe(2026);
 	});
 });

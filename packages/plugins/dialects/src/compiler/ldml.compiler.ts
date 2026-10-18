@@ -1,22 +1,21 @@
-import { pad, suffix, WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { pad, suffix, WeakCache, Enum, resolveTwoDigitYear, resolveDayOfYear, resolveFractionalSeconds, getIsoWeek, fromIsoWeek } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
-	type ParseOptions,
+	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
+	resolveWeekday,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
-	resolveDayOfYear,
-	fromIsoWeek,
-	getIsoWeek,
+	buildParsedZonedDateTime,
 } from './shared.compiler.js';
 
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDDo|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z|I)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|EE|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|cc|ee|DDDo|DDD|DD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z|I)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -120,6 +119,9 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 				case 'DDD':
 					parts.push((z) => pad(z.dayOfYear, 3));
 					break;
+				case 'DD':
+					parts.push((z) => pad(z.dayOfYear, 2));
+					break;
 				case 'D':
 					parts.push((z) => String(z.dayOfYear));
 					break;
@@ -212,8 +214,13 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'EEE':
 				case 'ccc':
+				case 'EE':
 				case 'E':
 					parts.push((z) => Enum.keyOf(enums.WEEKDAY, z.dayOfWeek) ?? String(z.dayOfWeek));
+					break;
+				case 'cc':
+				case 'ee':
+					parts.push((z) => pad(z.dayOfWeek, 2));
 					break;
 				case 'c':
 				case 'e':
@@ -373,6 +380,9 @@ export function compileLdmlParser(mask: string): RegExp {
 				case 'DDD':
 					pattern += group('doy', '\\d{3}');
 					break;
+				case 'DD':
+					pattern += group('doy', '\\d{2,3}');
+					break;
 				case 'D':
 					pattern += group('doy', '\\d{1,3}');
 					break;
@@ -442,8 +452,13 @@ export function compileLdmlParser(mask: string): RegExp {
 					break;
 				case 'EEE':
 				case 'ccc':
+				case 'EE':
 				case 'E':
 					pattern += group('weekday_abbr', '[A-Za-z]{3,}');
+					break;
+				case 'cc':
+				case 'ee':
+					pattern += group('weekday_num', '\\d{1,2}');
 					break;
 				case 'c':
 				case 'e':
@@ -497,7 +512,7 @@ export function compileLdmlParser(mask: string): RegExp {
 export function parseLdml(
 	input: string,
 	mask: string,
-	options: ParseOptions = {}
+	options: DialectOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileLdmlParser(mask);
 	const match = rx.exec(input.trim());
@@ -518,6 +533,8 @@ export function parseLdml(
 	const yyWeek = getGroup('yy_week');
 	const weekOfYear = getGroup('week_of_year');
 	const weekdayNum = getGroup('weekday_num');
+	const weekdayName = getGroup('weekday_name');
+	const weekdayAbbr = getGroup('weekday_abbr');
 	const mm = getGroup('mm');
 	const month_name = getGroup('month_name');
 	const month_abbr = getGroup('month_abbr');
@@ -527,11 +544,21 @@ export function parseLdml(
 	const doy_ord = getGroup('doy_ord');
 	const qtrVal = getGroup('quarter') || (getGroup('quarter_abbr')?.slice(1)) || (getGroup('quarter_name') ? String(getGroup('quarter_name')![0]) : undefined);
 
+	const resolveIsoDay = (): number | undefined => {
+		if (weekdayNum) {
+			const d = parseInt(weekdayNum, 10);
+			return d >= 1 && d <= 7 ? d : undefined;
+		}
+		if (weekdayName || weekdayAbbr) {
+			return resolveWeekday(weekdayName || weekdayAbbr!);
+		}
+		return 1;
+	};
+
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
 	} else if (yyVal) {
-		const yy = parseInt(yyVal, 10);
-		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+		year = resolveTwoDigitYear(parseInt(yyVal, 10), ctx.pivot, ctx.today);
 	}
 
 	const era = getGroup('era');
@@ -549,12 +576,12 @@ export function parseLdml(
 		if (!weekOfYear) return undefined;
 		let isoYear = yyyyWeek ? parseInt(yyyyWeek, 10) : parseInt(yyWeek!, 10);
 		if (yyWeek && !yyyyWeek)
-			isoYear = isoYear >= 70 ? 1900 + isoYear : 2000 + isoYear;
+			isoYear = resolveTwoDigitYear(isoYear, ctx.pivot, ctx.today);
 
 		const isoWeek = parseInt(weekOfYear, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
-		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
-		if (isoDay < 1 || isoDay > 7) return undefined;
+		const isoDay = resolveIsoDay();
+		if (isoDay === undefined) return undefined;
 		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
 		const check = getIsoWeek(targetDate);
 		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
@@ -564,8 +591,8 @@ export function parseLdml(
 	} else if (weekOfYear) {
 		const isoWeek = parseInt(weekOfYear, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
-		const isoDay = weekdayNum ? parseInt(weekdayNum, 10) : 1;
-		if (isoDay < 1 || isoDay > 7) return undefined;
+		const isoDay = resolveIsoDay();
+		if (isoDay === undefined) return undefined;
 		const targetDate = fromIsoWeek(year, isoWeek, isoDay);
 		const check = getIsoWeek(targetDate);
 		if (check.yearOfWeek !== year || check.weekOfYear !== isoWeek) return undefined;
@@ -605,35 +632,9 @@ export function parseLdml(
 	const time = resolveTimeComponents(getGroup);
 	if (!time) return undefined;
 	const { hour, minute, second } = time;
-	let millisecond = 0;
-	let microsecond = 0;
-	let nanosecond = 0;
-	const ff = getGroup('ff');
-	if (ff) {
-		const padded = ff.padEnd(9, '0');
-		millisecond = parseInt(padded.slice(0, 3), 10);
-		microsecond = parseInt(padded.slice(3, 6), 10);
-		nanosecond = parseInt(padded.slice(6, 9), 10);
-	}
-
-	try {
-		return Temporal.ZonedDateTime.from(
-			{
-				timeZone: tz,
-				calendar: 'iso8601',
-				year,
-				month,
-				day,
-				hour,
-				minute,
-				second,
-				millisecond,
-				microsecond,
-				nanosecond,
-			},
-			{ overflow: 'reject' }
-		).withCalendar(cal);
-	} catch {
-		return undefined;
-	}
+	const subseconds = resolveFractionalSeconds(getGroup('ff'));
+	return buildParsedZonedDateTime(
+		{ year, month, day, hour, minute, second, ...subseconds },
+		ctx
+	);
 }

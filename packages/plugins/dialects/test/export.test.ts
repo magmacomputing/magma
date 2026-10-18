@@ -156,6 +156,18 @@ describe('Dialect Export', () => {
 		expect(resGoDoy.unsupported).not.toContain('{doy}');
 		expect(resGoDoy.unsupported).toContain('{doy:raw}');
 		expect(resGoDoy.unsupported).toContain('{doy:ord}');
+
+		// yy:raw and woy:raw export mappings
+		const resYyRawStrftime = Tempo.dialects.export('{yy:raw}', 'strftime');
+		expect(resYyRawStrftime.pattern).toBe('%-y');
+		expect(resYyRawStrftime.unsupported).toEqual([]);
+
+		const resYyRawOracle = Tempo.dialects.export('{yy:raw}', 'oracle');
+		expect(resYyRawOracle.unsupported).toContain('{yy:raw}');
+
+		const resPhpUnpaddedIso = Tempo.dialects.export('{yy:raw} {woy:raw}', 'php');
+		expect(resPhpUnpaddedIso.unsupported).toContain('{yy:raw}');
+		expect(resPhpUnpaddedIso.unsupported).toContain('{woy:raw}');
 	});
 
 	it('works seamlessly from instance namespace t.dialects.export', () => {

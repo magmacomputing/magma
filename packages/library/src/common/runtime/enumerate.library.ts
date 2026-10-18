@@ -1,6 +1,6 @@
 import { asType, getType } from '#library/type.library.js';
-import { isNumber, isNumeric, isFunction } from '#library/assertion.library.js';
-import { ownEntries } from '#library/primitive.library.js';
+import { isNumeric, isFunction } from '#library/assertion.library.js';
+import { ownEntries, hasKey } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import { memoizeMethod } from '#library/function.library.js';
@@ -184,7 +184,7 @@ export function enumify<const T extends readonly any[]>(list: T, frozen?: boolea
 export function enumify<const T extends Property<any>>(list: T, frozen?: boolean): Enum.wrap<T>;
 export function enumify<T>(this: any, list: T, frozen = true): any {
 	const type = getType(this);
-	const proto = (type !== 'Module' && isFunction(this?.has)) ? this : ENUM;
+	const proto = (type !== 'Module' && hasKey(this, 'has', isFunction)) ? this : ENUM;
 	const arg = asType(list);
 	const target = Object.create(proto);
 

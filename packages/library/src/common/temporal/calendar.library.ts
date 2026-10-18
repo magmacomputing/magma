@@ -196,3 +196,76 @@ export function withUtcParts(date: Date, parts: Partial<UtcPartsOptions>): Date 
 	return fromUtcParts({ ...current, ...parts });
 }
 
+const MONTH_DAYS_NORMAL = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const MONTH_DAYS_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+/**
+ * Resolves 1-indexed day-of-year (1..366) to month (1..12) and day (1..31) using pure integer arithmetic.
+ * Returns undefined for a day outside the given year, including day 366 in a non-leap year.
+ */
+export function resolveDayOfYear(year: number, dayOfYear: number): { month: number; day: number } | undefined {
+	const leap = isLeapYear(year);
+	const maxDays = leap ? 366 : 365;
+	if (dayOfYear < 1 || dayOfYear > maxDays) return undefined;
+	const days = leap ? MONTH_DAYS_LEAP : MONTH_DAYS_NORMAL;
+	let rem = dayOfYear;
+	for (let m = 0; m < 12; m++) {
+		if (rem <= days[m]) {
+			return { month: m + 1, day: rem };
+		}
+		rem -= days[m];
+	}
+	return undefined;
+}
+
+/**
+ * Returns numeric week and week-year fields when both are supplied; otherwise computes them
+ * from the Gregorian year, month, and day using standard ISO 8601 rules.
+ */
+export function getIsoWeek(z: { year: number; month: number; day: number; weekOfYear?: number | undefined; yearOfWeek?: number | undefined }): { weekOfYear: number; yearOfWeek: number } {
+	if (typeof z.weekOfYear === 'number' && typeof z.yearOfWeek === 'number') {
+		return { weekOfYear: z.weekOfYear, yearOfWeek: z.yearOfWeek };
+	}
+	const d = new Date(Date.UTC(z.year, z.month - 1, z.day));
+	d.setUTCFullYear(z.year);
+	const dayNum = d.getUTCDay() || 7;
+	d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+	const yearOfWeek = d.getUTCFullYear();
+	const yearStart = new Date(Date.UTC(yearOfWeek, 0, 1));
+	yearStart.setUTCFullYear(yearOfWeek);
+	const weekOfYear = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+	return { weekOfYear, yearOfWeek };
+}
+
+/**
+ * Resolves an ISO week date (isoYear, isoWeek, isoDay) into calendar year, month, and day
+ * using lightweight UTC Date calculations. `isoDay` uses Monday=1 through Sunday=7 and defaults to Monday.
+ * Out-of-range week and day values roll into adjacent dates rather than being rejected.
+ */
+export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1): { year: number; month: number; day: number } {
+	const jan4 = new Date(Date.UTC(isoYear, 0, 4));
+	jan4.setUTCFullYear(isoYear);
+	const dayOfWeek = jan4.getUTCDay() || 7;
+	const week1MondayTime = jan4.getTime() - (dayOfWeek - 1) * 86400000;
+	const targetTime = week1MondayTime + ((isoWeek - 1) * 7 + (isoDay - 1)) * 86400000;
+	const target = new Date(targetTime);
+	return { year: target.getUTCFullYear(), month: target.getUTCMonth() + 1, day: target.getUTCDate() };
+}
+
+/**
+ * Resolves calendar year for IYYY-MM-DD format strings near ISO year boundaries.
+ */
+export function resolveIsoCalendarYear(targetIsoYear: number, month: number, day: number): number {
+	if (getIsoWeek({ year: targetIsoYear, month, day }).yearOfWeek === targetIsoYear)
+		return targetIsoYear;
+
+	if (month === 12 && day >= 29) {
+		if (getIsoWeek({ year: targetIsoYear - 1, month, day }).yearOfWeek === targetIsoYear)
+			return targetIsoYear - 1;
+	} else if (month === 1 && day <= 3) {
+		if (getIsoWeek({ year: targetIsoYear + 1, month, day }).yearOfWeek === targetIsoYear)
+			return targetIsoYear + 1;
+	}
+	return targetIsoYear;
+}
+

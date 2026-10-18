@@ -1296,7 +1296,7 @@ export class Tempo {
 
 	/** Compares two `Tempo` instances or date-time values. Returns -1 (earlier), 0 (equal), or 1 (later). */
 	static compare(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options) {
-		const host = (this && (this as any)[$Identity]) ? (this as any) : Tempo;
+		const host = hasKey(this, $Identity) ? this : Tempo;
 		const one = host.isTempo(tempo1) ? tempo1 : new host(tempo1 as t.DateTime),
 			two = host.isTempo(tempo2) ? tempo2 : new host(tempo2 as t.DateTime);
 
@@ -1479,8 +1479,8 @@ export class Tempo {
 	 * @param instance - The instance to check
 	 * @returns True if the instance is a Tempo object
 	 */
-	static [Symbol.hasInstance](instance: any) {
-		return isDefined(instance?.[$Identity])
+	static [Symbol.hasInstance](instance: any): boolean {
+		return hasKey(instance, $Identity);
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */

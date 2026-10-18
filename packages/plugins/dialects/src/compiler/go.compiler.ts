@@ -1,21 +1,18 @@
-import { WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { WeakCache, Enum, resolveDayOfYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
-	type ParseOptions,
+	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
-	resolveDayOfYear,
+	buildParsedZonedDateTime,
 } from './shared.compiler.js';
 
 const GO_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
 const GO_PARSER_CACHE = new WeakCache<string, RegExp>();
-
-const WEEKDAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const GO_TOKEN_REGEX =
 	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
@@ -93,10 +90,10 @@ export function compileGoFormatter(mask: string): FormatterFn {
 
 			// Weekday
 			case 'Monday':
-				parts.push((zdt) => WEEKDAY_NAMES_FULL[zdt.dayOfWeek % 7]);
+				parts.push((zdt) => Enum.keyOf(enums.WEEKDAYS, zdt.dayOfWeek) ?? '');
 				break;
 			case 'Mon':
-				parts.push((zdt) => WEEKDAY_NAMES_SHORT[zdt.dayOfWeek % 7]);
+				parts.push((zdt) => Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek) ?? '');
 				break;
 
 			// Hour
@@ -292,8 +289,10 @@ export function compileGoParser(mask: string): RegExp {
 				pattern += group('dd', '\\d{1,2}');
 				break;
 			case '002':
+				pattern += group('doy', '\\d{3}');
+				break;
 			case '__2':
-				pattern += group('doy', '\\d{1,3}');
+				pattern += group('doy', '\\s{0,2}\\d{1,3}');
 				break;
 			case 'Monday':
 			case 'Mon':
@@ -367,7 +366,7 @@ export function compileGoParser(mask: string): RegExp {
 				pattern += group('tz_offset', '[+-]\\d{2}');
 				break;
 			case 'MST':
-				pattern += group('tz_name', '[A-Za-z0-9_/+]+');
+				pattern += group('tz_name', '[A-Za-z0-9_/+-:]+');
 				break;
 			default:
 				pattern += escapeRegex(token);
@@ -394,13 +393,14 @@ export function compileGoParser(mask: string): RegExp {
  *
  * @param options - `today` supplies the reference year; otherwise uses the current date in the resolved zone.
  * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601.
+ * Abbreviations like PDT may not be valid Temporal time zone identifiers and can be rejected during parsing.
  * @returns The parsed date-time, or undefined for a mismatch, conflicting day-of-year fields, nonzero offset seconds,
  * or rejected date/time fields. Temporal construction errors are caught and return undefined.
  */
 export function parseGo(
 	input: string,
 	mask: string,
-	options: ParseOptions = {}
+	options: DialectOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const regex = compileGoParser(mask);
 	const match = regex.exec(input);
@@ -460,47 +460,18 @@ export function parseGo(
 	const timeComp = resolveTimeComponents(getGroup);
 	if (!timeComp) return undefined;
 
-	const ms = getGroup('ms');
-	const us = getGroup('us');
-	const ns = getGroup('ns');
-	let millisecond = 0;
-	let microsecond = 0;
-	let nanosecond = 0;
+	const subseconds = resolveFractionalSeconds(getGroup('ns') ?? getGroup('us') ?? getGroup('ms'));
 
-	if (ns) {
-		const paddedNs = ns.padEnd(9, '0');
-		const totalNs = parseInt(paddedNs, 10);
-		millisecond = Math.floor(totalNs / 1_000_000);
-		microsecond = Math.floor((totalNs % 1_000_000) / 1_000);
-		nanosecond = totalNs % 1_000;
-	} else if (us) {
-		const paddedUs = us.padEnd(6, '0');
-		const totalUs = parseInt(paddedUs, 10);
-		millisecond = Math.floor(totalUs / 1_000);
-		microsecond = totalUs % 1_000;
-	} else if (ms) {
-		const paddedMs = ms.padEnd(3, '0');
-		millisecond = parseInt(paddedMs, 10);
-	}
-
-	try {
-		return Temporal.ZonedDateTime.from(
-			{
-				timeZone: ctx.tz,
-				calendar: ctx.cal,
-				year,
-				month,
-				day,
-				hour: timeComp.hour,
-				minute: timeComp.minute,
-				second: timeComp.second,
-				millisecond,
-				microsecond,
-				nanosecond,
-			},
-			{ overflow: 'reject' }
-		);
-	} catch {
-		return undefined;
-	}
+	return buildParsedZonedDateTime(
+		{
+			year,
+			month,
+			day,
+			hour: timeComp.hour,
+			minute: timeComp.minute,
+			second: timeComp.second,
+			...subseconds,
+		},
+		ctx
+	);
 }

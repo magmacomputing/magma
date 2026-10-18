@@ -61,6 +61,18 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(dt.dialects.sql('YYYY"-"MM"-"DD"T"HH24:MI:SS')).toBe('2026-10-24T15:30:45');
 		});
 
+		it('formats day with ordinal suffix (DDTH, ddth, FMDDTH)', () => {
+			expect(dt.dialects.sql('DDTH "of" Month YYYY')).toBe('24TH of October 2026');
+			expect(dt.dialects.sql('ddth "of" Month YYYY')).toBe('24th of October 2026');
+			expect(dt.dialects.sql('FMDDTH "of" Month YYYY')).toBe('24TH of October 2026');
+
+			const first = new Tempo('2026-05-01');
+			expect(first.dialects.sql('DDTH')).toBe('01ST');
+			expect(first.dialects.sql('ddth')).toBe('01st');
+			expect(first.dialects.sql('FMDDTH')).toBe('1ST');
+			expect(first.dialects.sql('FMddth')).toBe('1st');
+		});
+
 		it('formats fractional seconds (FF, FF3, FF6)', () => {
 			expect(dt.dialects.sql('YYYY-MM-DD HH24:MI:SS.FF3')).toBe('2026-10-24 15:30:45.123');
 			expect(dt.dialects.sql('YYYY-MM-DD HH24:MI:SS.FF6')).toBe('2026-10-24 15:30:45.123456');
@@ -77,6 +89,12 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			// Jan 8 is always WW = 2 (day 8 of year)
 			const jan8 = new Tempo('2026-01-08T12:00:00Z');
 			expect(jan8.dialects.sql('WW')).toBe('02');
+		});
+
+		it('formats seconds past midnight (SSSSS, FMSSSSS)', () => {
+			const early = new Tempo('2026-04-09T01:00:05');
+			expect(early.dialects.sql('SSSSS')).toBe('03605');
+			expect(early.dialects.sql('FMSSSSS')).toBe('3605');
 		});
 
 		it('formats time zone region (TZR) and daylight saving abbreviation (TZD)', () => {
@@ -158,6 +176,14 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 
 		it('parses double-quoted literals', () => {
 			const t = Tempo.dialects.parse('2026年10月24日', 'YYYY"年"MM"月"DD"日"', 'oracle');
+			expect(t.isValid).toBe(true);
+			expect(t.yy).toBe(2026);
+			expect(t.mm).toBe(10);
+			expect(t.dd).toBe(24);
+		});
+
+		it('parses day with ordinal suffix (DDTH)', () => {
+			const t = Tempo.dialects.parse('24th of October 2026', 'DDTH "of" Month YYYY', 'oracle');
 			expect(t.isValid).toBe(true);
 			expect(t.yy).toBe(2026);
 			expect(t.mm).toBe(10);

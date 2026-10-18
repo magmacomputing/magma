@@ -1,14 +1,14 @@
-import { WeakCache, suffix, Enum, getISOWeekOfYear } from '@magmacomputing/tempo/library';
+import { WeakCache, suffix, Enum, getISOWeekOfYear, resolveTwoDigitYear, resolveDayOfYear } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
-	type ParseOptions,
+	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
-	resolveDayOfYear,
+	buildParsedZonedDateTime,
 } from './shared.compiler.js';
 
 const PHP_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
@@ -348,7 +348,7 @@ export function compilePhpParser(mask: string): RegExp {
 export function parsePhp(
 	input: string,
 	mask: string,
-	options: ParseOptions = {}
+	options: DialectOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const regex = compilePhpParser(mask);
 	const match = regex.exec(input);
@@ -375,8 +375,7 @@ export function parsePhp(
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
 	} else if (yy) {
-		const shortYear = parseInt(yy, 10);
-		year = shortYear >= 70 ? 1900 + shortYear : 2000 + shortYear;
+		year = resolveTwoDigitYear(parseInt(yy, 10), ctx.pivot, ctx.today);
 	}
 
 	let month = 1;
@@ -423,24 +422,18 @@ export function parsePhp(
 		microsecond = totalMicros % 1000;
 	}
 
-	try {
-		return Temporal.ZonedDateTime.from(
-			{
-				timeZone: ctx.tz,
-				calendar: ctx.cal,
-				year,
-				month,
-				day,
-				hour: timeComp.hour,
-				minute: timeComp.minute,
-				second: timeComp.second,
-				millisecond,
-				microsecond,
-				nanosecond: 0,
-			},
-			{ overflow: 'reject' }
-		);
-	} catch {
-		return undefined;
-	}
+	return buildParsedZonedDateTime(
+		{
+			year,
+			month,
+			day,
+			hour: timeComp.hour,
+			minute: timeComp.minute,
+			second: timeComp.second,
+			millisecond,
+			microsecond,
+			nanosecond: 0,
+		},
+		ctx
+	);
 }

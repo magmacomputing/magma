@@ -1,23 +1,20 @@
-import { pad, WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { pad, suffix, WeakCache, Enum, resolveDayOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
-	type ParseOptions,
+	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
-	resolveDayOfYear,
-	getIsoWeek,
-	fromIsoWeek,
-	resolveIsoCalendarYear,
+	buildParsedZonedDateTime,
 } from './shared.compiler.js';
 
 const ORACLE_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const ORACLE_PARSE_CACHE = new WeakCache<string, RegExp>();
 
-const ORACLE_TOKEN_REGEX = /"[^"]*"|TZH:TZM|HH24|HH12|SSSSS|MONTH|IYYY|YYYY|RRRR|A\.M\.|P\.M\.|MON|YYY|IYY|TZD|TZR|TZH|TZM|DAY|DDD|FF[1-9]?|FM|FX|IW|WW|YY|RR|IY|MM|DD|DY|HH|MI|SS|AM|PM|RM|OF|D|W|Q|Y|I|J/gi;
+const ORACLE_TOKEN_REGEX = /"[^"]*"|TZH:TZM|HH24|HH12|SSSSS|MONTH|IYYY|YYYY|RRRR|A\.M\.|P\.M\.|MON|YYY|IYY|TZD|TZR|TZH|TZM|DAY|DDTH|DDD|FF[1-9]?|FM|FX|IW|WW|YY|RR|IY|MM|DD|DY|HH|MI|SS|AM|PM|RM|OF|D|W|Q|Y|I|J/gi;
 
 const ROMAN_MONTHS: readonly string[] = [
 	'', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII',
@@ -124,6 +121,13 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					});
 					break;
 
+				case 'DDTH':
+					parts.push((z) => {
+						const num = isFm ? String(z.day) : pad(z.day, 2);
+						const ord = suffix(z.day).slice(-2);
+						return num + applyCase(ord, token.slice(-2));
+					});
+					break;
 				case 'DD':
 					parts.push((z) => (isFm ? String(z.day) : pad(z.day, 2)));
 					break;
@@ -143,6 +147,7 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					});
 					break;
 				case 'D':
+					// Oracle D is day of week (1-7). Implemented using ISO 8601 weekday numbering (1 for Monday to 7 for Sunday).
 					parts.push((z) => String(z.dayOfWeek));
 					break;
 				case 'J':
@@ -169,7 +174,10 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					parts.push((z) => (isFm ? String(z.second) : pad(z.second, 2)));
 					break;
 				case 'SSSSS':
-					parts.push((z) => String(z.hour * 3600 + z.minute * 60 + z.second));
+					parts.push((z) => {
+						const secs = z.hour * 3600 + z.minute * 60 + z.second;
+						return isFm ? String(secs) : pad(secs, 5);
+					});
 					break;
 
 				case 'AM':
@@ -331,6 +339,9 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 				case 'RM':
 					pattern += group('month_roman', '[IVXLCDMivxlcdm]+');
 					break;
+				case 'DDTH':
+					pattern += group('dd', '\\d{1,2}(?:st|nd|rd|th)');
+					break;
 				case 'DD':
 					pattern += group('dd', '\\d{1,2}');
 					break;
@@ -416,7 +427,7 @@ export function compileOracleParser(mask: string): RegExp | undefined {
 export function parseOracle(
 	input: string,
 	mask: string,
-	options: ParseOptions = {}
+	options: DialectOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileOracleParser(mask);
 	if (!rx) return undefined;
@@ -509,34 +520,10 @@ export function parseOracle(
 	const time = resolveTimeComponents(getGroup);
 	if (!time) return undefined;
 	const { hour, minute, second } = time;
-	let millisecond = 0;
-	let microsecond = 0;
-	let nanosecond = 0;
+	const subseconds = resolveFractionalSeconds(getGroup('us'));
 
-	const usVal = getGroup('us');
-	if (usVal) {
-		const padded = usVal.padEnd(9, '0').slice(0, 9);
-		const nanosTotal = parseInt(padded, 10);
-		millisecond = Math.floor(nanosTotal / 1_000_000);
-		microsecond = Math.floor((nanosTotal % 1_000_000) / 1000);
-		nanosecond = nanosTotal % 1000;
-	}
-
-	try {
-		return Temporal.ZonedDateTime.from({
-			timeZone: tz,
-			calendar: cal,
-			year,
-			month,
-			day,
-			hour,
-			minute,
-			second,
-			millisecond,
-			microsecond,
-			nanosecond,
-		}, { overflow: 'reject' });
-	} catch {
-		return undefined;
-	}
+	return buildParsedZonedDateTime(
+		{ year, month, day, hour, minute, second, ...subseconds },
+		ctx
+	);
 }

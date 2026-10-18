@@ -161,11 +161,11 @@ export type Until = (Options & { unit?: Unit }) | Unit
 export type Mutate = 'start' | 'mid' | 'end'
 export type TermOffset = { [K: `#${string}`]: number | string }
 export type SetFields = {
-	[K in Mutate]?: Unit | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek' | `#${string}`;
+	[K in Mutate]?: Unit | 'yow' | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek' | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 } & {
-	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
+	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'yow' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };

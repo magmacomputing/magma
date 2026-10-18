@@ -4,6 +4,7 @@ import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
 import { fromRoman } from '#library/number.library.js';
+import { resolveTwoDigitYear, resolveFractionalSeconds } from '#library/temporal.library.js';
 import { Enum } from '#library/enumerate.library.js';
 import { Match, enums, isTempo, logError, logWarn, logDebug } from '#tempo/support';
 import * as t from '../tempo.type.js';
@@ -233,12 +234,8 @@ export function parseOrdinalWeekday(groups: t.Groups, wkd: string, nthStr: strin
 	let yy = groups.yy ? Number(groups.yy) : (fallbackAnchor?.year ?? dateTime.year);
 	let mm = groups.mm ? num({ month: groups.mm }, config).month : (fallbackAnchor?.month ?? dateTime.month);
 
-	if (Number.isFinite(yy) && yy < 100) {
-		const pivot = config?.pivot ?? 75;
-		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
-		const century = Math.trunc(dateTime.year / 100);
-		yy += (century - Number(yy >= pivotYear)) * 100;
-	}
+	if (Number.isFinite(yy) && yy < 100)
+		yy = resolveTwoDigitYear(yy, config?.pivot, dateTime);
 
 	if (!Number.isFinite(yy) || !Number.isFinite(mm)) return undefined;
 
@@ -419,15 +416,15 @@ export function parseOrdinalDate(
  * @throws Errors reported through the configured error boundary unless `config.catch` is enabled;
  * Temporal errors from date resolution propagate regardless of that setting.
  */
-export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot: number = 75): Temporal.ZonedDateTime {
+export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config: any, pivot?: number): Temporal.ZonedDateTime {
 
 	const { mod, nbr = '1', afx, unt, era } = groups as Lexer.GroupDate & { era?: string };
 
 	if (groups.Rm) {
 		const parsedMonth = fromRoman(groups.Rm);
-		if (Number.isFinite(parsedMonth)) {
+		if (Number.isFinite(parsedMonth))
 			groups.mm = String(parsedMonth);
-		}
+
 		delete groups.Rm;
 	}
 
@@ -447,17 +444,13 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	if (isUndefined(yy) && isDefined(groups.yy2)) {
 		let yy2Num = parseInt(groups.yy2, 10);
 		if (Number.isFinite(yy2Num)) {
-			if (yy2Num < 100) {
-				const pivotVal = config?.pivot ?? pivot ?? 75;
-				const pivotYear = dateTime.subtract({ years: pivotVal }).year % 100;
-				const century = Math.floor(dateTime.year / 100);
-				yy2Num += (century - Number(yy2Num >= pivotYear)) * 100;
-			}
+			if (yy2Num < 100)
+				yy2Num = resolveTwoDigitYear(yy2Num, config?.pivot ?? pivot, dateTime);
+
 			yy = String(yy2Num);
 		}
 	}
-	let mm = groups.mm || undefined;
-	let dd = groups.dd || undefined;
+	let { mm, dd } = groups;
 
 	if (era) {
 		if (isUndefined(yy)) {
@@ -465,9 +458,9 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 			return dateTime;
 		}
 		const isBCE = RE_ERA_BCE.test(era);
-		if (isBCE) {
+		if (isBCE)
 			yy = String(-(Number(yy) - 1));
-		}
+
 		if (isUndefined(mm) && isUndefined(dd)) {
 			mm = '1';
 			dd = '1';
@@ -522,11 +515,8 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		return dateTime;
 	}
 
-	if (year.toString().match(Match.twoDigit)) {
-		const pivotYear = dateTime.subtract({ years: pivot }).year % 100;
-		const century = Math.trunc(dateTime.year / 100);
-		year += (century - Number(year >= pivotYear)) * 100;
-	}
+	if (year.toString().match(Match.twoDigit))
+		year = resolveTwoDigitYear(year, config?.pivot ?? pivot, dateTime);
 
 	const { nbr: adjust = 1 } = num({ nbr }, config);
 	const offset = Number(pad(month) + '.' + pad(day));
@@ -565,10 +555,10 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 	}
 
 	if (isDefined(groups["ff"])) {
-		const ff = groups["ff"].substring(0, 9).padEnd(9, '0');
-		ms = +ff.substring(0, 3);
-		us = +ff.substring(3, 6);
-		ns = +ff.substring(6, 9);
+		const sub = resolveFractionalSeconds(groups["ff"]);
+		ms = sub.millisecond;
+		us = sub.microsecond;
+		ns = sub.nanosecond;
 	}
 
 	if (groups["mer"]?.toLowerCase() === 'pm' && hh < 12 && (hh + mi + ss + ms + us + ns) > 0)

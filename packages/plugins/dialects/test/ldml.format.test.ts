@@ -55,6 +55,18 @@ describe('Unicode LDML Formatting', () => {
 		expect(dt.format('yyyy QQQQ', { dialect: DIALECT.Ldml })).toBe('2026 4th quarter');
 	});
 
+	it('formats short weekday (EE), padded weekday (cc, ee), and padded day-of-year (DD)', () => {
+		expect(dt.format('EE', { dialect: DIALECT.Ldml })).toBe('Sat');
+		expect(dt.format('cc', { dialect: DIALECT.Ldml })).toBe('06');
+		expect(dt.format('ee', { dialect: DIALECT.Ldml })).toBe('06');
+		expect(dt.format('DD', { dialect: DIALECT.Ldml })).toBe('297');
+
+		const jan5 = new Tempo('2026-01-05');
+		expect(jan5.format('DD', { dialect: DIALECT.Ldml })).toBe('05');
+		expect(jan5.format('DDD', { dialect: DIALECT.Ldml })).toBe('005');
+		expect(jan5.format('cc', { dialect: DIALECT.Ldml })).toBe('01');
+	});
+
 	it('executes compiled layout cache across 10,000 iterations efficiently', () => {
 		const mask = 'yyyy-MM-dd HH:mm:ss.SSS';
 		for (let i = 0; i < 10000; i++) {

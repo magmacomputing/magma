@@ -22,7 +22,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'yyyy:-3': { oracle: 'YYY', desc: 'Last 3 digits of year' },
 	'yyyy:-1': { oracle: 'Y', desc: 'Last digit of year' },
 	yy: { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
-	'yy:raw': { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
+	'yy:raw': { strftime: '%-y', desc: 'Unpadded 2-digit year (0-99)' },
 	yow: { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', desc: '4-digit ISO week-numbering year' },
 	'yow:-3': { oracle: 'IYY', desc: 'Last 3 digits of ISO week-numbering year' },
 	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
@@ -68,7 +68,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 
 	// Week of Year
 	woy: { ldml: 'II', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
-	'woy:raw': { ldml: 'I', strftime: '%-V', oracle: 'FMIW', moment: 'W', php: 'W', desc: 'Unpadded ISO week of year (1-53)' },
+	'woy:raw': { ldml: 'I', strftime: '%-V', oracle: 'FMIW', moment: 'W', desc: 'Unpadded ISO week of year (1-53)' },
 	'woy:ord': { moment: 'Wo', desc: 'ISO week of year with ordinal suffix' },
 
 	// Era

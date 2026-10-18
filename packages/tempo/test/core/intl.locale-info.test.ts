@@ -219,6 +219,15 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(tPrevYw.yw).toBe(2025);
 			expect(tPrevYw.wy).toBe(21);
 			expect(tPrevYw.dow).toBe(3);
+
+			// add:yow and subtract:yow
+			const tNextYow = t.add({ yow: 2 });
+			expect(tNextYow.yw).toBe(2028);
+			expect(tNextYow.wy).toBe(21);
+
+			const tPrevYow = t.subtract({ yow: 1 });
+			expect(tPrevYow.yw).toBe(2025);
+			expect(tPrevYow.wy).toBe(21);
 		});
 
 		it('t.set({ yw: "start" | "mid" | "end" }) and aliases correctly snap to ISO year boundaries', () => {
@@ -231,9 +240,12 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(startYw.dow).toBe(1);
 			expect(startYw.format('{hh}:{mi}:{ss}')).toBe('00:00:00');
 
-			// Shorthand start: 'yw' and start: 'isoYear'
+			// Shorthand start: 'yw', start: 'yow', and start: 'isoYear'
 			const startShorthand = t.set({ start: 'yw' });
 			expect(startShorthand.iso).toBe(startYw.iso);
+
+			const startYow = t.set({ start: 'yow' });
+			expect(startYow.iso).toBe(startYw.iso);
 
 			const startIsoYear = t.set({ start: 'isoYear' });
 			expect(startIsoYear.iso).toBe(startYw.iso);

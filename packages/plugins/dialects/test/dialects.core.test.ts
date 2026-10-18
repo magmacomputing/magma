@@ -1,7 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo/core';
 import { FormatModule } from '@magmacomputing/tempo/format';
 import { ParseModule } from '@magmacomputing/tempo/parse';
-import { DialectsPlugin, DIALECT } from '../src/index.js';
+import { DialectsPlugin, DIALECT, detectDialect } from '../src/index.js';
 
 describe('Dialects Core Modularity & Guardrails', () => {
 	beforeAll(() => {
@@ -60,5 +60,39 @@ describe('Dialects Core Modularity & Guardrails', () => {
 		expect(parsed.yy).toBe(2026);
 		expect(parsed.mm).toBe(10);
 		expect(parsed.dd).toBe(24);
+	});
+
+	it('detects dialect correctly with string, function, or options object', () => {
+		// Explicit string dialect
+		expect(detectDialect('%Y-%m-%d', DIALECT.Oracle)).toBe(DIALECT.Oracle);
+		// Dynamic supplier function
+		expect(detectDialect('%Y-%m-%d', () => DIALECT.Php)).toBe(DIALECT.Php);
+		// Options object with explicit dialect
+		expect(detectDialect('%Y-%m-%d', { dialect: DIALECT.Oracle })).toBe(DIALECT.Oracle);
+		// Options object without dialect falls through to mask auto-detection
+		expect(detectDialect('%Y-%m-%d', { timeZone: 'UTC' })).toBe(DIALECT.Strftime);
+		expect(detectDialect('2006-01-02', { fill: false })).toBe(DIALECT.Go);
+		expect(detectDialect('YYYY-MM-DD HH24:MI:SS', { strict: true })).toBe(DIALECT.Oracle);
+		expect(detectDialect('yyyy-MM-dd', { dialect: undefined })).toBe(DIALECT.Ldml);
+	});
+
+	it('honors pivot option when parsing two-digit years', () => {
+		// By default (pivot: 75), in 2026 window is 1951..2050
+		const tDefault1 = Tempo.fromFormat('24/10/26', 'dd/MM/yy');
+		expect(tDefault1.yy).toBe(2026);
+
+		const tDefault2 = Tempo.fromFormat('24/10/50', 'dd/MM/yy');
+		expect(tDefault2.yy).toBe(2050);
+
+		const tDefault3 = Tempo.fromFormat('24/10/51', 'dd/MM/yy');
+		expect(tDefault3.yy).toBe(1951);
+
+		// With custom pivot: 10, in 2026 window is 2016..2115
+		const tCustom = Tempo.fromFormat('24/10/51', 'dd/MM/yy', { pivot: 10 });
+		expect(tCustom.yy).toBe(2051);
+
+		// With dialects.parse
+		const tDialects = Tempo.dialects.parse('24/10/51', 'dd/MM/yy', { pivot: 10 });
+		expect(tDialects.yy).toBe(2051);
 	});
 });

@@ -1,4 +1,4 @@
-import { toZonedDateTime, toPlainDate, getOffsets } from '#library/temporal.library.js';
+import { toZonedDateTime, toPlainDate, getOffsets, resolveTwoDigitYear, resolveFractionalSeconds } from '#library/temporal.library.js';
 
 describe('Temporal Library Helpers', () => {
 	describe('toZonedDateTime', () => {
@@ -85,6 +85,69 @@ describe('Temporal Library Helpers', () => {
 			expect(typeof offsets1.jan).toBe('number');
 			expect(typeof offsets1.jul).toBe('number');
 			expect(offsets1).toBe(offsets2);
+		});
+	});
+
+	describe('resolveTwoDigitYear', () => {
+		it('should resolve two-digit years using default 75-year sliding window with numeric reference year', () => {
+			// With reference 2026 and pivot 75: window is 1951..2050
+			expect(resolveTwoDigitYear(26, 75, 2026)).toBe(2026);
+			expect(resolveTwoDigitYear(0, 75, 2026)).toBe(2000);
+			expect(resolveTwoDigitYear(50, 75, 2026)).toBe(2050);
+			expect(resolveTwoDigitYear(51, 75, 2026)).toBe(1951);
+			expect(resolveTwoDigitYear(99, 75, 2026)).toBe(1999);
+		});
+
+		it('should support Temporal object as reference date', () => {
+			const refZdt = Temporal.ZonedDateTime.from('2026-10-24T12:00:00[UTC]');
+			expect(resolveTwoDigitYear(24, 75, refZdt)).toBe(2024);
+			expect(resolveTwoDigitYear(80, 75, refZdt)).toBe(1980);
+
+			const refPd = Temporal.PlainDate.from('1990-06-15');
+			// With reference 1990 and pivot 75: window is 1915..2014
+			expect(resolveTwoDigitYear(90, 75, refPd)).toBe(1990);
+			expect(resolveTwoDigitYear(14, 75, refPd)).toBe(2014);
+			expect(resolveTwoDigitYear(15, 75, refPd)).toBe(1915);
+		});
+
+		it('should support custom pivot thresholds (e.g. 50 years or 70 years)', () => {
+			// Fixed pivot 70 relative to 2045: window 1975..2074
+			expect(resolveTwoDigitYear(75, 70, 2045)).toBe(1975);
+			expect(resolveTwoDigitYear(74, 70, 2045)).toBe(2074);
+		});
+
+		it('should return numbers >= 100 or negative unchanged', () => {
+			expect(resolveTwoDigitYear(2026)).toBe(2026);
+			expect(resolveTwoDigitYear(1984)).toBe(1984);
+			expect(resolveTwoDigitYear(-5)).toBe(-5);
+		});
+	});
+
+	describe('resolveFractionalSeconds', () => {
+		it('should return zeroes for undefined or empty input', () => {
+			expect(resolveFractionalSeconds()).toEqual({ millisecond: 0, microsecond: 0, nanosecond: 0 });
+			expect(resolveFractionalSeconds('')).toEqual({ millisecond: 0, microsecond: 0, nanosecond: 0 });
+		});
+
+		it('should parse 3-digit millisecond fractions', () => {
+			expect(resolveFractionalSeconds('123')).toEqual({ millisecond: 123, microsecond: 0, nanosecond: 0 });
+		});
+
+		it('should parse 6-digit microsecond fractions', () => {
+			expect(resolveFractionalSeconds('123456')).toEqual({ millisecond: 123, microsecond: 456, nanosecond: 0 });
+		});
+
+		it('should parse 9-digit nanosecond fractions', () => {
+			expect(resolveFractionalSeconds('123456789')).toEqual({ millisecond: 123, microsecond: 456, nanosecond: 789 });
+		});
+
+		it('should right-pad short fractions up to 9 digits', () => {
+			expect(resolveFractionalSeconds('5')).toEqual({ millisecond: 500, microsecond: 0, nanosecond: 0 });
+			expect(resolveFractionalSeconds('05')).toEqual({ millisecond: 50, microsecond: 0, nanosecond: 0 });
+		});
+
+		it('should truncate fractions longer than 9 digits', () => {
+			expect(resolveFractionalSeconds('123456789999')).toEqual({ millisecond: 123, microsecond: 456, nanosecond: 789 });
 		});
 	});
 });

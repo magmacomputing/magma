@@ -734,9 +734,11 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				case 'space': {
-					if (token !== 'h12' && !normMods.some(m => RE_INTEGER.test(m) && m !== '0')) {
-						const defaultWidth = (token === 'doy' || (token === 'dd' && normMods.includes('year'))) ? 3
-							: (token === 'ss' && normMods.includes('day')) ? 5
+					if (!normMods.some(m => RE_INTEGER.test(m) && m !== '0')) {
+						const defaultWidth = (token === 'doy' || (token === 'dd' && normMods.includes('year')))
+							? 3
+							: (token === 'ss' && normMods.includes('day'))
+								? 5
 								: 2;
 						const strVal = String(res);
 						if (RE_SIGNED_DIGITS.test(strVal)) {

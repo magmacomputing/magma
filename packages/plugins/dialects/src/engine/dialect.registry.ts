@@ -1,4 +1,4 @@
-import { evaluate, hasKey } from '@magmacomputing/tempo/library';
+import { evaluate, hasKey, isObject, isUndefined } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import { formatLdml, parseLdml } from '../compiler/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js';
@@ -6,8 +6,7 @@ import { formatOracle, parseOracle } from '../compiler/oracle.compiler.js';
 import { formatPhp, parsePhp } from '../compiler/php.compiler.js';
 import { formatGo, parseGo } from '../compiler/go.compiler.js';
 
-import { type ParseOptions as DialectOptions } from '../compiler/shared.compiler.js';
-export type { DialectOptions };
+import type { DialectOptions } from '../compiler/shared.compiler.js';
 
 const RE_ORACLE_DETECTION = /\bhh(?:24|12)\b/i;
 const RE_ORACLE_UPPER = /\b(?:MI|FF[1-9]?|MON)\b/;
@@ -25,8 +24,8 @@ const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWy
  * @throws Errors from evaluating a dialect supplier propagate to the caller.
  */
 export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
-	const raw = hasKey(dialectOrOptions, 'dialect')
-		? dialectOrOptions.dialect
+	const raw = isObject(dialectOrOptions)
+		? (hasKey(dialectOrOptions, 'dialect') ? dialectOrOptions.dialect : undefined)
 		: dialectOrOptions;
 	const resolved = evaluate(raw);
 	if (resolved) return normalizeDialect(resolved);
@@ -40,44 +39,40 @@ export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
 	return DIALECT.Ldml;
 }
 
+const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
+	YYYY: 'yyyy',
+	GGGG: 'YYYY',
+	YY: 'yy',
+	GG: 'YY',
+	DDDD: 'DDD',
+	DDDo: 'DDDo',
+	DDD: 'D',
+	Do: 'Do',
+	DD: 'dd',
+	D: 'd',
+	dddd: 'EEEE',
+	ddd: 'EEE',
+	WW: 'ww',
+	W: 'w',
+	ZZ: 'ZZ',
+	Z: 'ZZZZZ',
+	E: 'e',
+	A: 'aa',
+	a: 'a',
+};
+
+const RE_MOMENT_TRANSLATE =
+	/\[([^\]]+)\]|(YYYY|GGGG|YY|GG|DDDD|DDDo|DDD|Do|DD|D|dddd|ddd|WW|W|ZZ|Z|E|A|a)/g;
+
 /**
  * Translates a Moment.js format mask into standard LDML.
  */
 export function translateMomentToLdml(mask: string): string {
-	let out = '';
-	let i = 0;
-	while (i < mask.length) {
-		if (mask[i] === '[') {
-			const close = mask.indexOf(']', i);
-			if (close !== -1) {
-				const literal = mask.slice(i + 1, close).replace(/'/g, "''");
-				out += `'${literal}'`;
-				i = close + 1;
-				continue;
-			}
-		}
-		if (mask.startsWith('YYYY', i)) { out += 'yyyy'; i += 4; }
-		else if (mask.startsWith('GGGG', i)) { out += 'YYYY'; i += 4; }
-		else if (mask.startsWith('YY', i)) { out += 'yy'; i += 2; }
-		else if (mask.startsWith('GG', i)) { out += 'YY'; i += 2; }
-		else if (mask.startsWith('DDDD', i)) { out += 'DDD'; i += 4; }
-		else if (mask.startsWith('DDDo', i)) { out += 'DDDo'; i += 4; }
-		else if (mask.startsWith('DDD', i)) { out += 'D'; i += 3; }
-		else if (mask.startsWith('Do', i)) { out += 'Do'; i += 2; }
-		else if (mask.startsWith('DD', i)) { out += 'dd'; i += 2; }
-		else if (mask.startsWith('D', i)) { out += 'd'; i += 1; }
-		else if (mask.startsWith('dddd', i)) { out += 'EEEE'; i += 4; }
-		else if (mask.startsWith('ddd', i)) { out += 'EEE'; i += 3; }
-		else if (mask.startsWith('WW', i)) { out += 'ww'; i += 2; }
-		else if (mask.startsWith('W', i)) { out += 'w'; i += 1; }
-		else if (mask.startsWith('A', i)) { out += 'aa'; i += 1; }
-		else if (mask.startsWith('a', i)) { out += 'a'; i += 1; }
-		else {
-			out += mask[i];
-			i++;
-		}
-	}
-	return out;
+	return mask.replace(RE_MOMENT_TRANSLATE, (match, literal, token) => {
+		return (!isUndefined(literal))
+			? `'${literal.replace(/'/g, "''")}'`
+			: MOMENT_TO_LDML_MAP[token] ?? match;
+	});
 }
 
 /**

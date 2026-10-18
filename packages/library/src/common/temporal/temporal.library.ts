@@ -245,3 +245,55 @@ export function normalizeUtcOffset(zone: string): string {
 
 	return `${sign}${hours.padStart(2, '0')}:${minutes ?? '00'}`;
 }
+
+/**
+ * Resolves a two-digit year (0–99) into a four-digit year using a 100-year sliding window (century pivot).
+ *
+ * @param yy - The two-digit year (0–99). If >= 100, negative, or not finite, returned as-is.
+ * @param pivot - Cutoff offset in years relative to the reference date (default: 75, covering [reference - 75, reference + 24]).
+ * @param reference - Reference date, year, or ZonedDateTime to pivot against (default: current system date).
+ * @returns The resolved 4-digit calendar year.
+ */
+export function resolveTwoDigitYear(
+	yy: number,
+	pivot: number = 75,
+	reference?: Temporal.ZonedDateTime | Temporal.PlainDate | number
+): number {
+	if (yy >= 100 || yy < 0 || !Number.isFinite(yy)) return yy;
+	const refYear = isNumber(reference)
+		? reference
+		: (reference ? reference.year : today().year);
+	const minYear = refYear - pivot;
+
+	let year = Math.floor(minYear / 100) * 100 + yy;
+	if (year < minYear) year += 100;
+
+	return year;
+}
+
+/**
+ * Breakdown of subsecond fraction into millisecond, microsecond, and nanosecond integers.
+ */
+export interface SubsecondParts {
+	millisecond: number;
+	microsecond: number;
+	nanosecond: number;
+}
+
+/**
+ * Parses up to 9 digits of sub-second fractions into millisecond, microsecond, and nanosecond numbers.
+ *
+ * @param raw - The raw fractional seconds string (e.g. "123", "123456789")
+ * @returns Object with millisecond, microsecond, and nanosecond components
+ */
+export function resolveFractionalSeconds(raw?: string): SubsecondParts {
+	if (!raw) return { millisecond: 0, microsecond: 0, nanosecond: 0 };
+	const padded = raw.padEnd(9, '0').slice(0, 9);
+
+	return {
+		millisecond: parseInt(padded.slice(0, 3), 10),
+		microsecond: parseInt(padded.slice(3, 6), 10),
+		nanosecond: parseInt(padded.slice(6, 9), 10),
+	};
+}
+

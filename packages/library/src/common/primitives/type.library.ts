@@ -427,7 +427,7 @@ export type TypeofMap = {
 	number: number;
 	boolean: boolean;
 	function: (...args: any[]) => unknown;
-	object: Record<PropertyKey, unknown>;
+	object: object;
 	bigint: bigint;
 	symbol: symbol;
 	undefined: undefined;

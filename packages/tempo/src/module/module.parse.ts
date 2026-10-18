@@ -52,6 +52,17 @@ const RE_ORDINAL_SUFFIX = /(?:st|nd|rd|th)/;
 const RE_TERM_ID = /#[\w.]+/;
 
 const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
+const RE_ROMAN_CHARS = /^[IVXLCDMivxlcdm]+$/;
+
+/** Parses a capture group as Roman numerals if it matches Roman characters, otherwise parses as decimal */
+function parseRomanOrDecimal(val: string): number {
+	const trimmed = val.trim();
+	if (RE_ROMAN_CHARS.test(trimmed)) {
+		const r = fromRoman(trimmed);
+		if (Number.isFinite(r)) return r;
+	}
+	return parseInt(trimmed, 10);
+}
 
 /** Constructs a regular expression to match ordinal term expressions (e.g. "3rd day of #qtr.2"). */
 function buildOrdinalTermPattern(ordWords?: string): RegExp {
@@ -193,11 +204,9 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	const yyyy = getGroup('yyyy');
 	const yyVal = getGroup('yy');
 	if (yyyy) {
-		const rYear = fromRoman(yyyy);
-		year = Number.isFinite(rYear) ? rYear : parseInt(yyyy, 10);
+		year = parseRomanOrDecimal(yyyy);
 	} else if (yyVal) {
-		const rYear = fromRoman(yyVal);
-		const yy = Number.isFinite(rYear) ? rYear : parseInt(yyVal, 10);
+		const yy = parseRomanOrDecimal(yyVal);
 		year = yy < 100 ? (yy >= 70 ? 1900 + yy : 2000 + yy) : yy;
 	}
 
@@ -206,8 +215,7 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	const mmm = getGroup('mmm');
 	const mon = getGroup('mon');
 	if (mm) {
-		const rMonth = fromRoman(mm);
-		month = Number.isFinite(rMonth) ? rMonth : parseInt(mm, 10);
+		month = parseRomanOrDecimal(mm);
 	} else if (mmm || mon) {
 		const mNum = resolveMonthNum(mmm || mon!);
 		if (mNum) month = mNum;
@@ -219,8 +227,7 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	let day = 1;
 	const dd = getGroup('dd');
 	if (dd) {
-		const rDay = fromRoman(dd);
-		day = Number.isFinite(rDay) ? rDay : parseInt(dd.replace(/[^0-9]/g, ''), 10);
+		day = parseRomanOrDecimal(dd);
 	} else if (!yyyy && !yyVal && !mm && !mmm && !mon) {
 		day = today.day;
 	}
@@ -233,8 +240,7 @@ function parseBracedFormat(input: string, fmt: string, today: Temporal.ZonedDate
 	const hh = getGroup('hh');
 	const h12 = getGroup('h12');
 	if (hh) {
-		const rHour = fromRoman(hh);
-		hour = Number.isFinite(rHour) ? rHour : parseInt(hh, 10);
+		hour = parseRomanOrDecimal(hh);
 	} else if (h12) hour = parseInt(h12, 10);
 
 	const mer = getGroup('mer');
@@ -279,7 +285,15 @@ function parseDialectFormat(input: string, fmt: string, state: any, today: Tempo
 		?? (TempoClass as any)?.dialectsRegistry;
 	const parser = dialectsRegistry?.parse ?? (dialect ? dialectsRegistry?.[dialect]?.parse : undefined);
 	if (isFunction(parser)) {
-		return parser(input, fmt, { ...state.config, timeZone: tz, calendar: cal, dialect, today });
+		return parser(input, fmt, {
+			...state.config,
+			...state.options,
+			pivot: state.options?.pivot ?? state.parse?.pivot ?? state.config?.pivot,
+			timeZone: tz,
+			calendar: cal,
+			dialect,
+			today,
+		});
 	}
 	throw new Error(`[Tempo] Parsing unbraced format mask '${fmt}' requires '@magmacomputing/tempo-plugin-dialects'.`);
 }

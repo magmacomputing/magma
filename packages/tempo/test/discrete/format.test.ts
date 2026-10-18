@@ -316,7 +316,7 @@ describe('Tempo.format() refinements', () => {
     it('supports :space padding modifier with default and explicit widths', () => {
       expect(dt.format('{dd:space}')).toBe(' 5');
       expect(dt.format('{dd:2:space}')).toBe(' 5');
-      expect(dt.format('{h12:space}')).toBe('09 am');
+      expect(dt.format('{h12:space}')).toBe(' 9 am');
       expect(dt.format('{h12:space:2}')).toBe(' 9 am');
 
       const dtSingleDoy = new Tempo('2026-01-05T04:00:00');

@@ -1,5 +1,6 @@
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
 import { defineConfig } from 'vitest/config';
 import swc from 'unplugin-swc';
 
@@ -7,6 +8,10 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, '../tempo/bin/temporal-polyfill.ts');
 const spy = resolve(__dirname, '../tempo/test/support/setup.console-spy.ts');
+
+const stdDist = resolve(__dirname, '.std/dist/index.js');
+const stdSrc = resolve(__dirname, '.std/src/index.ts');
+const stdDistEntry = existsSync(stdDist) ? stdDist : stdSrc;
 
 export default defineConfig({
 	esbuild: false,
@@ -41,7 +46,7 @@ export default defineConfig({
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, '../tempo/dist/module/module.index.js') },
 			{ find: /^#tempo\/support$/, replacement: resolve(__dirname, '../tempo/dist/support/support.index.js') },
 			{ find: /^#tempo\/tempo\.class\.js$/, replacement: resolve(__dirname, '../tempo/dist/tempo.index.js') },
-			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../tempo/dist/plugin/term/term.index.js') },
+			{ find: /^#tempo\/std$/, replacement: stdDistEntry },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, '../tempo/dist/$1.js') },
 			{ find: /^#tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/dist/$1.js') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, '../tempo/dist/tempo.index.js') },

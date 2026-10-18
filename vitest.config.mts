@@ -1,10 +1,15 @@
 import path, { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { existsSync } from 'node:fs'
 import { defineConfig } from 'vitest/config'
 import swc from 'unplugin-swc'
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
+
+const stdDist = path.resolve(__dirname, './packages/plugins/.std/dist/index.js');
+const stdSrc = path.resolve(__dirname, './packages/plugins/.std/src/index.ts');
+const stdDistEntry = existsSync(stdDist) ? stdDist : stdSrc;
 
 export default defineConfig({
   esbuild: false,
@@ -67,7 +72,7 @@ export default defineConfig({
       { find: /^#tempo\/plugin\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/$1.js') },
       { find: /^#tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.index.js') },
       { find: /^#tempo\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/$1.js') },
-      { find: /^#tempo\/std$/, replacement: path.resolve(__dirname, './packages/tempo/dist/term/index.js') },
+      { find: /^#tempo\/std$/, replacement: stdDistEntry },
       { find: /^#tempo$/, replacement: path.resolve(__dirname, './packages/tempo/dist/tempo.index.js') }
     ] : [
       { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },

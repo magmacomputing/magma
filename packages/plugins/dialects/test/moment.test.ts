@@ -31,6 +31,14 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		expect(dt.format('GGGG', { dialect: DIALECT.Moment })).toBe('2026');
 		expect(dt.format('GG', { dialect: DIALECT.Moment })).toBe('26');
 
+		// Weekday ISO number
+		expect(dt.format('E', { dialect: DIALECT.Moment })).toBe('6');
+
+		// Timezone offsets
+		const dtUtc = new Tempo('2026-10-24T15:30:45Z');
+		expect(dtUtc.format('Z', { dialect: DIALECT.Moment })).toBe('+00:00');
+		expect(dtUtc.format('ZZ', { dialect: DIALECT.Moment })).toBe('+0000');
+
 		// Quarter
 		expect(dt.format('Q', { dialect: DIALECT.Moment })).toBe('4');
 		expect(dt.format('[Q]Q', { dialect: DIALECT.Moment })).toBe('Q4');

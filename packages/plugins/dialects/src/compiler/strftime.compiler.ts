@@ -1,17 +1,14 @@
-import { pad, WeakCache, Enum } from '@magmacomputing/tempo/library';
+import { pad, WeakCache, Enum, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, getIsoWeek, fromIsoWeek } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
-	type ParseOptions,
+	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
-	resolveDayOfYear,
-	getIsoWeek,
-	fromIsoWeek,
-	resolveIsoCalendarYear,
+	buildParsedZonedDateTime,
 } from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
@@ -345,7 +342,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 export function parseStrftime(
 	input: string,
 	mask: string,
-	options: ParseOptions = {}
+	options: DialectOptions = {}
 ): Temporal.ZonedDateTime | undefined {
 	const rx = compileStrftimeParser(mask);
 	const match = rx.exec(input.trim());
@@ -378,12 +375,11 @@ export function parseStrftime(
 		const yy = parseInt(yyVal, 10);
 		year = century
 			? parseInt(century, 10) * 100 + yy
-			: (yy >= 70 ? 1900 + yy : 2000 + yy);
+			: resolveTwoDigitYear(yy, ctx.pivot, ctx.today);
 	} else if (iyyy) {
 		year = parseInt(iyyy, 10);
 	} else if (iyyVal) {
-		const yy = parseInt(iyyVal, 10);
-		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+		year = resolveTwoDigitYear(parseInt(iyyVal, 10), ctx.pivot, ctx.today);
 	}
 
 	const hasYear = Boolean(yyyy || yyVal || iyyy || iyyVal);
@@ -416,7 +412,7 @@ export function parseStrftime(
 			if (w < 0 || w > 6) return undefined;
 			isoDay = w === 0 ? 7 : w;
 		}
-		const isoYear = iyyy ? parseInt(iyyy, 10) : (iyyVal ? (parseInt(iyyVal, 10) >= 70 ? 1900 + parseInt(iyyVal, 10) : 2000 + parseInt(iyyVal, 10)) : year);
+		const isoYear = iyyy ? parseInt(iyyy, 10) : (iyyVal ? resolveTwoDigitYear(parseInt(iyyVal, 10), ctx.pivot, ctx.today) : year);
 		const res = fromIsoWeek(isoYear, isoWeek, isoDay);
 		const check = getIsoWeek(res);
 		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek)
@@ -441,7 +437,7 @@ export function parseStrftime(
 		}
 
 		if ((iyyy || iyyVal) && mm && dd) {
-			const isoYear = iyyy ? parseInt(iyyy, 10) : (parseInt(iyyVal!, 10) >= 70 ? 1900 + parseInt(iyyVal!, 10) : 2000 + parseInt(iyyVal!, 10));
+			const isoYear = iyyy ? parseInt(iyyy, 10) : resolveTwoDigitYear(parseInt(iyyVal!, 10), ctx.pivot, ctx.today);
 			if ((month === 12 && day >= 29) || (month === 1 && day <= 3)) {
 				const cand1 = isoYear;
 				const cand2 = month === 12 ? isoYear - 1 : isoYear + 1;
@@ -476,36 +472,10 @@ export function parseStrftime(
 	const time = resolveTimeComponents(getGroup);
 	if (!time) return undefined;
 	const { hour, minute, second } = time;
-	let millisecond = 0;
-	let microsecond = 0;
-	let nanosecond = 0;
-	const us = getGroup('us');
-	if (us) {
-		const padded = us.padEnd(9, '0').slice(0, 9);
-		millisecond = parseInt(padded.slice(0, 3), 10);
-		microsecond = parseInt(padded.slice(3, 6), 10);
-		nanosecond = parseInt(padded.slice(6, 9), 10);
-	}
+	const subseconds = resolveFractionalSeconds(getGroup('us'));
 
-	try {
-		const isoZdt = Temporal.ZonedDateTime.from(
-			{
-				timeZone: tz,
-				calendar: 'iso8601',
-				year,
-				month,
-				day,
-				hour,
-				minute,
-				second,
-				millisecond,
-				microsecond,
-				nanosecond,
-			},
-			{ overflow: 'reject' }
-		);
-		return cal === 'iso8601' ? isoZdt : isoZdt.withCalendar(cal);
-	} catch {
-		return undefined;
-	}
+	return buildParsedZonedDateTime(
+		{ year, month, day, hour, minute, second, ...subseconds },
+		ctx
+	);
 }

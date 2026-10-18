@@ -38,20 +38,23 @@ export const toHex = (num: TValues<number> = [], len?: number) =>
  * suffix(23); // '23rd'
  * ```
  */
-export const suffix = (idx: number = 0) => {
-	const str = String(idx);
+export const suffix = (idx: number = 0): string => {
+	const n = Math.abs(idx);
+	const mod100 = n % 100;
+	if (mod100 >= 11 && mod100 <= 13)
+		return `${idx}th`;
 
-	switch (true) {
-		case str.endsWith('1') && !str.endsWith('11'):
-			return str + 'st';
-		case str.endsWith('2') && !str.endsWith('12'):
-			return str + 'nd';
-		case str.endsWith('3') && !str.endsWith('13'):
-			return str + 'rd';
+	switch (n % 10) {
+		case 1:
+			return `${idx}st`;
+		case 2:
+			return `${idx}nd`;
+		case 3:
+			return `${idx}rd`;
 		default:
-			return str + 'th';
+			return `${idx}th`;
 	}
-}
+};
 
 /**
  * Splits a number or string by a delimiter and parses the chunks.

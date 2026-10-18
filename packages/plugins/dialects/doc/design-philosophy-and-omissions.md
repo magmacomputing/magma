@@ -126,7 +126,7 @@ When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, 
 
 ### 2. Confusing 1–24 and 0–11 Hour Systems (LDML `k` / `K`)
 * **The Legacy Behavior**: LDML defines `k` (hours 1–24, where midnight is `24`) and `K` (hours 0–11 for 12-hour clocks, where midnight is `0` AM and noon is `0` PM).
-* **Why We Omitted It**: Representing midnight as `24:00:00` or 11:00 AM as `00:00 AM` is widely recognized as a source of confusion that causes parsing edge cases and serialization bugs. Tempo provides standard 24-hour (`{hh}`) and standard 12-hour (`{h12}`). When localized display conventions are required, applying `:locale` (e.g. `{hh:locale}`) queries the underlying ECMAScript `Intl` engine to seamlessly adopt the target locale's preferred `hourCycle` (`h11`, `h12`, `h23`, or `h24`).
+* **Why We Omitted It**: Representing midnight as `24:00:00` or noon as `0:00 PM` is widely recognized as a source of confusion that causes parsing edge cases and serialization bugs. Tempo provides standard 24-hour (`{hh}`) and standard 12-hour (`{h12}`). When localized display conventions are required, applying `:locale` (e.g. `{hh:locale}`) queries the underlying ECMAScript `Intl` engine to seamlessly adopt the target locale's preferred `hourCycle` (`h11`, `h12`, `h23`, or `h24`).
 
 ### 3. Duplicate Standalone vs. Format Inflections (LDML `LLLL` vs `MMMM`, `cccc` vs `EEEE`)
 * **The Legacy Behavior**: In inflected languages (such as Russian, Polish, or Finnish), month and weekday names change form depending on whether they appear alone (nominative case: `LLLL`, `cccc`) or alongside a day number (genitive case: `MMMM`, `EEEE`).

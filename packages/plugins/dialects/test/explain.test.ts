@@ -86,14 +86,14 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('translates Oracle masks preserving case rules, FM toggling, and unsupported tokens', () => {
 		const res = Tempo.dialects.explain('IYYY-IW-D J', DIALECT.Oracle);
-		expect(res.pattern).toBe('{yow}-{woy}-{dow:locale} {jj}');
+		expect(res.pattern).toBe('{yow}-{woy}-{dow} {jj}');
 		const jToken = res.tokens.find(t => t.source === 'J');
 		expect(jToken?.tempo).toBe('{jj}');
 		expect(jToken?.desc).toContain('Julian day');
 
 		// Case-insensitive token matching for recognized single letters (e.g. 'd')
 		const resLowerD = Tempo.dialects.explain('YYYY-MM-d', DIALECT.Oracle);
-		expect(resLowerD.pattern).toBe('{yyyy}-{mm}-{dow:locale}');
+		expect(resLowerD.pattern).toBe('{yyyy}-{mm}-{dow}');
 
 		// Fill Mode (FM) toggles unpadded tokens
 		const resFm = Tempo.dialects.explain('FMMM/DD/YYYY FMHH24:MI', DIALECT.Oracle);
@@ -254,12 +254,22 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('translates LDML meridiem (a, aa, aaa) and weekday/doy tokens (DD, EE, ee, cc)', () => {
 		const resMer = Tempo.dialects.explain('hh:mm a', DIALECT.Ldml);
-		expect(resMer.pattern).toBe('{h12}:{mi} {mer:upper}');
+		expect(resMer.pattern).toBe('{h12}:{mi} {mer}');
 
 		const resTokens = Tempo.dialects.explain('yyyy-DD EE ee cc', DIALECT.Ldml);
 		expect(resTokens.pattern).toBe('{yyyy}-{doy} {www} {dow:locale} {dow:locale}');
 
 		const resWeek = Tempo.dialects.explain('YYYY Y ww w', DIALECT.Ldml);
 		expect(resWeek.pattern).toBe('{yow:locale} {yow:locale} {woy:locale} {woy:locale:raw}');
+
+		// Moment locale week-year gggg and gg
+		const resMomentWeek = Tempo.dialects.explain('gggg gg', DIALECT.Moment);
+		expect(resMomentWeek.pattern).toBe('{yow:locale} {yow:locale:short}');
+
+		// Strftime raw %-Y and %-d
+		const resStrftimeRaw = Tempo.dialects.explain('%-Y-%-m-%-d', DIALECT.Strftime);
+		expect(resStrftimeRaw.pattern).toBe('{yyyy}-{mm:raw}-{dd:raw}');
+		expect(resStrftimeRaw.tokens.find(t => t.source === '%-Y')?.desc).toBe('4-digit year');
+		expect(resStrftimeRaw.tokens.find(t => t.source === '%-d')?.desc).toBe('Unpadded day of month (1-31)');
 	});
 });

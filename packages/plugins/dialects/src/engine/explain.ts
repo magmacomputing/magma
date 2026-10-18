@@ -1,4 +1,4 @@
-import { deepFreeze } from '@magmacomputing/tempo/library';
+import { deepFreeze, isUndefined } from '@magmacomputing/tempo/library';
 import { DIALECT } from '../constants.js';
 import { detectDialect } from './dialect.registry.js';
 import type { ExplainResult, ExplainedToken, ExplainOptions } from '../types.js';
@@ -48,7 +48,7 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	S: { tempo: '{ff:1}', desc: 'Fractional seconds (tenths: 0-9)' },
 	aaa: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	aa: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
-	a: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	a: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	EEEE: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
 	cccc: { tempo: '{wkd}', desc: 'Full standalone weekday name' },
 	EEE: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
@@ -121,28 +121,30 @@ const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; re
 	D: { tempo: '{mm}/{dd}/{yy}', desc: 'US date' },
 };
 
-const STRFTIME_RAW_MAP: Readonly<Record<string, string>> = {
-	d: '{dd:raw}',
-	e: '{dd:raw}',
-	m: '{mm:raw}',
-	H: '{hh:raw}',
-	k: '{hh:raw}',
-	I: '{h12:raw}',
-	l: '{h12:raw}',
-	M: '{mi:raw}',
-	S: '{ss:raw}',
-	j: '{doy:raw}',
-	V: '{woy:raw}',
-	u: '{dow:raw}',
-	w: '{dow:raw:0}',
-	y: '{yy:raw}',
-	Y: '{yyyy}',
+const STRFTIME_RAW_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
+	d: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	e: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	m: { tempo: '{mm:raw}', desc: 'Unpadded month number (1-12)' },
+	H: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
+	k: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
+	I: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	l: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	M: { tempo: '{mi:raw}', desc: 'Unpadded minute (0-59)' },
+	S: { tempo: '{ss:raw}', desc: 'Unpadded second (0-59)' },
+	j: { tempo: '{doy:raw}', desc: 'Unpadded day of year (1-366)' },
+	V: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
+	u: { tempo: '{dow:raw}', desc: 'Unpadded ISO day of week (1-7)' },
+	w: { tempo: '{dow:raw:0}', desc: 'Unpadded day of week with Sunday as 0 (0-6)' },
+	y: { tempo: '{yy:raw}', desc: 'Unpadded 2-digit year (0-99)' },
+	Y: { tempo: '{yyyy}', desc: '4-digit year' },
 };
 
 const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	YYYY: { tempo: '{yyyy}', desc: '4-digit year' },
 	YY: { tempo: '{yy}', desc: '2-digit year' },
+	gggg: { tempo: '{yow:locale}', desc: '4-digit week-numbering year (locale)' },
 	GGGG: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
+	gg: { tempo: '{yow:locale:short}', desc: '2-digit week-numbering year (locale)' },
 	GG: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
@@ -223,7 +225,7 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	DY: { tempo: '{www:upper}', desc: 'Short weekday name uppercase (e.g. WED)' },
 	Dy: { tempo: '{www}', desc: 'Short weekday name capitalized (e.g. Wed)' },
 	dy: { tempo: '{www:lower}', desc: 'Short weekday name lowercase (e.g. wed)' },
-	D: { tempo: '{dow:locale}', desc: 'Day of week (1-7, territory-dependent via :locale)' },
+	D: { tempo: '{dow}', desc: 'Day of week (1-7, ISO Monday=1)' },
 	HH24: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
 	HH12: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
 	HH: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
@@ -350,7 +352,7 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 
 const RE_LDML = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|DD|EE|ee|cc|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|Y|L|M|Q|q|Z|z|I)/g;
 const RE_STRFTIME = /%(-)?(\d+)?([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
-const RE_MOMENT = /\[([^\]]+)\]|(YYYY|YY|GGGG|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
+const RE_MOMENT = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'MONTH',
 	'MON',
@@ -416,9 +418,9 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					tokens.push({ source: raw, tempo: '', desc: 'Format exact matching modifier' });
 				} else {
 					const isCaseSensitive = ORACLE_CASE_SENSITIVE_TOKENS.has(upper);
-					let info = (fillMode ? ORACLE_UNPADDED_EXPLAIN_MAP[upper] : undefined) ??
-						ORACLE_EXPLAIN_MAP[raw] ??
-						(!isCaseSensitive ? ORACLE_EXPLAIN_MAP[upper] : undefined);
+					let info = (fillMode ? ORACLE_UNPADDED_EXPLAIN_MAP[upper] : undefined)
+						?? ORACLE_EXPLAIN_MAP[raw]
+						?? (!isCaseSensitive ? ORACLE_EXPLAIN_MAP[upper] : undefined);
 
 					if (!info && RE_ORACLE_FF_PRECISION.test(raw)) {
 						const prec = raw.slice(2);
@@ -458,12 +460,11 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					pattern += tempo;
 					tokens.push({ source: raw, tempo, desc: `Fractional seconds (${prec} digits)` });
 				} else if (flag === '-') {
-					const rawTempo = STRFTIME_RAW_MAP[spec];
+					const rawInfo = STRFTIME_RAW_MAP[spec];
 					const baseInfo = STRFTIME_EXPLAIN_MAP[spec];
-					if (rawTempo !== undefined || baseInfo !== undefined) {
-						const tempo = rawTempo ?? baseInfo?.tempo ?? '';
-						const baseDesc = baseInfo?.desc ?? spec;
-						const desc = rawTempo ? `Unpadded ${baseDesc.toLowerCase()}` : baseDesc;
+					if (!isUndefined(rawInfo) || !isUndefined(baseInfo)) {
+						const tempo = rawInfo?.tempo ?? baseInfo?.tempo ?? '';
+						const desc = rawInfo?.desc ?? baseInfo?.desc ?? spec;
 						pattern += tempo || appendLiteral(raw);
 						tokens.push({ source: raw, tempo, desc });
 					} else {

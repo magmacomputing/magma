@@ -1,11 +1,12 @@
-import { isLeapYear, toPlainDate, toZonedDateTime, getDaysInMonth, Enum } from '@magmacomputing/tempo/library';
+import {
+	Enum,
+	isNumber,
+} from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
-
-export { isLeapYear, toPlainDate, toZonedDateTime, getDaysInMonth };
 
 export type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 
-export interface ParseOptions {
+export interface DialectOptions {
 	dialect?: any;
 	timeZone?: any;
 	calendar?: any;
@@ -17,6 +18,7 @@ export interface ParseContext {
 	tz: string;
 	today: Temporal.ZonedDateTime;
 	cal: string;
+	pivot: number;
 }
 
 export interface ParsedTime {
@@ -41,6 +43,13 @@ export function resolveMonth(str: string): number | undefined {
 	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap);
 }
 
+/** Resolves an English weekday name or abbreviation to its ISO weekday number (1 = Monday, 7 = Sunday). */
+export function resolveWeekday(str: string): number | undefined {
+	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+	const val = Enum.get(enums.WEEKDAY, cap) ?? Enum.get(enums.WEEKDAYS, cap);
+	return typeof val === 'number' && val >= 1 && val <= 7 ? val : undefined;
+}
+
 /** Creates a helper to extract named groups from a RegExpExecArray, including suffixed groups. */
 export function createGroupExtractor(match: RegExpExecArray): (name: string) => string | undefined {
 	const g = match.groups ?? {};
@@ -55,7 +64,7 @@ export function createGroupExtractor(match: RegExpExecArray): (name: string) => 
  */
 export function resolveParseContext(
 	getGroup: (name: string) => string | undefined,
-	options: ParseOptions = {}
+	options: DialectOptions = {}
 ): ParseContext | undefined {
 	let tz = options.timeZone ?? 'UTC';
 	const tz_offset = getGroup('tz_offset');
@@ -71,7 +80,15 @@ export function resolveParseContext(
 		}
 		tz = norm;
 	} else if (tz_name) {
-		tz = tz_name;
+		const m = tz_name.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/i);
+		if (m) {
+			const sign = m[1];
+			const hours = m[2].padStart(2, '0');
+			const mins = m[3] ? m[3] : '00';
+			tz = `${sign}${hours}:${mins}`;
+		} else {
+			tz = tz_name;
+		}
 	}
 
 	let today: Temporal.ZonedDateTime;
@@ -86,7 +103,8 @@ export function resolveParseContext(
 	}
 
 	const cal = options.calendar ?? 'iso8601';
-	return { tz, today, cal };
+	const pivot = isNumber(options.pivot) ? options.pivot : 75;
+	return { tz, today, cal, pivot };
 }
 
 /**
@@ -141,72 +159,46 @@ export function resolveTimeComponents(getGroup: (name: string) => string | undef
 	return { hour, minute, second };
 }
 
-const MONTH_DAYS_NORMAL = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-const MONTH_DAYS_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
-/**
- * Resolves 1-indexed day-of-year (1..366) to month (1..12) and day (1..31) using pure integer arithmetic.
- * Returns undefined for a day outside the given year, including day 366 in a non-leap year.
- */
-export function resolveDayOfYear(year: number, dayOfYear: number): { month: number; day: number } | undefined {
-	const leap = isLeapYear(year);
-	const maxDays = leap ? 366 : 365;
-	if (dayOfYear < 1 || dayOfYear > maxDays) return undefined;
-	const days = leap ? MONTH_DAYS_LEAP : MONTH_DAYS_NORMAL;
-	let rem = dayOfYear;
-	for (let m = 0; m < 12; m++) {
-		if (rem <= days[m]) {
-			return { month: m + 1, day: rem };
-		}
-		rem -= days[m];
-	}
-	return undefined;
+export interface ParsedDateFields {
+	year: number;
+	month: number;
+	day: number;
+	hour?: number;
+	minute?: number;
+	second?: number;
+	millisecond?: number;
+	microsecond?: number;
+	nanosecond?: number;
 }
 
 /**
- * Returns numeric week and week-year fields when both are supplied; otherwise computes them
- * from the Gregorian year, month, and day.
+ * Constructs a Temporal.ZonedDateTime with the parsed Gregorian fields using the ISO calendar,
+ * then converts it to ctx.cal with withCalendar when needed.
+ * Returns undefined if date construction fails or overflow occurs.
  */
-export function getIsoWeek(z: { year: number; month: number; day: number; weekOfYear?: number | undefined; yearOfWeek?: number | undefined }): { weekOfYear: number; yearOfWeek: number } {
-	if (typeof z.weekOfYear === 'number' && typeof z.yearOfWeek === 'number') {
-		return { weekOfYear: z.weekOfYear, yearOfWeek: z.yearOfWeek };
+export function buildParsedZonedDateTime(
+	fields: ParsedDateFields,
+	ctx: ParseContext,
+): Temporal.ZonedDateTime | undefined {
+	try {
+		const isoZdt = Temporal.ZonedDateTime.from(
+			{
+				timeZone: ctx.tz,
+				calendar: 'iso8601',
+				year: fields.year,
+				month: fields.month,
+				day: fields.day,
+				hour: fields.hour ?? 0,
+				minute: fields.minute ?? 0,
+				second: fields.second ?? 0,
+				millisecond: fields.millisecond ?? 0,
+				microsecond: fields.microsecond ?? 0,
+				nanosecond: fields.nanosecond ?? 0,
+			},
+			{ overflow: 'reject' }
+		);
+		return ctx.cal === 'iso8601' ? isoZdt : isoZdt.withCalendar(ctx.cal);
+	} catch {
+		return undefined;
 	}
-	const d = new Date(Date.UTC(z.year, z.month - 1, z.day));
-	d.setUTCFullYear(z.year);
-	const dayNum = d.getUTCDay() || 7;
-	d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-	const yearOfWeek = d.getUTCFullYear();
-	const yearStart = new Date(Date.UTC(yearOfWeek, 0, 1));
-	yearStart.setUTCFullYear(yearOfWeek);
-	const weekOfYear = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-	return { weekOfYear, yearOfWeek };
-}
-
-/**
- * Resolves an ISO week date (isoYear, isoWeek, isoDay) into calendar year, month, and day
- * using lightweight UTC Date calculations. `isoDay` uses Monday=1 through Sunday=7 and defaults to Monday.
- * Out-of-range week and day values roll into adjacent dates rather than being rejected.
- */
-export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1): { year: number; month: number; day: number } {
-	const jan4 = new Date(Date.UTC(isoYear, 0, 4));
-	jan4.setUTCFullYear(isoYear);
-	const dayOfWeek = jan4.getUTCDay() || 7;
-	const week1MondayTime = jan4.getTime() - (dayOfWeek - 1) * 86400000;
-	const targetTime = week1MondayTime + ((isoWeek - 1) * 7 + (isoDay - 1)) * 86400000;
-	const target = new Date(targetTime);
-	return { year: target.getUTCFullYear(), month: target.getUTCMonth() + 1, day: target.getUTCDate() };
-}
-
-/**
- * Resolves calendar year for IYYY-MM-DD format strings near ISO year boundaries.
- */
-export function resolveIsoCalendarYear(targetIsoYear: number, month: number, day: number): number {
-	if (month === 12 && day >= 29) {
-		if (getIsoWeek({ year: targetIsoYear - 1, month, day }).yearOfWeek === targetIsoYear)
-			return targetIsoYear - 1;
-	} else if (month === 1 && day <= 3) {
-		if (getIsoWeek({ year: targetIsoYear + 1, month, day }).yearOfWeek === targetIsoYear)
-			return targetIsoYear + 1;
-	}
-	return targetIsoYear;
 }

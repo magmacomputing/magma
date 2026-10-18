@@ -94,12 +94,17 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 							if (firstError === undefined) firstError = err;
 						}
 					}
+					if (lastInstance !== undefined) return lastInstance;
 					try {
-						return lastInstance ?? (installedClass as any).from(input, {
+						const fallback = (installedClass as any).from(input, {
 							...opts,
 							format: masks,
 							dialect: DIALECT.Ldml,
 						});
+						if (!fallback?.isValid && firstError !== undefined)
+							throw firstError;
+
+						return fallback;
 					} catch (fallbackErr) {
 						if (firstError !== undefined) throw firstError;
 						throw fallbackErr;
