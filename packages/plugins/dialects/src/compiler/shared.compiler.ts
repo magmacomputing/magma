@@ -38,9 +38,7 @@ export function escapeRegex(str: string): string {
 /** Resolves an English month name or abbreviation to its month number. */
 export function resolveMonth(str: string): number | undefined {
 	const cap = str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-	return Enum.get(enums.MONTH, cap)
-		?? Enum.get(enums.MONTHS, cap)
-		?? Enum.get(enums.MONTH, cap.slice(0, 3));
+	return Enum.get(enums.MONTH, cap) ?? Enum.get(enums.MONTHS, cap);
 }
 
 /** Creates a helper to extract named groups from a RegExpExecArray, including suffixed groups. */
@@ -106,15 +104,15 @@ export function resolveTimeComponents(getGroup: (name: string) => string | undef
 	const h12 = getGroup('h12')?.trim();
 	if (hh) {
 		const val = parseInt(hh, 10);
-		if (val < 0 || val > 23) return undefined;
+		if (isNaN(val) || val < 0 || val > 23) return undefined;
 		hour = val;
 	} else if (h24) {
 		const val = parseInt(h24, 10);
-		if (val < 1 || val > 24) return undefined;
+		if (isNaN(val) || val < 1 || val > 24) return undefined;
 		hour = val === 24 ? 0 : val;
 	} else if (h12) {
 		const val = parseInt(h12, 10);
-		if (val < 1 || val > 12) return undefined;
+		if (isNaN(val) || val < 1 || val > 12) return undefined;
 		hour = val;
 	}
 
@@ -129,14 +127,14 @@ export function resolveTimeComponents(getGroup: (name: string) => string | undef
 	const mi = getGroup('mi');
 	if (mi) {
 		const val = parseInt(mi, 10);
-		if (val < 0 || val > 59) return undefined;
+		if (isNaN(val) || val < 0 || val > 59) return undefined;
 		minute = val;
 	}
 
 	const ss = getGroup('ss');
 	if (ss) {
 		const val = parseInt(ss, 10);
-		if (val < 0 || val > 59) return undefined;
+		if (isNaN(val) || val < 0 || val > 59) return undefined;
 		second = val;
 	}
 

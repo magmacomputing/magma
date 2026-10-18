@@ -7,9 +7,10 @@ export type { ExplainedToken, ExplainResult, ExplainOptions };
 
 const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	yyyy: { tempo: '{yyyy}', desc: '4-digit year' },
-	YYYY: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
+	YYYY: { tempo: '{yow:locale}', desc: '4-digit week-numbering year (locale)' },
 	yy: { tempo: '{yy}', desc: '2-digit year' },
-	YY: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
+	YY: { tempo: '{yow:locale:short}', desc: '2-digit week-numbering year (locale)' },
+	Y: { tempo: '{yow:locale}', desc: 'Week-numbering year (locale)' },
 	y: { tempo: '{yyyy}', desc: 'Year' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	LLLL: { tempo: '{mon}', desc: 'Full standalone month name' },
@@ -24,6 +25,7 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	Do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
 	do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
 	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
+	DD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	D: { tempo: '{doy:raw}', desc: 'Unpadded day of year (1-366)' },
 	GGGG: { tempo: '{era:long}', desc: 'Full localized era (e.g. Anno Domini)' },
 	GGG: { tempo: '{era}', desc: 'Abbreviated localized era (e.g. AD)' },
@@ -46,18 +48,21 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	S: { tempo: '{ff:1}', desc: 'Fractional seconds (tenths: 0-9)' },
 	aaa: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	aa: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
-	a: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
+	a: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
 	EEEE: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
 	cccc: { tempo: '{wkd}', desc: 'Full standalone weekday name' },
 	EEE: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
 	ccc: { tempo: '{www}', desc: 'Short standalone weekday name' },
+	EE: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
 	E: { tempo: '{www}', desc: 'Short weekday name' },
-	c: { tempo: '{dow}', desc: 'ISO Day of week (1-7)' },
-	e: { tempo: '{dow}', desc: 'Day of week (1-7)' },
+	cc: { tempo: '{dow:locale}', desc: 'Locale-relative standalone day of week (1-7)' },
+	c: { tempo: '{dow:locale}', desc: 'Locale-relative standalone day of week (1-7)' },
+	ee: { tempo: '{dow:locale}', desc: 'Locale-relative day of week (1-7)' },
+	e: { tempo: '{dow:locale}', desc: 'Locale-relative day of week (1-7)' },
 	II: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
 	I: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
-	ww: { tempo: '{woy}', desc: 'Zero-padded locale-dependent week of year (01-53)' },
-	w: { tempo: '{woy:raw}', desc: 'Unpadded locale-dependent week of year (1-53)' },
+	ww: { tempo: '{woy:locale}', desc: 'Zero-padded locale week of year (01-53)' },
+	w: { tempo: '{woy:locale:raw}', desc: 'Unpadded locale week of year (1-53)' },
 	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	QQQQ: { tempo: '{#quarter}', desc: 'Full quarter name (via #quarter Term)' },
 	qqqq: { tempo: '{#quarter}', desc: 'Full standalone quarter name (via #quarter Term)' },
@@ -157,6 +162,12 @@ const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	m: { tempo: '{mi:raw}', desc: 'Unpadded minute (0-59)' },
 	ss: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
 	s: { tempo: '{ss:raw}', desc: 'Unpadded second (0-59)' },
+	SSSSSSSSS: { tempo: '{ff:9}', desc: 'Nanoseconds (000000000-999999999)' },
+	SSSSSSSS: { tempo: '{ff:8}', desc: 'Fractional seconds (8 digits)' },
+	SSSSSSS: { tempo: '{ff:7}', desc: 'Fractional seconds (7 digits)' },
+	SSSSSS: { tempo: '{ff:6}', desc: 'Microseconds (000000-999999)' },
+	SSSSS: { tempo: '{ff:5}', desc: 'Fractional seconds (5 digits)' },
+	SSSS: { tempo: '{ff:4}', desc: 'Fractional seconds (4 digits)' },
 	SSS: { tempo: '{ms}', desc: 'Millisecond (000-999)' },
 	SS: { tempo: '{ff:2}', desc: 'Fractional seconds (hundredths: 00-99)' },
 	S: { tempo: '{ff:1}', desc: 'Fractional seconds (tenths: 0-9)' },
@@ -202,6 +213,8 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	mon: { tempo: '{mmm:lower}', desc: 'Short month name lowercase (e.g. oct)' },
 	RM: { tempo: '{mm:roman}', desc: 'Roman numeral month uppercase (e.g. X)' },
 	rm: { tempo: '{mm:roman:lower}', desc: 'Roman numeral month lowercase (e.g. x)' },
+	DDTH: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
+	ddth: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
 	DD: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
 	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	DAY: { tempo: '{wkd:upper}', desc: 'Full weekday name uppercase (e.g. WEDNESDAY)' },
@@ -322,22 +335,22 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	'.999': { tempo: '', desc: 'Trailing millisecond with dot omitted if zero (unsupported in Tempo tokens)' },
 	'.999999': { tempo: '', desc: 'Trailing microsecond with dot omitted if zero (unsupported in Tempo tokens)' },
 	'.999999999': { tempo: '', desc: 'Trailing nanosecond with dot omitted if zero (unsupported in Tempo tokens)' },
-	'Z07:00': { tempo: '{tz:offset:z}', desc: 'UTC Z or ISO-8601 offset' },
-	'Z07:00:00': { tempo: '{tz:offset:ss:z}', desc: 'UTC Z or ISO-8601 offset with seconds' },
-	Z0700: { tempo: '{tz:offsetcompact:z}', desc: 'UTC Z or basic numeric offset' },
-	Z070000: { tempo: '{tz:offsetcompact:ss:z}', desc: 'UTC Z or basic numeric offset with seconds' },
+	'Z07:00': { tempo: '{tz:offset:utc}', desc: 'UTC Z or ISO-8601 offset' },
+	'Z07:00:00': { tempo: '{tz:offset:ss:utc}', desc: 'UTC Z or ISO-8601 offset with seconds' },
+	Z0700: { tempo: '{tz:offsetcompact:utc}', desc: 'UTC Z or basic numeric offset' },
+	Z070000: { tempo: '{tz:offsetcompact:ss:utc}', desc: 'UTC Z or basic numeric offset with seconds' },
 	'-07:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset' },
 	'-07:00:00': { tempo: '{tz:offset:ss}', desc: 'ISO-8601 numeric offset with seconds' },
 	'-0700': { tempo: '{tz:offsetcompact}', desc: 'Basic numeric offset' },
 	'-070000': { tempo: '{tz:offsetcompact:ss}', desc: 'Basic numeric offset with seconds' },
 	'-07': { tempo: '{tz:offset:hh}', desc: 'Hour-only numeric offset with sign' },
-	Z07: { tempo: '{tz:offset:short:z}', desc: 'UTC Z or hour-only numeric offset' },
+	Z07: { tempo: '{tz:offset:short:utc}', desc: 'UTC Z or hour-only numeric offset' },
 	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },
 };
 
-const LDML_REGEX = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|L|M|Q|q|Z|z|I)/g;
-const STRFTIME_REGEX = /%(-)?(\d+)?([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
-const MOMENT_REGEX = /\[([^\]]+)\]|(YYYY|YY|GGGG|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
+const RE_LDML = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|DD|EE|ee|cc|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|Y|L|M|Q|q|Z|z|I)/g;
+const RE_STRFTIME = /%(-)?(\d+)?([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
+const RE_MOMENT = /\[([^\]]+)\]|(YYYY|YY|GGGG|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'MONTH',
 	'MON',
@@ -350,19 +363,22 @@ const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'P.M.',
 ]);
 
-const ORACLE_REGEX =
-	/"[^"]*"|TZH:TZM|tzh:tzm|HH24|hh24|HH12|hh12|SSSSS|sssss|MONTH|Month|month|IYYY|iyyy|YYYY|yyyy|RRRR|rrrr|A\.M\.|P\.M\.|a\.m\.|p\.m\.|MON|Mon|mon|YYY|yyy|IYY|iyy|TZD|tzd|TZR|tzr|TZH|tzh|TZM|tzm|DAY|Day|day|DDD|ddd|FF[1-9]?|ff[1-9]?|FM|fm|FX|fx|IW|iw|WW|ww|YY|yy|RR|rr|IY|iy|MM|mm|DD|dd|DY|Dy|dy|HH|hh|MI|mi|SS|ss|AM|PM|am|pm|RM|rm|OF|of|[DWQYIJdwqyij]/g;
-const GO_EXPLAIN_REGEX =
+const RE_ORACLE =
+	/"[^"]*"|TZH:TZM|tzh:tzm|HH24|hh24|HH12|hh12|SSSSS|sssss|MONTH|Month|month|IYYY|iyyy|YYYY|yyyy|RRRR|rrrr|A\.M\.|P\.M\.|a\.m\.|p\.m\.|MON|Mon|mon|YYY|yyy|IYY|iyy|TZD|tzd|TZR|tzr|TZH|tzh|TZM|tzm|DAY|Day|day|DDTH|ddth|DDD|ddd|FF[1-9]?|ff[1-9]?|FM|fm|FX|fx|IW|iw|WW|ww|YY|yy|RR|rr|IY|iy|MM|mm|DD|dd|DY|Dy|dy|HH|hh|MI|mi|SS|ss|AM|PM|am|pm|RM|rm|OF|of|[DWQYIJdwqyij]/g;
+const RE_GO_EXPLAIN =
 	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
 
-/**
- * Translates an external date format mask into native Tempo {token} syntax
+const RE_ORACLE_FF_PRECISION = /^FF([1-9])$/i;
+const RE_LDML_FRACTIONAL = /^S{1,9}$/;
+const RE_BRACES = /[{}]/g;
+const RE_LDML_ESCAPED_QUOTE = /''/g;
+
 /**
  * Escapes literal text before appending to native Tempo patterns so literal braces are not
  * misinterpreted as token delimiters.
  */
 function appendLiteral(text: string): string {
-	return text ? text.replace(/[{}]/g, (m) => (m === '{' ? '{{' : '}}')) : '';
+	return text ? text.replace(RE_BRACES, (m) => (m === '{' ? '{{' : '}}')) : '';
 }
 
 /**
@@ -384,7 +400,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 		case DIALECT.Oracle: {
 			let lastIndex = 0;
 			let fillMode = false;
-			for (const match of mask.matchAll(ORACLE_REGEX)) {
+			for (const match of mask.matchAll(RE_ORACLE)) {
 				const index = match.index!;
 				if (index > lastIndex)
 					pattern += appendLiteral(mask.slice(lastIndex, index));
@@ -404,7 +420,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 						ORACLE_EXPLAIN_MAP[raw] ??
 						(!isCaseSensitive ? ORACLE_EXPLAIN_MAP[upper] : undefined);
 
-					if (!info && /^FF([1-9])$/i.test(raw)) {
+					if (!info && RE_ORACLE_FF_PRECISION.test(raw)) {
 						const prec = raw.slice(2);
 						info = { tempo: `{ff:${prec}}`, desc: `Fractional seconds (${prec} digits)` };
 					}
@@ -428,7 +444,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 
 		case DIALECT.Strftime: {
 			let lastIndex = 0;
-			for (const match of mask.matchAll(STRFTIME_REGEX)) {
+			for (const match of mask.matchAll(RE_STRFTIME)) {
 				const index = match.index!;
 				if (index > lastIndex)
 					pattern += appendLiteral(mask.slice(lastIndex, index));
@@ -442,11 +458,14 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					pattern += tempo;
 					tokens.push({ source: raw, tempo, desc: `Fractional seconds (${prec} digits)` });
 				} else if (flag === '-') {
-					const tempo = STRFTIME_RAW_MAP[spec] ?? STRFTIME_EXPLAIN_MAP[spec]?.tempo;
-					if (tempo) {
-						const baseDesc = STRFTIME_EXPLAIN_MAP[spec]?.desc ?? spec;
-						pattern += tempo;
-						tokens.push({ source: raw, tempo, desc: `Unpadded ${baseDesc.toLowerCase()}` });
+					const rawTempo = STRFTIME_RAW_MAP[spec];
+					const baseInfo = STRFTIME_EXPLAIN_MAP[spec];
+					if (rawTempo !== undefined || baseInfo !== undefined) {
+						const tempo = rawTempo ?? baseInfo?.tempo ?? '';
+						const baseDesc = baseInfo?.desc ?? spec;
+						const desc = rawTempo ? `Unpadded ${baseDesc.toLowerCase()}` : baseDesc;
+						pattern += tempo || appendLiteral(raw);
+						tokens.push({ source: raw, tempo, desc });
 					} else {
 						pattern += appendLiteral(raw);
 					}
@@ -468,7 +487,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 
 		case DIALECT.Moment: {
 			let lastIndex = 0;
-			for (const match of mask.matchAll(MOMENT_REGEX)) {
+			for (const match of mask.matchAll(RE_MOMENT)) {
 				const index = match.index!;
 				if (index > lastIndex)
 					pattern += appendLiteral(mask.slice(lastIndex, index));
@@ -528,7 +547,7 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 
 		case DIALECT.Go: {
 			let lastIndex = 0;
-			for (const match of mask.matchAll(GO_EXPLAIN_REGEX)) {
+			for (const match of mask.matchAll(RE_GO_EXPLAIN)) {
 				const index = match.index!;
 				if (index > lastIndex)
 					pattern += appendLiteral(mask.slice(lastIndex, index));
@@ -551,18 +570,18 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 		case DIALECT.Ldml:
 		default: {
 			let lastIndex = 0;
-			for (const match of mask.matchAll(LDML_REGEX)) {
+			for (const match of mask.matchAll(RE_LDML)) {
 				const index = match.index!;
 				if (index > lastIndex)
 					pattern += appendLiteral(mask.slice(lastIndex, index));
 
 				const raw = match[0];
 				if (raw.startsWith("'")) {
-					const unquoted = raw.length === 2 && raw === "''" ? "'" : raw.slice(1, -1).replace(/''/g, "'");
+					const unquoted = raw.length === 2 && raw === "''" ? "'" : raw.slice(1, -1).replace(RE_LDML_ESCAPED_QUOTE, "'");
 					pattern += appendLiteral(unquoted);
 				} else {
 					let info = LDML_EXPLAIN_MAP[raw];
-					if (!info && /^S{1,9}$/.test(raw))
+					if (!info && RE_LDML_FRACTIONAL.test(raw))
 						info = { tempo: `{ff:${raw.length}}`, desc: `Fractional seconds (${raw.length} digits)` };
 
 					if (info) {

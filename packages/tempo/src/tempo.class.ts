@@ -1410,7 +1410,9 @@ export class Tempo {
 		});
 
 		// treats `Tempo.terms` as array-like and indexable by key, scope, or alias.
-		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key))) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>>;
+		return cast<Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>>>(
+			indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key)))
+		);
 	}
 
 	/** static Tempo.registry */
@@ -1523,7 +1525,7 @@ export class Tempo {
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [$LogConfig]: true } as unknown as Internal.Config,
+		/** instance configuration */															config: cast<Internal.Config>({ [$LogConfig]: true }),
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
 

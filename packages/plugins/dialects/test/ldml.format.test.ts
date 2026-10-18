@@ -42,6 +42,10 @@ describe('Unicode LDML Formatting', () => {
 		expect(dt.format('Do MMMM', { dialect: DIALECT.Ldml })).toBe('24th October');
 		expect(dt.format('yyyy G', { dialect: DIALECT.Ldml })).toBe('2026 AD');
 		expect(dt.format('yyyy GGGG', { dialect: DIALECT.Ldml })).toBe('2026 Anno Domini');
+
+		const dtBc = new Tempo('0000-05-15');
+		expect(dtBc.format('yyyy G', { dialect: DIALECT.Ldml })).toBe('0001 BC');
+		expect(dtBc.format('yyyy GGGG', { dialect: DIALECT.Ldml })).toBe('0001 Before Christ');
 	});
 
 	it('formats quarter tokens (Q, QQ, QQQ, QQQQ)', () => {

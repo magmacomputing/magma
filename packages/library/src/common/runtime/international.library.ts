@@ -3,6 +3,7 @@ import { memoizeFunction } from '#library/function.library.js';
 import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
+import { cast } from '#library/type.library.js';
 
 import type { LooseUnion } from '#library/type.library.js';
 
@@ -63,7 +64,7 @@ export const getPR = memoizeFunction((locale?: LocaleInput, options?: Intl.Plura
 	try {
 		return new Intl.PluralRules(cleanLocaleTag(locale), options);
 	} catch (e) {
-		return { select: () => 'other' } as unknown as Intl.PluralRules;
+		return cast<Intl.PluralRules>({ select: () => 'other' });
 	}
 });
 
@@ -806,7 +807,7 @@ export function getISOWeekOfYear(zdt: input): result {
  * Calculates the week-of-year and week-numbering year for a given date according to locale-specific week rules.
  *
  * @param zdt - The ZonedDateTime or matching input object
- * @param weekInfo - Optional week rules with firstDay (1=Mon..7=Sun) and minimalDays (default derived or 4)
+ * @param weekInfo - Optional week rules with firstDay (1=Mon..7=Sun) and minimalDays (defaults to 1 when omitted, or derived from region)
  * @returns An object containing the weekOfYear and yearOfWeek
  * @example
  * ```ts
@@ -818,8 +819,10 @@ export function getLocaleWeekOfYear(
 	weekInfo?: { firstDay?: number | undefined; minimalDays?: number | undefined; region?: string | undefined },
 ): result {
 	const region = weekInfo?.region;
-	const firstDay = weekInfo?.firstDay ?? getFallbackFirstDay(region);
-	const minimalDays = weekInfo?.minimalDays ?? getFallbackMinimalDays(region);
+	const rawFirstDay = weekInfo?.firstDay ?? getFallbackFirstDay(region);
+	const rawMinimalDays = weekInfo?.minimalDays ?? getFallbackMinimalDays(region);
+	const firstDay = Math.max(1, Math.min(7, Math.floor(rawFirstDay) || 1));
+	const minimalDays = Math.max(1, Math.min(7, Math.floor(rawMinimalDays) || 1));
 
 	if (firstDay === 1 && minimalDays === 4)
 		return getISOWeekOfYear(zdt);

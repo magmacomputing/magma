@@ -178,12 +178,17 @@ describe('Dialect Export', () => {
 		// Also verify alias tz:offset:min
 		expect(Tempo.dialects.export('{tz:offset:min}', 'oracle').pattern).toBe('TZM');
 
-		const resGo = Tempo.dialects.export('{tz:offset:z} {tz:offsetcompact:z} {tz:offset:ss:z} {tz:offsetcompact:ss:z} {tz:offset:ss} {tz:offsetcompact:ss} {tz:offset:hh}', 'go');
+		const resGo = Tempo.dialects.export('{tz:offset:utc} {tz:offsetcompact:utc} {tz:offset:ss:utc} {tz:offsetcompact:ss:utc} {tz:offset:ss} {tz:offsetcompact:ss} {tz:offset:hh}', 'go');
 		expect(resGo.pattern).toBe('Z07:00 Z0700 Z07:00:00 Z070000 -07:00:00 -070000 -07');
 		expect(resGo.unsupported).toHaveLength(0);
 
+		// Also verify alias :z
+		const resGoAlias = Tempo.dialects.export('{tz:offset:z} {tz:offsetcompact:z} {tz:offset:ss:z} {tz:offsetcompact:ss:z}', 'go');
+		expect(resGoAlias.pattern).toBe('Z07:00 Z0700 Z07:00:00 Z070000');
+		expect(resGoAlias.unsupported).toHaveLength(0);
+
 		// Also verify aliases :sec
-		expect(Tempo.dialects.export('{tz:offset:sec:z} {tz:offsetcompact:sec}', 'go').pattern).toBe('Z07:00:00 -070000');
+		expect(Tempo.dialects.export('{tz:offset:sec:utc} {tz:offset:sec:z} {tz:offsetcompact:sec}', 'go').pattern).toBe('Z07:00:00 Z07:00:00 -070000');
 	});
 
 	it('exports Phase 4 specialized and scoped tokens to target dialects', () => {
@@ -210,7 +215,6 @@ describe('Dialect Export', () => {
 		const resLdml = Tempo.dialects.export('{wom}', 'ldml');
 		expect(resLdml.pattern).toBe('W');
 		expect(resLdml.unsupported).toHaveLength(0);
-
 	});
 
 	it('exports 0-indexed Sunday = 0 weekday tokens to PHP and Moment', () => {
@@ -226,5 +230,16 @@ describe('Dialect Export', () => {
 	it('detects Go reference date tokens in literal words as conflicts', () => {
 		const res = Tempo.dialects.export('{yyyy} ref1', 'go');
 		expect(res.unsupported).toContain(' ref1');
+	});
+
+	it('exports uppercase meridiem to LDML aa and lowercase to a', () => {
+		expect(Tempo.dialects.export('{h12}:{mi} {mer:upper}', 'ldml').pattern).toBe('hh:mm aa');
+		expect(Tempo.dialects.export('{h12}:{mi} {mer}', 'ldml').pattern).toBe('hh:mm a');
+	});
+
+	it('preserves native escaped braces {{ and }} as literals', () => {
+		const res = Tempo.dialects.export('{yyyy}-{{literal}}', 'ldml');
+		expect(res.pattern).toBe("yyyy-{'literal'}");
+		expect(res.unsupported).toHaveLength(0);
 	});
 });

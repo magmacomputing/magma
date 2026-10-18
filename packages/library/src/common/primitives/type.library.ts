@@ -453,8 +453,10 @@ type Trim<T extends string> = T extends ` ${infer R}`
  */
 export type ResolveTypeTag<S extends string> = string extends S
 	? unknown
-	: Lowercase<Trim<S>> extends keyof TypeofMap
-	? TypeofMap[Lowercase<Trim<S>>]
+	: S extends any
+	? Lowercase<Trim<S>> extends keyof TypeofMap
+		? TypeofMap[Lowercase<Trim<S>>]
+		: never
 	: never;
 
 /**

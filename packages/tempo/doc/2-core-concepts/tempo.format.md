@@ -139,7 +139,7 @@ Tempo.use(FormatModule);
 | `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{dim}` | Total Days in Month (28-31) | `31` |
 | `{cen}` | 2-digit Century (`{century}`) | `20` |
-| `{jj}` | Astronomical Julian Day Number (`{julian}`) | `2461331` |
+| `{jj}` | Astronomical Julian Day Number (`{julian}`) | `2461338` |
 | `{wom}` | Week of Month (1-5, aliases `{ww:month}`, `{woy:month}`) | `4` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
@@ -178,8 +178,8 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 >   * `{tz:offset:hh}` / `{tz:offset:hour}` → Hour with sign (e.g. `+10`, `-05`, `+00`).
 >   * `{tz:offset:mi}` (and alias `:min`) → Minutes without sign (e.g. `00`, `30`).
 >   * `{tz:offset:ss}` (and alias `:sec`) → Offset including seconds (e.g. `+10:00:00`, compact `{tz:offset:compact:ss}` → `+100000`).
->   * `{tz:offset:z}` / `{tz:offset:compact:z}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else ISO offset `+10:00` (or compact `+1000`).
-> * **Canonical Naming**: Sub-modifiers `:hh`, `:mi`, and `:ss` match Tempo's core time tokens. Modifiers `:hour`, `:min`, and `:sec` are supported synonyms.
+>   * `{tz:offset:utc}` / `{tz:offset:compact:utc}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else ISO offset `+10:00` (or compact `+1000`).
+> * **Canonical Naming**: Sub-modifiers `:hh`, `:mi`, `:ss`, and `:utc` match Tempo's core time tokens. Modifiers `:hour`, `:min`, `:sec`, and `:z` are supported synonyms.
 > * **Shorthands & Aliases**: LDML aliases (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`) are supported as drop-in shorthands.
 
 > [!TIP]

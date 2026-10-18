@@ -61,6 +61,7 @@ export function translateMomentToLdml(mask: string): string {
 		else if (mask.startsWith('YY', i)) { out += 'yy'; i += 2; }
 		else if (mask.startsWith('GG', i)) { out += 'YY'; i += 2; }
 		else if (mask.startsWith('DDDD', i)) { out += 'DDD'; i += 4; }
+		else if (mask.startsWith('DDDo', i)) { out += 'DDDo'; i += 4; }
 		else if (mask.startsWith('DDD', i)) { out += 'D'; i += 3; }
 		else if (mask.startsWith('Do', i)) { out += 'Do'; i += 2; }
 		else if (mask.startsWith('DD', i)) { out += 'dd'; i += 2; }

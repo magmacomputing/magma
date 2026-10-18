@@ -1,6 +1,6 @@
 import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import { getRuntime } from '@magmacomputing/tempo/support';
-import { isDefined, isFunction, isObject } from '@magmacomputing/tempo/library';
+import { isNull, isFunction, isObject } from '@magmacomputing/tempo/library';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAlias } from './constants.js';
@@ -13,7 +13,7 @@ import { formatGo, parseGo } from './compiler/go.compiler.js';
 import { explain } from './engine/explain.js';
 import { exportDialect } from './engine/export.js';
 import { convertDialect } from './engine/convert.js';
-import { attachDialectShims } from './shims/luxon.shim.js';
+import { attachDialectShims } from './engine/dialect.shim.js';
 import type { ConvertOptions, ConvertResult, DialectInput, DialectsInstanceNamespace, DialectsStaticNamespace, ExplainOptions, ExplainResult, ExplainedToken, ExportOptions, ExportResult, ExportedToken } from './types.js';
 
 export {
@@ -64,7 +64,7 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 		if (!hasOwn(installedClass, 'dialects')) {
 			const staticNamespace: DialectsStaticNamespace = {
 				parse: (input: string, mask: string, dialectOrOptions?: string | any, options?: any): Tempo => {
-					const opts = isObject(dialectOrOptions) ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
+					const opts = isObject(dialectOrOptions) ? dialectOrOptions : { ...options, dialect: dialectOrOptions ?? options?.dialect };
 					return (installedClass as any).from(input, {
 						...opts,
 						format: mask,
@@ -72,14 +72,15 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 					});
 				},
 				fromFormats: (input: string, masks: string[], dialectOrOptions?: string | any, options?: any): Tempo => {
-					const opts = isObject(dialectOrOptions) ? dialectOrOptions : { dialect: dialectOrOptions, ...options };
-					if (isDefined(opts.dialect)) {
+					const opts = isObject(dialectOrOptions) ? dialectOrOptions : { ...options, dialect: dialectOrOptions ?? options?.dialect };
+					if (opts.dialect != null) {
 						return (installedClass as any).from(input, {
 							...opts,
 							format: masks,
 						});
 					}
 					let lastInstance: any;
+					let firstError: unknown;
 					for (const mask of masks) {
 						try {
 							const t = (installedClass as any).from(input, {
@@ -89,15 +90,20 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 							});
 							if (t?.isValid) return t;
 							lastInstance = t;
-						} catch {
-							// continue to next candidate mask
+						} catch (err) {
+							if (firstError === undefined) firstError = err;
 						}
 					}
-					return lastInstance ?? (installedClass as any).from(input, {
-						...opts,
-						format: masks,
-						dialect: DIALECT.Ldml,
-					});
+					try {
+						return lastInstance ?? (installedClass as any).from(input, {
+							...opts,
+							format: masks,
+							dialect: DIALECT.Ldml,
+						});
+					} catch (fallbackErr) {
+						if (firstError !== undefined) throw firstError;
+						throw fallbackErr;
+					}
 				},
 				explain: (mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult => {
 					return explain(mask, dialectOrOptions);

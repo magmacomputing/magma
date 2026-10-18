@@ -22,6 +22,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'yyyy:-3': { oracle: 'YYY', desc: 'Last 3 digits of year' },
 	'yyyy:-1': { oracle: 'Y', desc: 'Last digit of year' },
 	yy: { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
+	'yy:raw': { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
 	yow: { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', desc: '4-digit ISO week-numbering year' },
 	'yow:-3': { oracle: 'IYY', desc: 'Last 3 digits of ISO week-numbering year' },
 	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
@@ -60,8 +61,10 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'www:upper': { ldml: 'EEE', strftime: '%a', oracle: 'DY', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name uppercase' },
 	'www:lower': { ldml: 'EEE', strftime: '%a', oracle: 'dy', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name lowercase' },
 	dow: { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Day of week number (1-7)' },
+	'dow:raw': { ldml: 'c', strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Unpadded day of week number (1-7)' },
 	'dow:locale': { ldml: 'e', strftime: '%w', oracle: 'D', moment: 'd', php: 'w', desc: 'Territory-dependent day of week' },
 	'dow:ord': { moment: 'do', desc: 'Day of week with ordinal suffix' },
+	'dow:raw:0': { strftime: '%w', moment: 'd', php: 'w', desc: '0-indexed unpadded day of week (0-6)' },
 
 	// Week of Year
 	woy: { ldml: 'II', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
@@ -78,7 +81,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'hh:space': { strftime: '%k', desc: 'Space-padded 24-hour clock ( 0-23)' },
 	h12: { ldml: 'hh', strftime: '%I', oracle: 'HH12', moment: 'hh', php: 'h', go: '03', desc: '12-hour clock zero-padded (01-12)' },
 	'h12:raw': { ldml: 'h', strftime: '%-I', oracle: 'FMHH12', moment: 'h', php: 'g', go: '3', desc: '12-hour clock unpadded (1-12)' },
-	'h12:space': { desc: '12-hour clock with space before meridiem' },
+	'h12:space': { strftime: '%l', desc: 'Space-padded 12-hour clock ( 1-12)' },
 	mi: { ldml: 'mm', strftime: '%M', oracle: 'MI', moment: 'mm', php: 'i', go: '04', desc: 'Zero-padded minute (00-59)' },
 	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMI', moment: 'm', go: '4', desc: 'Unpadded minute (0-59)' },
 	ss: { ldml: 'ss', strftime: '%S', oracle: 'SS', moment: 'ss', php: 's', go: '05', desc: 'Zero-padded second (00-59)' },
@@ -93,20 +96,27 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 
 	// Meridiem
 	mer: { ldml: 'a', strftime: '%P', oracle: 'am', moment: 'a', php: 'a', go: 'pm', desc: 'am/pm lowercase' },
-	'mer:upper': { ldml: 'a', strftime: '%p', oracle: 'AM', moment: 'A', php: 'A', go: 'PM', desc: 'AM/PM uppercase' },
+	'mer:upper': { ldml: 'aa', strftime: '%p', oracle: 'AM', moment: 'A', php: 'A', go: 'PM', desc: 'AM/PM uppercase' },
 	'mer:dots': { ldml: 'a', strftime: '%P', oracle: 'a.m.', moment: 'a', php: 'a', go: 'pm', desc: 'a.m./p.m. lowercase with dots' },
-	'mer:upper:dots': { ldml: 'a', strftime: '%p', oracle: 'A.M.', moment: 'A', php: 'A', go: 'PM', desc: 'A.M./P.M. uppercase with dots' },
+	'mer:upper:dots': { ldml: 'aa', strftime: '%p', oracle: 'A.M.', moment: 'A', php: 'A', go: 'PM', desc: 'A.M./P.M. uppercase with dots' },
 
 	// Timezone
 	tz: { ldml: 'zzzz', strftime: '%Z', oracle: 'TZR', moment: 'z', php: 'e', go: 'MST', desc: 'Time zone region name / identifier' },
 	'tz:short': { ldml: 'z', strftime: '%Z', oracle: 'TZD', moment: 'zz', php: 'T', go: 'MST', desc: 'Time zone daylight / short abbreviation' },
 	'tz:offset': { ldml: 'ZZZZZ', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
+	'tz:longoffset': { ldml: 'ZZZZ', desc: 'Long localized GMT offset (e.g. GMT+08:00)' },
 	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
 	'tz:offset:hh': { oracle: 'TZH', go: '-07', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
 	'tz:offset:mi': { oracle: 'TZM', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
 	'tz:offset:ss': { go: '-07:00:00', desc: 'ISO-8601 time zone offset with seconds (e.g. +08:00:00)' },
 	'tz:offsetcompact:ss': { go: '-070000', desc: 'Compact time zone offset with seconds (e.g. +080000)' },
-	'tz:offset:z': { go: 'Z07:00', desc: 'UTC Z or ISO-8601 offset' },
+	'tz:offset:utc': { go: 'Z07:00', desc: 'UTC Z or ISO-8601 offset' },
+	'tz:offset:short:utc': { go: 'Z07', desc: 'UTC Z or hour-only numeric offset' },
+	'tz:offsetcompact:utc': { go: 'Z0700', desc: 'UTC Z or compact offset' },
+	'tz:offset:ss:utc': { go: 'Z07:00:00', desc: 'UTC Z or ISO-8601 offset with seconds' },
+	'tz:offsetcompact:ss:utc': { go: 'Z070000', desc: 'UTC Z or compact offset with seconds' },
+	'tz:offset:z': { go: 'Z07:00', desc: 'UTC Z or ISO-8601 offset' }, // @internal alias for :utc
+	'tz:offset:short:z': { go: 'Z07', desc: 'UTC Z or hour-only numeric offset' },
 	'tz:offsetcompact:z': { go: 'Z0700', desc: 'UTC Z or compact offset' },
 	'tz:offset:ss:z': { go: 'Z07:00:00', desc: 'UTC Z or ISO-8601 offset with seconds' },
 	'tz:offsetcompact:ss:z': { go: 'Z070000', desc: 'UTC Z or compact offset with seconds' },
@@ -182,20 +192,25 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	'tz:offset:compact:ss': 'tz:offsetcompact:ss',
 	'tz:offset:compact:sec': 'tz:offsetcompact:ss',
 	'tz:offsetcompact:sec': 'tz:offsetcompact:ss',
+	'tz:offset:compact:utc': 'tz:offsetcompact:utc',
+	'tz:offset:compact:ss:utc': 'tz:offsetcompact:ss:utc',
+	'tz:offset:sec:utc': 'tz:offset:ss:utc',
+	'tz:offsetcompact:sec:utc': 'tz:offsetcompact:ss:utc',
 	'tz:offset:compact:z': 'tz:offsetcompact:z',
 	'tz:offset:compact:ss:z': 'tz:offsetcompact:ss:z',
 	'tz:offset:sec:z': 'tz:offset:ss:z',
 	'tz:offsetcompact:sec:z': 'tz:offsetcompact:ss:z',
 };
 
-const REGEX_SINGLE_QUOTE = /'/g;
-const REGEX_ALPHA = /[A-Za-z]+/g;
-const REGEX_ORACLE_LITERAL = /[A-Za-z\u0080-\uffff]+/g;
-const REGEX_PERCENT = /%/g;
-const REGEX_PHP_ESCAPE = /[A-Za-z\\]/g;
-const REGEX_TEMPO_TOKEN = /\{([^{}]+)\}|([^{]+|\{)/g;
-const REGEX_FF_PRECISION = /^ff:([1-9])$/i;
-const REGEX_GO_CONFLICT =
+const RE_SINGLE_QUOTE = /'/g;
+const RE_LDML_LITERAL = /[A-Za-z']/;
+const RE_ALPHA = /[A-Za-z]+/g;
+const RE_ORACLE_LITERAL = /[A-Za-z\u0080-\uffff]+/g;
+const RE_PERCENT = /%/g;
+const RE_PHP_ESCAPE = /[A-Za-z\\]/g;
+const RE_TEMPO_TOKEN = /(\{\{|\}\})|\{([^{}]+)\}|([^{}]+|[{}])/g;
+const RE_FF_PRECISION = /^ff:([1-9])$/i;
+const RE_GO_CONFLICT =
 	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|[1-5])/;
 
 /** Escapes literal text for the target dialect; Go text is returned unchanged because layouts have no escape syntax. */
@@ -203,19 +218,19 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 	if (!str) return '';
 	switch (dialect) {
 		case DIALECT.Ldml:
-			return /[A-Za-z']/.test(str) ? `'${str.replace(REGEX_SINGLE_QUOTE, "''")}'` : str;
+			return RE_LDML_LITERAL.test(str) ? `'${str.replace(RE_SINGLE_QUOTE, "''")}'` : str;
 
 		case DIALECT.Moment:
-			return str.replace(REGEX_ALPHA, (m) => `[${m}]`);
+			return str.replace(RE_ALPHA, (m) => `[${m}]`);
 
 		case DIALECT.Oracle:
-			return str.replace(REGEX_ORACLE_LITERAL, (m) => `"${m}"`);
+			return str.replace(RE_ORACLE_LITERAL, (m) => `"${m}"`);
 
 		case DIALECT.Strftime:
-			return str.replace(REGEX_PERCENT, '%%');
+			return str.replace(RE_PERCENT, '%%');
 
 		case DIALECT.Php:
-			return str.replace(REGEX_PHP_ESCAPE, (m) => `\\${m}`);
+			return str.replace(RE_PHP_ESCAPE, (m) => `\\${m}`);
 
 		case DIALECT.Go:
 			return str;
@@ -244,10 +259,10 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 	const unsupported: string[] = [];
 	let pattern = '';
 
-	for (const match of tempoMask.matchAll(REGEX_TEMPO_TOKEN)) {
-		if (isDefined(match[2])) {
-			const literal = match[2];
-			if (dialect === DIALECT.Go && REGEX_GO_CONFLICT.test(literal)) {
+	for (const match of tempoMask.matchAll(RE_TEMPO_TOKEN)) {
+		if (isDefined(match[1]) || isDefined(match[3])) {
+			const literal = isDefined(match[1]) ? match[1][0] : match[3];
+			if (dialect === DIALECT.Go && RE_GO_CONFLICT.test(literal)) {
 				unsupported.push(literal);
 				tokens.push({
 					source: literal,
@@ -259,13 +274,13 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 			} else {
 				pattern += quoteLiteral(literal, dialect);
 			}
-		} else if (isDefined(match[1])) {
-			const rawKey = match[1].trim();
+		} else if (isDefined(match[2])) {
+			const rawKey = match[2].trim();
 			const fullToken = `{${rawKey}}`;
 			const canonicalKey = V4_EXPORT_ALIASES[rawKey] ?? V4_EXPORT_ALIASES[rawKey.toLowerCase()] ?? rawKey;
 			let info = TEMPO_TO_DIALECT_MAP[canonicalKey] ?? TEMPO_TO_DIALECT_MAP[canonicalKey.toLowerCase()];
 
-			if (!info && REGEX_FF_PRECISION.test(canonicalKey)) {
+			if (!info && RE_FF_PRECISION.test(canonicalKey)) {
 				const prec = Number(canonicalKey.slice(3));
 				info = {
 					ldml: 'S'.repeat(prec),

@@ -145,4 +145,20 @@ describe('Unicode LDML Parsing', () => {
 		expect(parsed.isValid).toBe(true);
 		expect(parsed.zdt.calendarId).toBe('hebrew');
 	});
+
+	it('parses era tokens (G, GGGG) and normalizes BC to ISO astronomical years', () => {
+		const tBc = Tempo.fromFormat('0001-05-15 BC', 'yyyy-MM-dd G');
+		expect(tBc.isValid).toBe(true);
+		expect(tBc.yy).toBe(0); // 1 BC is ISO year 0
+		expect(tBc.mm).toBe(5);
+		expect(tBc.dd).toBe(15);
+
+		const tBcLong = Tempo.fromFormat('0002-05-15 Before Christ', 'yyyy-MM-dd GGGG');
+		expect(tBcLong.isValid).toBe(true);
+		expect(tBcLong.yy).toBe(-1); // 2 BC is ISO year -1
+
+		const tAd = Tempo.fromFormat('2026-05-15 AD', 'yyyy-MM-dd G');
+		expect(tAd.isValid).toBe(true);
+		expect(tAd.yy).toBe(2026);
+	});
 });

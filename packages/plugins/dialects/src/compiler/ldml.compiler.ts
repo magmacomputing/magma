@@ -16,7 +16,7 @@ import {
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z|I)/g;
+const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDDo|DDD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z|I)/g;
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -45,19 +45,19 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 		} else {
 			switch (token) {
 				case 'yyyy':
-					parts.push((z) => pad(z.year, 4));
+					parts.push((z) => (z.year <= 0 ? pad(1 - z.year, 4) : pad(z.year, 4)));
 					break;
 				case 'YYYY':
 					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).yearOfWeek, 4));
 					break;
 				case 'yy':
-					parts.push((z) => pad(z.year % 100, 2));
+					parts.push((z) => pad(((((z.year <= 0 ? 1 - z.year : z.year) % 100) + 100) % 100), 2));
 					break;
 				case 'YY':
 					parts.push((z) => pad(((getIsoWeek(z.toPlainDate()).yearOfWeek % 100) + 100) % 100, 2));
 					break;
 				case 'y':
-					parts.push((z) => String(z.year));
+					parts.push((z) => String(z.year <= 0 ? 1 - z.year : z.year));
 					break;
 				case 'II':
 				case 'ww':
@@ -113,6 +113,9 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'd':
 					parts.push((z) => String(z.day));
+					break;
+				case 'DDDo':
+					parts.push((z) => suffix(z.dayOfYear));
 					break;
 				case 'DDD':
 					parts.push((z) => pad(z.dayOfYear, 3));
@@ -364,6 +367,9 @@ export function compileLdmlParser(mask: string): RegExp {
 				case 'd':
 					pattern += group('dd', '\\d{1,2}');
 					break;
+				case 'DDDo':
+					pattern += group('doy_ord', '\\d{1,3}(?:st|nd|rd|th)');
+					break;
 				case 'DDD':
 					pattern += group('doy', '\\d{3}');
 					break;
@@ -518,6 +524,7 @@ export function parseLdml(
 	const dd = getGroup('dd');
 	const dd_ord = getGroup('dd_ord');
 	const doy = getGroup('doy');
+	const doy_ord = getGroup('doy_ord');
 	const qtrVal = getGroup('quarter') || (getGroup('quarter_abbr')?.slice(1)) || (getGroup('quarter_name') ? String(getGroup('quarter_name')![0]) : undefined);
 
 	if (yyyy) {
@@ -525,6 +532,17 @@ export function parseLdml(
 	} else if (yyVal) {
 		const yy = parseInt(yyVal, 10);
 		year = yy >= 70 ? 1900 + yy : 2000 + yy;
+	}
+
+	const era = getGroup('era');
+	const era_long = getGroup('era_long');
+	if (era || era_long) {
+		const e = (era || era_long)!.trim().toLowerCase();
+		if (e === 'bc' || e === 'before christ') {
+			year = 1 - year;
+		} else if (e !== 'ad' && e !== 'anno domini') {
+			return undefined;
+		}
 	}
 
 	if (yyyyWeek || yyWeek) {
@@ -554,8 +572,8 @@ export function parseLdml(
 		year = targetDate.year;
 		month = targetDate.month;
 		day = targetDate.day;
-	} else if (doy) {
-		const res = resolveDayOfYear(year, parseInt(doy, 10));
+	} else if (doy || doy_ord) {
+		const res = resolveDayOfYear(year, parseInt((doy || doy_ord)!, 10));
 		if (!res) return undefined;
 		month = res.month;
 		day = res.day;

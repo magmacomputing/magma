@@ -17,7 +17,9 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		const jan5 = new Tempo('2026-01-05');
 		expect(jan5.format('DDDD', { dialect: DIALECT.Moment })).toBe('005');
 		expect(jan5.format('DDD', { dialect: DIALECT.Moment })).toBe('5');
+		expect(jan5.format('DDDo', { dialect: DIALECT.Moment })).toBe('5th');
 		expect(dt.format('DDDD', { dialect: DIALECT.Moment })).toBe('297');
+		expect(dt.format('DDDo', { dialect: DIALECT.Moment })).toBe('297th');
 
 		// ISO week
 		const feb1 = new Tempo('2026-02-01');
@@ -53,6 +55,12 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		expect(tDoy.yy).toBe(2026);
 		expect(tDoy.mm).toBe(1);
 		expect(tDoy.dd).toBe(5);
+
+		const tDoyOrd = Tempo.dialects.parse('2026-5th', 'YYYY-DDDo', DIALECT.Moment);
+		expect(tDoyOrd.isValid).toBe(true);
+		expect(tDoyOrd.yy).toBe(2026);
+		expect(tDoyOrd.mm).toBe(1);
+		expect(tDoyOrd.dd).toBe(5);
 
 		const tWeek = Tempo.dialects.parse('2026-W43', 'GGGG-[W]WW', DIALECT.Moment);
 		expect(tWeek.isValid).toBe(true);

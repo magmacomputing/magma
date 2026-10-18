@@ -7,6 +7,7 @@ import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
+import { cast } from '#library/type.library.js';
 
 import { isTempo, enums, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
@@ -510,18 +511,18 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					const pluginHook = (plugin as any)?.[TermHook.format];
 					let hookRes: any;
 					if (isFunction(pluginHook))
-						hookRes = pluginHook.call(plugin, token, obj as unknown as Tempo);
+						hookRes = pluginHook.call(plugin, token, cast<Tempo>(obj));
 
 					if (!isDefined(hookRes)) {
 						const instanceHook = ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
 						if (isFunction(instanceHook))
-							hookRes = instanceHook.call(((obj as any)?.term?.[termName]), token, obj as unknown as Tempo);
+							hookRes = instanceHook.call(((obj as any)?.term?.[termName]), token, cast<Tempo>(obj));
 					}
 					if (isDefined(hookRes)) {
 						res = hookRes;
 						break;
 					}
-					const termObj = (obj as unknown as Tempo).term[token.slice(1)];
+					const termObj = cast<Tempo>(obj).term[token.slice(1)];
 					res = isObject(termObj)
 						? (termObj.label ?? termObj.key ?? `{${token}}`)
 						: (termObj ?? `{${token}}`);
@@ -544,7 +545,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 		let canonicalTerm: string | undefined;
 		if (token.startsWith('#') && isTempo(obj)) {
-			const termVal = (obj as unknown as Tempo).term[token.slice(1)];
+			const termVal = cast<Tempo>(obj).term[token.slice(1)];
 			if (isObject(termVal)) {
 				canonicalTerm = String(termVal.key ?? termVal.id ?? res);
 			} else if (isDefined(termVal)) {
@@ -673,7 +674,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'offset':
 				case 'offsetcompact': {
 					if (token === 'tz') {
-						const isCompact = mod.toLowerCase() === 'offsetcompact' || normMods.includes('compact');
+						const sep = (mod.toLowerCase() === 'offsetcompact' || normMods.includes('compact')) ? '' : ':';
 						const isUtc = zdt.offset === '+00:00' || zdt.offset === '-00:00' || zdt.offset === 'Z' || zdt.offsetNanoseconds === 0;
 						const sign = zdt.offset.startsWith('-') ? '-' : '+';
 						const cleanOffset = (zdt.offset.startsWith('+') || zdt.offset.startsWith('-'))
@@ -681,26 +682,22 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							: zdt.offset === 'Z' ? '00:00' : zdt.offset;
 						const [hStr = '00', mStr = '00', sStr = '00'] = cleanOffset.split(':');
 
-						if (normMods.includes('z') && isUtc) {
+						if ((normMods.includes('utc') || normMods.includes('z')) && isUtc) { // :utc canon, :z @internal alias
 							res = 'Z';
 						} else if (normMods.includes('hh') || normMods.includes('hour')) {
 							res = `${sign}${hStr}`;
 						} else if (normMods.includes('mi') || normMods.includes('min')) {
 							res = mStr;
 						} else if (normMods.includes('ss') || normMods.includes('sec')) {
-							res = isCompact
-								? `${sign}${hStr}${mStr}${sStr}`
-								: `${sign}${hStr}:${mStr}:${sStr}`;
+							res = `${sign}${hStr}${sep}${mStr}${sep}${sStr}`;
 						} else if (normMods.includes('short')) {
 							if (mStr === '00' && sStr === '00') {
 								res = `${sign}${hStr}`;
 							} else {
-								res = isCompact ? `${sign}${hStr}${mStr}` : `${sign}${hStr}:${mStr}`;
+								res = `${sign}${hStr}${sep}${mStr}`;
 							}
 						} else {
-							res = isCompact
-								? `${sign}${hStr}${mStr}`
-								: `${sign}${hStr}:${mStr}`;
+							res = `${sign}${hStr}${sep}${mStr}`;
 						}
 					}
 					break;
@@ -712,25 +709,25 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'offsetshort': // @deprecated, will remove in v5.0.0
 					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
 					break;
-				case 'z':
+				case 'z': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:short}, {tz:offset}, etc.
 					if (token === 'tz') {
 						if (!normMods.includes('offset') && !normMods.includes('offsetcompact'))
 							res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
 					}
 					break;
-				case 'zz':
+				case 'zz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:offset}
 					if (token === 'tz') res = zdt.offset;
 					break;
-				case 'zzz':
+				case 'zzz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:offsetcompact}
 					if (token === 'tz') res = zdt.offset.replace(':', '');
 					break;
-				case 'zzzz':
+				case 'zzzz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:short}
 					if (token === 'tz') {
 						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'short' }).formatToParts(zdt.epochMilliseconds);
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 					}
 					break;
-				case 'zzzzz':
+				case 'zzzzz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:long}
 					if (token === 'tz') {
 						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'long' }).formatToParts(zdt.epochMilliseconds);
 						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;

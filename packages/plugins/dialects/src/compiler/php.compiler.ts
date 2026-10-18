@@ -14,9 +14,6 @@ import {
 const PHP_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
 const PHP_PARSER_CACHE = new WeakCache<string, RegExp>();
 
-const WEEKDAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const WEEKDAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 /**
  * Compiles a PHP date format mask into a high-performance formatter function.
  * A backslash makes the next character literal; unrecognized characters are retained.
@@ -86,10 +83,10 @@ export function compilePhpFormatter(mask: string): FormatterFn {
 
 			// Weekday
 			case 'l': // full weekday name
-				parts.push((zdt) => WEEKDAY_NAMES_FULL[zdt.dayOfWeek % 7]);
+				parts.push((zdt) => Enum.keyOf(enums.WEEKDAYS, zdt.dayOfWeek) ?? '');
 				break;
 			case 'D': // 3-letter weekday
-				parts.push((zdt) => WEEKDAY_NAMES_SHORT[zdt.dayOfWeek % 7]);
+				parts.push((zdt) => Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek) ?? '');
 				break;
 			case 'N': // ISO-8601 day of week (1 for Monday to 7 for Sunday)
 				parts.push((zdt) => zdt.dayOfWeek.toString());
@@ -175,7 +172,7 @@ export function compilePhpFormatter(mask: string): FormatterFn {
 
 			case 'r': // RFC 2822: D, d M Y H:i:s O
 				parts.push((zdt) => {
-					const dow = WEEKDAY_NAMES_SHORT[zdt.dayOfWeek % 7];
+					const dow = Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek) ?? '';
 					const d = zdt.day.toString().padStart(2, '0');
 					const m = Enum.keyOf(enums.MONTH, zdt.month) ?? '';
 					const y = zdt.year.toString().padStart(4, '0');

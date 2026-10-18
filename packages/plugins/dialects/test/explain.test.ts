@@ -149,11 +149,11 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(daySpace?.tempo).toBe('{dd:space}');
 
 		const z0700 = tokens.find(t => t.source === 'Z0700');
-		expect(z0700?.tempo).toBe('{tz:offsetcompact:z}');
+		expect(z0700?.tempo).toBe('{tz:offsetcompact:utc}');
 		expect(z0700?.desc).toContain('UTC Z or basic numeric offset');
 
 		const z070000 = tokens.find(t => t.source === 'Z070000');
-		expect(z070000?.tempo).toBe('{tz:offsetcompact:ss:z}');
+		expect(z070000?.tempo).toBe('{tz:offsetcompact:ss:utc}');
 		expect(z070000?.desc).toContain('offset with seconds');
 
 		const m070000 = tokens.find(t => t.source === '-070000');
@@ -164,7 +164,7 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(m07?.tempo).toBe('{tz:offset:hh}');
 
 		const z07 = tokens.find(t => t.source === 'Z07');
-		expect(z07?.tempo).toBe('{tz:offset:short:z}');
+		expect(z07?.tempo).toBe('{tz:offset:short:utc}');
 
 		const oracleRes = Tempo.dialects.explain('YYYY-MM-DD TZH TZM', DIALECT.Oracle);
 		expect(oracleRes.pattern).toBe('{yyyy}-{mm}-{dd} {tz:offset:hh} {tz:offset:mi}');
@@ -250,5 +250,16 @@ describe('Dialect Explain & Migration Helper', () => {
 			tempo: '{ff:8}',
 			desc: 'Fractional seconds (8 digits)',
 		});
+	});
+
+	it('translates LDML meridiem (a, aa, aaa) and weekday/doy tokens (DD, EE, ee, cc)', () => {
+		const resMer = Tempo.dialects.explain('hh:mm a', DIALECT.Ldml);
+		expect(resMer.pattern).toBe('{h12}:{mi} {mer:upper}');
+
+		const resTokens = Tempo.dialects.explain('yyyy-DD EE ee cc', DIALECT.Ldml);
+		expect(resTokens.pattern).toBe('{yyyy}-{doy} {www} {dow:locale} {dow:locale}');
+
+		const resWeek = Tempo.dialects.explain('YYYY Y ww w', DIALECT.Ldml);
+		expect(resWeek.pattern).toBe('{yow:locale} {yow:locale} {woy:locale} {woy:locale:raw}');
 	});
 });
