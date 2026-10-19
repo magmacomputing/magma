@@ -5,11 +5,13 @@ import type { Tempo } from '@magmacomputing/tempo/core';
 
 import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAlias } from './constants.js';
 import { detectDialect, formatWithDialect, parseWithDialect } from './engine/dialect.registry.js';
-import { formatLdml, parseLdml } from './compiler/ldml.compiler.js';
-import { formatStrftime, parseStrftime } from './compiler/strftime.compiler.js';
-import { formatOracle, parseOracle } from './compiler/oracle.compiler.js';
-import { formatPhp, parsePhp } from './compiler/php.compiler.js';
+import { formatLdml, parseLdml, LDML_TOKENS, type LdmlToken } from './compiler/ldml.compiler.js';
+import { formatStrftime, parseStrftime, STRFTIME_SPECIFIERS, type StrftimeSpecifier } from './compiler/strftime.compiler.js';
+import { formatOracle, parseOracle, ORACLE_TOKENS, ORACLE_UNSUPPORTED_PARSE_TOKENS, type OracleToken } from './compiler/oracle.compiler.js';
+import { formatPhp, parsePhp, PHP_TOKENS, type PhpToken } from './compiler/php.compiler.js';
 import { formatGo, parseGo } from './compiler/go.compiler.js';
+import { validateResolvedDateFields, type ExtractedDateMetadata } from './compiler/shared.compiler.js';
+import { MOMENT_TOKENS, MOMENT_TO_LDML_MAP, type MomentToken } from './engine/dialect.registry.js';
 import { explain } from './engine/explain.js';
 import { exportDialect } from './engine/export.js';
 import { convertDialect } from './engine/convert.js';
@@ -25,20 +27,47 @@ export {
 	parseWithDialect,
 	formatLdml,
 	parseLdml,
+	LDML_TOKENS,
 	formatStrftime,
 	parseStrftime,
+	STRFTIME_SPECIFIERS,
 	formatOracle,
 	parseOracle,
+	ORACLE_TOKENS,
+	ORACLE_UNSUPPORTED_PARSE_TOKENS,
 	formatPhp,
 	parsePhp,
+	PHP_TOKENS,
 	formatGo,
 	parseGo,
+	validateResolvedDateFields,
+	MOMENT_TOKENS,
+	MOMENT_TO_LDML_MAP,
 	explain,
 	exportDialect,
 	convertDialect,
 };
 
-export type { ConvertOptions, ConvertResult, Dialect, DialectAlias, DialectsInstanceNamespace, DialectsStaticNamespace, ExplainOptions, ExplainResult, ExplainedToken, ExportOptions, ExportResult, ExportedToken };
+export type {
+	ConvertOptions,
+	ConvertResult,
+	ExtractedDateMetadata,
+	Dialect,
+	DialectAlias,
+	DialectsInstanceNamespace,
+	DialectsStaticNamespace,
+	ExplainOptions,
+	ExplainResult,
+	ExplainedToken,
+	ExportOptions,
+	ExportResult,
+	ExportedToken,
+	LdmlToken,
+	StrftimeSpecifier,
+	OracleToken,
+	PhpToken,
+	MomentToken,
+};
 
 /**
  * ## DialectsPlugin

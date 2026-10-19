@@ -9,10 +9,26 @@ import {
 	resolveParseContext,
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
+	validateResolvedDateFields,
 } from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const STRFTIME_PARSE_CACHE = new WeakCache<string, RegExp>();
+
+export const STRFTIME_SPECIFIERS = [
+	'%', 'Y', 'y', 'C',
+	'm', 'B', 'b', 'h',
+	'd', 'e',
+	'H', 'I', 'l', 'k',
+	'G', 'g', 'V', 'U', 'W',
+	'D', 'M', 'S', 'f',
+	'p', 'P',
+	'A', 'a', 'w', 'u',
+	'j', 'z', 'Z',
+	'F', 'T', 'R', 's',
+] as const;
+
+export type StrftimeSpecifier = (typeof STRFTIME_SPECIFIERS)[number];
 
 const STRFTIME_SPECIFIER_REGEX = /%(-)?(\d+)?([a-zA-Z%])/g;
 
@@ -141,6 +157,20 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 					return formatNum(w);
 				});
 				break;
+			case 'U':
+				parts.push((z) => {
+					const w = z.dayOfWeek === 7 ? 0 : z.dayOfWeek;
+					const u = Math.floor((z.dayOfYear - 1 - w + 7) / 7);
+					return formatNum(u);
+				});
+				break;
+			case 'W':
+				parts.push((z) => {
+					const wM = z.dayOfWeek - 1;
+					const w = Math.floor((z.dayOfYear - 1 - wM + 7) / 7);
+					return formatNum(w);
+				});
+				break;
 			case 'F':
 				parts.push((z) => `${pad(z.year, 4)}-${pad(z.month, 2)}-${pad(z.day, 2)}`);
 				break;
@@ -258,6 +288,12 @@ export function compileStrftimeParser(mask: string): RegExp {
 				break;
 			case 'V':
 				pattern += group('iw', '\\d{1,2}');
+				break;
+			case 'U':
+				pattern += group('week_u', '\\d{1,2}');
+				break;
+			case 'W':
+				pattern += group('week_w', '\\d{1,2}');
 				break;
 			case 'D':
 				pattern += `${group('mm', '\\d{2}')}/${group('dd', '\\d{2}')}/${group('yy', '\\d{2}')}`;
@@ -466,6 +502,20 @@ export function parseStrftime(
 			} else {
 				year = isoYear;
 			}
+		}
+
+		const weekday_u = getGroup('weekday_u');
+		const weekday_w = getGroup('weekday_w');
+		const week_u = getGroup('week_u');
+		const week_w = getGroup('week_w');
+		if (weekday_u || weekday_w || week_u || week_w) {
+			const expectedDayOfWeek = weekday_u
+				? parseInt(weekday_u, 10)
+				: (weekday_w ? (parseInt(weekday_w, 10) === 0 ? 7 : parseInt(weekday_w, 10)) : undefined);
+			const expectedWeekU = week_u ? parseInt(week_u, 10) : undefined;
+			const expectedWeekW = week_w ? parseInt(week_w, 10) : undefined;
+			if (!validateResolvedDateFields({ year, month, day }, { expectedDayOfWeek, expectedWeekU, expectedWeekW }))
+				return undefined;
 		}
 	}
 

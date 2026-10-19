@@ -10,12 +10,25 @@ import {
 	resolveParseContext,
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
+	validateResolvedDateFields,
 } from './shared.compiler.js';
 
 const FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const PARSE_REGEX_CACHE = new WeakCache<string, RegExp>();
 
-const LDML_TOKEN_REGEX = /'(''|[^'])*'|(ZZZZZ|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|GGGG|ZZZZ|zzzz|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|MMM|LLL|EEE|ccc|EE|QQQQ|qqqq|QQQ|qqq|GGG|ZZZ|zzz|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|cc|ee|DDDo|DDD|DD|y|M|L|d|D|G|H|h|k|m|s|a|c|e|E|w|W|Q|q|Z|z|I)/g;
+export const LDML_TOKENS = [
+	'ZZZZZ', 'yyyy', 'YYYY', 'MMMM', 'LLLL', 'EEEE', 'cccc', 'GGGG', 'ZZZZ', 'zzzz',
+	'SSSSSSSSS', 'SSSSSSSS', 'SSSSSSS', 'SSSSSS', 'SSSSS', 'SSSS', 'SSS', 'SS', 'S',
+	'MMM', 'LLL', 'EEE', 'ccc', 'EE', 'QQQQ', 'qqqq', 'QQQ', 'qqq', 'GGG', 'ZZZ', 'zzz',
+	'yy', 'YY', 'MM', 'LL', 'dd', 'HH', 'hh', 'kk', 'mm', 'ss', 'aaa', 'aa',
+	'Do', 'do', 'ww', 'II', 'QQ', 'qq', 'GG', 'ZZ', 'zz', 'cc', 'ee',
+	'DDDo', 'DDD', 'DD', 'y', 'M', 'L', 'd', 'D', 'G', 'H', 'h', 'k', 'm', 's',
+	'a', 'c', 'e', 'E', 'w', 'W', 'Q', 'q', 'Z', 'z', 'I',
+] as const;
+
+export type LdmlToken = (typeof LDML_TOKENS)[number];
+
+const LDML_TOKEN_REGEX = new RegExp(`'(''|[^'])*'|(${LDML_TOKENS.join('|')})`, 'g');
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -626,6 +639,30 @@ export function parseLdml(
 			day = parseInt(dd_ord, 10);
 		} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr && !qtrVal) {
 			day = today.day;
+		}
+
+		let expectedQuarter: number | undefined;
+		if (qtrVal && (mm || month_name || month_abbr)) {
+			const cleanQtr = qtrVal.replace(/\D/g, '');
+			const q = parseInt(cleanQtr, 10);
+			if (isNaN(q) || q < 1 || q > 4) return undefined;
+			expectedQuarter = q;
+		}
+
+		let expectedDayOfWeek: number | undefined;
+		if (weekdayNum || weekdayName || weekdayAbbr) {
+			const expectedDay = resolveIsoDay();
+			if (expectedDay === undefined) return undefined;
+			expectedDayOfWeek = expectedDay;
+		}
+
+		if (expectedQuarter !== undefined || expectedDayOfWeek !== undefined) {
+			if (!validateResolvedDateFields({ year, month, day }, {
+				expectedQuarter,
+				expectedDayOfWeek,
+			})) {
+				return undefined;
+			}
 		}
 	}
 

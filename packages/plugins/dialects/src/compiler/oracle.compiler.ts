@@ -1,20 +1,36 @@
-import { pad, suffix, WeakCache, Enum, resolveDayOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { pad, suffix, WeakCache, resolveDayOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
+import { enums, Enum } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
+	resolveWeekday,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
+	validateResolvedDateFields,
 } from './shared.compiler.js';
 
 const ORACLE_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
 const ORACLE_PARSE_CACHE = new WeakCache<string, RegExp>();
 
-const ORACLE_TOKEN_REGEX = /"[^"]*"|TZH:TZM|HH24|HH12|SSSSS|MONTH|IYYY|YYYY|RRRR|A\.M\.|P\.M\.|MON|YYY|IYY|TZD|TZR|TZH|TZM|DAY|DDTH|DDD|FF[1-9]?|FM|FX|IW|WW|YY|RR|IY|MM|DD|DY|HH|MI|SS|AM|PM|RM|OF|D|W|Q|Y|I|J/gi;
+export const ORACLE_TOKENS = [
+	'TZH:TZM', 'HH24', 'HH12', 'SSSSS', 'MONTH', 'IYYY', 'YYYY', 'RRRR',
+	'A.M.', 'P.M.', 'MON', 'YYY', 'IYY', 'TZD', 'TZR', 'TZH', 'TZM',
+	'DAY', 'DDTH', 'DDD', 'FM', 'FX', 'IW', 'WW', 'YY', 'RR', 'IY',
+	'MM', 'DD', 'DY', 'HH', 'MI', 'SS', 'AM', 'PM', 'RM', 'OF',
+	'D', 'W', 'Q', 'Y', 'I', 'J',
+] as const;
+
+export type OracleToken = (typeof ORACLE_TOKENS)[number];
+
+const oracleEscaped = ORACLE_TOKENS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+const dddIdx = oracleEscaped.indexOf('DDD');
+oracleEscaped.splice(dddIdx + 1, 0, 'FF[1-9]?');
+
+const ORACLE_TOKEN_REGEX = new RegExp(`"[^"]*"|${oracleEscaped.join('|')}`, 'gi');
 
 const ROMAN_MONTHS: readonly string[] = [
 	'', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII',
@@ -278,7 +294,7 @@ export function formatOracle(zdt: Temporal.ZonedDateTime, mask: string): string 
  * Format tokens supported by formatOracle but unsupported for reverse parsing in parseOracle:
  * YYY, IYY, IY, Y, I, J, W, Q, IW, WW, SSSSS, TZH, TZM.
  */
-const ORACLE_UNSUPPORTED_PARSE_TOKENS: ReadonlySet<string> = new Set([
+export const ORACLE_UNSUPPORTED_PARSE_TOKENS: ReadonlySet<string> = new Set([
 	'YYY', 'IYY', 'IY', 'Y', 'I', 'J', 'W', 'Q', 'WW', 'SSSSS', 'TZH', 'TZM',
 ]);
 
@@ -500,13 +516,24 @@ export function parseOracle(
 		day = today.day;
 	}
 
+	const dVal = getGroup('weekday_num');
+	const weekdayName = getGroup('weekday_name');
+	const weekdayAbbr = getGroup('weekday_abbr');
+	let resolvedWeekday: number | undefined;
+	if (dVal) {
+		const parsed = parseInt(dVal, 10);
+		if (parsed < 1 || parsed > 7) return undefined;
+		resolvedWeekday = parsed;
+	} else if (weekdayName || weekdayAbbr) {
+		resolvedWeekday = resolveWeekday(weekdayName || weekdayAbbr!);
+		if (resolvedWeekday === undefined) return undefined;
+	}
+
 	if (iw) {
 		const isoYear = iyyy ? parseInt(iyyy, 10) : (hasYear ? year : ((today as any).yearOfWeek ?? today.year));
 		const isoWeek = parseInt(iw, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
-		const dVal = getGroup('weekday_num');
-		const isoDay = dVal ? parseInt(dVal, 10) : 1;
-		if (isoDay < 1 || isoDay > 7) return undefined;
+		const isoDay = resolvedWeekday ?? 1;
 		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
 		const check = getIsoWeek(targetDate);
 		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
@@ -514,16 +541,14 @@ export function parseOracle(
 		month = targetDate.month;
 		day = targetDate.day;
 	} else {
-		if (iyyy) {
+		if (iyyy)
 			year = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day);
-		}
-		const dVal = getGroup('weekday_num');
-		if (dVal) {
-			const expectedDay = parseInt(dVal, 10);
-			try {
-				const plainDate = Temporal.PlainDate.from({ year, month, day }, { overflow: 'reject' });
-				if (plainDate.dayOfWeek !== expectedDay) return undefined;
-			} catch {
+
+		if (resolvedWeekday !== undefined || doy) {
+			if (!validateResolvedDateFields({ year, month, day }, {
+				expectedDayOfWeek: resolvedWeekday,
+				expectedDayOfYear: doy ? parseInt(doy, 10) : undefined,
+			})) {
 				return undefined;
 			}
 		}

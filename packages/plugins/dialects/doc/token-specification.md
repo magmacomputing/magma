@@ -21,13 +21,16 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Unpadded (`1`-`12`) | `M` | `M` | `M` | `%-m` | `FMMM` | `n` | `1` | `{mm:raw}` |
 | | Short name (`Oct`) | `MMM` | `LLL` | `MMM` | `%b` | `Mon` | `M` | `Jan` | `{mmm}` |
 | | Full name (`October`) | `MMMM` | `LLLL` | `MMMM` | `%B` | `Month` | `F` | `January` | `{mon}` |
+| | Days in month (`28`-`31`) | N/A | N/A | N/A | N/A | N/A | `t` | N/A | N/A |
 | **Day** | Zero-padded day (`01`-`31`) | `dd` | `dd` | `DD` | `%d` | `DD` | `d` | `02` | `{dd}` |
 | | Unpadded day (`1`-`31`) | `d` | `d` | `D` | `%-d` | `FMDD` | `j` | `2` | `{dd:raw}` |
 | | Ordinal day (`24th`) | `do`* | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
 | **Era** | Era abbreviated (`AD` / `BC`) | `G` | `G` | N/A | N/A | N/A | N/A | N/A | `{era}` |
 | | Era full (`Anno Domini`) | `GGGG` | `GG` | N/A | N/A | N/A | N/A | N/A | `{era:long}` |
-| **Day of Year** | Day of year (`001`-`366`) | `DDD` | `ooo` | `DDDD` | `%j` | `DDD` | N/A | `002` | `{doy}` |
+| **Day of Year** | Day of year (`001`-`366`) | `DDD` | `ooo` | `DDDD` | `%j` | `DDD` | `z`* | `002` | `{doy}` |
 | **Week of Year**| ISO week (`01`-`53`) | `II`* | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
+| | Sunday-start week (`00`-`53`) | N/A | N/A | N/A | `%U` | N/A | N/A | N/A | N/A |
+| | Monday-start week (`00`-`53`) | N/A | N/A | N/A | `%W` | N/A | N/A | N/A | N/A |
 | **Weekday** | Full name (`Saturday`) | `EEEE` | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
 | | Short name (`Sat`) | `EEE` | `EEE` | `ddd` | `%a` | `Dy` | `D` | `Mon` | `{www}` |
 | | ISO day of week (`1`-`7`) | `e`* | `E` | `E` | `%u` | `D`* | `N` | N/A | `{dow}` |
@@ -63,7 +66,7 @@ This document provides a comprehensive cross-reference matrix comparing date for
 | | Full quarter name (`3rd quarter`) | `QQQQ` | N/A | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
 
 > [!NOTE]
-> `*` In LDML (`e`) and Oracle (`D`), day-of-week numeric indexing is territory/locale-dependent; Moment uses `E` for standard ISO weekdays (1–7). In LDML, `ww` is locale-dependent week of year (date-fns uses `II` for ISO week of year). Go’s `15` layout always zero-pads 24-hour hours (no unpadded equivalent). `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month; date-fns adds `do` for ordinal day of month, while Moment supports `Do`.
+> `*` In LDML (`e`) and Oracle (`D`), day-of-week numeric indexing is territory/locale-dependent; Moment uses `E` for standard ISO weekdays (1–7). In LDML, `ww` is locale-dependent week of year (date-fns uses `II` for ISO week of year). Go’s `15` layout always zero-pads 24-hour hours (no unpadded equivalent). In POSIX `strftime`, `%V` formats the ISO 8601 week (`01`–`53`), while `%U` (Sunday-first) and `%W` (Monday-first) format calendar week numbers (`00`–`53`). `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. In PHP `date()`, `z` is a 0-indexed day of year (`0`–`365`), while `t` provides the number of days in the given month (`28`–`31`). Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month; date-fns adds `do` for ordinal day of month, while Moment supports `Do`.
 
 ---
 

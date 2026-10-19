@@ -207,5 +207,30 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(parsedCentury.mm).toBe(5);
 		expect(parsedCentury.dd).toBe(10);
 	});
+
+	it('formats, parses, and validates calendar week numbers (%U, %W)', () => {
+		const t = new Tempo('2026-10-24T12:00:00Z', { timeZone: 'UTC' });
+		const formattedU = t.format('%Y-%m-%d %U', { dialect: DIALECT.Strftime });
+		const formattedW = t.format('%Y-%m-%d %W', { dialect: DIALECT.Strftime });
+
+		expect(formattedU).toBe('2026-10-24 42');
+		expect(formattedW).toBe('2026-10-24 42');
+
+		// Round-trip parse
+		const parsedU = Tempo.dialects.parse(formattedU, '%Y-%m-%d %U', DIALECT.Strftime, { timeZone: 'UTC' });
+		expect(parsedU.isValid).toBe(true);
+		expect(parsedU.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		const parsedW = Tempo.dialects.parse(formattedW, '%Y-%m-%d %W', DIALECT.Strftime, { timeZone: 'UTC' });
+		expect(parsedW.isValid).toBe(true);
+		expect(parsedW.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		// Rejects contradictory week numbers
+		const mismatchU = Tempo.dialects.parse('2026-10-24 40', '%Y-%m-%d %U', DIALECT.Strftime, { error: 'catch' });
+		expect(mismatchU.isValid).toBe(false);
+
+		const mismatchW = Tempo.dialects.parse('2026-10-24 40', '%Y-%m-%d %W', DIALECT.Strftime, { error: 'catch' });
+		expect(mismatchW.isValid).toBe(false);
+	});
 });
 

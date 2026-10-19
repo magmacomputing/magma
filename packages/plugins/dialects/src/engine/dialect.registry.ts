@@ -39,7 +39,17 @@ export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
 	return DIALECT.Ldml;
 }
 
-const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
+export const MOMENT_TOKENS = [
+	'YYYY', 'YY', 'GGGG', 'GG', 'gggg', 'gg',
+	'DDDD', 'DDDo', 'DDD', 'DD', 'Do', 'D',
+	'dddd', 'ddd', 'dd', 'do', 'd',
+	'Mo', 'WW', 'Wo', 'W', 'ww', 'w', 'Qo',
+	'ZZ', 'Z', 'E', 'e', 'A', 'a',
+] as const;
+
+export type MomentToken = (typeof MOMENT_TOKENS)[number];
+
+export const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
 	YYYY: 'yyyy',
 	GGGG: 'YYYY',
 	YY: 'yy',
@@ -61,8 +71,7 @@ const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
 	a: 'a',
 };
 
-const RE_MOMENT_TRANSLATE =
-	/\[([^\]]+)\]|(YYYY|YY|GGGG|GG|gggg|gg|DDDD|DDDo|DDD|DD|Do|D|dddd|ddd|dd|do|d|Mo|WW|Wo|W|ww|w|Qo|ZZ|Z|E|e|A|a)/g;
+const RE_MOMENT_TRANSLATE = new RegExp(`\\[([^\\]]+)\\]|(${MOMENT_TOKENS.join('|')})`, 'g');
 
 /**
  * Translates a Moment.js format mask into standard LDML.

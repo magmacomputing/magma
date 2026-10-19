@@ -135,4 +135,37 @@ describe('PHP Date Dialect Engine', () => {
 		const res = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', DIALECT.Php);
 		expect(res.pattern).toBe('Y-m-d H:i:s');
 	});
+
+	it('parses and round-trips ISO week and auxiliary date tokens (o, W, N, w, t)', () => {
+		const t = new Tempo('2026-10-24T12:00:00Z', { timeZone: 'UTC' });
+		// 2026-10-24 is ISO week 43, Saturday (N = 6, w = 6), daysInMonth (t = 31)
+		expect(t.dialects.php('o-\\WW-N')).toBe('2026-W43-6');
+		expect(t.dialects.php('o-\\WW-w')).toBe('2026-W43-6');
+		expect(t.dialects.php('Y-m-d t')).toBe('2026-10-24 31');
+
+		const parsedIsoWeekN = Tempo.dialects.parse('2026-W43-6', 'o-\\WW-N', DIALECT.Php, { timeZone: 'UTC' });
+		expect(parsedIsoWeekN.isValid).toBe(true);
+		expect(parsedIsoWeekN.iso).toBe('2026-10-24T00:00:00Z');
+
+		const parsedIsoWeekW = Tempo.dialects.parse('2026-W43-6', 'o-\\WW-w', DIALECT.Php, { timeZone: 'UTC' });
+		expect(parsedIsoWeekW.isValid).toBe(true);
+		expect(parsedIsoWeekW.iso).toBe('2026-10-24T00:00:00Z');
+
+		const parsedDaysInMonth = Tempo.dialects.parse('2026-10-24 31', 'Y-m-d t', DIALECT.Php, { timeZone: 'UTC' });
+		expect(parsedDaysInMonth.isValid).toBe(true);
+		expect(parsedDaysInMonth.iso).toBe('2026-10-24T00:00:00Z');
+	});
+
+	it('rejects contradictions in weekday (N, w) and days in month (t)', () => {
+		// Oct 24 2026 is Saturday (N = 6, w = 6). Monday (N = 1, w = 1) is a mismatch.
+		const mismatchN = Tempo.dialects.parse('2026-10-24 1', 'Y-m-d N', DIALECT.Php, { error: 'catch' });
+		expect(mismatchN.isValid).toBe(false);
+
+		const mismatchW = Tempo.dialects.parse('2026-10-24 0', 'Y-m-d w', DIALECT.Php, { error: 'catch' });
+		expect(mismatchW.isValid).toBe(false);
+
+		// October has 31 days. 30 is a mismatch.
+		const mismatchT = Tempo.dialects.parse('2026-10-24 30', 'Y-m-d t', DIALECT.Php, { error: 'catch' });
+		expect(mismatchT.isValid).toBe(false);
+	});
 });

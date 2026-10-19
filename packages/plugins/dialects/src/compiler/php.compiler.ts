@@ -1,18 +1,33 @@
-import { WeakCache, suffix, Enum, getISOWeekOfYear, resolveTwoDigitYear, resolveDayOfYear } from '@magmacomputing/tempo/library';
+import { WeakCache, suffix, Enum, getISOWeekOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveTwoDigitYear, resolveDayOfYear } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
+	resolveWeekday,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
+	validateResolvedDateFields,
 } from './shared.compiler.js';
 
 const PHP_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
 const PHP_PARSER_CACHE = new WeakCache<string, RegExp>();
+
+export const PHP_TOKENS = [
+	'Y', 'y', 'o',
+	'm', 'n', 'M', 'F', 't',
+	'd', 'j', 'S', 'z',
+	'l', 'D', 'N', 'w', 'W',
+	'H', 'G', 'h', 'g', 'i', 's', 'v', 'u',
+	'a', 'A',
+	'O', 'P', 'T', 'e', 'U',
+	'c', 'r',
+] as const;
+
+export type PhpToken = (typeof PHP_TOKENS)[number];
 
 /**
  * Compiles a PHP date format mask into a high-performance formatter function.
@@ -262,10 +277,25 @@ export function compilePhpParser(mask: string): RegExp {
 				pattern += group('dd', '\\d{1,2}');
 				break;
 			case 'D':
-				pattern += '(?:[A-Za-z]{3})';
+				pattern += group('weekday_abbr', '[A-Za-z]{3}');
 				break;
 			case 'l':
-				pattern += '(?:[A-Za-z]+)';
+				pattern += group('weekday_name', '[A-Za-z]+');
+				break;
+			case 'N':
+				pattern += group('weekday_n', '[1-7]');
+				break;
+			case 'w':
+				pattern += group('weekday_w', '[0-6]');
+				break;
+			case 'W':
+				pattern += group('iso_week', '\\d{1,2}');
+				break;
+			case 'o':
+				pattern += group('iso_year', '\\d{4}');
+				break;
+			case 't':
+				pattern += group('days_in_month', '2[89]|3[01]');
 				break;
 			case 'S':
 				pattern += '(?:st|nd|rd|th)';
@@ -373,6 +403,30 @@ export function parsePhp(
 	let year = ctx.today.year;
 	const yyyy = getGroup('yyyy');
 	const yy = getGroup('yy');
+	const isoYearStr = getGroup('iso_year');
+	const isoWeekStr = getGroup('iso_week');
+	const weekdayN = getGroup('weekday_n');
+	const weekdayW = getGroup('weekday_w');
+	const weekdayName = getGroup('weekday_name');
+	const weekdayAbbr = getGroup('weekday_abbr');
+	const daysInMonth = getGroup('days_in_month');
+
+	const resolveIsoDay = (): number | undefined => {
+		if (weekdayN) {
+			const d = parseInt(weekdayN, 10);
+			return d >= 1 && d <= 7 ? d : undefined;
+		}
+		if (weekdayW) {
+			const w = parseInt(weekdayW, 10);
+			if (w < 0 || w > 6) return undefined;
+			return w === 0 ? 7 : w;
+		}
+		if (weekdayName || weekdayAbbr) {
+			return resolveWeekday(weekdayName || weekdayAbbr!);
+		}
+		return undefined;
+	};
+
 	if (yyyy) {
 		year = parseInt(yyyy, 10);
 	} else if (yy) {
@@ -380,31 +434,60 @@ export function parsePhp(
 	}
 
 	let month = 1;
-	const mm = getGroup('mm');
-	const mon_short = getGroup('mon_short');
-	const mon_long = getGroup('mon_long');
-	if (mm) {
-		month = parseInt(mm, 10);
-	} else if (mon_short) {
-		const m = resolveMonth(mon_short);
-		if (m === undefined) return undefined;
-		month = m;
-	} else if (mon_long) {
-		const m = resolveMonth(mon_long);
-		if (m === undefined) return undefined;
-		month = m;
-	}
-
 	let day = 1;
-	const dd = getGroup('dd');
-	const doy = getGroup('doy');
-	if (dd) {
-		day = parseInt(dd, 10);
-	} else if (doy && !mm && !mon_short && !mon_long) {
-		const res = resolveDayOfYear(year, parseInt(doy, 10) + 1);
-		if (!res) return undefined;
-		month = res.month;
-		day = res.day;
+
+	if (isoWeekStr) {
+		const isoWeek = parseInt(isoWeekStr, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const isoYear = isoYearStr ? parseInt(isoYearStr, 10) : (yyyy ? year : ((ctx.today as any).yearOfWeek ?? ctx.today.year));
+		const isoDay = resolveIsoDay() ?? 1;
+		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else {
+		const mm = getGroup('mm');
+		const mon_short = getGroup('mon_short');
+		const mon_long = getGroup('mon_long');
+		if (mm) {
+			month = parseInt(mm, 10);
+		} else if (mon_short) {
+			const m = resolveMonth(mon_short);
+			if (m === undefined) return undefined;
+			month = m;
+		} else if (mon_long) {
+			const m = resolveMonth(mon_long);
+			if (m === undefined) return undefined;
+			month = m;
+		}
+
+		const dd = getGroup('dd');
+		const doy = getGroup('doy');
+		if (dd) {
+			day = parseInt(dd, 10);
+		} else if (doy && !mm && !mon_short && !mon_long) {
+			const res = resolveDayOfYear(year, parseInt(doy, 10) + 1);
+			if (!res) return undefined;
+			month = res.month;
+			day = res.day;
+		}
+
+		if (isoYearStr && (mm || mon_short || mon_long) && dd) {
+			year = resolveIsoCalendarYear(parseInt(isoYearStr, 10), month, day);
+		} else if (isoYearStr && !yyyy && !yy) {
+			year = parseInt(isoYearStr, 10);
+		}
+
+		const expectedDay = resolveIsoDay();
+		if (expectedDay !== undefined || daysInMonth) {
+			if (!validateResolvedDateFields({ year, month, day }, {
+				expectedDayOfWeek: expectedDay,
+				expectedDaysInMonth: daysInMonth ? parseInt(daysInMonth, 10) : undefined,
+			}))
+				return undefined;
+		}
 	}
 
 	const timeComp = resolveTimeComponents(getGroup);

@@ -1,6 +1,7 @@
 import {
 	Enum,
 	isNumber,
+	getIsoWeek,
 } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 
@@ -202,3 +203,72 @@ export function buildParsedZonedDateTime(
 		return undefined;
 	}
 }
+
+export interface ExtractedDateMetadata {
+	expectedDayOfWeek?: number | undefined;
+	expectedDayOfYear?: number | undefined;
+	expectedDaysInMonth?: number | undefined;
+	expectedQuarter?: number | undefined;
+	expectedIsoWeek?: number | undefined;
+	expectedIsoYear?: number | undefined;
+	expectedWeekU?: number | undefined;
+	expectedWeekW?: number | undefined;
+	expectedIsLeap?: number | undefined;
+}
+
+/**
+ * Validates auxiliary or redundant date fields against a resolved calendar date.
+ * Accepts either an existing Temporal.PlainDate or { year, month, day }.
+ * Returns false if date construction rejects (e.g. invalid day of month) or
+ * if any auxiliary field contradicts the resolved date.
+ */
+export function validateResolvedDateFields(
+	date: Temporal.PlainDate | { year: number; month: number; day: number },
+	meta: ExtractedDateMetadata,
+): boolean {
+	let plainDate: Temporal.PlainDate;
+	try {
+		plainDate = date instanceof Temporal.PlainDate
+			? date
+			: Temporal.PlainDate.from(date, { overflow: 'reject' });
+	} catch {
+		return false;
+	}
+
+	if (meta.expectedDayOfWeek !== undefined && plainDate.dayOfWeek !== meta.expectedDayOfWeek)
+		return false;
+
+	if (meta.expectedDayOfYear !== undefined && plainDate.dayOfYear !== meta.expectedDayOfYear)
+		return false;
+
+	if (meta.expectedDaysInMonth !== undefined && plainDate.daysInMonth !== meta.expectedDaysInMonth)
+		return false;
+
+	if (meta.expectedQuarter !== undefined) {
+		const q = Math.ceil(plainDate.month / 3);
+		if (q !== meta.expectedQuarter) return false;
+	}
+	if (meta.expectedIsoWeek !== undefined || meta.expectedIsoYear !== undefined) {
+		const iso = getIsoWeek(plainDate);
+		if (meta.expectedIsoWeek !== undefined && iso.weekOfYear !== meta.expectedIsoWeek)
+			return false;
+		if (meta.expectedIsoYear !== undefined && iso.yearOfWeek !== meta.expectedIsoYear)
+			return false;
+	}
+	if (meta.expectedWeekU !== undefined) {
+		const w = plainDate.dayOfWeek === 7 ? 0 : plainDate.dayOfWeek;
+		const u = Math.floor((plainDate.dayOfYear - 1 - w + 7) / 7);
+		if (u !== meta.expectedWeekU) return false;
+	}
+	if (meta.expectedWeekW !== undefined) {
+		const wM = plainDate.dayOfWeek - 1;
+		const w = Math.floor((plainDate.dayOfYear - 1 - wM + 7) / 7);
+		if (w !== meta.expectedWeekW) return false;
+	}
+	if (meta.expectedIsLeap !== undefined) {
+		const isLeap = plainDate.inLeapYear ? 1 : 0;
+		if (isLeap !== meta.expectedIsLeap) return false;
+	}
+	return true;
+}
+
