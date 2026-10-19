@@ -90,6 +90,10 @@ describe('Unicode LDML Parsing', () => {
 		const t2 = Tempo.fromFormat('2026-10-24 15:30:45 Z', 'yyyy-MM-dd HH:mm:ss Z');
 		expect(t2.isValid).toBe(true);
 		expect(t2.toDateTime().offset).toBe('+00:00');
+
+		const t3 = Tempo.fromFormat('2026-10-24 15:30:45 GMT+05:00', 'yyyy-MM-dd HH:mm:ss ZZZZ');
+		expect(t3.isValid).toBe(true);
+		expect(t3.toDateTime().offset).toBe('+05:00');
 	});
 
 	it('matches first candidate format across array of masks', () => {

@@ -133,4 +133,26 @@ describe('Go Reference Time Dialect Engine', () => {
 		expect(parsed.mm).toBe(10);
 		expect(parsed.dd).toBe(24);
 	});
+
+	it('parses and validates weekday names (Monday, Mon)', () => {
+		// 2026-10-24 is Saturday
+		const tFull = Tempo.dialects.parse('Saturday, 2026-10-24', 'Monday, 2006-01-02', DIALECT.Go, { timeZone: 'UTC' });
+		expect(tFull.isValid).toBe(true);
+		expect(tFull.dd).toBe(24);
+
+		const tAbbr = Tempo.dialects.parse('Sat, 2026-10-24', 'Mon, 2006-01-02', DIALECT.Go, { timeZone: 'UTC' });
+		expect(tAbbr.isValid).toBe(true);
+		expect(tAbbr.dd).toBe(24);
+
+		// Contradictory weekday must be rejected
+		const tMismatchFull = Tempo.dialects.parse('Monday, 2026-10-24', 'Monday, 2006-01-02', DIALECT.Go, { timeZone: 'UTC', error: 'catch' });
+		expect(tMismatchFull.isValid).toBe(false);
+
+		const tMismatchAbbr = Tempo.dialects.parse('Sun, 2026-10-24', 'Mon, 2006-01-02', DIALECT.Go, { timeZone: 'UTC', error: 'catch' });
+		expect(tMismatchAbbr.isValid).toBe(false);
+
+		// Unrecognized weekday name must be rejected
+		const tInvalid = Tempo.dialects.parse('InvalidDay, 2026-10-24', 'Monday, 2006-01-02', DIALECT.Go, { timeZone: 'UTC', error: 'catch' });
+		expect(tInvalid.isValid).toBe(false);
+	});
 });

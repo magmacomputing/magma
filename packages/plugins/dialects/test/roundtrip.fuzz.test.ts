@@ -235,6 +235,12 @@ describe('Dialects Property-Based Roundtrip & Fuzzing Harness', () => {
 			expect(phpGood.isValid).toBe(true);
 			const phpBad = Tempo.dialects.parse(`${baseDate} 2`, 'Y-m-d H:i:s N', DIALECT.Php, { error: 'catch' });
 			expect(phpBad.isValid).toBe(false);
+
+			// Go: Monday = Saturday, mutate to Friday
+			const goGood = Tempo.dialects.parse(`${baseDate} Saturday`, '2006-01-02 15:04:05 Monday', DIALECT.Go);
+			expect(goGood.isValid).toBe(true);
+			const goBad = Tempo.dialects.parse(`${baseDate} Friday`, '2006-01-02 15:04:05 Monday', DIALECT.Go, { error: 'catch' });
+			expect(goBad.isValid).toBe(false);
 		});
 
 		it('systematically rejects mutated calendar weeks (%U, %W) in Strftime', () => {

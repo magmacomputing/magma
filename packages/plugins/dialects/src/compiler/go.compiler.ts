@@ -5,10 +5,12 @@ import {
 	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
+	resolveWeekday,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
+	validateResolvedDateFields,
 } from './shared.compiler.js';
 
 const GO_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
@@ -295,8 +297,10 @@ export function compileGoParser(mask: string): RegExp {
 				pattern += group('doy', '\\s{0,2}\\d{1,3}');
 				break;
 			case 'Monday':
+				pattern += group('weekday_name', '[A-Za-z]+');
+				break;
 			case 'Mon':
-				pattern += '(?:[A-Za-z]+)';
+				pattern += group('weekday_abbr', '[A-Za-z]{3}');
 				break;
 			case '15':
 				pattern += group('hh', '\\d{2}');
@@ -455,6 +459,16 @@ export function parseGo(
 		}
 	} else if (dd) {
 		day = parseInt(dd.trim(), 10);
+	}
+
+	const weekdayName = getGroup('weekday_name');
+	const weekdayAbbr = getGroup('weekday_abbr');
+	if (weekdayName || weekdayAbbr) {
+		const expectedDayOfWeek = resolveWeekday(weekdayName || weekdayAbbr!);
+		if (expectedDayOfWeek === undefined) return undefined;
+		if (!validateResolvedDateFields({ year, month, day }, { expectedDayOfWeek })) {
+			return undefined;
+		}
 	}
 
 	const timeComp = resolveTimeComponents(getGroup);

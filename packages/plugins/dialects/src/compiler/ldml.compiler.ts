@@ -479,11 +479,13 @@ export function compileLdmlParser(mask: string): RegExp {
 					break;
 
 				case 'ZZZZZ':
-				case 'ZZZZ':
 				case 'ZZZ':
 				case 'ZZ':
 				case 'Z':
 					pattern += group('tz_offset', '[+-]\\d{2}(?::?\\d{2})?|Z');
+					break;
+				case 'ZZZZ':
+					pattern += group('tz_name', 'GMT[+-]\\d{1,2}(?::?\\d{2})?');
 					break;
 				case 'zzzz':
 				case 'zzz':
@@ -515,7 +517,7 @@ export function compileLdmlParser(mask: string): RegExp {
  * Parses an input string with an LDML mask.
  * Input is trimmed and matching is case-insensitive. Missing time fields default to zero.
  * For calendar date masks, an explicit year defaults missing month/day to January 1;
- * an explicit month defaults missing day to 1. Two-digit years use a cutoff of 70 (1970-2069).
+ * an explicit month defaults missing day to 1. Two-digit years use a sliding pivot window based on the reference date (pivot default 75).
  *
  * @param options - `today` supplies missing date fields; otherwise uses the current date in the resolved zone.
  * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601.

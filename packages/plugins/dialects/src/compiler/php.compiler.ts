@@ -367,7 +367,7 @@ export function compilePhpParser(mask: string): RegExp {
 /**
  * Parses an input string using a PHP date format mask into a Temporal.ZonedDateTime.
  * Matching is case-insensitive without trimming input. Missing date fields default to the reference year, January,
- * and day 1; missing time fields default to zero. Two-digit years 00-69 mean 2000-2069 and 70-99 mean 1970-1999.
+ * and day 1; missing time fields default to zero. Two-digit years use a sliding pivot window based on the reference date (pivot default 75).
  * `U` takes precedence over other date/time fields and denotes signed Unix seconds, producing an ISO calendar result.
  *
  * @param options - `today` supplies the reference year; otherwise uses the current date in the resolved zone.
