@@ -221,6 +221,17 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 			expect(tInvalidWeek.isValid).toBe(false);
 		});
 
+		it('validates weekday_num when iw is absent', () => {
+			const tValid = Tempo.dialects.parse('2026-10-24 6', 'YYYY-MM-DD D', 'oracle');
+			expect(tValid.isValid).toBe(true);
+			expect(tValid.yy).toBe(2026);
+			expect(tValid.mm).toBe(10);
+			expect(tValid.dd).toBe(24);
+
+			const tMismatch = Tempo.dialects.parse('2026-10-24 1', 'YYYY-MM-DD D', 'oracle', { error: 'catch' });
+			expect(tMismatch.isValid).toBe(false);
+		});
+
 		it('preserves round-tripping near ISO year boundaries with IYYY-MM-DD', () => {
 			// 2024-12-30 is Monday of ISO week 1, 2025 -> formats to "2025-12-30"
 			const orig = new Tempo('2024-12-30T12:00:00Z');

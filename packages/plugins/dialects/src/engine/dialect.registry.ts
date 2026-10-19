@@ -62,16 +62,21 @@ const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
 };
 
 const RE_MOMENT_TRANSLATE =
-	/\[([^\]]+)\]|(YYYY|GGGG|YY|GG|DDDD|DDDo|DDD|Do|DD|D|dddd|ddd|WW|W|ZZ|Z|E|A|a)/g;
+	/\[([^\]]+)\]|(YYYY|YY|GGGG|GG|gggg|gg|DDDD|DDDo|DDD|DD|Do|D|dddd|ddd|dd|do|d|Mo|WW|Wo|W|ww|w|Qo|ZZ|Z|E|e|A|a)/g;
 
 /**
  * Translates a Moment.js format mask into standard LDML.
  */
 export function translateMomentToLdml(mask: string): string {
 	return mask.replace(RE_MOMENT_TRANSLATE, (match, literal, token) => {
-		return (!isUndefined(literal))
-			? `'${literal.replace(/'/g, "''")}'`
-			: MOMENT_TO_LDML_MAP[token] ?? match;
+		if (!isUndefined(literal)) {
+			return `'${literal.replace(/'/g, "''")}'`;
+		}
+		const mapped = MOMENT_TO_LDML_MAP[token];
+		if (isUndefined(mapped)) {
+			throw new Error(`[Tempo Dialects] Moment token '${token}' has no LDML equivalent.`);
+		}
+		return mapped;
 	});
 }
 
@@ -119,8 +124,13 @@ export function parseWithDialect(
 			return parseOracle(input, mask, options);
 		case DIALECT.Strftime:
 			return parseStrftime(input, mask, options);
-		case DIALECT.Moment:
-			return parseLdml(input, translateMomentToLdml(mask), options);
+		case DIALECT.Moment: {
+			try {
+				return parseLdml(input, translateMomentToLdml(mask), options);
+			} catch {
+				return undefined;
+			}
+		}
 		case DIALECT.Php:
 			return parsePhp(input, mask, options);
 		case DIALECT.Go:

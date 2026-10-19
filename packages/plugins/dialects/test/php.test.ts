@@ -104,6 +104,9 @@ describe('PHP Date Dialect Engine', () => {
 		expect(Number(formattedU)).toBeLessThan(0);
 		const roundTripped = Tempo.dialects.parse(formattedU, 'U', DIALECT.Php, { timeZone: 'UTC' });
 		expect(roundTripped.iso).toBe('1955-11-05T06:00:00Z');
+
+		const parsedCal = Tempo.dialects.parse('0', 'U', DIALECT.Php, { timeZone: 'UTC', calendar: 'gregory' });
+		expect(parsedCal.toDateTime().calendarId).toBe('gregory');
 	});
 
 	it('round-trips timezone identifiers containing hyphens and colons via e', () => {

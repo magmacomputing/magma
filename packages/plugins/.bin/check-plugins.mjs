@@ -88,7 +88,7 @@ function getChangelogInfo(pkgFullPath, branchVersion) {
 			return { exists: true, entryFound: true, isDated, isUnreleased, label };
 		}
 		if (UNRELEASED_HEADER_REGEX.test(content)) {
-			return { exists: true, entryFound: false, isDated: false, isUnreleased: true, label: 'Unreleased' };
+			return { exists: true, entryFound: false, isDated: false, isUnreleased: false, label: 'Unreleased' };
 		}
 		return { exists: true, entryFound: false, isDated: false, isUnreleased: false, label: null };
 	} catch {
@@ -212,10 +212,10 @@ async function main() {
 			if (isBumpedOverMain) {
 				if (changelog.isDated) {
 					status = `🚀 Ready to Publish (v${branchVersion})`;
-				} else if (changelog.isUnreleased) {
-					status = `⏳ Unreleased (v${branchVersion})`;
 				} else if (!changelog.entryFound) {
 					status = `📝 Missing CHANGELOG (v${branchVersion})`;
+				} else if (changelog.isUnreleased) {
+					status = `⏳ Unreleased (v${branchVersion})`;
 				} else {
 					status = `⏳ Unreleased (v${branchVersion})`;
 				}

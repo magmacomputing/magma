@@ -260,7 +260,8 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(resTokens.pattern).toBe('{yyyy}-{doy} {www} {dow:locale} {dow:locale}');
 
 		const resWeek = Tempo.dialects.explain('YYYY Y ww w', DIALECT.Ldml);
-		expect(resWeek.pattern).toBe('{yow:locale} {yow:locale} {woy:locale} {woy:locale:raw}');
+		expect(resWeek.pattern).toBe('{yow} {yow:locale} {woy} {woy:raw}');
+		expect(Tempo.dialects.explain('YY', DIALECT.Ldml).pattern).toBe('{yow:short}');
 
 		// Moment locale week-year gggg and gg
 		const resMomentWeek = Tempo.dialects.explain('gggg gg', DIALECT.Moment);

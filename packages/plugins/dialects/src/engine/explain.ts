@@ -7,9 +7,9 @@ export type { ExplainedToken, ExplainResult, ExplainOptions };
 
 const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	yyyy: { tempo: '{yyyy}', desc: '4-digit year' },
-	YYYY: { tempo: '{yow:locale}', desc: '4-digit week-numbering year (locale)' },
+	YYYY: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
 	yy: { tempo: '{yy}', desc: '2-digit year' },
-	YY: { tempo: '{yow:locale:short}', desc: '2-digit week-numbering year (locale)' },
+	YY: { tempo: '{yow:short}', desc: '2-digit ISO week-numbering year' },
 	Y: { tempo: '{yow:locale}', desc: 'Week-numbering year (locale)' },
 	y: { tempo: '{yyyy}', desc: 'Year' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
@@ -61,8 +61,8 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	e: { tempo: '{dow:locale}', desc: 'Locale-relative day of week (1-7)' },
 	II: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
 	I: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
-	ww: { tempo: '{woy:locale}', desc: 'Zero-padded locale week of year (01-53)' },
-	w: { tempo: '{woy:locale:raw}', desc: 'Unpadded locale week of year (1-53)' },
+	ww: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
+	w: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
 	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	QQQQ: { tempo: '{#quarter}', desc: 'Full quarter name (via #quarter Term)' },
 	qqqq: { tempo: '{#quarter}', desc: 'Full standalone quarter name (via #quarter Term)' },

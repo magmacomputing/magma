@@ -363,7 +363,8 @@ export function parsePhp(
 	if (epoch_sec) {
 		const sec = parseInt(epoch_sec, 10);
 		try {
-			return Temporal.Instant.fromEpochMilliseconds(sec * 1000).toZonedDateTimeISO(ctx.tz);
+			const isoZdt = Temporal.Instant.fromEpochMilliseconds(sec * 1000).toZonedDateTimeISO(ctx.tz);
+			return ctx.cal === 'iso8601' ? isoZdt : isoZdt.withCalendar(ctx.cal);
 		} catch {
 			return undefined;
 		}

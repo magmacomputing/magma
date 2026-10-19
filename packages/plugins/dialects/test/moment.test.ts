@@ -35,7 +35,7 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		expect(dt.format('E', { dialect: DIALECT.Moment })).toBe('6');
 
 		// Timezone offsets
-		const dtUtc = new Tempo('2026-10-24T15:30:45Z');
+		const dtUtc = new Tempo('2026-10-24T15:30:45Z', { timeZone: 'UTC' });
 		expect(dtUtc.format('Z', { dialect: DIALECT.Moment })).toBe('+00:00');
 		expect(dtUtc.format('ZZ', { dialect: DIALECT.Moment })).toBe('+0000');
 
@@ -79,5 +79,14 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 		expect(tQtr.isValid).toBe(true);
 		expect(tQtr.yy).toBe(2026);
 		expect(tQtr.mm).toBe(10);
+	});
+
+	it('rejects Moment tokens without LDML equivalents', () => {
+		const unsupported = ['dd', 'do', 'd', 'Mo', 'ww', 'w', 'gggg', 'gg', 'Wo', 'Qo', 'e'];
+		for (const token of unsupported) {
+			expect(() => dt.format(token, { dialect: DIALECT.Moment })).toThrow(/no LDML equivalent/);
+			const parsed = Tempo.dialects.parse('2026', token, DIALECT.Moment, { error: 'catch' });
+			expect(parsed.isValid).toBe(false);
+		}
 	});
 });

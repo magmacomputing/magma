@@ -513,8 +513,20 @@ export function parseOracle(
 		year = targetDate.year;
 		month = targetDate.month;
 		day = targetDate.day;
-	} else if (iyyy) {
-		year = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day);
+	} else {
+		if (iyyy) {
+			year = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day);
+		}
+		const dVal = getGroup('weekday_num');
+		if (dVal) {
+			const expectedDay = parseInt(dVal, 10);
+			try {
+				const plainDate = Temporal.PlainDate.from({ year, month, day }, { overflow: 'reject' });
+				if (plainDate.dayOfWeek !== expectedDay) return undefined;
+			} catch {
+				return undefined;
+			}
+		}
 	}
 
 	const time = resolveTimeComponents(getGroup);
