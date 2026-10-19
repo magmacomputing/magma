@@ -178,4 +178,36 @@ describe('Unicode LDML Parsing', () => {
 		expect(tAd.isValid).toBe(true);
 		expect(tAd.yy).toBe(2026);
 	});
+
+	it('validates day-of-year against explicit month, day, weekday, and quarter in LDML', () => {
+		// 2026-10-24 is DOY 297, Saturday (EEEE), Q4
+		const tValid = Tempo.fromFormat('2026-10-24 297', 'yyyy-MM-dd D');
+		expect(tValid.isValid).toBe(true);
+		expect(tValid.yy).toBe(2026);
+		expect(tValid.mm).toBe(10);
+		expect(tValid.dd).toBe(24);
+
+		// Month mismatch
+		const tMonthMismatch = Tempo.fromFormat('2026-11-24 297', 'yyyy-MM-dd D', { error: 'catch' });
+		expect(tMonthMismatch.isValid).toBe(false);
+
+		// Day mismatch
+		const tDayMismatch = Tempo.fromFormat('2026-10-25 297', 'yyyy-MM-dd D', { error: 'catch' });
+		expect(tDayMismatch.isValid).toBe(false);
+
+		// Weekday validation with DOY
+		const tWeekdayValid = Tempo.fromFormat('2026-297 Saturday', 'yyyy-D EEEE');
+		expect(tWeekdayValid.isValid).toBe(true);
+		expect(tWeekdayValid.dd).toBe(24);
+
+		const tWeekdayMismatch = Tempo.fromFormat('2026-297 Monday', 'yyyy-D EEEE', { error: 'catch' });
+		expect(tWeekdayMismatch.isValid).toBe(false);
+
+		// Quarter validation with DOY
+		const tQuarterValid = Tempo.fromFormat('2026-297 Q4', 'yyyy-D QQQ');
+		expect(tQuarterValid.isValid).toBe(true);
+
+		const tQuarterMismatch = Tempo.fromFormat('2026-297 Q1', 'yyyy-D QQQ', { error: 'catch' });
+		expect(tQuarterMismatch.isValid).toBe(false);
+	});
 });

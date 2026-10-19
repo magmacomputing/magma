@@ -474,13 +474,14 @@ export function parsePhp(
 			day = res.day;
 		}
 
+		const expectedDay = resolveIsoDay();
 		if (isoYearStr && (mm || mon_short || mon_long) && dd) {
-			year = resolveIsoCalendarYear(parseInt(isoYearStr, 10), month, day);
+			const cand = resolveIsoCalendarYear(parseInt(isoYearStr, 10), month, day, expectedDay);
+			if (cand === undefined) return undefined;
+			year = cand;
 		} else if (isoYearStr && !yyyy && !yy) {
 			year = parseInt(isoYearStr, 10);
 		}
-
-		const expectedDay = resolveIsoDay();
 		if (expectedDay !== undefined || daysInMonth) {
 			if (!validateResolvedDateFields({ year, month, day }, {
 				expectedDayOfWeek: expectedDay,

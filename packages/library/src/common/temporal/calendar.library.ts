@@ -253,19 +253,55 @@ export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1
 }
 
 /**
- * Resolves calendar year for IYYY-MM-DD format strings near ISO year boundaries.
+ * Resolves the calendar year corresponding to an ISO week-numbering year
+ * for a specified month and day, testing adjacent calendar-year candidates.
+ * Uses expectedDayOfWeek (1=Monday..7=Sunday) to disambiguate when available,
+ * and rejects ambiguous dates that match multiple candidate years without weekday disambiguation.
+ *
+ * @param targetIsoYear - The ISO week-numbering year
+ * @param month - The 1-indexed calendar month (1..12)
+ * @param day - The 1-indexed calendar day (1..31)
+ * @param expectedDayOfWeek - Optional 1-indexed ISO weekday (1=Monday..7=Sunday)
+ * @returns The resolved calendar year, or undefined if invalid or ambiguous
  */
-export function resolveIsoCalendarYear(targetIsoYear: number, month: number, day: number): number {
-	if (getIsoWeek({ year: targetIsoYear, month, day }).yearOfWeek === targetIsoYear)
-		return targetIsoYear;
+export function resolveIsoCalendarYear(
+	targetIsoYear: number,
+	month: number,
+	day: number,
+	expectedDayOfWeek?: number,
+): number | undefined {
+	const candidates =
+		month === 12 && day >= 29
+			? [targetIsoYear, targetIsoYear - 1]
+			: month === 1 && day <= 3
+				? [targetIsoYear, targetIsoYear + 1]
+				: [targetIsoYear];
 
-	if (month === 12 && day >= 29) {
-		if (getIsoWeek({ year: targetIsoYear - 1, month, day }).yearOfWeek === targetIsoYear)
-			return targetIsoYear - 1;
-	} else if (month === 1 && day <= 3) {
-		if (getIsoWeek({ year: targetIsoYear + 1, month, day }).yearOfWeek === targetIsoYear)
-			return targetIsoYear + 1;
+	const matching: number[] = [];
+
+	for (const y of candidates) {
+		try {
+			if (typeof Temporal !== 'undefined' && Temporal.PlainDate) {
+				const plainDate = Temporal.PlainDate.from({ year: y, month, day }, { overflow: 'reject' });
+				if (getIsoWeek(plainDate).yearOfWeek !== targetIsoYear) continue;
+				if (expectedDayOfWeek !== undefined && plainDate.dayOfWeek !== expectedDayOfWeek) continue;
+				matching.push(y);
+			} else {
+				const d = new Date(Date.UTC(y, month - 1, day));
+				d.setUTCFullYear(y);
+				if (d.getUTCFullYear() !== y || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) continue;
+				if (getIsoWeek({ year: y, month, day }).yearOfWeek !== targetIsoYear) continue;
+				const dayOfWeek = d.getUTCDay() || 7;
+				if (expectedDayOfWeek !== undefined && dayOfWeek !== expectedDayOfWeek) continue;
+				matching.push(y);
+			}
+		} catch {
+			continue;
+		}
 	}
-	return targetIsoYear;
+
+	return (matching.length === 1)
+		? matching[0]
+		: undefined;
 }
 

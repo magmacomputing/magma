@@ -168,4 +168,22 @@ describe('PHP Date Dialect Engine', () => {
 		const mismatchT = Tempo.dialects.parse('2026-10-24 30', 'Y-m-d t', DIALECT.Php, { error: 'catch' });
 		expect(mismatchT.isValid).toBe(false);
 	});
+
+	it('disambiguates or rejects ambiguous ISO week-year candidates with o-m-d', () => {
+		// Both 2014-12-29 (Monday, N=1) and 2015-12-29 (Tuesday, N=2) have ISO week-year 2015
+		const tAmbiguous = Tempo.dialects.parse('2015-12-29', 'o-m-d', DIALECT.Php, { error: 'catch' });
+		expect(tAmbiguous.isValid).toBe(false);
+
+		const tMonday = Tempo.dialects.parse('2015-12-29 1', 'o-m-d N', DIALECT.Php, { timeZone: 'UTC' });
+		expect(tMonday.isValid).toBe(true);
+		expect(tMonday.yy).toBe(2014);
+		expect(tMonday.mm).toBe(12);
+		expect(tMonday.dd).toBe(29);
+
+		const tTuesday = Tempo.dialects.parse('2015-12-29 2', 'o-m-d N', DIALECT.Php, { timeZone: 'UTC' });
+		expect(tTuesday.isValid).toBe(true);
+		expect(tTuesday.yy).toBe(2015);
+		expect(tTuesday.mm).toBe(12);
+		expect(tTuesday.dd).toBe(29);
+	});
 });

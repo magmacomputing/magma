@@ -617,6 +617,17 @@ export function parseLdml(
 	} else if (doy || doy_ord) {
 		const res = resolveDayOfYear(year, parseInt((doy || doy_ord)!, 10));
 		if (!res) return undefined;
+		if (mm) {
+			if (parseInt(mm, 10) !== res.month) return undefined;
+		} else if (month_name || month_abbr) {
+			const m = resolveMonth(month_name || month_abbr!);
+			if (!m || m !== res.month) return undefined;
+		}
+		if (dd) {
+			if (parseInt(dd, 10) !== res.day) return undefined;
+		} else if (dd_ord) {
+			if (parseInt(dd_ord, 10) !== res.day) return undefined;
+		}
 		month = res.month;
 		day = res.day;
 	} else {
@@ -642,30 +653,31 @@ export function parseLdml(
 		} else if (!yyyy && !yyVal && !mm && !month_name && !month_abbr && !qtrVal) {
 			day = today.day;
 		}
+	}
 
-		let expectedQuarter: number | undefined;
-		if (qtrVal && (mm || month_name || month_abbr)) {
-			const cleanQtr = qtrVal.replace(/\D/g, '');
-			const q = parseInt(cleanQtr, 10);
-			if (isNaN(q) || q < 1 || q > 4) return undefined;
-			expectedQuarter = q;
-		}
+	let expectedQuarter: number | undefined;
+	if (qtrVal && (mm || month_name || month_abbr || doy || doy_ord)) {
+		const cleanQtr = qtrVal.replace(/\D/g, '');
+		const q = parseInt(cleanQtr, 10);
+		if (isNaN(q) || q < 1 || q > 4) return undefined;
+		expectedQuarter = q;
+	}
 
-		let expectedDayOfWeek: number | undefined;
-		if (weekdayNum || weekdayName || weekdayAbbr) {
-			const expectedDay = resolveIsoDay();
-			if (expectedDay === undefined) return undefined;
-			expectedDayOfWeek = expectedDay;
-		}
+	let expectedDayOfWeek: number | undefined;
+	if (!yyyyWeek && !yyWeek && !weekOfYear && (weekdayNum || weekdayName || weekdayAbbr)) {
+		const expectedDay = resolveIsoDay();
+		if (expectedDay === undefined) return undefined;
+		expectedDayOfWeek = expectedDay;
+	}
 
-		if (expectedQuarter !== undefined || expectedDayOfWeek !== undefined) {
-			if (!validateResolvedDateFields({ year, month, day }, {
-				expectedQuarter,
-				expectedDayOfWeek,
-			})) {
-				return undefined;
-			}
-		}
+	const expectedDayOfYear = (doy || doy_ord) ? parseInt((doy || doy_ord)!, 10) : undefined;
+
+	if (!validateResolvedDateFields({ year, month, day }, {
+		expectedQuarter,
+		expectedDayOfWeek,
+		expectedDayOfYear,
+	})) {
+		return undefined;
 	}
 
 	const time = resolveTimeComponents(getGroup);

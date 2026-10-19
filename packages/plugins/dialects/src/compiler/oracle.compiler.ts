@@ -507,10 +507,14 @@ export function parseOracle(
 	const doy = getGroup('day_of_year');
 	if (dd) {
 		day = parseInt(dd, 10);
-	} else if (doy && !mm && !month_roman && !month_name && !month_abbr) {
+	} else if (doy) {
 		const res = resolveDayOfYear(year, parseInt(doy, 10));
 		if (!res) return undefined;
-		month = res.month;
+		if (mm || month_roman || month_name || month_abbr) {
+			if (res.month !== month) return undefined;
+		} else {
+			month = res.month;
+		}
 		day = res.day;
 	} else if (!hasYear && !mm && !month_roman && !month_name && !month_abbr) {
 		day = today.day;
@@ -541,8 +545,11 @@ export function parseOracle(
 		month = targetDate.month;
 		day = targetDate.day;
 	} else {
-		if (iyyy)
-			year = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day);
+		if (iyyy) {
+			const cand = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day, resolvedWeekday);
+			if (cand === undefined) return undefined;
+			year = cand;
+		}
 
 		if (resolvedWeekday !== undefined || doy) {
 			if (!validateResolvedDateFields({ year, month, day }, {

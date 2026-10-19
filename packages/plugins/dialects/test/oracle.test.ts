@@ -245,6 +245,37 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 		expect(parsed.dd).toBe(30);
 	});
 
+	it('resolves day of year (DDD) when month is present without day token', () => {
+		// 2026-10-24 is DOY 297
+		const tValid = Tempo.dialects.parse('2026-10 297', 'YYYY-MM DDD', 'oracle');
+		expect(tValid.isValid).toBe(true);
+		expect(tValid.yy).toBe(2026);
+		expect(tValid.mm).toBe(10);
+		expect(tValid.dd).toBe(24);
+
+		// Contradiction between MM and DDD
+		const tMismatch = Tempo.dialects.parse('2026-11 297', 'YYYY-MM DDD', 'oracle', { error: 'catch' });
+		expect(tMismatch.isValid).toBe(false);
+	});
+
+	it('disambiguates or rejects ambiguous ISO week-year candidates with IYYY-MM-DD', () => {
+		// Both 2014-12-29 (Monday, D=1) and 2015-12-29 (Tuesday, D=2) have ISO week-year 2015
+		const tAmbiguous = Tempo.dialects.parse('2015-12-29', 'IYYY-MM-DD', 'oracle', { error: 'catch' });
+		expect(tAmbiguous.isValid).toBe(false);
+
+		const tMonday = Tempo.dialects.parse('2015-12-29 1', 'IYYY-MM-DD D', 'oracle');
+		expect(tMonday.isValid).toBe(true);
+		expect(tMonday.yy).toBe(2014);
+		expect(tMonday.mm).toBe(12);
+		expect(tMonday.dd).toBe(29);
+
+		const tTuesday = Tempo.dialects.parse('2015-12-29 2', 'IYYY-MM-DD D', 'oracle');
+		expect(tTuesday.isValid).toBe(true);
+		expect(tTuesday.yy).toBe(2015);
+		expect(tTuesday.mm).toBe(12);
+		expect(tTuesday.dd).toBe(29);
+	});
+
 	it('parses two-digit years with YY (current century) and RR (pivot century)', () => {
 		const today2026 = new Tempo('2026-05-15T12:00:00Z').toDateTime();
 

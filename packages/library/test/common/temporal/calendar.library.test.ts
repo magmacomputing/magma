@@ -272,13 +272,24 @@ describe('calendar.library', () => {
 		expect(fromIsoWeek(2026, 1, 4)).toEqual({ year: 2026, month: 1, day: 1 });
 	});
 
-	test('resolveIsoCalendarYear handles year boundaries', () => {
+	test('resolveIsoCalendarYear handles year boundaries and disambiguation', () => {
 		// Dec 30 with targetIsoYear 2025 -> calendar year 2024
 		expect(resolveIsoCalendarYear(2025, 12, 30)).toBe(2024);
 		// Normal date inside the year
 		expect(resolveIsoCalendarYear(2026, 6, 15)).toBe(2026);
-		// Boundary dates that belong to targetIsoYear
-		expect(resolveIsoCalendarYear(2026, 1, 1)).toBe(2026);
-		expect(resolveIsoCalendarYear(2026, 12, 31)).toBe(2026);
+		// Boundary date that uniquely belongs to targetIsoYear
+		expect(resolveIsoCalendarYear(2025, 1, 1)).toBe(2025);
+		expect(resolveIsoCalendarYear(2025, 12, 31)).toBe(2024);
+
+		// Ambiguous date without expectedDayOfWeek returns undefined
+		expect(resolveIsoCalendarYear(2026, 1, 1)).toBeUndefined();
+		// Disambiguated by expectedDayOfWeek: 2026-01-01 is Thursday (4), 2027-01-01 is Friday (5)
+		expect(resolveIsoCalendarYear(2026, 1, 1, 4)).toBe(2026);
+		expect(resolveIsoCalendarYear(2026, 1, 1, 5)).toBe(2027);
+
+		// Ambiguous Dec 29: in 2015, Dec 29 is Tuesday (2, week 53 of 2015); in 2014, Dec 29 is Monday (1, week 1 of 2015)
+		expect(resolveIsoCalendarYear(2015, 12, 29)).toBeUndefined();
+		expect(resolveIsoCalendarYear(2015, 12, 29, 1)).toBe(2014);
+		expect(resolveIsoCalendarYear(2015, 12, 29, 2)).toBe(2015);
 	});
 });
