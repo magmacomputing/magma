@@ -333,3 +333,8 @@ export default {
 	LOCALE,
 	Enum,
 }
+
+/**
+ * @deprecated Deprecated in v4.7.0; to be removed in v5.0.0. Import from `@magmacomputing/tempo/library`.
+ */
+export { Enum } from '#library/enumerate.library.js';
