@@ -116,6 +116,12 @@ describe('Dialect Export', () => {
 		const resDotNetQuote = Tempo.dialects.export("{h12} o'clock", 'dotnet');
 		expect(resDotNetQuote.pattern).toBe("hh' o\\'clock'");
 
+		const resDotNetSingle = Tempo.dialects.export('{dd:raw}', 'dotnet');
+		expect(resDotNetSingle.pattern).toBe('%d');
+
+		const resDotNetSingleH = Tempo.dialects.export('{h12:raw}', 'dotnet');
+		expect(resDotNetSingleH.pattern).toBe('%h');
+
 		const resSheet = Tempo.dialects.export('{yyyy}-{mm}-{dd} {h12}:{mi}:{ss} {mer:upper}', 'sheet');
 		expect(resSheet.dialect).toBe(DIALECT.Sheet);
 		expect(resSheet.pattern).toBe('yyyy-mm-dd hh:mm:ss AM/PM');

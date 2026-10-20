@@ -62,7 +62,7 @@ describe('Spreadsheet (Excel / Google Sheets) Format Dialect', () => {
 
 		it('formats cumulative elapsed-time tokens ([h], [m], [s])', () => {
 			// 15 hours, 30 minutes, 45 seconds = 15 hours, 930 minutes, 55845 seconds
-			const tElapsed = new Tempo('2026-10-24T15:30:45.000Z');
+			const tElapsed = new Tempo('2026-10-24T15:30:45.000Z', { timeZone: 'UTC' });
 			expect(tElapsed.dialects.sheet('[h]:mm:ss')).toBe('15:30:45');
 			expect(tElapsed.dialects.sheet('[hh]:mm:ss')).toBe('15:30:45');
 			expect(tElapsed.dialects.sheet('[m]:ss')).toBe('930:45');

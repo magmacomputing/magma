@@ -358,6 +358,8 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 			}
 		}
 	}
+	if (dialect === DIALECT.DotNet && pattern.length === 1 && tokens.some((t) => t.supported))
+		pattern = `%${pattern}`;
 
 	const result: ExportResult = {
 		dialect,

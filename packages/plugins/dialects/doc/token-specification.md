@@ -56,17 +56,18 @@ For a high-level overview across the most common date-formatting paradigms, the 
 | **Minute (padded)** | Zero-padded minute (`00`–`59`) | `mm` | `mm` | `%M` | `mm` | `{mi}` |
 | **Second (padded)** | Zero-padded second (`00`–`59`) | `ss` | `ss` | `%S` | `ss` | `{ss}` |
 | **Milliseconds** | 3-digit fractional seconds (`123`) | `SSS` | `SSS` | `%3f`* | `fff` | `{ms}` |
-| **Microseconds** | 6-digit fractional seconds (`123456`) | `SSSSSS` | `SSSSSS` | `%f`* | `ffffff` | `{ff:6}` |
+| **Microseconds** | 6-digit fractional seconds (`123456`) | `SSSSSS` | `SSSSSS`* | `%f`* | `ffffff` | `{ff:6}` |
 | **Timezone Offset** | Fixed offset with colon (`+08:00`) | `ZZZZZ` / `XXX` | `Z` | N/A | `zzz` | `{tz:offset}` |
 | **Timezone (Kind-based)** | Dynamic offset or Z based on `DateTime.Kind` | N/A | N/A | N/A | `K`* | `{tz:offset:utc}` |
 | **Compact Offset** | Portable offset without colon (`+0800`) | `ZZ` | `ZZ` | `%z` | N/A | `{tz:offsetcompact}` |
 | **Timezone Abbreviation** | Localized abbreviation (`CET`) | `z` | `z` | `%Z` | N/A | `{tz:short}` |
-| **Unix Epoch** | Seconds since Unix epoch | N/A | `X` | `%s` | N/A | `{ts}` |
+| **Unix Epoch** | Seconds since Unix epoch | N/A | `X` | `%s`* | N/A | `{ts}` |
 
 > [!NOTE]
 > `*` **Standard Variations & Extensions**:
 > - **LDML (`YYYY`, `ww`, `e`, `c`)**: In Unicode UTS #35, week-numbering year, week of year, and numeric day of week reflect territory/locale calendar conventions; deterministic ISO 8601 behavior requires explicit ISO settings.
-> - **POSIX `strftime` (`%-m`, `%-H`, `%-I`, `%f`)**: Modifiers omitting padding (`%-`) are GNU/Linux extensions; `%z` is the POSIX portable standard for compact offsets. POSIX does not specify subseconds; `%f` is Python's 6-digit microsecond specifier, while `%3f`, `%6f`, and `%9f` are Tempo extensions.
+> - **Moment / Day.js (`SSSSSS`)**: Moment formats up to 3 fractional digits (milliseconds) and zero-pads additional digits; standard Day.js only formats up to `SSS` without plugins.
+> - **POSIX `strftime` (`%-m`, `%-H`, `%-I`, `%f`, `%s`)**: Modifiers omitting padding (`%-`) and `%s` (seconds since Unix epoch) are GNU/BSD extensions not specified in the standard POSIX `strftime` specification; `%z` is the POSIX portable standard for compact offsets. POSIX does not specify subseconds; `%f` is Python's 6-digit microsecond specifier, while `%3f`, `%6f`, and `%9f` are Tempo extensions.
 > - **.NET `K`**: Unlike fixed-offset `zzz` (`+08:00`), `K` produces an offset for `DateTimeKind.Local`, `Z` for `DateTimeKind.Utc`, and an empty string for `DateTimeKind.Unspecified`.
 
 ---

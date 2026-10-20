@@ -41,7 +41,7 @@ describe('.NET Date and Time Format Dialect', () => {
 			expect(t.dialects.dotnet('ss.FFF')).toBe('45.123');
 			expect(t.dialects.dotnet('ss.FFFFFFF')).toBe('45.1234567');
 
-			const tZero = new Tempo('2026-10-24T15:30:45.000Z');
+			const tZero = new Tempo('2026-10-24T15:30:45.000Z', { timeZone: 'UTC' });
 			expect(tZero.dialects.dotnet('ss.FFF')).toBe('45');
 			expect(tZero.dialects.dotnet('yyyy-MM-dd HH:mm:ss.FFF')).toBe('2026-10-24 15:30:45');
 		});
