@@ -111,10 +111,16 @@ export function compileDotNetFormatter(rawMask: string): FormatterFn {
 
 	while ((match = RE_DOTNET_TOKEN.exec(mask)) !== null) {
 		const index = match.index;
-		if (index > lastIndex) {
-			const literal = mask.slice(lastIndex, index);
-			parts.push(() => literal);
+		let literal = index > lastIndex ? mask.slice(lastIndex, index) : '';
+		let dotBeforeF = false;
+		if (match[4] !== undefined && /^F{1,7}$/.test(match[4])) {
+			if (literal.endsWith('.')) {
+				dotBeforeF = true;
+				literal = literal.slice(0, -1);
+			}
 		}
+		if (literal.length > 0)
+			parts.push(() => literal);
 
 		if (match[1] !== undefined) {
 			// Single quoted literal
@@ -216,26 +222,20 @@ export function compileDotNetFormatter(rawMask: string): FormatterFn {
 					parts.push((z) => getTicks7(z).slice(0, 1));
 					break;
 				case 'FFFFFFF':
-					parts.push((z) => getTicks7(z).replace(/0+$/, ''));
-					break;
 				case 'FFFFFF':
-					parts.push((z) => getTicks7(z).slice(0, 6).replace(/0+$/, ''));
-					break;
 				case 'FFFFF':
-					parts.push((z) => getTicks7(z).slice(0, 5).replace(/0+$/, ''));
-					break;
 				case 'FFFF':
-					parts.push((z) => getTicks7(z).slice(0, 4).replace(/0+$/, ''));
-					break;
 				case 'FFF':
-					parts.push((z) => getTicks7(z).slice(0, 3).replace(/0+$/, ''));
-					break;
 				case 'FF':
-					parts.push((z) => getTicks7(z).slice(0, 2).replace(/0+$/, ''));
+				case 'F': {
+					const len = token.length;
+					const prefix = dotBeforeF ? '.' : '';
+					parts.push((z) => {
+						const frac = (len === 7 ? getTicks7(z) : getTicks7(z).slice(0, len)).replace(/0+$/, '');
+						return frac.length > 0 ? prefix + frac : '';
+					});
 					break;
-				case 'F':
-					parts.push((z) => getTicks7(z).slice(0, 1).replace(/0+$/, ''));
-					break;
+				}
 				case 'tt':
 					parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
 					break;
@@ -310,8 +310,15 @@ export function compileDotNetParser(rawMask: string): RegExp {
 
 	while ((match = RE_DOTNET_TOKEN.exec(mask)) !== null) {
 		const index = match.index;
-		if (index > lastIndex) {
-			const literal = mask.slice(lastIndex, index);
+		let literal = index > lastIndex ? mask.slice(lastIndex, index) : '';
+		let dotBeforeF = false;
+		if (match[4] !== undefined && /^F{1,7}$/.test(match[4])) {
+			if (literal.endsWith('.')) {
+				dotBeforeF = true;
+				literal = literal.slice(0, -1);
+			}
+		}
+		if (literal.length > 0) {
 			pattern += escapeRegex(literal);
 		}
 
@@ -402,9 +409,11 @@ export function compileDotNetParser(rawMask: string): RegExp {
 				case 'FFFF':
 				case 'FFF':
 				case 'FF':
-				case 'F':
-					pattern += `(?:${group('us', `\\d{1,${token.length}}`)})?`;
+				case 'F': {
+					const dot = dotBeforeF ? '\\.' : '';
+					pattern += `(?:${dot}${group('us', `\\d{1,${token.length}}`)})?`;
 					break;
+				}
 				case 'tt':
 					pattern += group('mer', 'AM|PM|am|pm');
 					break;

@@ -38,6 +38,12 @@ describe('.NET Date and Time Format Dialect', () => {
 			expect(t.dialects.dotnet('ss.fff')).toBe('45.123');
 			expect(t.dialects.dotnet('ss.ffffff')).toBe('45.123456');
 			expect(t.dialects.dotnet('ss.fffffff')).toBe('45.1234567');
+			expect(t.dialects.dotnet('ss.FFF')).toBe('45.123');
+			expect(t.dialects.dotnet('ss.FFFFFFF')).toBe('45.1234567');
+
+			const tZero = new Tempo('2026-10-24T15:30:45.000Z');
+			expect(tZero.dialects.dotnet('ss.FFF')).toBe('45');
+			expect(tZero.dialects.dotnet('yyyy-MM-dd HH:mm:ss.FFF')).toBe('2026-10-24 15:30:45');
 		});
 
 		it('formats time zone offsets and K specifier', () => {
@@ -118,6 +124,18 @@ describe('.NET Date and Time Format Dialect', () => {
 			expect(parsed.hh).toBe(9);
 			expect(parsed.mi).toBe(5);
 			expect(parsed.ss).toBe(2);
+		});
+
+		it('parses optional fractional seconds with F specifiers with and without decimal point', () => {
+			const parsedWithFrac = Tempo.dialects.parse('2026-10-24 15:30:45.123', 'yyyy-MM-dd HH:mm:ss.FFF', DIALECT.DotNet);
+			expect(parsedWithFrac.isValid).toBe(true);
+			expect(parsedWithFrac.ss).toBe(45);
+			expect(parsedWithFrac.ms).toBe(123);
+
+			const parsedWithoutFrac = Tempo.dialects.parse('2026-10-24 15:30:45', 'yyyy-MM-dd HH:mm:ss.FFF', DIALECT.DotNet);
+			expect(parsedWithoutFrac.isValid).toBe(true);
+			expect(parsedWithoutFrac.ss).toBe(45);
+			expect(parsedWithoutFrac.ms).toBe(0);
 		});
 
 		it('parses textual month and weekday names', () => {
