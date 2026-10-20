@@ -18,7 +18,7 @@ describe('MySQL / MariaDB Format & Parse Dialect', () => {
 			expect(dt.dialects.mysql('%m')).toBe('10');
 			expect(dt.dialects.mysql('%c')).toBe('10');
 
-			const jan = new Tempo('2026-01-05T00:00:00Z');
+			const jan = new Tempo('2026-01-05T00:00:00Z', { timeZone: 'UTC' });
 			expect(jan.dialects.mysql('%c')).toBe('1');
 			expect(jan.dialects.mysql('%m')).toBe('01');
 		});
@@ -28,12 +28,12 @@ describe('MySQL / MariaDB Format & Parse Dialect', () => {
 			expect(dt.dialects.mysql('%e')).toBe('24');
 			expect(dt.dialects.mysql('%D')).toBe('24th');
 
-			const jan = new Tempo('2026-01-01T00:00:00Z');
+			const jan = new Tempo('2026-01-01T00:00:00Z', { timeZone: 'UTC' });
 			expect(jan.dialects.mysql('%d')).toBe('01');
 			expect(jan.dialects.mysql('%e')).toBe('1');
 			expect(jan.dialects.mysql('%D')).toBe('1st');
 
-			const jan2 = new Tempo('2026-01-02T00:00:00Z');
+			const jan2 = new Tempo('2026-01-02T00:00:00Z', { timeZone: 'UTC' });
 			expect(jan2.dialects.mysql('%D')).toBe('2nd');
 		});
 
@@ -44,7 +44,7 @@ describe('MySQL / MariaDB Format & Parse Dialect', () => {
 			expect(dt.dialects.mysql('%I')).toBe('03');
 			expect(dt.dialects.mysql('%l')).toBe('3');
 
-			const morning = new Tempo('2026-10-24T09:05:00Z');
+			const morning = new Tempo('2026-10-24T09:05:00Z', { timeZone: 'UTC' });
 			expect(morning.dialects.mysql('%H')).toBe('09');
 			expect(morning.dialects.mysql('%k')).toBe('9');
 			expect(morning.dialects.mysql('%h')).toBe('09');
@@ -62,16 +62,38 @@ describe('MySQL / MariaDB Format & Parse Dialect', () => {
 			expect(dt.dialects.mysql('%a')).toBe('Sat');
 			expect(dt.dialects.mysql('%w')).toBe('6');
 
-			const sun = new Tempo('2026-10-25T00:00:00Z');
+			const sun = new Tempo('2026-10-25T00:00:00Z', { timeZone: 'UTC' });
 			expect(sun.dialects.mysql('%w')).toBe('0');
 			expect(sun.dialects.mysql('%W')).toBe('Sunday');
 		});
 
+		it('formats MySQL microsecond specifier (%f)', () => {
+			expect(dt.dialects.mysql('%f')).toBe('123456');
+			const dtLowMicro = new Tempo('2026-10-24T15:30:45.005020Z', { timeZone: 'UTC' });
+			expect(dtLowMicro.dialects.mysql('%f')).toBe('005020');
+		});
+
 		it('formats MySQL ISO week (%v) and ISO week-year (%x)', () => {
 			// 2024-12-30 is ISO week 1 of 2025
-			const tEdge = new Tempo('2024-12-30T10:00:00Z');
+			const tEdge = new Tempo('2024-12-30T10:00:00Z', { timeZone: 'UTC' });
 			expect(tEdge.dialects.mysql('%v')).toBe('01');
 			expect(tEdge.dialects.mysql('%x')).toBe('2025');
+		});
+
+		it('formats MySQL Mode 0 week (%U), Mode 1 week (%u), and Mode 2 week/year (%V, %X)', () => {
+			// 2026-01-01 is Thursday
+			const jan1 = new Tempo('2026-01-01T00:00:00Z', { timeZone: 'UTC' });
+			// %U: Sunday-based, days before first Sunday are week 00
+			expect(jan1.dialects.mysql('%U')).toBe('00');
+			// %u: Monday-based, 4+ days in week 1 -> Jan 1 is week 01
+			expect(jan1.dialects.mysql('%u')).toBe('01');
+			// %V / %X: Sunday-based, week 1 begins on first Sunday -> Jan 1 (Thu) belongs to week 52 of 2025
+			expect(jan1.dialects.mysql('%X-%V')).toBe('2025-52');
+
+			// 2026-01-04 is Sunday -> first Sunday of 2026
+			const jan4 = new Tempo('2026-01-04T00:00:00Z', { timeZone: 'UTC' });
+			expect(jan4.dialects.mysql('%U')).toBe('01');
+			expect(jan4.dialects.mysql('%X-%V')).toBe('2026-01');
 		});
 
 		it('supports mariadb alias and auto-detects %i as MySQL', () => {

@@ -499,6 +499,137 @@ t.format('{tz:offset:compact:ss:z}');// "Z" (if UTC) or "+100000"
 | **`{woy:cal}`** | Transitory format token in v4.7.0 | Deprecated in favor of native `{ww}` |
 | **`{wom}`** | Week of Month (`1`–`5`, Oracle `W`, LDML `W`) | Week of Month (`1`–`5`) |
 
+---
+
+## 9. Code Formatting Standards & Semicolon Policy Evaluation (ECMAScript Standards Compliance)
+
+### Classification
+* **Type:** Tooling, Code Formatting & Syntactic Consistency Policy.
+* **Target Milestone:** `v5.0.0` (evaluated and executed on the v5 development branch).
+* **Affected Scope:** All monorepo packages, documentation themes, and configuration files.
+
+---
+
+### Context & Problem Statement
+
+During v4 maintenance, discrepancies were noted where VitePress documentation theme files (e.g. `.vitepress/theme/index.ts`) omitted semicolons on `import` statements following Vue/Vite defaults, whereas Tempo core, utility library, and dialect plugin source code consistently terminated statements with semicolons.
+
+This raised the question of whether to alter import statement punctuation across the monorepo to align with community conventions or formal language standards.
+
+---
+
+### Technical & Standards Analysis
+
+1. **Formal ECMAScript Grammar (ECMA-262 § 16.2.2)**:
+   - In the official ECMAScript language specification, `ImportDeclaration` formally terminates with a semicolon:
+     $$\text{ImportDeclaration} : \text{import}\ \text{ImportClause}\ \text{FromClause}\ \mathbf{;}$$
+     $$\text{ImportDeclaration} : \text{import}\ \text{ModuleSpecifier}\ \mathbf{;}$$
+   - Omitting semicolons relies on Automatic Semicolon Insertion (ASI), which serves as an error-correction mechanism in the grammar rather than the primary syntactic specification.
+   - Major standards references (TC39 proposals, official TypeScript Handbook, MDN Web Docs, Google TypeScript Style Guide) terminate `import` declarations with semicolons.
+
+2. **Rejection of Mixed Punctuation ("Imports without semicolons, statements with semicolons")**:
+   - Having `import` lines without semicolons while regular statements (`const`, function calls, returns) use semicolons within the same file creates an inconsistent anti-pattern flagged by ESLint, Biome, and CodeRabbit.
+   - Punctuation policy must be uniform file-wide and repository-wide.
+
+3. **Blast Radius on Maintenance Branches**:
+   - Over 600 files currently use standard semicolons on `import` statements.
+   - Bulk formatting sweeps on `maintenance/v4` would generate excessive `git blame` churn and merge friction. Bulk syntactic adjustments are therefore deferred to the `v5.0.0` milestone.
+
+---
+
+### Decision Pathways for the v5 Branch
+
+When work begins on the v5 branch, a formal decision will be selected and automated via tooling:
+
+* **Option A (Formal ECMAScript Compliance - Recommended)**:
+  - Enforce explicit semicolons on all statements (including `import` and `export` declarations) across the entire monorepo (`semi: true`).
+  - Add missing semicolons to VitePress documentation theme files to eliminate one-off style anomalies.
+  - Aligns with standard TypeScript, Prettier defaults, and ECMA-262 grammar.
+
+* **Option B (Full "No-Semi" Style)**:
+  - If transitioning to an omission style (Vue / Vite / StandardJS style), enforce `semi: false` uniformly across *all* statements and files via an automated formatter (Prettier / Biome), avoiding half-and-half styling.
+
+### Action Items for v5 Execution
+- [ ] Adopt repository-wide formatter configuration (`.prettierrc` or `biome.json`) enforcing the chosen semicolon rule.
+- [ ] Run automated formatting in an isolated, dedicated commit on the v5 branch.
+- [ ] Update [`.agents/rules/styleGuide.md`](file:///home/michael/Project/magma/.agents/rules/styleGuide.md) to codify the policy.
+
+---
+
+## 10. Type-Guard Semantics: Renaming `isDefined` to `isNonNull` and Introducing Strict `isDefined`
+
+### Classification
+* **Type:** Breaking API & Type-Guard Semantic Correction.
+* **Target Milestone:** `v5.0.0`
+* **Affected API:** `@magmacomputing/library` (`#library/assertion.library.js`), `@magmacomputing/tempo/library`
+
+---
+
+### Behavior Comparison
+
+| Aspect | Current Behavior (`v4.x`) | New Behavior (`v5.0.0`) |
+| :--- | :--- | :--- |
+| **`isDefined(undefined)`** | `false` | `false` |
+| **`isDefined(null)`** | `false` ⚠️ (Narrows to `NonNullable<T>`) | `true`  (Narrows to `Exclude<T, undefined>`) |
+| **`isDefined(0)` / `isDefined('')`** | `true` | `true` |
+| **`isUndefined(null)`** | `false` | `false` |
+| **`isNonNull(null)`** | *N/A (Did not exist)* | `false` (Narrows to `NonNullable<T>`) |
+| **Logical Symmetry** | `isDefined` is **NOT** the opposite of `isUndefined` | `!isDefined(x)` $\iff$ `isUndefined(x)` (Strict symmetry) |
+
+---
+
+### Context & Problem Statement
+
+In the v4.x utility stack (`packages/library/src/common/primitives/assertion.library.ts:L153-L154`):
+```typescript
+export const isUndefined = (obj: unknown): obj is undefined => obj === undefined || isType<undefined>(obj, 'Void', 'Empty');
+export const isDefined = <T>(obj: T): obj is NonNullable<T> => obj !== null && obj !== undefined && !isNullish(obj);
+```
+
+While `isUndefined(val)` checks purely whether `val` is undefined, `isDefined(val)` checks whether `val` is neither `null` nor `undefined` (`NonNullable<T>`).
+
+This asymmetry creates counter-intuitive behavior:
+* For `val = null`, `isUndefined(null)` returns `false`, yet `isDefined(null)` *also* returns `false`.
+* `null` is trapped in a semantic void where it is neither defined nor undefined.
+* Developers checking if an optional configuration property was explicitly passed (even as `null`) get false negatives when using `isDefined()`.
+
+---
+
+### Migration Strategy & Phasing for v5
+
+To eliminate this semantic mismatch without subtle regressions across the codebase:
+
+1. **Step 1: Introduce `isNonNull`**
+   - Add `isNonNull` (and/or `isNonNullish`) to `assertion.library.ts`:
+     ```typescript
+     export const isNonNull = <T>(obj: T): obj is NonNullable<T> =>
+       obj !== null && obj !== undefined && !isNullish(obj);
+     ```
+   - This explicitly captures the contract `val !== null && val !== undefined`.
+
+2. **Step 2: Monorepo-Wide Global Replacement (`isDefined` $\to$ `isNonNull`)**
+   - Perform a global replacement of `isDefined` $\to$ `isNonNull` across all existing call sites in Tempo Core, plugins, and tests.
+   - Because existing code was authored under the assumption that `null` is rejected, migrating call sites to `isNonNull` guarantees 100% behavioral equivalence and zero regression risk.
+
+3. **Step 3: Introduce Strict `isDefined`**
+   - Redefine `isDefined` to be the exact logical inverse of `isUndefined`:
+     ```typescript
+     export const isDefined = <T>(obj: T): obj is Exclude<T, undefined> =>
+       obj !== undefined && !isType<undefined>(obj, 'Void', 'Empty');
+     ```
+   - Now, `isDefined(null)` evaluates to `true`, and `!isDefined(x)` strictly matches `isUndefined(x)`.
+
+---
+
+### Action Items for v5 Execution
+- [ ] Export `isNonNull` from `packages/library/src/common/primitives/assertion.library.ts` and re-export via `#library/assertion.library.js`.
+- [ ] Perform monorepo sweep: replace existing `isDefined` usage with `isNonNull`.
+- [ ] Redefine `isDefined` as `Exclude<T, undefined>` (`obj !== undefined`).
+- [ ] Add unit test assertions in `packages/library/test` verifying `isDefined(null) === true` and `isNonNull(null) === false`.
+- [ ] Document the type-guard migration in the v5 Upgrade Guide.
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-import { evaluate, hasKey, isObject, isUndefined } from '@magmacomputing/tempo/library';
+import { evaluate, hasKey, isObject, isUndefined, ValueOf } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import { formatLdml, parseLdml } from '../compiler/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js';
@@ -17,8 +17,8 @@ const RE_LDML_CONFLICT = /\b(?:yyyy|mm|ss)\b/;
 const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b|\b2006[/-]0?1[/-]0?2\b/;
 const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
 const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ]/;
-const RE_DOTNET_DETECTION = /\b(?:tt|dddd|zzz|ffff|FFFF)\b|^[Oo]$/;
-const RE_SHEET_DETECTION = /\[[hms]+\]|\bmmmmm\b|\b(?:AM\/PM|am\/pm|A\/P|a\/p)\b/i;
+const RE_DOTNET_DETECTION = /\b(?:tt|dddd|ffff|FFFF)\b|^[Oo]$/;
+const RE_SHEET_DETECTION = /\[[hHmMsS]+\]|\bmmmmm\b|\b(?:AM\/PM|am\/pm|A\/P|a\/p)\b/;
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
@@ -41,8 +41,8 @@ export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
 	if (RE_STRFTIME_SPECIFIERS.test(clean)) return DIALECT.Strftime;
 	if (!RE_LDML_CONFLICT.test(clean) && RE_GO_DETECTION.test(clean)) return DIALECT.Go;
 	if (RE_ORACLE_DETECTION.test(clean) || (!RE_LDML_CONFLICT.test(clean) && RE_ORACLE_UPPER.test(clean))) return DIALECT.Oracle;
-	if (RE_DOTNET_DETECTION.test(clean)) return DIALECT.DotNet;
 	if (RE_SHEET_DETECTION.test(clean)) return DIALECT.Sheet;
+	if (RE_DOTNET_DETECTION.test(clean)) return DIALECT.DotNet;
 
 	return DIALECT.Ldml;
 }
@@ -52,10 +52,10 @@ export const MOMENT_TOKENS = [
 	'DDDD', 'DDDo', 'DDD', 'DD', 'Do', 'D',
 	'dddd', 'ddd', 'dd', 'do', 'd',
 	'Mo', 'WW', 'Wo', 'W', 'ww', 'w', 'Qo',
-	'ZZ', 'Z', 'E', 'e', 'A', 'a',
+	'ZZ', 'Z', 'E', 'e', 'A', 'a', 'X', 'x',
 ] as const;
 
-export type MomentToken = (typeof MOMENT_TOKENS)[number];
+export type MomentToken = ValueOf<typeof MOMENT_TOKENS>;
 
 export const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
 	YYYY: 'yyyy',
@@ -76,7 +76,7 @@ export const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
 	Z: 'ZZZZZ',
 	E: 'e',
 	A: 'aa',
-	a: 'a',
+	a: 'aaa',
 };
 
 const RE_MOMENT_TRANSLATE = new RegExp(`\\[([^\\]]+)\\]|(${MOMENT_TOKENS.join('|')})`, 'g');

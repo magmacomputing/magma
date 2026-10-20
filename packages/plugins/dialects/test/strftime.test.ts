@@ -53,6 +53,13 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(t2.yy).toBe(2026);
 		expect(t2.mm).toBe(10);
 		expect(t2.dd).toBe(24);
+
+		// Rejects contradictory weekday names (%A, %a)
+		const invalidWeekdayName = Tempo.dialects.parse('October 24, 2026 (Sunday)', '%B %d, %Y (%A)', DIALECT.Strftime, { error: 'catch' });
+		expect(invalidWeekdayName.isValid).toBe(false);
+
+		const invalidWeekdayAbbr = Tempo.dialects.parse('Sun, 24 Oct 2026', '%a, %d %b %Y', DIALECT.Strftime, { error: 'catch' });
+		expect(invalidWeekdayAbbr.isValid).toBe(false);
 	});
 
 	it('parses strings formatted with strftime specifiers', () => {
@@ -231,6 +238,52 @@ describe('POSIX strftime Formatting & Parsing', () => {
 
 		const mismatchW = Tempo.dialects.parse('2026-10-24 40', '%Y-%m-%d %W', DIALECT.Strftime, { error: 'catch' });
 		expect(mismatchW.isValid).toBe(false);
+	});
+
+	it('round-trips formatStrftime and parseStrftime using %Y %U %w and %W inputs across multiple dates and years', () => {
+		const sampleDates = [
+			'2026-10-24', // Standard Saturday
+			'2026-01-02', // Week 0 (Friday before first Sunday)
+			'2026-01-04', // First Sunday (Week 1 start)
+			'2026-12-31', // Last day of year (Thursday)
+			'2024-02-29', // Leap year leap day
+			'2024-01-01', // Year starting on Monday
+			'2023-01-01', // Year starting on Sunday (Week 1 start for %U)
+			'2025-06-15', // Mid-year Sunday
+		];
+
+		for (const isoDate of sampleDates) {
+			const t = new Tempo(`${isoDate}T00:00:00Z`, { timeZone: 'UTC' });
+
+			// %Y %U %w (Sunday-based week + Sunday=0 weekday)
+			const formattedU = t.format('%Y %U %w', { dialect: DIALECT.Strftime });
+			const parsedU = Tempo.dialects.parse(formattedU, '%Y %U %w', DIALECT.Strftime, { timeZone: 'UTC' });
+			expect(parsedU.isValid).toBe(true);
+			expect(parsedU.format('{yyyy}-{mm}-{dd}')).toBe(isoDate);
+
+			// %Y %W %w (Monday-based week + Sunday=0 weekday)
+			const formattedWw = t.format('%Y %W %w', { dialect: DIALECT.Strftime });
+			const parsedWw = Tempo.dialects.parse(formattedWw, '%Y %W %w', DIALECT.Strftime, { timeZone: 'UTC' });
+			expect(parsedWw.isValid).toBe(true);
+			expect(parsedWw.format('{yyyy}-{mm}-{dd}')).toBe(isoDate);
+
+			// %Y %W %u (Monday-based week + Monday=1 weekday)
+			const formattedWu = t.format('%Y %W %u', { dialect: DIALECT.Strftime });
+			const parsedWu = Tempo.dialects.parse(formattedWu, '%Y %W %u', DIALECT.Strftime, { timeZone: 'UTC' });
+			expect(parsedWu.isValid).toBe(true);
+			expect(parsedWu.format('{yyyy}-{mm}-{dd}')).toBe(isoDate);
+		}
+
+		// Rejects results outside the requested year or invalid week/weekday combinations
+		const outOfYearU = Tempo.dialects.parse('2026 54 0', '%Y %U %w', DIALECT.Strftime, { error: 'catch' });
+		expect(outOfYearU.isValid).toBe(false);
+
+		const outOfYearW = Tempo.dialects.parse('2026 54 1', '%Y %W %u', DIALECT.Strftime, { error: 'catch' });
+		expect(outOfYearW.isValid).toBe(false);
+
+		// In 2023, Jan 1 is Sunday (Week 1 for %U), so Week 0 Sunday does not exist
+		const invalidWeek0Sun = Tempo.dialects.parse('2023 00 0', '%Y %U %w', DIALECT.Strftime, { error: 'catch' });
+		expect(invalidWeek0Sun.isValid).toBe(false);
 	});
 });
 

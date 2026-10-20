@@ -12,7 +12,7 @@ describe('Unicode LDML Formatting', () => {
 	});
 
 	it('formats 12-hour clocks with AM/PM markers', () => {
-		expect(dt.format('hh:mm:ss a', { dialect: DIALECT.Ldml })).toBe('03:30:45 pm');
+		expect(dt.format('hh:mm:ss a', { dialect: DIALECT.Ldml })).toBe('03:30:45 PM');
 		expect(dt.format('h:mm aa', { dialect: DIALECT.Ldml })).toBe('3:30 PM');
 		expect(dt.format('h:mm aaa', { dialect: DIALECT.Ldml })).toBe('3:30 pm');
 	});
@@ -37,6 +37,10 @@ describe('Unicode LDML Formatting', () => {
 		expect(tEdge.format('Y', { dialect: DIALECT.Ldml })).toBe('2025');
 		expect(tEdge.format('ww', { dialect: DIALECT.Ldml })).toBe('01');
 		expect(tEdge.format('w', { dialect: DIALECT.Ldml })).toBe('1');
+
+		// With non-ISO calendar, week-year and week-number normalize to ISO calendar
+		const hebrewEdge = new Tempo('2024-12-30T10:00:00', { calendar: 'hebrew', timeZone: 'UTC' });
+		expect(hebrewEdge.format("YYYY-'W'ww", { dialect: DIALECT.Ldml })).toBe('2025-W01');
 	});
 
 	it('formats day-of-year (DDD), ordinal day (Do), and era (G, GGGG)', () => {

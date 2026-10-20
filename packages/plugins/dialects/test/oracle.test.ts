@@ -232,6 +232,23 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 		expect(tMismatch.isValid).toBe(false);
 	});
 
+	it('validates explicit day fields against IW and rejects contradictory weeks', () => {
+		// 2026-10-24 is Saturday of ISO week 43
+		const tValid = Tempo.dialects.parse('2026-10-24 43', 'YYYY-MM-DD IW', 'oracle');
+		expect(tValid.isValid).toBe(true);
+		expect(tValid.yy).toBe(2026);
+		expect(tValid.mm).toBe(10);
+		expect(tValid.dd).toBe(24);
+
+		// Contradictory week 42 with 2026-10-24 should be rejected
+		const tMismatchWeek = Tempo.dialects.parse('2026-10-24 42', 'YYYY-MM-DD IW', 'oracle', { error: 'catch' });
+		expect(tMismatchWeek.isValid).toBe(false);
+
+		// Contradictory weekday with IW should also be rejected
+		const tMismatchWeekday = Tempo.dialects.parse('2026-10-24 43 1', 'YYYY-MM-DD IW D', 'oracle', { error: 'catch' });
+		expect(tMismatchWeekday.isValid).toBe(false);
+	});
+
 	it('preserves round-tripping near ISO year boundaries with IYYY-MM-DD', () => {
 		// 2024-12-30 is Monday of ISO week 1, 2025 -> formats to "2025-12-30"
 		const orig = new Tempo('2024-12-30T12:00:00Z');

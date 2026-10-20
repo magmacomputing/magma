@@ -5,11 +5,13 @@ import {
 	type DialectOptions,
 	escapeRegex,
 	resolveMonth,
+	resolveWeekday,
 	createGroupExtractor,
 	resolveParseContext,
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
 	validateResolvedDateFields,
+	getSundayBasedWeek,
 } from './shared.compiler.js';
 
 const STRFTIME_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
@@ -158,11 +160,7 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				});
 				break;
 			case 'U':
-				parts.push((z) => {
-					const w = z.dayOfWeek === 7 ? 0 : z.dayOfWeek;
-					const u = Math.floor((z.dayOfYear - 1 - w + 7) / 7);
-					return formatNum(u);
-				});
+				parts.push((z) => formatNum(getSundayBasedWeek(z.year, z.dayOfYear, z.dayOfWeek)));
 				break;
 			case 'W':
 				parts.push((z) => {
@@ -438,6 +436,8 @@ export function parseStrftime(
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
 		const weekday_u = getGroup('weekday_u');
 		const weekday_w = getGroup('weekday_w');
+		const weekday_name = getGroup('weekday_name');
+		const weekday_abbr = getGroup('weekday_abbr');
 		let isoDay = 1;
 		if (weekday_u) {
 			const u = parseInt(weekday_u, 10);
@@ -447,6 +447,14 @@ export function parseStrftime(
 			const w = parseInt(weekday_w, 10);
 			if (w < 0 || w > 6) return undefined;
 			isoDay = w === 0 ? 7 : w;
+		} else if (weekday_name || weekday_abbr) {
+			const rw = resolveWeekday(weekday_name || weekday_abbr!);
+			if (rw === undefined) return undefined;
+			isoDay = rw;
+		}
+		if ((weekday_name || weekday_abbr) && (weekday_u || weekday_w)) {
+			const rw = resolveWeekday(weekday_name || weekday_abbr!);
+			if (rw === undefined || rw !== isoDay) return undefined;
 		}
 		const isoYear = iyyy ? parseInt(iyyy, 10) : (iyyVal ? resolveTwoDigitYear(parseInt(iyyVal, 10), ctx.pivot, ctx.today) : year);
 		const res = fromIsoWeek(isoYear, isoWeek, isoDay);
@@ -457,6 +465,76 @@ export function parseStrftime(
 		year = res.year;
 		month = res.month;
 		day = res.day;
+	} else if (getGroup('week_u') && !mm && !month_name && !month_abbr && !dd) {
+		const uVal = parseInt(getGroup('week_u')!, 10);
+		if (uVal < 0 || uVal > 53) return undefined;
+		const weekday_u = getGroup('weekday_u');
+		const weekday_w = getGroup('weekday_w');
+		const weekday_name = getGroup('weekday_name');
+		const weekday_abbr = getGroup('weekday_abbr');
+		let wdaySun = 0;
+		if (weekday_w) {
+			const w = parseInt(weekday_w, 10);
+			if (w < 0 || w > 6) return undefined;
+			wdaySun = w;
+		} else if (weekday_u) {
+			const u = parseInt(weekday_u, 10);
+			if (u < 1 || u > 7) return undefined;
+			wdaySun = u % 7;
+		} else if (weekday_name || weekday_abbr) {
+			const rw = resolveWeekday(weekday_name || weekday_abbr!);
+			if (rw === undefined) return undefined;
+			wdaySun = rw % 7;
+		}
+		const jan1Iso = new Temporal.PlainDate(year, 1, 1).dayOfWeek;
+		const jan1Sun = jan1Iso % 7;
+		const firstSundayYday = (7 - jan1Sun) % 7;
+		const yday = firstSundayYday + (uVal - 1) * 7 + wdaySun;
+		const res = resolveDayOfYear(year, yday + 1);
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
+
+		const expectedDayOfWeek = weekday_u
+			? parseInt(weekday_u, 10)
+			: (weekday_w ? (parseInt(weekday_w, 10) === 0 ? 7 : parseInt(weekday_w, 10)) : undefined);
+		if (!validateResolvedDateFields({ year, month, day }, { expectedDayOfWeek, expectedWeekU: uVal, expectedWeekW: getGroup('week_w') ? parseInt(getGroup('week_w')!, 10) : undefined }))
+			return undefined;
+	} else if (getGroup('week_w') && !mm && !month_name && !month_abbr && !dd) {
+		const wVal = parseInt(getGroup('week_w')!, 10);
+		if (wVal < 0 || wVal > 53) return undefined;
+		const weekday_u = getGroup('weekday_u');
+		const weekday_w = getGroup('weekday_w');
+		const weekday_name = getGroup('weekday_name');
+		const weekday_abbr = getGroup('weekday_abbr');
+		let wdayMon = 0;
+		if (weekday_u) {
+			const u = parseInt(weekday_u, 10);
+			if (u < 1 || u > 7) return undefined;
+			wdayMon = u - 1;
+		} else if (weekday_w) {
+			const w = parseInt(weekday_w, 10);
+			if (w < 0 || w > 6) return undefined;
+			wdayMon = w === 0 ? 6 : w - 1;
+		} else if (weekday_name || weekday_abbr) {
+			const rw = resolveWeekday(weekday_name || weekday_abbr!);
+			if (rw === undefined) return undefined;
+			wdayMon = rw - 1;
+		}
+		const jan1Iso = new Temporal.PlainDate(year, 1, 1).dayOfWeek;
+		const jan1Mon = jan1Iso - 1;
+		const firstMondayYday = (7 - jan1Mon) % 7;
+		const yday = firstMondayYday + (wVal - 1) * 7 + wdayMon;
+		const res = resolveDayOfYear(year, yday + 1);
+		if (!res) return undefined;
+		month = res.month;
+		day = res.day;
+
+		const expectedDayOfWeek = weekday_u
+			? parseInt(weekday_u, 10)
+			: (weekday_w ? (parseInt(weekday_w, 10) === 0 ? 7 : parseInt(weekday_w, 10)) : undefined);
+		if (!validateResolvedDateFields({ year, month, day }, { expectedDayOfWeek, expectedWeekU: getGroup('week_u') ? parseInt(getGroup('week_u')!, 10) : undefined, expectedWeekW: wVal }))
+			return undefined;
 	} else {
 		if (mm) month = parseInt(mm, 10);
 		else if (month_name || month_abbr) {
@@ -508,10 +586,25 @@ export function parseStrftime(
 		const weekday_w = getGroup('weekday_w');
 		const week_u = getGroup('week_u');
 		const week_w = getGroup('week_w');
-		if (weekday_u || weekday_w || week_u || week_w) {
-			const expectedDayOfWeek = weekday_u
-				? parseInt(weekday_u, 10)
-				: (weekday_w ? (parseInt(weekday_w, 10) === 0 ? 7 : parseInt(weekday_w, 10)) : undefined);
+		const weekday_name = getGroup('weekday_name');
+		const weekday_abbr = getGroup('weekday_abbr');
+		if (weekday_u || weekday_w || week_u || week_w || weekday_name || weekday_abbr) {
+			let expectedDayOfWeek: number | undefined;
+			if (weekday_u) {
+				const u = parseInt(weekday_u, 10);
+				if (u < 1 || u > 7) return undefined;
+				expectedDayOfWeek = u;
+			} else if (weekday_w) {
+				const w = parseInt(weekday_w, 10);
+				if (w < 0 || w > 6) return undefined;
+				expectedDayOfWeek = w === 0 ? 7 : w;
+			}
+			if (weekday_name || weekday_abbr) {
+				const resolved = resolveWeekday(weekday_name || weekday_abbr!);
+				if (resolved === undefined) return undefined;
+				if (expectedDayOfWeek !== undefined && expectedDayOfWeek !== resolved) return undefined;
+				expectedDayOfWeek = resolved;
+			}
 			const expectedWeekU = week_u ? parseInt(week_u, 10) : undefined;
 			const expectedWeekW = week_w ? parseInt(week_w, 10) : undefined;
 			if (!validateResolvedDateFields({ year, month, day }, { expectedDayOfWeek, expectedWeekU, expectedWeekW }))

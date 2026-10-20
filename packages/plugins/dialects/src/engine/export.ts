@@ -3,15 +3,15 @@ import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import type { ExportedToken, ExportResult } from '../types.js';
 
 interface DialectTarget {
-	readonly ldml?: string;
-	readonly strftime?: string;
-	readonly oracle?: string;
-	readonly moment?: string;
-	readonly php?: string;
-	readonly go?: string;
-	readonly mysql?: string;
-	readonly dotnet?: string;
-	readonly sheet?: string;
+	readonly ldml?: string | undefined;
+	readonly strftime?: string | undefined;
+	readonly oracle?: string | undefined;
+	readonly moment?: string | undefined;
+	readonly php?: string | undefined;
+	readonly go?: string | undefined;
+	readonly mysql?: string | undefined;
+	readonly dotnet?: string | undefined;
+	readonly sheet?: string | undefined;
 	readonly desc: string;
 }
 
@@ -21,100 +21,104 @@ interface DialectTarget {
  */
 const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	// Year
-	yyyy: { ldml: 'yyyy', strftime: '%Y', oracle: 'YYYY', moment: 'YYYY', php: 'Y', go: '2006', desc: '4-digit year' },
+	yyyy: { ldml: 'yyyy', strftime: '%Y', oracle: 'YYYY', moment: 'YYYY', php: 'Y', go: '2006', mysql: '%Y', dotnet: 'yyyy', sheet: 'yyyy', desc: '4-digit year' },
 	'yyyy:-3': { oracle: 'YYY', desc: 'Last 3 digits of year' },
 	'yyyy:-1': { oracle: 'Y', desc: 'Last digit of year' },
-	yy: { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', desc: '2-digit year' },
-	'yy:raw': { strftime: '%-y', desc: 'Unpadded 2-digit year (0-99)' },
-	yow: { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', desc: '4-digit ISO week-numbering year' },
+	yy: { ldml: 'yy', strftime: '%y', oracle: 'YY', moment: 'YY', php: 'y', go: '06', mysql: '%y', dotnet: 'yy', sheet: 'yy', desc: '2-digit year' },
+	'yy:raw': { strftime: '%-y', dotnet: 'y', desc: 'Unpadded 2-digit year (0-99)' },
+	yow: { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', mysql: '%x', desc: '4-digit ISO week-numbering year' },
 	'yow:-3': { oracle: 'IYY', desc: 'Last 3 digits of ISO week-numbering year' },
 	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
 	'yow:short': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
 	'yow:-1': { oracle: 'I', desc: 'Last digit of ISO week-numbering year' },
 	'yow:raw': { ldml: 'Y', desc: 'Unpadded ISO week-numbering year' },
+	'yow:locale': { ldml: 'YYYY', strftime: '%G', oracle: 'IYYY', moment: 'GGGG', php: 'o', mysql: '%x', desc: '4-digit week-numbering year' },
+	'yow:locale:short': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit week-numbering year' },
 
 	// Month
-	mm: { ldml: 'MM', strftime: '%m', oracle: 'MM', moment: 'MM', php: 'm', go: '01', desc: 'Zero-padded month (01-12)' },
-	'mm:raw': { ldml: 'M', strftime: '%-m', oracle: 'FMMM', moment: 'M', php: 'n', go: '1', desc: 'Unpadded month number (1-12)' },
-	mon: { ldml: 'MMMM', strftime: '%B', oracle: 'Month', moment: 'MMMM', php: 'F', go: 'January', desc: 'Full month name capitalized (e.g. October)' },
-	'mon:upper': { ldml: 'MMMM', strftime: '%B', oracle: 'MONTH', moment: 'MMMM', php: 'F', go: 'January', desc: 'Full month name uppercase (e.g. OCTOBER)' },
-	'mon:lower': { ldml: 'MMMM', strftime: '%B', oracle: 'month', moment: 'MMMM', php: 'F', go: 'January', desc: 'Full month name lowercase (e.g. october)' },
-	mmm: { ldml: 'MMM', strftime: '%b', oracle: 'Mon', moment: 'MMM', php: 'M', go: 'Jan', desc: 'Short month name capitalized (e.g. Oct)' },
-	'mmm:upper': { ldml: 'MMM', strftime: '%b', oracle: 'MON', moment: 'MMM', php: 'M', go: 'Jan', desc: 'Short month name uppercase (e.g. OCT)' },
-	'mmm:lower': { ldml: 'MMM', strftime: '%b', oracle: 'mon', moment: 'MMM', php: 'M', go: 'Jan', desc: 'Short month name lowercase (e.g. oct)' },
+	mm: { ldml: 'MM', strftime: '%m', oracle: 'MM', moment: 'MM', php: 'm', go: '01', mysql: '%m', dotnet: 'MM', sheet: 'mm', desc: 'Zero-padded month (01-12)' },
+	'mm:raw': { ldml: 'M', strftime: '%-m', oracle: 'FMMMFM', moment: 'M', php: 'n', go: '1', mysql: '%c', dotnet: 'M', sheet: 'm', desc: 'Unpadded month number (1-12)' },
+	mon: { ldml: 'MMMM', strftime: '%B', oracle: 'Month', moment: 'MMMM', php: 'F', go: 'January', mysql: '%M', dotnet: 'MMMM', sheet: 'mmmm', desc: 'Full month name capitalized (e.g. October)' },
+	'mon:upper': { oracle: 'MONTH', desc: 'Full month name uppercase (e.g. OCTOBER)' },
+	'mon:lower': { oracle: 'month', desc: 'Full month name lowercase (e.g. october)' },
+	mmm: { ldml: 'MMM', strftime: '%b', oracle: 'Mon', moment: 'MMM', php: 'M', go: 'Jan', mysql: '%b', dotnet: 'MMM', sheet: 'mmm', desc: 'Short month name capitalized (e.g. Oct)' },
+	'mmm:upper': { oracle: 'MON', desc: 'Short month name uppercase (e.g. OCT)' },
+	'mmm:lower': { oracle: 'mon', desc: 'Short month name lowercase (e.g. oct)' },
 	'mm:roman': { oracle: 'RM', desc: 'Roman numeral month in uppercase (I-XII)' },
 	'mm:roman:lower': { oracle: 'rm', desc: 'Roman numeral month in lowercase (i-xii)' },
 
 	// Day of Month
-	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', desc: 'Zero-padded day of month (01-31)' },
-	'dd:raw': { ldml: 'd', strftime: '%-d', oracle: 'FMDD', moment: 'D', php: 'j', go: '2', desc: 'Unpadded day of month (1-31)' },
+	dd: { ldml: 'dd', strftime: '%d', oracle: 'DD', moment: 'DD', php: 'd', go: '02', mysql: '%d', dotnet: 'dd', sheet: 'dd', desc: 'Zero-padded day of month (01-31)' },
+	'dd:raw': { ldml: 'd', strftime: '%-d', oracle: 'FMDDFM', moment: 'D', php: 'j', go: '2', mysql: '%e', dotnet: 'd', sheet: 'd', desc: 'Unpadded day of month (1-31)' },
 	'dd:space': { strftime: '%e', go: '_2', desc: 'Space-padded day of month ( 1-31)' },
-	'dd:ord': { oracle: 'DDTH', moment: 'Do', desc: 'Day of month with ordinal suffix' },
+	'dd:ord': { oracle: 'DDTH', moment: 'Do', mysql: '%D', desc: 'Day of month with ordinal suffix' },
 
 	// Day of Year
-	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', desc: 'Day of year (001-366)' },
-	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDD', moment: 'DDD', desc: 'Unpadded day of year (1-366)' },
+	doy: { ldml: 'DDD', strftime: '%j', oracle: 'DDD', moment: 'DDDD', go: '002', mysql: '%j', desc: 'Day of year (001-366)' },
+	'doy:raw': { ldml: 'D', strftime: '%-j', oracle: 'FMDDDFM', moment: 'DDD', desc: 'Unpadded day of year (1-366)' },
 	'doy:space': { go: '__2', desc: 'Space-padded day of year (  1-366)' },
 	'doy:ord': { moment: 'DDDo', desc: 'Day of year with ordinal suffix' },
 
 	// Weekday
-	wkd: { ldml: 'EEEE', strftime: '%A', oracle: 'Day', moment: 'dddd', php: 'l', go: 'Monday', desc: 'Full weekday name capitalized' },
-	'wkd:upper': { ldml: 'EEEE', strftime: '%A', oracle: 'DAY', moment: 'dddd', php: 'l', go: 'Monday', desc: 'Full weekday name uppercase' },
-	'wkd:lower': { ldml: 'EEEE', strftime: '%A', oracle: 'day', moment: 'dddd', php: 'l', go: 'Monday', desc: 'Full weekday name lowercase' },
-	www: { ldml: 'EEE', strftime: '%a', oracle: 'Dy', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name capitalized' },
-	'www:upper': { ldml: 'EEE', strftime: '%a', oracle: 'DY', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name uppercase' },
-	'www:lower': { ldml: 'EEE', strftime: '%a', oracle: 'dy', moment: 'ddd', php: 'D', go: 'Mon', desc: 'Short weekday name lowercase' },
-	dow: { ldml: 'e', strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Day of week number (1-7)' },
-	'dow:raw': { ldml: 'c', strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Unpadded day of week number (1-7)' },
-	'dow:locale': { ldml: 'e', strftime: '%w', oracle: 'D', moment: 'd', php: 'w', desc: 'Territory-dependent day of week' },
+	wkd: { ldml: 'EEEE', strftime: '%A', oracle: 'Day', moment: 'dddd', php: 'l', go: 'Monday', mysql: '%W', dotnet: 'dddd', sheet: 'dddd', desc: 'Full weekday name capitalized' },
+	'wkd:upper': { oracle: 'DAY', desc: 'Full weekday name uppercase' },
+	'wkd:lower': { oracle: 'day', desc: 'Full weekday name lowercase' },
+	www: { ldml: 'EEE', strftime: '%a', oracle: 'Dy', moment: 'ddd', php: 'D', go: 'Mon', mysql: '%a', dotnet: 'ddd', sheet: 'ddd', desc: 'Short weekday name capitalized' },
+	'www:upper': { oracle: 'DY', desc: 'Short weekday name uppercase' },
+	'www:lower': { oracle: 'dy', desc: 'Short weekday name lowercase' },
+	dow: { strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Day of week number (1-7)' },
+	'dow:raw': { strftime: '%u', oracle: 'D', moment: 'E', php: 'N', desc: 'Unpadded day of week number (1-7)' },
+	'dow:locale': { ldml: 'e', moment: 'e', oracle: 'D', desc: 'Territory-dependent day of week' },
 	'dow:ord': { moment: 'do', desc: 'Day of week with ordinal suffix' },
-	'dow:raw:0': { strftime: '%w', moment: 'd', php: 'w', desc: '0-indexed unpadded day of week (0-6)' },
+	'dow:raw:0': { strftime: '%w', moment: 'd', php: 'w', mysql: '%w', desc: '0-indexed unpadded day of week (0-6)' },
 
 	// Week of Year
-	woy: { ldml: 'II', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', desc: 'Zero-padded ISO week of year (01-53)' },
-	'woy:raw': { ldml: 'I', strftime: '%-V', oracle: 'FMIW', moment: 'W', desc: 'Unpadded ISO week of year (1-53)' },
+	woy: { ldml: 'II', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', mysql: '%v', desc: 'Zero-padded ISO week of year (01-53)' },
+	'woy:raw': { ldml: 'I', strftime: '%-V', oracle: 'FMIWFM', moment: 'W', desc: 'Unpadded ISO week of year (1-53)' },
+	'woy:locale': { ldml: 'ww', strftime: '%V', oracle: 'IW', moment: 'WW', php: 'W', mysql: '%v', desc: 'Zero-padded week of year' },
+	'woy:locale:raw': { ldml: 'w', strftime: '%-V', oracle: 'FMIWFM', moment: 'W', desc: 'Unpadded week of year' },
 	'woy:ord': { moment: 'Wo', desc: 'ISO week of year with ordinal suffix' },
 
 	// Era
-	era: { ldml: 'G', desc: 'Abbreviated localized era (e.g. AD)' },
-	'era:long': { ldml: 'GGGG', desc: 'Full localized era (e.g. Anno Domini)' },
+	era: { ldml: 'G', dotnet: 'gg', desc: 'Abbreviated localized era (e.g. AD)' },
+	'era:long': { ldml: 'GGGG', dotnet: 'gg', desc: 'Full localized era (e.g. Anno Domini)' },
 
 	// Clock & Time
-	hh: { ldml: 'HH', strftime: '%H', oracle: 'HH24', moment: 'HH', php: 'H', go: '15', desc: '24-hour clock zero-padded (00-23)' },
-	'hh:raw': { ldml: 'H', strftime: '%-H', oracle: 'FMHH24', moment: 'H', php: 'G', desc: '24-hour clock unpadded (0-23)' },
+	hh: { ldml: 'HH', strftime: '%H', oracle: 'HH24', moment: 'HH', php: 'H', go: '15', mysql: '%H', dotnet: 'HH', sheet: 'hh', desc: '24-hour clock zero-padded (00-23)' },
+	'hh:raw': { ldml: 'H', strftime: '%-H', oracle: 'FMHH24FM', moment: 'H', php: 'G', mysql: '%k', dotnet: 'H', sheet: 'h', desc: '24-hour clock unpadded (0-23)' },
 	'hh:space': { strftime: '%k', desc: 'Space-padded 24-hour clock ( 0-23)' },
-	h12: { ldml: 'hh', strftime: '%I', oracle: 'HH12', moment: 'hh', php: 'h', go: '03', desc: '12-hour clock zero-padded (01-12)' },
-	'h12:raw': { ldml: 'h', strftime: '%-I', oracle: 'FMHH12', moment: 'h', php: 'g', go: '3', desc: '12-hour clock unpadded (1-12)' },
+	h12: { ldml: 'hh', strftime: '%I', oracle: 'HH12', moment: 'hh', php: 'h', go: '03', mysql: '%h', dotnet: 'hh', sheet: 'hh', desc: '12-hour clock zero-padded (01-12)' },
+	'h12:raw': { ldml: 'h', strftime: '%-I', oracle: 'FMHH12FM', moment: 'h', php: 'g', go: '3', mysql: '%l', dotnet: 'h', sheet: 'h', desc: '12-hour clock unpadded (1-12)' },
 	'h12:space': { strftime: '%l', desc: 'Space-padded 12-hour clock ( 1-12)' },
-	mi: { ldml: 'mm', strftime: '%M', oracle: 'MI', moment: 'mm', php: 'i', go: '04', desc: 'Zero-padded minute (00-59)' },
-	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMI', moment: 'm', go: '4', desc: 'Unpadded minute (0-59)' },
-	ss: { ldml: 'ss', strftime: '%S', oracle: 'SS', moment: 'ss', php: 's', go: '05', desc: 'Zero-padded second (00-59)' },
-	'ss:raw': { ldml: 's', strftime: '%-S', oracle: 'FMSS', moment: 's', go: '5', desc: 'Unpadded second (0-59)' },
+	mi: { ldml: 'mm', strftime: '%M', oracle: 'MI', moment: 'mm', php: 'i', go: '04', mysql: '%i', dotnet: 'mm', sheet: 'mm', desc: 'Zero-padded minute (00-59)' },
+	'mi:raw': { ldml: 'm', strftime: '%-M', oracle: 'FMMIFM', moment: 'm', go: '4', dotnet: 'm', sheet: 'm', desc: 'Unpadded minute (0-59)' },
+	ss: { ldml: 'ss', strftime: '%S', oracle: 'SS', moment: 'ss', php: 's', go: '05', mysql: '%s', dotnet: 'ss', sheet: 'ss', desc: 'Zero-padded second (00-59)' },
+	'ss:raw': { ldml: 's', strftime: '%-S', oracle: 'FMSSFM', moment: 's', go: '5', dotnet: 's', sheet: 's', desc: 'Unpadded second (0-59)' },
 
 	// Fractional Seconds
-	ms: { ldml: 'SSS', strftime: '%3f', oracle: 'FF3', moment: 'SSS', php: 'v', go: '.000', desc: 'Millisecond (000-999)' },
-	'ff:1': { ldml: 'S', strftime: '%1f', oracle: 'FF1', moment: 'S', desc: 'Fractional tenths (0-9)' },
-	'ff:2': { ldml: 'SS', strftime: '%2f', oracle: 'FF2', moment: 'SS', desc: 'Fractional hundredths (00-99)' },
+	ms: { ldml: 'SSS', strftime: '%3f', oracle: 'FF3', moment: 'SSS', php: 'v', go: '.000', dotnet: 'fff', sheet: '.000', desc: 'Millisecond (000-999)' },
+	'ff:1': { ldml: 'S', strftime: '%1f', oracle: 'FF1', moment: 'S', dotnet: 'f', sheet: '.0', desc: 'Fractional tenths (0-9)' },
+	'ff:2': { ldml: 'SS', strftime: '%2f', oracle: 'FF2', moment: 'SS', dotnet: 'ff', sheet: '.00', desc: 'Fractional hundredths (00-99)' },
 	'ff:9': { ldml: 'SSSSSSSSS', strftime: '%9f', oracle: 'FF9', moment: 'SSSSSSSSS', go: '.000000000', desc: 'Nanoseconds (000000000-999999999)' },
-	ff: { ldml: 'SSSSSS', strftime: '%f', oracle: 'FF6', moment: 'SSSSSS', php: 'u', go: '.000000', desc: 'Microseconds (000000-999999)' },
+	ff: { ldml: 'SSSSSS', strftime: '%f', oracle: 'FF6', moment: 'SSSSSS', php: 'u', go: '.000000', mysql: '%f', dotnet: 'ffffff', desc: 'Microseconds (000000-999999)' },
 
 	// Meridiem
-	mer: { ldml: 'a', strftime: '%P', oracle: 'am', moment: 'a', php: 'a', go: 'pm', desc: 'am/pm lowercase' },
-	'mer:upper': { ldml: 'aa', strftime: '%p', oracle: 'AM', moment: 'A', php: 'A', go: 'PM', desc: 'AM/PM uppercase' },
-	'mer:dots': { ldml: 'a', strftime: '%P', oracle: 'a.m.', moment: 'a', php: 'a', go: 'pm', desc: 'a.m./p.m. lowercase with dots' },
-	'mer:upper:dots': { ldml: 'aa', strftime: '%p', oracle: 'A.M.', moment: 'A', php: 'A', go: 'PM', desc: 'A.M./P.M. uppercase with dots' },
+	mer: { ldml: 'aaa', strftime: '%P', oracle: 'am', moment: 'a', php: 'a', go: 'pm', mysql: '%p', dotnet: 'tt', sheet: 'am/pm', desc: 'am/pm lowercase' },
+	'mer:upper': { ldml: 'aa', strftime: '%p', oracle: 'AM', moment: 'A', php: 'A', go: 'PM', mysql: '%p', dotnet: 'tt', sheet: 'AM/PM', desc: 'AM/PM uppercase' },
+	'mer:dots': { oracle: 'a.m.', desc: 'a.m./p.m. lowercase with dots' },
+	'mer:upper:dots': { oracle: 'A.M.', desc: 'A.M./P.M. uppercase with dots' },
 
 	// Timezone
 	tz: { ldml: 'zzzz', strftime: '%Z', oracle: 'TZR', moment: 'z', php: 'e', go: 'MST', desc: 'Time zone region name / identifier' },
 	'tz:short': { ldml: 'z', strftime: '%Z', oracle: 'TZD', moment: 'zz', php: 'T', go: 'MST', desc: 'Time zone daylight / short abbreviation' },
-	'tz:offset': { ldml: 'ZZZZZ', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
+	'tz:offset': { ldml: 'ZZZZZ', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', dotnet: 'zzz', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
 	'tz:longoffset': { ldml: 'ZZZZ', desc: 'Long localized GMT offset (e.g. GMT+08:00)' },
-	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
-	'tz:offset:hh': { oracle: 'TZH', go: '-07', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
+	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', dotnet: 'zz', desc: 'Compact time zone offset (e.g. +0800)' },
+	'tz:offset:hh': { oracle: 'TZH', go: '-07', dotnet: 'zz', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
 	'tz:offset:mi': { oracle: 'TZM', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
 	'tz:offset:ss': { go: '-07:00:00', desc: 'ISO-8601 time zone offset with seconds (e.g. +08:00:00)' },
 	'tz:offsetcompact:ss': { go: '-070000', desc: 'Compact time zone offset with seconds (e.g. +080000)' },
-	'tz:offset:utc': { go: 'Z07:00', desc: 'UTC Z or ISO-8601 offset' },
+	'tz:offset:utc': { go: 'Z07:00', dotnet: 'K', desc: 'UTC Z or ISO-8601 offset' },
 	'tz:offset:short:utc': { go: 'Z07', desc: 'UTC Z or hour-only numeric offset' },
 	'tz:offsetcompact:utc': { go: 'Z0700', desc: 'UTC Z or compact offset' },
 	'tz:offset:ss:utc': { go: 'Z07:00:00', desc: 'UTC Z or ISO-8601 offset with seconds' },
@@ -129,19 +133,19 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	jj: { oracle: 'J', desc: 'Astronomical Julian day number' },
 	'ss:day': { oracle: 'SSSSS', desc: 'Seconds past midnight (0-86399)' },
 	'ss:day:5': { oracle: 'SSSSS', desc: 'Zero-padded 5-digit seconds past midnight (00000-86399)' },
-	'ss:day:raw': { oracle: 'FMSSSSS', desc: 'Unpadded seconds past midnight (0-86399)' },
+	'ss:day:raw': { oracle: 'FMSSSSSFM', desc: 'Unpadded seconds past midnight (0-86399)' },
 	'woy:cal': { oracle: 'WW', desc: 'Week of year starting on Jan 1 (01-53)' },
-	'woy:cal:raw': { oracle: 'FMWW', desc: 'Unpadded week of year starting on Jan 1 (1-53)' },
+	'woy:cal:raw': { oracle: 'FMWWFM', desc: 'Unpadded week of year starting on Jan 1 (1-53)' },
 	wom: { ldml: 'W', oracle: 'W', desc: 'Week of month (1-5)' },
-	'wom:raw': { oracle: 'FMW', desc: 'Unpadded week of month (1-5)' },
+	'wom:raw': { oracle: 'FMWFM', desc: 'Unpadded week of month (1-5)' },
 	dim: { php: 't', desc: 'Days in the given month (28-31)' },
 	cen: { strftime: '%C', desc: 'Century (00-99)' },
 	'doy:0': { php: 'z', desc: '0-indexed day of year (0-365)' },
 	'doy:zero': { php: 'z', desc: '0-indexed day of year (0-365)' },
 	'doy:raw:0': { php: 'z', desc: '0-indexed unpadded day of year (0-365)' },
 	'doy:raw:zero': { php: 'z', desc: '0-indexed unpadded day of year (0-365)' },
-	'dow:0': { strftime: '%w', moment: 'd', php: 'w', desc: 'Day of week with Sunday as 0 (0-6)' },
-	'dow:zero': { strftime: '%w', moment: 'd', php: 'w', desc: 'Day of week with Sunday as 0 (0-6)' },
+	'dow:0': { strftime: '%w', moment: 'd', php: 'w', mysql: '%w', desc: 'Day of week with Sunday as 0 (0-6)' },
+	'dow:zero': { strftime: '%w', moment: 'd', php: 'w', mysql: '%w', desc: 'Day of week with Sunday as 0 (0-6)' },
 
 	// Timestamps & Terms
 	ts: { strftime: '%s', moment: 'X', php: 'U', desc: 'Unix timestamp in seconds' },
@@ -173,6 +177,11 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	'woy:jan1': 'woy:cal',
 	'woy:jan1:raw': 'woy:cal:raw',
 	yw: 'yow',
+	'yow:locale': 'yow:locale',
+	'yow:locale:short': 'yow:locale:short',
+	'yow:locale:-2': 'yow:locale:short',
+	'woy:locale': 'woy:locale',
+	'woy:locale:raw': 'woy:locale:raw',
 	month: 'mm:raw',
 	day: 'dd:raw',
 	wy: 'woy',
@@ -231,6 +240,7 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 			return str.replace(RE_ORACLE_LITERAL, (m) => `"${m}"`);
 
 		case DIALECT.Strftime:
+		case DIALECT.Mysql:
 			return str.replace(RE_PERCENT, '%%');
 
 		case DIALECT.Php:
@@ -240,7 +250,9 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 			return str;
 
 		case DIALECT.DotNet:
-			return RE_LDML_LITERAL.test(str) ? `'${str}'` : str;
+			return RE_LDML_LITERAL.test(str)
+				? `'${str.replace(RE_SINGLE_QUOTE, "\\'")}'`
+				: str;
 
 		case DIALECT.Sheet:
 			return RE_LDML_LITERAL.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
@@ -287,8 +299,14 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 		} else if (isDefined(match[2])) {
 			const rawKey = match[2].trim();
 			const fullToken = `{${rawKey}}`;
-			const canonicalKey = V4_EXPORT_ALIASES[rawKey] ?? V4_EXPORT_ALIASES[rawKey.toLowerCase()] ?? rawKey;
-			let info = TEMPO_TO_DIALECT_MAP[canonicalKey] ?? TEMPO_TO_DIALECT_MAP[canonicalKey.toLowerCase()];
+			const rawLower = rawKey.toLowerCase();
+			const canonicalKey = Object.hasOwn(V4_EXPORT_ALIASES, rawKey)
+				? V4_EXPORT_ALIASES[rawKey]
+				: (Object.hasOwn(V4_EXPORT_ALIASES, rawLower) ? V4_EXPORT_ALIASES[rawLower] : rawKey);
+			const canonLower = typeof canonicalKey === 'string' ? canonicalKey.toLowerCase() : rawKey;
+			let info = Object.hasOwn(TEMPO_TO_DIALECT_MAP, canonicalKey)
+				? TEMPO_TO_DIALECT_MAP[canonicalKey]
+				: (Object.hasOwn(TEMPO_TO_DIALECT_MAP, canonLower) ? TEMPO_TO_DIALECT_MAP[canonLower] : undefined);
 
 			if (!info && RE_FF_PRECISION.test(canonicalKey)) {
 				const prec = Number(canonicalKey.slice(3));
@@ -298,12 +316,14 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 					oracle: `FF${prec}`,
 					moment: 'S'.repeat(prec),
 					dotnet: 'f'.repeat(prec),
+					sheet: prec <= 3 ? `.${'0'.repeat(prec)}` : undefined,
+					mysql: prec === 6 ? '%f' : undefined,
 					desc: `Fractional seconds (${prec} digits)`,
 				};
 			}
 
 			const targetToken = info?.[dialect as keyof DialectTarget];
-			if (isDefined(targetToken)) {
+			if (isDefined(info) && isDefined(targetToken)) {
 				if (dialect === DIALECT.Go && targetToken.startsWith('.')) {
 					if (pattern.endsWith('.')) {
 						pattern = pattern.slice(0, -1);

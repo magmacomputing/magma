@@ -28,14 +28,13 @@ export const SHEET_TOKENS = [
 
 export type SheetSpecifier = (typeof SHEET_TOKENS)[number];
 
-const RE_SHEET_TOKEN = /"([^"]*)"|\\(.)|_[^\s]|[*][^\s]|\[(?:h+|m+|s+)\]|\[(?:red|green|blue|yellow|magenta|cyan|white|black)\]|(\.000|\.00|\.0|am\/pm|a\/p|yyyy|yy|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s)/gi;
-
-const RE_AM_PM_CHECK = /\b(?:am\/pm|a\/p)\b/i;
+const RE_SHEET_TOKEN = /"([^"]*)"|\\(.)|_[^\s]|[*][^\s]|\[(?:red|green|blue|yellow|magenta|cyan|white|black)\]|(\[(?:h+|m+|s+)\]|\.000|\.00|\.0|am\/pm|a\/p|yyyy|yy|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s)/gi;
 
 /** @internal */
 export interface SheetTokenMatch {
 	readonly type: 'literal' | 'token';
 	readonly value: string;
+	readonly raw?: string;
 	readonly isMinute?: boolean;
 }
 
@@ -83,7 +82,7 @@ export function tokenizeSheetMask(mask: string): SheetTokenMatch[] {
 	for (let i = 0; i < rawMatches.length; i++) {
 		const item = rawMatches[i];
 		if (item.literal !== undefined) {
-			result.push({ type: 'literal', value: item.literal });
+			result.push({ type: 'literal', value: item.literal, raw: item.text });
 			continue;
 		}
 
@@ -95,7 +94,7 @@ export function tokenizeSheetMask(mask: string): SheetTokenMatch[] {
 				const pt = rawMatches[prev].token;
 				if (!pt)
 					continue;
-				if (pt === 'h' || pt === 'hh') {
+				if (pt === 'h' || pt === 'hh' || pt === '[h]' || pt === '[hh]') {
 					isMinute = true;
 					break;
 				}
@@ -108,7 +107,7 @@ export function tokenizeSheetMask(mask: string): SheetTokenMatch[] {
 					const nt = rawMatches[next].token;
 					if (!nt)
 						continue;
-					if (nt === 's' || nt === 'ss') {
+					if (nt === 's' || nt === 'ss' || nt === '[s]' || nt === '[ss]') {
 						isMinute = true;
 						break;
 					}
@@ -117,9 +116,9 @@ export function tokenizeSheetMask(mask: string): SheetTokenMatch[] {
 				}
 			}
 
-			result.push({ type: 'token', value: tok, isMinute });
+			result.push({ type: 'token', value: tok, raw: item.text, isMinute });
 		} else {
-			result.push({ type: 'token', value: tok });
+			result.push({ type: 'token', value: tok, raw: item.text });
 		}
 	}
 
@@ -134,8 +133,8 @@ export function compileSheetFormatter(mask: string): FormatterFn {
 	if (cached)
 		return cached;
 
-	const is12Hour = RE_AM_PM_CHECK.test(mask);
 	const tokens = tokenizeSheetMask(mask);
+	const is12Hour = tokens.some((t) => t.type === 'token' && (t.value === 'am/pm' || t.value === 'a/p'));
 	const parts: ((zdt: Temporal.ZonedDateTime) => string)[] = [];
 
 	for (const t of tokens) {
@@ -222,6 +221,24 @@ export function compileSheetFormatter(mask: string): FormatterFn {
 			case '.0':
 				parts.push((z) => `.${Math.floor(z.millisecond / 100)}`);
 				break;
+			case '[h]':
+				parts.push((z) => String(z.hour));
+				break;
+			case '[hh]':
+				parts.push((z) => pad(z.hour, 2));
+				break;
+			case '[m]':
+				parts.push((z) => String(z.hour * 60 + z.minute));
+				break;
+			case '[mm]':
+				parts.push((z) => pad(z.hour * 60 + z.minute, 2));
+				break;
+			case '[s]':
+				parts.push((z) => String(z.hour * 3600 + z.minute * 60 + z.second));
+				break;
+			case '[ss]':
+				parts.push((z) => pad(z.hour * 3600 + z.minute * 60 + z.second, 2));
+				break;
 			default:
 				parts.push(() => tok);
 				break;
@@ -249,8 +266,8 @@ export function compileSheetParser(mask: string): RegExp {
 	if (cached)
 		return cached;
 
-	const is12Hour = RE_AM_PM_CHECK.test(mask);
 	const tokens = tokenizeSheetMask(mask);
+	const is12Hour = tokens.some((t) => t.type === 'token' && (t.value === 'am/pm' || t.value === 'a/p'));
 	const groupCounts: Record<string, number> = {};
 	const group = (name: string, regex: string) => {
 		const count = (groupCounts[name] = (groupCounts[name] ?? 0) + 1);
@@ -332,6 +349,18 @@ export function compileSheetParser(mask: string): RegExp {
 				break;
 			case '.0':
 				pattern += `\\.${group('us', '\\d{1}')}`;
+				break;
+			case '[h]':
+			case '[hh]':
+				pattern += group('hh', '\\d+');
+				break;
+			case '[m]':
+			case '[mm]':
+				pattern += group('mi', '\\d+');
+				break;
+			case '[s]':
+			case '[ss]':
+				pattern += group('ss', '\\d+');
 				break;
 			default:
 				pattern += escapeRegex(tok);

@@ -101,10 +101,10 @@ Instead of memorizing dozens of distinct tokens, developers learn a small set of
 
 In historical libraries, arbitrary literal text embedded in format strings is notoriously fragile:
 
-* **Moment / Day.js**: Requires square brackets (`[Recorded on] YYYY-MM-DD`). Forgetting brackets results in `Recorded on` converting characters like `d`, `a`, `y`, `M`, and `o` into date parts. Escaping an actual bracket requires `[\[nested\]]`.
-* **Unicode LDML**: Requires single quotes (`'Recorded on' yyyy-MM-dd`). Escaping single quotes requires double quotes (`'It''s time'`).
+* **Moment / Day.js**: Requires square brackets (`[Recorded on] YYYY-MM-DD`). Forgetting brackets results in `Recorded on` converting characters like `d`, `e`, and `o` into date parts. Escaping an actual bracket requires `[\[nested\]]`.
+* **Unicode LDML**: Requires single quotes (`'Recorded on' yyyy-MM-dd`). Literal single quotes are doubled (`'It''s time'`).
 * **Go `time.Format`**: Has **no escape mechanism whatsoever**. Literal text containing Go reference tokens (`Jan`, `Mon`, `1`, `2`, `02`, `2006`) cannot be escaped and will unpredictably mutate.
-* **POSIX `strftime`**: Unescapable literal `%` characters require `%%`.
+* **POSIX `strftime`**: A literal percent sign is written as `%%`.
 
 **The Tempo Solution**:  
 In Tempo, **all text outside curly braces is literal by default**:

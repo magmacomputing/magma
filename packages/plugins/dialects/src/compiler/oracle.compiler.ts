@@ -538,16 +538,46 @@ export function parseOracle(
 	}
 
 	if (iw) {
-		const isoYear = iyyy ? parseInt(iyyy, 10) : (hasYear ? year : ((today as any).yearOfWeek ?? today.year));
 		const isoWeek = parseInt(iw, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
-		const isoDay = resolvedWeekday ?? 1;
-		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
-		const check = getIsoWeek(targetDate);
-		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
-		year = targetDate.year;
-		month = targetDate.month;
-		day = targetDate.day;
+		const hasExplicitDay = Boolean(dd || doy);
+
+		if (hasExplicitDay) {
+			if (iyyy) {
+				const cand = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day, resolvedWeekday);
+				if (cand === undefined) return undefined;
+				if (yyyy && cand !== year) return undefined;
+				year = cand;
+			}
+
+			if (resolvedWeekday !== undefined || doy) {
+				if (!validateResolvedDateFields({ year, month, day }, {
+					expectedDayOfWeek: resolvedWeekday,
+					expectedDayOfYear: doy ? parseInt(doy, 10) : undefined,
+				})) {
+					return undefined;
+				}
+			}
+
+			let plainDate: Temporal.PlainDate;
+			try {
+				plainDate = new Temporal.PlainDate(year, month, day);
+			} catch {
+				return undefined;
+			}
+			const check = getIsoWeek(plainDate);
+			if (check.weekOfYear !== isoWeek) return undefined;
+			if (iyyy && check.yearOfWeek !== parseInt(iyyy, 10)) return undefined;
+		} else {
+			const isoYear = iyyy ? parseInt(iyyy, 10) : (hasYear ? year : ((today as any).yearOfWeek ?? today.year));
+			const isoDay = resolvedWeekday ?? 1;
+			const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+			const check = getIsoWeek(targetDate);
+			if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
+			year = targetDate.year;
+			month = targetDate.month;
+			day = targetDate.day;
+		}
 	} else {
 		if (iyyy) {
 			const cand = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day, resolvedWeekday);

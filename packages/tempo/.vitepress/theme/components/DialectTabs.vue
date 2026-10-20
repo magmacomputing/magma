@@ -37,7 +37,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'yy', tempo: '{yy}', category: 'Year', description: '2-digit calendar year', example: '26' },
       { external: 'y', tempo: '{yyyy}', category: 'Year', description: 'Calendar year without zero-padding', example: '2026' },
       { external: 'YYYY', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
-      { external: 'YY', tempo: '{yow:2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
+      { external: 'YY', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
       { external: 'MM', tempo: '{mm}', category: 'Month', description: 'Zero-padded numeric month (01–12)', example: '10' },
       { external: 'M', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded numeric month (1–12)', example: '10' },
       { external: 'MMM / LLL', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
@@ -50,7 +50,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'w', tempo: '{woy:raw}', category: 'Week', description: 'Unpadded ISO week of year (1–53)', example: '43' },
       { external: 'EEEE', tempo: '{wkd}', category: 'Weekday', description: 'Full weekday name', example: 'Saturday' },
       { external: 'EEE', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
-      { external: 'e / c', tempo: '{dow}', category: 'Weekday', description: 'Numeric day of week (1=Monday..7=Sunday)', example: '6' },
+      { external: 'e / c', tempo: '{dow:locale}', category: 'Weekday', description: 'Locale-relative day of week (1–7)', example: '6' },
       { external: 'HH', tempo: '{hh}', category: 'Hour', description: 'Zero-padded 24-hour (00–23)', example: '15' },
       { external: 'H', tempo: '{hh:raw}', category: 'Hour', description: 'Unpadded 24-hour (0–23)', example: '15' },
       { external: 'hh', tempo: '{h12}', category: 'Hour', description: 'Zero-padded 12-hour (01–12)', example: '03' },
@@ -64,13 +64,14 @@ const DIALECTS: DialectConfig[] = [
       { external: 'SSS', tempo: '{ms}', category: 'Fractional', description: 'Milliseconds (3 digits)', example: '123' },
       { external: 'SSSSSS', tempo: '{ff:6}', category: 'Fractional', description: 'Microseconds (6 digits)', example: '123456' },
       { external: 'SSSSSSSSS', tempo: '{ff:9}', category: 'Fractional', description: 'Nanoseconds (9 digits)', example: '123456789' },
-      { external: 'aa / a', tempo: '{mer:upper}', category: 'Hour', description: 'AM / PM meridiem indicator', example: 'PM' },
-      { external: 'z', tempo: '{tz:short}', category: 'Timezone', description: 'Short timezone abbreviation', example: 'EDT' },
-      { external: 'zzzz', tempo: '{tz}', category: 'Timezone', description: 'Full timezone identifier', example: 'America/New_York' },
+      { external: 'aa', tempo: '{mer:upper}', category: 'Hour', description: 'AM / PM marker (uppercase)', example: 'PM' },
+      { external: 'a', tempo: '{mer}', category: 'Hour', description: 'am / pm marker (lowercase)', example: 'pm' },
+      { external: 'z', tempo: '{tz:short}', category: 'Timezone', description: 'Short localized time zone name', example: 'EDT' },
+      { external: 'zzzz', tempo: '{tz:long}', category: 'Timezone', description: 'Full localized time zone name', example: 'Eastern Daylight Time' },
       { external: 'ZZZZZ / XXX', tempo: '{tz:offset}', category: 'Timezone', description: 'ISO 8601 offset with colon', example: '+08:00' },
       { external: 'ZZ / XX', tempo: '{tz:offsetcompact}', category: 'Timezone', description: 'Compact offset without colon', example: '+0800' },
-      { external: 'QQQQ / qqqq', tempo: '{#quarter}', category: 'Quarter', description: 'Full quarter name', example: '4th quarter' },
-      { external: 'Q / q', tempo: '{#quarter:num}', category: 'Quarter', description: 'Numeric quarter (1–4)', example: '4' }
+      { external: 'QQQQ / qqqq', tempo: '{#quarter}', category: 'Quarter', description: 'Full quarter name (via #quarter Term)', example: '4th quarter' },
+      { external: 'Q / q', tempo: '{#quarter}', category: 'Quarter', description: 'Quarter number 1–4 (via #quarter Term)', example: '4' }
     ]
   },
   {
@@ -87,7 +88,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'YY', tempo: '{yy}', category: 'Year', description: '2-digit calendar year', example: '26' },
       { external: 'Y', tempo: '{yyyy}', category: 'Year', description: 'Calendar year without zero-padding', example: '2026' },
       { external: 'GGGG', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
-      { external: 'GG', tempo: '{yow:2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
+      { external: 'GG', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
       { external: 'MM', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: 'M', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
       { external: 'MMM', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
@@ -101,7 +102,8 @@ const DIALECTS: DialectConfig[] = [
       { external: 'W', tempo: '{woy:raw}', category: 'Week', description: 'Unpadded ISO week of year (1–53)', example: '43' },
       { external: 'dddd', tempo: '{wkd}', category: 'Weekday', description: 'Full weekday name', example: 'Saturday' },
       { external: 'ddd', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
-      { external: 'dd', tempo: '{ww}', category: 'Weekday', description: 'Two-letter minimal weekday name', example: 'Sa' },
+      { external: 'dd', tempo: '{www}', category: 'Weekday', description: 'Two-letter weekday name', example: 'Sa' },
+      { external: 'd', tempo: '{dow:0}', category: 'Weekday', description: 'Day of week with Sunday as 0 (0–6)', example: '6' },
       { external: 'E', tempo: '{dow}', category: 'Weekday', description: 'ISO day of week (1=Monday..7=Sunday)', example: '6' },
       { external: 'HH', tempo: '{hh}', category: 'Hour', description: 'Zero-padded 24-hour (00–23)', example: '15' },
       { external: 'H', tempo: '{hh:raw}', category: 'Hour', description: 'Unpadded 24-hour (0–23)', example: '15' },
@@ -122,8 +124,8 @@ const DIALECTS: DialectConfig[] = [
       { external: 'ZZ', tempo: '{tz:offsetcompact}', category: 'Timezone', description: 'Compact offset without colon', example: '+0800' },
       { external: 'z / zz', tempo: '{tz:short}', category: 'Timezone', description: 'Timezone abbreviation', example: 'EDT' },
       { external: 'X', tempo: '{ts}', category: 'Epoch', description: 'Unix epoch timestamp in seconds', example: '1792848645' },
-      { external: 'x', tempo: '{ts:ms}', category: 'Epoch', description: 'Unix epoch timestamp in milliseconds', example: '1792848645000' },
-      { external: 'Q', tempo: '{#quarter:num}', category: 'Quarter', description: 'Quarter of year (1–4)', example: '4' },
+      { external: 'x', tempo: '', category: 'Epoch', description: 'Unix epoch timestamp in milliseconds (unsupported in seconds-based {ts})', example: '1792848645000' },
+      { external: 'Q', tempo: '{#quarter}', category: 'Quarter', description: 'Quarter of year (1–4)', example: '4' },
       { external: 'Qo', tempo: '{#quarter:ord}', category: 'Quarter', description: 'Ordinal quarter of year', example: '4th' }
     ]
   },
@@ -140,8 +142,8 @@ const DIALECTS: DialectConfig[] = [
       { external: '%Y', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
       { external: '%y', tempo: '{yy}', category: 'Year', description: '2-digit year (00–99)', example: '26' },
       { external: '%G', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
-      { external: '%g', tempo: '{yow:2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
-      { external: '%C', tempo: '{yow:cent}', category: 'Year', description: 'Century number (year / 100)', example: '20' },
+      { external: '%g', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
+      { external: '%C', tempo: '{cen}', category: 'Year', description: 'Century number (00–99)', example: '20' },
       { external: '%m', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: '%-m', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
       { external: '%b / %h', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
@@ -150,12 +152,13 @@ const DIALECTS: DialectConfig[] = [
       { external: '%-d', tempo: '{dd:raw}', category: 'Day', description: 'Unpadded day of month (1–31)', example: '24' },
       { external: '%e', tempo: '{dd:space}', category: 'Day', description: 'Space-padded day of month ( 1–31)', example: '24' },
       { external: '%j', tempo: '{doy}', category: 'Day', description: 'Zero-padded day of year (001–366)', example: '297' },
-      { external: '%V', tempo: '{woy}', category: 'Week', description: 'ISO week number (01–53)', example: '43' },
-      { external: '%U / %W', tempo: '{woy}', category: 'Week', description: 'Sunday / Monday based week number', example: '43' },
+      { external: '%V', tempo: '{woy}', category: 'Week', description: 'Zero-padded ISO week number (01–53)', example: '43' },
+      { external: '%U', tempo: '', category: 'Week', description: 'Week number with Sunday as first day (00–53)', example: '42' },
+      { external: '%W', tempo: '', category: 'Week', description: 'Week number with Monday as first day (00–53)', example: '43' },
       { external: '%A', tempo: '{wkd}', category: 'Weekday', description: 'Full weekday name', example: 'Saturday' },
       { external: '%a', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
       { external: '%u', tempo: '{dow}', category: 'Weekday', description: 'ISO weekday (1=Monday..7=Sunday)', example: '6' },
-      { external: '%w', tempo: '{dow:0}', category: 'Weekday', description: 'Weekday (0=Sunday..6=Saturday)', example: '6' },
+      { external: '%w', tempo: '{dow:0}', category: 'Weekday', description: 'Day of week with Sunday as 0 (0–6)', example: '6' },
       { external: '%H', tempo: '{hh}', category: 'Hour', description: 'Zero-padded 24-hour (00–23)', example: '15' },
       { external: '%-H', tempo: '{hh:raw}', category: 'Hour', description: 'Unpadded 24-hour (0–23)', example: '15' },
       { external: '%k', tempo: '{hh:space}', category: 'Hour', description: 'Space-padded 24-hour ( 0–23)', example: '15' },
@@ -188,17 +191,18 @@ const DIALECTS: DialectConfig[] = [
     sampleParse: "Tempo.fromFormat('2026-10-24 15:30:45.123', 'yyyy-MM-dd HH:mm:ss.fff', { dialect: 'dotnet' })",
     sampleFormat: "t.format('dddd, MMMM d, yyyy HH:mm:ss K', { dialect: 'dotnet' })",
     tokens: [
-      { external: 'yyyy / yyyyy', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
+      { external: 'yyyy', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
+      { external: 'yyyyy', tempo: '{yyyy}', category: 'Year', description: '5-digit zero-padded year', example: '02026' },
       { external: 'yy', tempo: '{yy}', category: 'Year', description: '2-digit year (00–99)', example: '26' },
-      { external: 'y', tempo: '{yyyy}', category: 'Year', description: 'Calendar year without zero-padding', example: '2026' },
+      { external: 'y', tempo: '{yy:raw}', category: 'Year', description: 'Unpadded year (0–99)', example: '26' },
+      { external: 'MMMM', tempo: '{mon}', category: 'Month', description: 'Full month name', example: 'October' },
+      { external: 'MMM', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
       { external: 'MM', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: 'M', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
-      { external: 'MMM', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
-      { external: 'MMMM', tempo: '{mon}', category: 'Month', description: 'Full month name', example: 'October' },
+      { external: 'dddd', tempo: '{wkd}', category: 'Weekday', description: 'Full weekday name', example: 'Saturday' },
+      { external: 'ddd', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
       { external: 'dd', tempo: '{dd}', category: 'Day', description: 'Zero-padded day of month (01–31)', example: '24' },
       { external: 'd', tempo: '{dd:raw}', category: 'Day', description: 'Unpadded day of month (1–31)', example: '24' },
-      { external: 'ddd', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
-      { external: 'dddd', tempo: '{wkd}', category: 'Weekday', description: 'Full weekday name', example: 'Saturday' },
       { external: 'HH', tempo: '{hh}', category: 'Hour', description: 'Zero-padded 24-hour (00–23)', example: '15' },
       { external: 'H', tempo: '{hh:raw}', category: 'Hour', description: 'Unpadded 24-hour (0–23)', example: '15' },
       { external: 'hh', tempo: '{h12}', category: 'Hour', description: 'Zero-padded 12-hour (01–12)', example: '03' },
@@ -207,14 +211,13 @@ const DIALECTS: DialectConfig[] = [
       { external: 'm', tempo: '{mi:raw}', category: 'Minute', description: 'Unpadded minute (0–59)', example: '30' },
       { external: 'ss', tempo: '{ss}', category: 'Second', description: 'Zero-padded second (00–59)', example: '45' },
       { external: 's', tempo: '{ss:raw}', category: 'Second', description: 'Unpadded second (0–59)', example: '45' },
-      { external: 'fff', tempo: '{ms}', category: 'Fractional', description: 'Milliseconds (3 digits)', example: '123' },
-      { external: 'ffffff', tempo: '{ff:6}', category: 'Fractional', description: 'Microseconds (6 digits)', example: '123456' },
       { external: 'fffffff', tempo: '{ff:7}', category: 'Fractional', description: '100-nanosecond ticks (7 digits)', example: '1234567' },
+      { external: 'ffffff', tempo: '{ff:6}', category: 'Fractional', description: 'Microseconds (6 digits)', example: '123456' },
+      { external: 'fff', tempo: '{ms}', category: 'Fractional', description: 'Milliseconds (3 digits)', example: '123' },
       { external: 'tt', tempo: '{mer:upper}', category: 'Hour', description: 'AM / PM designator', example: 'PM' },
-      { external: 't', tempo: '{mer:initial}', category: 'Hour', description: 'First letter of AM / PM designator', example: 'P' },
+      { external: 't', tempo: '{mer:upper}', category: 'Hour', description: 'A / P marker', example: 'P' },
       { external: 'zzz', tempo: '{tz:offset}', category: 'Timezone', description: 'Hours and minutes offset with colon', example: '+08:00' },
-      { external: 'zz', tempo: '{tz:offsethours}', category: 'Timezone', description: 'Zero-padded hours offset', example: '+08' },
-      { external: 'z', tempo: '{tz:offsethours:raw}', category: 'Timezone', description: 'Unpadded hours offset', example: '+8' },
+      { external: 'zz / z', tempo: '{tz:offset:hh}', category: 'Timezone', description: 'Signed hour offset', example: '+08' },
       { external: 'K', tempo: '{tz:offset}', category: 'Timezone', description: 'ISO 8601 offset representation', example: '+08:00' },
       { external: 'O / o', tempo: 'Round-trip', category: 'Other', description: 'Standard Round-trip ISO-8601 specifier', example: '2026-10-24T15:30:45.1234567+08:00' },
       { external: 's', tempo: 'Sortable', category: 'Other', description: 'Standard Sortable ISO specifier', example: '2026-10-24T15:30:45' },
@@ -238,7 +241,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'm (date)', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12) in date context', example: '10' },
       { external: 'mmm', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
       { external: 'mmmm', tempo: '{mon}', category: 'Month', description: 'Full month name', example: 'October' },
-      { external: 'mmmmm', tempo: '{mon:initial}', category: 'Month', description: 'Single letter month initial', example: 'O' },
+      { external: 'mmmmm', tempo: '{mon:1}', category: 'Month', description: 'First letter of month', example: 'O' },
       { external: 'dd', tempo: '{dd}', category: 'Day', description: 'Zero-padded day of month (01–31)', example: '24' },
       { external: 'd', tempo: '{dd:raw}', category: 'Day', description: 'Unpadded day of month (1–31)', example: '24' },
       { external: 'ddd', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
@@ -254,9 +257,11 @@ const DIALECTS: DialectConfig[] = [
       { external: '.0', tempo: '{ff:1}', category: 'Fractional', description: 'Tenths of a second (1 decimal place)', example: '.1' },
       { external: 'AM/PM', tempo: '{mer:upper}', category: 'Hour', description: 'Uppercase AM/PM indicator', example: 'PM' },
       { external: 'am/pm', tempo: '{mer}', category: 'Hour', description: 'Lowercase am/pm indicator', example: 'pm' },
-      { external: 'A/P', tempo: '{mer:initial}', category: 'Hour', description: 'Single letter uppercase A or P', example: 'P' },
-      { external: 'a/p', tempo: '{mer:initial:lower}', category: 'Hour', description: 'Single letter lowercase a or p', example: 'p' },
-      { external: '[h] / [m] / [s]', tempo: 'Duration', category: 'Other', description: 'Cumulative elapsed hours, minutes, or seconds', example: '[36]' }
+      { external: 'A/P', tempo: '{mer:upper}', category: 'Hour', description: 'Single letter uppercase A or P', example: 'P' },
+      { external: 'a/p', tempo: '{mer}', category: 'Hour', description: 'Single letter lowercase a or p', example: 'p' },
+      { external: '[h]', tempo: '{hh:raw}', category: 'Hour', description: 'Cumulative elapsed hours', example: '15' },
+      { external: '[m]', tempo: '', category: 'Minute', description: 'Cumulative elapsed minutes', example: '930' },
+      { external: '[s]', tempo: '', category: 'Second', description: 'Cumulative elapsed seconds', example: '55845' }
     ]
   },
   {
@@ -271,7 +276,8 @@ const DIALECTS: DialectConfig[] = [
     tokens: [
       { external: '%Y', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
       { external: '%y', tempo: '{yy}', category: 'Year', description: '2-digit calendar year (00–99)', example: '26' },
-      { external: '%X / %x', tempo: '{yow}', category: 'Year', description: '4-digit week-based year', example: '2026' },
+      { external: '%x', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year (with %v)', example: '2026' },
+      { external: '%X', tempo: '{yow}', category: 'Year', description: '4-digit year for week %V (Sunday-based Mode 2)', example: '2026' },
       { external: '%m', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: '%c', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
       { external: '%b', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
@@ -280,7 +286,10 @@ const DIALECTS: DialectConfig[] = [
       { external: '%e', tempo: '{dd:raw}', category: 'Day', description: 'Unpadded day of month (1–31)', example: '24' },
       { external: '%D', tempo: '{dd:ord}', category: 'Day', description: 'Day of month with English suffix', example: '24th' },
       { external: '%j', tempo: '{doy}', category: 'Day', description: 'Zero-padded day of year (001–366)', example: '297' },
-      { external: '%v / %u / %U / %V', tempo: '{woy}', category: 'Week', description: 'Week of year (01–53)', example: '43' },
+      { external: '%v', tempo: '{woy}', category: 'Week', description: 'Zero-padded ISO week of year (01–53, Monday start)', example: '43' },
+      { external: '%u', tempo: '', category: 'Week', description: 'Week number with Monday as first day (00–53, Mode 1)', example: '43' },
+      { external: '%U', tempo: '', category: 'Week', description: 'Week number with Sunday as first day (00–53, Mode 0)', example: '42' },
+      { external: '%V', tempo: '', category: 'Week', description: 'Week number with Sunday as first day (01–53, Mode 2)', example: '42' },
       { external: '%W', tempo: '{wkd}', category: 'Weekday', description: 'Full weekday name', example: 'Saturday' },
       { external: '%a', tempo: '{www}', category: 'Weekday', description: 'Abbreviated weekday name', example: 'Sat' },
       { external: '%w', tempo: '{dow:0}', category: 'Weekday', description: 'Day of week (0=Sunday..6=Saturday)', example: '6' },
@@ -310,7 +319,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'YYYY / RRRR', tempo: '{yyyy}', category: 'Year', description: '4-digit year', example: '2026' },
       { external: 'YY / RR', tempo: '{yy}', category: 'Year', description: '2-digit year (00–99)', example: '26' },
       { external: 'IYYY', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
-      { external: 'IY', tempo: '{yow:2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
+      { external: 'IY', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
       { external: 'MM', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: 'FMMM', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
       { external: 'MON / Mon / mon', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name (case-preserving)', example: 'Oct' },
@@ -337,7 +346,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'am / pm', tempo: '{mer}', category: 'Hour', description: 'Lowercase meridiem indicator', example: 'pm' },
       { external: 'TZD', tempo: '{tz:short}', category: 'Timezone', description: 'Daylight savings abbreviation', example: 'EDT' },
       { external: 'TZH:TZM', tempo: '{tz:offset}', category: 'Timezone', description: 'Time zone offset with colon', example: '+08:00' },
-      { external: 'OF', tempo: '{tz:offsetcompact}', category: 'Timezone', description: 'Compact offset without colon', example: '+0800' }
+      { external: 'OF', tempo: '{tz:offset}', category: 'Timezone', description: 'Compact offset without colon', example: '+0800' }
     ]
   },
   {
@@ -348,7 +357,7 @@ const DIALECTS: DialectConfig[] = [
     aliases: ['laravel', 'wordpress'],
     syntaxNote: 'Single letters represent tokens; backslash-escape any character to treat as literal: \\d\\a\\t\\e.',
     sampleParse: "Tempo.fromFormat('2026-10-24 15:30:45', 'Y-m-d H:i:s', { dialect: 'php' })",
-    sampleFormat: "t.format('l, F jS, Y \\a\\t g:i:s A', { dialect: 'php' })",
+    sampleFormat: "t.format('l, F jS, Y \\\\a\\\\t g:i:s A', { dialect: 'php' })",
     tokens: [
       { external: 'Y', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
       { external: 'y', tempo: '{yy}', category: 'Year', description: '2-digit year (00–99)', example: '26' },
@@ -551,6 +560,7 @@ function copyToClipboard(text: string) {
             </td>
             <td class="col-tempo">
               <button
+                v-if="t.tempo"
                 class="token-tempo-btn"
                 :title="'Click to copy ' + t.tempo"
                 @click="copyToClipboard(t.tempo)"
@@ -558,6 +568,7 @@ function copyToClipboard(text: string) {
                 <code>{{ t.tempo }}</code>
                 <span class="copy-hint">{{ copiedToken === t.tempo ? '✓ Copied!' : 'Copy' }}</span>
               </button>
+              <span v-else class="unsupported-tempo" title="No direct 1:1 Native Tempo equivalent">—</span>
             </td>
             <td class="col-cat">
               <span class="cat-pill" :data-cat="t.category">{{ t.category }}</span>
@@ -826,22 +837,42 @@ function copyToClipboard(text: string) {
 /* Table */
 .dialect-table-container {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 520px;
+  position: relative;
+  scrollbar-width: thin;
+  scrollbar-color: var(--vp-c-divider) transparent;
+}
+
+.dialect-table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dialect-table-container::-webkit-scrollbar-thumb {
+  background: var(--vp-c-divider);
+  border-radius: 3px;
 }
 
 .dialect-token-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.88rem;
   margin: 0 !important;
 }
 
 .dialect-token-table th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   background: var(--vp-c-bg-alt);
   color: var(--vp-c-text-1);
   font-weight: 600;
   text-align: left;
   padding: 10px 16px;
   border-bottom: 1px solid var(--vp-c-divider);
+  box-shadow: 0 1px 0 var(--vp-c-divider);
 }
 
 .dialect-token-table td {
@@ -930,6 +961,13 @@ function copyToClipboard(text: string) {
 
 .token-tempo-btn:hover .copy-hint {
   color: var(--vp-c-brand-1);
+}
+
+.unsupported-tempo {
+  display: inline-block;
+  color: var(--vp-c-text-3);
+  font-weight: 600;
+  padding: 4px 10px;
 }
 
 .cat-pill {

@@ -51,6 +51,16 @@ export function resolveWeekday(str: string): number | undefined {
 	return typeof val === 'number' && val >= 1 && val <= 7 ? val : undefined;
 }
 
+/**
+ * Calculates the Sunday-based week of the year (00-53), where week 1 begins on the first Sunday.
+ * Days before the first Sunday of the year are considered week 0.
+ */
+export function getSundayBasedWeek(_year: number, dayOfYear: number, dayOfWeek: number): number {
+	const yday = dayOfYear - 1;
+	const wdaySun = dayOfWeek % 7; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+	return Math.floor((yday + 7 - wdaySun) / 7);
+}
+
 /** Creates a helper to extract named groups from a RegExpExecArray, including suffixed groups. */
 export function createGroupExtractor(match: RegExpExecArray): (name: string) => string | undefined {
 	const g = match.groups ?? {};
@@ -256,8 +266,7 @@ export function validateResolvedDateFields(
 			return false;
 	}
 	if (meta.expectedWeekU !== undefined) {
-		const w = plainDate.dayOfWeek === 7 ? 0 : plainDate.dayOfWeek;
-		const u = Math.floor((plainDate.dayOfYear - 1 - w + 7) / 7);
+		const u = getSundayBasedWeek(plainDate.year, plainDate.dayOfYear, plainDate.dayOfWeek);
 		if (u !== meta.expectedWeekU) return false;
 	}
 	if (meta.expectedWeekW !== undefined) {

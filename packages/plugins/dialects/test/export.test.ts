@@ -26,7 +26,7 @@ describe('Dialect Export', () => {
 		expect(res1.pattern).toBe('MONTH DD, YYYY');
 
 		const res2 = Tempo.dialects.export('{mm:raw}/{dd:raw}/{yyyy}', 'oracle');
-		expect(res2.pattern).toBe('FMMM/FMDD/YYYY');
+		expect(res2.pattern).toBe('FMMMFM/FMDDFM/YYYY');
 
 		const res3 = Tempo.dialects.export('{wkd:upper}', 'oracle');
 		expect(res3.pattern).toBe('DAY');
@@ -98,6 +98,28 @@ describe('Dialect Export', () => {
 
 		const res3 = Tempo.dialects.export('{h12}:{mi} {mer:upper}', 'go');
 		expect(res3.pattern).toBe('03:04 PM');
+	});
+
+	it('exports standard patterns to MySQL DATE_FORMAT models and escapes % in literals', () => {
+		const res = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ff:6} 100%', 'mysql');
+		expect(res.dialect).toBe(DIALECT.Mysql);
+		expect(res.pattern).toBe('%Y-%m-%d %H:%i:%s.%f 100%%');
+		expect(res.unsupported).toHaveLength(0);
+	});
+
+	it('exports standard patterns to .NET and Sheet format models', () => {
+		const resDotNet = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}', 'dotnet');
+		expect(resDotNet.dialect).toBe(DIALECT.DotNet);
+		expect(resDotNet.pattern).toBe('yyyy-MM-dd HH:mm:ss.fff');
+		expect(resDotNet.unsupported).toHaveLength(0);
+
+		const resDotNetQuote = Tempo.dialects.export("{h12} o'clock", 'dotnet');
+		expect(resDotNetQuote.pattern).toBe("hh' o\\'clock'");
+
+		const resSheet = Tempo.dialects.export('{yyyy}-{mm}-{dd} {h12}:{mi}:{ss} {mer:upper}', 'sheet');
+		expect(resSheet.dialect).toBe(DIALECT.Sheet);
+		expect(resSheet.pattern).toBe('yyyy-mm-dd hh:mm:ss AM/PM');
+		expect(resSheet.unsupported).toHaveLength(0);
 	});
 
 	it('handles dynamic fractional precision width (ff:1 to ff:9)', () => {
@@ -206,7 +228,7 @@ describe('Dialect Export', () => {
 	it('exports Phase 4 specialized and scoped tokens to target dialects', () => {
 		// Oracle J, SSSSS, WW, W
 		const resOracle = Tempo.dialects.export('{jj} {ss:day} {ss:day:5} {ss:day:raw} {woy:cal} {wom}', 'oracle');
-		expect(resOracle.pattern).toBe('J SSSSS SSSSS FMSSSSS WW W');
+		expect(resOracle.pattern).toBe('J SSSSS SSSSS FMSSSSSFM WW W');
 		expect(resOracle.unsupported).toHaveLength(0);
 
 		// Aliases julian, ww:cal, ww:month
@@ -244,14 +266,25 @@ describe('Dialect Export', () => {
 		expect(res.unsupported).toContain(' ref1');
 	});
 
-	it('exports uppercase meridiem to LDML aa and lowercase to a', () => {
+	it('exports uppercase meridiem to LDML aa and lowercase to aaa', () => {
 		expect(Tempo.dialects.export('{h12}:{mi} {mer:upper}', 'ldml').pattern).toBe('hh:mm aa');
-		expect(Tempo.dialects.export('{h12}:{mi} {mer}', 'ldml').pattern).toBe('hh:mm a');
+		expect(Tempo.dialects.export('{h12}:{mi} {mer}', 'ldml').pattern).toBe('hh:mm aaa');
 	});
 
 	it('preserves native escaped braces {{ and }} as literals', () => {
 		const res = Tempo.dialects.export('{yyyy}-{{literal}}', 'ldml');
 		expect(res.pattern).toBe("yyyy-{'literal'}");
 		expect(res.unsupported).toHaveLength(0);
+	});
+
+	it('exports weekday tokens dow and dow:locale with correct dialect targets', () => {
+		expect(Tempo.dialects.export('{dow}', 'moment').pattern).toBe('E');
+		expect(Tempo.dialects.export('{dow}', 'strftime').pattern).toBe('%u');
+		expect(Tempo.dialects.export('{dow}', 'php').pattern).toBe('N');
+		expect(Tempo.dialects.export('{dow}', 'ldml').unsupported).toEqual(['{dow}']);
+
+		expect(Tempo.dialects.export('{dow:locale}', 'ldml').pattern).toBe('e');
+		expect(Tempo.dialects.export('{dow:locale}', 'moment').pattern).toBe('e');
+		expect(Tempo.dialects.export('{dow:locale}', 'strftime').unsupported).toEqual(['{dow:locale}']);
 	});
 });

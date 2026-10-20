@@ -31,7 +31,7 @@ export const DOTNET_TOKENS = [
 
 export type DotNetSpecifier = (typeof DOTNET_TOKENS)[number];
 
-const RE_DOTNET_TOKEN = /'([^']*)'|"([^"]*)"|\\(.)|(fffffff|ffffff|fffff|ffff|fff|ff|f|FFFFFFF|FFFFFF|FFFFF|FFFF|FFF|FF|F|yyyyy|yyyy|yyy|yy|y|MMMM|MMM|MM|M|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|tt|t|zzz|zz|z|K|gg|g)/g;
+const RE_DOTNET_TOKEN = new RegExp(`'([^']*)'|"([^"]*)"|\\\\(.)|%?(${DOTNET_TOKENS.join('|')})`, 'g');
 
 const STANDARD_DOTNET_FORMATS: Record<string, string> = {
 	O: "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffffffK",
@@ -50,17 +50,15 @@ const STANDARD_DOTNET_FORMATS: Record<string, string> = {
 	G: 'MM/dd/yyyy HH:mm:ss',
 };
 
+const UTC_STANDARD_FORMATS = new Set(['u', 'r', 'R']);
+
 /**
  * Normalizes a .NET format mask by resolving standard single-character specifiers.
  */
-function normalizeDotNetMask(mask: string): string {
-	if (mask.length === 1 && STANDARD_DOTNET_FORMATS[mask])
-		return STANDARD_DOTNET_FORMATS[mask];
-
-	if (mask.length === 2 && mask[0] === '%')
-		return mask[1];
-
-	return mask;
+export function normalizeDotNetMask(mask: string): string {
+	return (mask.length === 1 && STANDARD_DOTNET_FORMATS[mask])
+		? STANDARD_DOTNET_FORMATS[mask]
+		: mask;
 }
 
 /**
@@ -84,23 +82,26 @@ function formatTimeZoneOffset(z: Temporal.ZonedDateTime, mode: 'z' | 'zz' | 'zzz
 	const hours = Math.floor(absMinutes / 60);
 	const mins = absMinutes % 60;
 
-	if (mode === 'z')
-		return `${sign}${hours}`;
-
-	if (mode === 'zz')
-		return `${sign}${pad(hours, 2)}`;
-
-	return `${sign}${pad(hours, 2)}:${pad(mins, 2)}`;
+	switch (mode) {
+		case 'z':
+			return `${sign}${hours}`;
+		case 'zz':
+			return `${sign}${pad(hours, 2)}`;
+		default:
+			return `${sign}${pad(hours, 2)}:${pad(mins, 2)}`;
+	}
 }
 
 /**
  * Compiles a .NET format mask into a high-performance formatter function.
  */
 export function compileDotNetFormatter(rawMask: string): FormatterFn {
-	const mask = normalizeDotNetMask(rawMask);
-	const cached = DOTNET_FORMAT_CACHE.get(mask);
+	const cached = DOTNET_FORMAT_CACHE.get(rawMask);
 	if (cached)
 		return cached;
+
+	const mask = normalizeDotNetMask(rawMask);
+	const isUtcMask = UTC_STANDARD_FORMATS.has(rawMask);
 
 	const parts: ((zdt: Temporal.ZonedDateTime) => string)[] = [];
 	let lastIndex = 0;
@@ -268,8 +269,11 @@ export function compileDotNetFormatter(rawMask: string): FormatterFn {
 		parts.push(() => trailing);
 	}
 
-	const fn: FormatterFn = (zdt) => parts.map((p) => p(zdt)).join('');
-	DOTNET_FORMAT_CACHE.set(mask, fn);
+	const fn: FormatterFn = (zdt) => {
+		const target = isUtcMask ? zdt.withTimeZone('UTC') : zdt;
+		return parts.map((p) => p(target)).join('');
+	};
+	DOTNET_FORMAT_CACHE.set(rawMask, fn);
 	return fn;
 }
 
@@ -277,8 +281,9 @@ export function compileDotNetFormatter(rawMask: string): FormatterFn {
  * Formats a date using .NET custom or standard format specifiers.
  */
 export function formatDotNet(zdt: Temporal.ZonedDateTime, mask: string): string {
+	const target = UTC_STANDARD_FORMATS.has(mask) ? zdt.withTimeZone('UTC') : zdt;
 	const formatter = compileDotNetFormatter(mask);
-	return formatter(zdt);
+	return formatter(target);
 }
 
 /**
@@ -452,7 +457,10 @@ export function parseDotNet(
 		return undefined;
 
 	const getGroup = createGroupExtractor(match);
-	const ctx = resolveParseContext(getGroup, options);
+	const parseOptions = UTC_STANDARD_FORMATS.has(mask)
+		? { ...options, timeZone: 'UTC' }
+		: options;
+	const ctx = resolveParseContext(getGroup, parseOptions);
 	if (!ctx)
 		return undefined;
 	const today = ctx.today;
@@ -477,8 +485,11 @@ export function parseDotNet(
 	}
 
 	let resolvedWeekday: number | undefined;
-	if (weekdayName || weekdayAbbr)
+	if (weekdayName || weekdayAbbr) {
 		resolvedWeekday = resolveWeekday(weekdayName || weekdayAbbr!);
+		if (resolvedWeekday === undefined)
+			return undefined;
+	}
 
 	if (mm) {
 		month = parseInt(mm, 10);

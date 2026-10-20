@@ -35,35 +35,39 @@ For a high-level overview across the most common date-formatting paradigms, the 
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Year (4-digit)** | 4-digit calendar year (`2026`) | `yyyy` | `YYYY` | `%Y` | `yyyy` | `{yyyy}` |
 | **Year (2-digit)** | 2-digit calendar year (`26`) | `yy` | `YY` | `%y` | `yy` | `{yy}` |
-| **ISO Week Year** | 4-digit ISO week-numbering year | `YYYY` | `GGGG` | `%G` | N/A | `{yow}` |
+| **Week-Numbering Year** | Week-numbering year (ISO via `%G` / `GGGG`; locale-dependent in LDML `YYYY`) | `YYYY`* | `GGGG` | `%G` | N/A | `{yow}` |
 | **Month (padded)** | Zero-padded month (`01`–`12`) | `MM` | `MM` | `%m` | `MM` | `{mm}` |
-| **Month (raw)** | Unpadded month (`1`–`12`) | `M` | `M` | `%-m` | `M` | `{mm:raw}` |
+| **Month (raw)** | Unpadded month (`1`–`12`) | `M` | `M` | `%-m`* | `M` | `{mm:raw}` |
 | **Month Name (short)** | Abbreviated month (`Oct`) | `MMM` / `LLL` | `MMM` | `%b` | `MMM` | `{mmm}` |
 | **Month Name (full)** | Full month name (`October`) | `MMMM` / `LLLL` | `MMMM` | `%B` | `MMMM` | `{mon}` |
 | **Day (padded)** | Zero-padded day (`01`–`31`) | `dd` | `DD` | `%d` | `dd` | `{dd}` |
-| **Day (raw)** | Unpadded day (`1`–`31`) | `d` | `D` | `%-d` | `d` | `{dd:raw}` |
+| **Day (raw)** | Unpadded day (`1`–`31`) | `d` | `D` | `%-d`* | `d` | `{dd:raw}` |
 | **Day (ordinal)** | Ordinal suffix (`24th`) | N/A | `Do` | N/A | N/A | `{dd:ord}` |
 | **Day of Year** | Day of year (`001`–`366`) | `DDD` | `DDDD` | `%j` | N/A | `{doy}` |
-| **Week of Year** | ISO week number (`01`–`53`) | `ww` | `WW` | `%V` | N/A | `{woy}` |
+| **Week of Year** | Week number (`01`–`53`; ISO via `%V` / `WW`; locale-dependent in LDML `ww`) | `ww`* | `WW` | `%V` | N/A | `{woy}` |
 | **Weekday (full)** | Full weekday (`Saturday`) | `EEEE` | `dddd` | `%A` | `dddd` | `{wkd}` |
 | **Weekday (short)** | Abbreviated weekday (`Sat`) | `EEE` | `ddd` | `%a` | `ddd` | `{www}` |
-| **Weekday (ISO)** | ISO weekday (`1`=Mon .. `7`=Sun) | `e` / `c` | `E` | `%u` | N/A | `{dow}` |
+| **Weekday (numeric)** | Numeric weekday (ISO 1=Mon..7=Sun via `%u`/`E`; locale-dependent 1-7 in LDML `e`/`c`) | `e` / `c`* | `E` | `%u` | N/A | `{dow}` |
 | **Hour (24h padded)** | 24-hour clock (`00`–`23`) | `HH` | `HH` | `%H` | `HH` | `{hh}` |
-| **Hour (24h raw)** | 24-hour clock unpadded (`0`–`23`) | `H` | `H` | `%-H` | `H` | `{hh:raw}` |
+| **Hour (24h raw)** | 24-hour clock unpadded (`0`–`23`) | `H` | `H` | `%-H`* | `H` | `{hh:raw}` |
 | **Hour (12h padded)** | 12-hour clock (`01`–`12`) | `hh` | `hh` | `%I` | `hh` | `{h12}` |
-| **Hour (12h raw)** | 12-hour clock unpadded (`1`–`12`) | `h` | `h` | `%-I` | `h` | `{h12:raw}` |
+| **Hour (12h raw)** | 12-hour clock unpadded (`1`–`12`) | `h` | `h` | `%-I`* | `h` | `{h12:raw}` |
 | **Meridiem (upper)** | Uppercase indicator (`AM` / `PM`) | `aa` | `A` | `%p` | `tt` | `{mer:upper}` |
 | **Minute (padded)** | Zero-padded minute (`00`–`59`) | `mm` | `mm` | `%M` | `mm` | `{mi}` |
 | **Second (padded)** | Zero-padded second (`00`–`59`) | `ss` | `ss` | `%S` | `ss` | `{ss}` |
-| **Milliseconds** | 3-digit fractional seconds (`123`) | `SSS` | `SSS` | `%3f*` | `fff` | `{ms}` |
-| **Microseconds** | 6-digit fractional seconds (`123456`) | `SSSSSS` | `SSSSSS` | `%f*` | `ffffff` | `{ff:6}` |
-| **Timezone Offset** | Offset with colon (`+08:00`) | `ZZZZZ` / `XXX` | `Z` | `%:z` | `zzz` / `K` | `{tz:offset}` |
-| **Compact Offset** | Offset without colon (`+0800`) | `ZZ` | `ZZ` | `%z` | N/A | `{tz:offsetcompact}` |
-| **Timezone Name** | Abbreviation or IANA (`EDT`) | `z` | `z` | `%Z` | N/A | `{tz:short}` |
+| **Milliseconds** | 3-digit fractional seconds (`123`) | `SSS` | `SSS` | `%3f`* | `fff` | `{ms}` |
+| **Microseconds** | 6-digit fractional seconds (`123456`) | `SSSSSS` | `SSSSSS` | `%f`* | `ffffff` | `{ff:6}` |
+| **Timezone Offset** | Fixed offset with colon (`+08:00`) | `ZZZZZ` / `XXX` | `Z` | N/A | `zzz` | `{tz:offset}` |
+| **Timezone (Kind-based)** | Dynamic offset or Z based on `DateTime.Kind` | N/A | N/A | N/A | `K`* | `{tz:offset:utc}` |
+| **Compact Offset** | Portable offset without colon (`+0800`) | `ZZ` | `ZZ` | `%z` | N/A | `{tz:offsetcompact}` |
+| **Timezone Abbreviation** | Localized abbreviation (`CET`) | `z` | `z` | `%Z` | N/A | `{tz:short}` |
 | **Unix Epoch** | Seconds since Unix epoch | N/A | `X` | `%s` | N/A | `{ts}` |
 
 > [!NOTE]
-> `*` In POSIX `strftime`, standard implementations do not specify fractional seconds; `%f` is Python's 6-digit microsecond specifier, while `%3f`, `%6f`, and `%9f` are Tempo extensions designed for deterministic subsecond formatting and parsing.
+> `*` **Standard Variations & Extensions**:
+> - **LDML (`YYYY`, `ww`, `e`, `c`)**: In Unicode UTS #35, week-numbering year, week of year, and numeric day of week reflect territory/locale calendar conventions; deterministic ISO 8601 behavior requires explicit ISO settings.
+> - **POSIX `strftime` (`%-m`, `%-H`, `%-I`, `%f`)**: Modifiers omitting padding (`%-`) are GNU/Linux extensions; `%z` is the POSIX portable standard for compact offsets. POSIX does not specify subseconds; `%f` is Python's 6-digit microsecond specifier, while `%3f`, `%6f`, and `%9f` are Tempo extensions.
+> - **.NET `K`**: Unlike fixed-offset `zzz` (`+08:00`), `K` produces an offset for `DateTimeKind.Local`, `Z` for `DateTimeKind.Utc`, and an empty string for `DateTimeKind.Unspecified`.
 
 ---
 
@@ -110,11 +114,11 @@ const str = t.format("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff", { dialect: 'dotnet' 
 ### E. Excel / Google Sheets (`sheet`)
 * Enclose arbitrary strings in double quotes: `"Order Date: " yyyy-mm-dd`.
 * Escape individual characters using backslash `\`.
-* Formatting decorators like `_ ` (space reservation) and `* ` (fill character) are ignored in standard parsing/formatting.
+* Formatting decorators like <code>_ </code> (space reservation) and <code>* </code> (fill character) are ignored in standard parsing/formatting.
 
 ```typescript
-const str = t.format('"Total: $" 0.00 "as of" mmmm d, yyyy', { dialect: 'sheet' });
-// => "Total: $ 0.00 as of October 24, 2026"
+const str = t.format('"Total: $0.00 as of " mmmm d, yyyy', { dialect: 'sheet' });
+// => "Total: $0.00 as of October 24, 2026"
 ```
 
 ### F. Native Tempo Core

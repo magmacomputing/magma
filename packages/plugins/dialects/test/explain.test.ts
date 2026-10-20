@@ -49,8 +49,8 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(res3.pattern).toBe('{#quarter} {yyyy}');
 
 		const res4 = Tempo.dialects.explain('Y-w-e', DIALECT.Ldml);
-		expect(res4.pattern).toBe('{yow}-{woy:raw}-{dow:locale}');
-		expect(res4.tokens[0]).toEqual({ source: 'Y', tempo: '{yow}', desc: 'Week-numbering year' });
+		expect(res4.pattern).toBe('{yow:locale}-{woy:locale:raw}-{dow:locale}');
+		expect(res4.tokens[0]).toEqual({ source: 'Y', tempo: '{yow:locale}', desc: 'Week-numbering year (locale)' });
 	});
 
 	it('translates timezone tokens into Tempo tz modifiers', () => {
@@ -58,7 +58,7 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(res1.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi} {tz:long}');
 
 		const res2 = Tempo.dialects.explain('%Y-%m-%d %H:%M %Z', DIALECT.Strftime);
-		expect(res2.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi} {tz:short}');
+		expect(res2.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi} {tz}');
 
 		const res3 = Tempo.dialects.explain('YYYY-MM-DD HH:mm Z', DIALECT.Moment);
 		expect(res3.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi} {tz:offset}');
@@ -90,14 +90,14 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('translates Oracle masks preserving case rules, FM toggling, and unsupported tokens', () => {
 		const res = Tempo.dialects.explain('IYYY-IW-D J', DIALECT.Oracle);
-		expect(res.pattern).toBe('{yow}-{woy}-{dow} {jj}');
+		expect(res.pattern).toBe('{yow}-{woy}-{dow:locale} {jj}');
 		const jToken = res.tokens.find(t => t.source === 'J');
 		expect(jToken?.tempo).toBe('{jj}');
 		expect(jToken?.desc).toContain('Julian day');
 
 		// Case-insensitive token matching for recognized single letters (e.g. 'd')
 		const resLowerD = Tempo.dialects.explain('YYYY-MM-d', DIALECT.Oracle);
-		expect(resLowerD.pattern).toBe('{yyyy}-{mm}-{dow}');
+		expect(resLowerD.pattern).toBe('{yyyy}-{mm}-{dow:locale}');
 
 		// Fill Mode (FM) toggles unpadded tokens
 		const resFm = Tempo.dialects.explain('FMMM/DD/YYYY FMHH24:MI', DIALECT.Oracle);
@@ -257,15 +257,15 @@ describe('Dialect Explain & Migration Helper', () => {
 	});
 
 	it('translates LDML meridiem (a, aa, aaa) and weekday/doy tokens (DD, EE, ee, cc)', () => {
-		const resMer = Tempo.dialects.explain('hh:mm a', DIALECT.Ldml);
-		expect(resMer.pattern).toBe('{h12}:{mi} {mer}');
+		const resMer = Tempo.dialects.explain('hh:mm a aaa', DIALECT.Ldml);
+		expect(resMer.pattern).toBe('{h12}:{mi} {mer:upper} {mer}');
 
 		const resTokens = Tempo.dialects.explain('yyyy-DD EE ee cc', DIALECT.Ldml);
 		expect(resTokens.pattern).toBe('{yyyy}-{doy} {www} {dow:locale} {dow:locale}');
 
 		const resWeek = Tempo.dialects.explain('YYYY ww w', DIALECT.Ldml);
-		expect(resWeek.pattern).toBe('{yow} {woy} {woy:raw}');
-		expect(Tempo.dialects.explain('YY', DIALECT.Ldml).pattern).toBe('{yow:short}');
+		expect(resWeek.pattern).toBe('{yow:locale} {woy:locale} {woy:locale:raw}');
+		expect(Tempo.dialects.explain('YY', DIALECT.Ldml).pattern).toBe('{yow:locale:short}');
 
 		// Moment locale week-year gggg and gg
 		const resMomentWeek = Tempo.dialects.explain('gggg gg', DIALECT.Moment);
@@ -280,8 +280,8 @@ describe('Dialect Explain & Migration Helper', () => {
 
 	it('treats Y consistently as week-numbering year in both LDML explain and format', () => {
 		const resExplain = Tempo.dialects.explain('Y', DIALECT.Ldml);
-		expect(resExplain.pattern).toBe('{yow}');
-		expect(resExplain.tokens).toEqual([{ source: 'Y', tempo: '{yow}', desc: 'Week-numbering year' }]);
+		expect(resExplain.pattern).toBe('{yow:locale}');
+		expect(resExplain.tokens).toEqual([{ source: 'Y', tempo: '{yow:locale}', desc: 'Week-numbering year (locale)' }]);
 
 		const dt = new Tempo('2026-10-24T12:00:00Z');
 		expect(dt.dialects.format('Y', DIALECT.Ldml)).toBe('2026');
@@ -292,4 +292,74 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(res.pattern).toBe('{yyyy}-{doy:ord}');
 		expect(res.tokens.find(t => t.source === 'DDDo')?.desc).toBe('Day of year with ordinal suffix');
 	});
+
+	it('clamps strftime %Nf precision to 1-9 and keeps out-of-range as literals', () => {
+		const resValid = Tempo.dialects.explain('%f %3f %9f', DIALECT.Strftime);
+		expect(resValid.pattern).toBe('{ff:6} {ff:3} {ff:9}');
+
+		const resInvalid = Tempo.dialects.explain('%0f %12f', DIALECT.Strftime);
+		expect(resInvalid.pattern).toBe('%0f %12f');
+	});
+
+	it('preserves Sheet elapsed time tokens as literals in the explained pattern and handles uppercase AM/PM', () => {
+		const res = Tempo.dialects.explain('[h]:mm:[ss]', DIALECT.Sheet);
+		expect(res.pattern).toBe('[h]:{mi}:[ss]');
+		expect(res.tokens.find(t => t.source === '[h]')?.desc).toBe('Elapsed hours');
+		expect(res.tokens.find(t => t.source === '[ss]')?.desc).toBe('Elapsed seconds');
+
+		const resAmPm = Tempo.dialects.explain('h:mm AM/PM', DIALECT.Sheet);
+		expect(resAmPm.pattern).toBe('{h12:raw}:{mi} {mer:upper}');
+		expect(resAmPm.tokens.find(t => t.source.toLowerCase() === 'am/pm')?.tempo).toBe('{mer:upper}');
+	});
+
+	it('explains uppercase Sheet tokens such as YYYY and DD correctly', () => {
+		const res = Tempo.dialects.explain('YYYY-MM-DD', DIALECT.Sheet);
+		expect(res.pattern).toBe('{yyyy}-{mm}-{dd}');
+		expect(res.tokens.find(t => t.source === 'YYYY')?.desc).toBe('4-digit year');
+		expect(res.tokens.find(t => t.source === 'DD')?.desc).toBe('Zero-padded day of month (01-31)');
+	});
+
+	it('explains spreadsheet masks into native Tempo braced tokens', () => {
+		const res = Tempo.dialects.explain('yyyy-mm-dd hh:mm:ss', DIALECT.Sheet);
+		expect(res.dialect).toBe(DIALECT.Sheet);
+		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+
+		const res12 = Tempo.dialects.explain('hh:mm:ss AM/PM', DIALECT.Sheet);
+		expect(res12.pattern).toBe('{h12}:{mi}:{ss} {mer:upper}');
+	});
+
+	it('explains Moment E token as ISO day of week', () => {
+		const res = Tempo.dialects.explain('YYYY-MM-DD E', DIALECT.Moment);
+		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {dow}');
+		expect(res.tokens.find(t => t.source === 'E')).toEqual({
+			source: 'E',
+			tempo: '{dow}',
+			desc: 'ISO day of week (1-7)',
+		});
+	});
+
+	it('supports .NET custom specifiers prefixed with % to avoid standard format ambiguity', () => {
+		const res = Tempo.dialects.explain('%d', DIALECT.DotNet);
+		expect(res.pattern).toBe('{dd:raw}');
+		expect(res.tokens[0]).toEqual({ source: '%d', tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' });
+
+		const resH = Tempo.dialects.explain('%h', DIALECT.DotNet);
+		expect(resH.pattern).toBe('{h12:raw}');
+		expect(resH.tokens[0]).toEqual({ source: '%h', tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' });
+	});
+
+	it('explains .NET masks into native Tempo braced tokens', () => {
+		const res = Tempo.dialects.explain('yyyy-MM-dd HH:mm:ss', DIALECT.DotNet);
+		expect(res.dialect).toBe(DIALECT.DotNet);
+		expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+
+		const resWeekday = Tempo.dialects.explain('dddd, MMMM d, yyyy hh:mm tt', DIALECT.DotNet);
+		expect(resWeekday.pattern).toBe('{wkd}, {mon} {dd:raw}, {yyyy} {h12}:{mi} {mer:upper}');
+
+		const resK = Tempo.dialects.explain('yyyy-MM-ddTHH:mm:ssK', DIALECT.DotNet);
+		expect(resK.pattern).toBe('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}{tz:offset:utc}');
+		expect(resK.tokens.find(t => t.source === 'K')?.tempo).toBe('{tz:offset:utc}');
+	});
 });
+
+

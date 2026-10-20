@@ -6,7 +6,7 @@ import { ORACLE_TOKEN_REGEX } from '../compiler/oracle.compiler.js';
 import { STRFTIME_SPECIFIERS } from '../compiler/strftime.compiler.js';
 import { GO_TOKEN_REGEX } from '../compiler/go.compiler.js';
 import { MYSQL_SPECIFIERS } from '../compiler/mysql.compiler.js';
-import { DOTNET_TOKENS } from '../compiler/dotnet.compiler.js';
+import { DOTNET_TOKENS, normalizeDotNetMask } from '../compiler/dotnet.compiler.js';
 import { tokenizeSheetMask } from '../compiler/sheet.compiler.js';
 import type { ExplainResult, ExplainedToken, ExplainOptions } from '../types.js';
 
@@ -14,11 +14,11 @@ export type { ExplainedToken, ExplainResult, ExplainOptions };
 
 const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	yyyy: { tempo: '{yyyy}', desc: '4-digit year' },
-	YYYY: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
+	YYYY: { tempo: '{yow:locale}', desc: '4-digit week-numbering year (locale)' },
 	yy: { tempo: '{yy}', desc: '2-digit year' },
-	YY: { tempo: '{yow:short}', desc: '2-digit ISO week-numbering year' },
+	YY: { tempo: '{yow:locale:short}', desc: '2-digit week-numbering year (locale)' },
 	y: { tempo: '{yyyy}', desc: 'Year' },
-	Y: { tempo: '{yow}', desc: 'Week-numbering year' },
+	Y: { tempo: '{yow:locale}', desc: 'Week-numbering year (locale)' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	LLLL: { tempo: '{mon}', desc: 'Full standalone month name' },
 	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
@@ -56,7 +56,7 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	S: { tempo: '{ff:1}', desc: 'Fractional seconds (tenths: 0-9)' },
 	aaa: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
 	aa: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
-	a: { tempo: '{mer}', desc: 'am/pm marker (lowercase)' },
+	a: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
 	EEEE: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
 	cccc: { tempo: '{wkd}', desc: 'Full standalone weekday name' },
 	EEE: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
@@ -69,8 +69,8 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	e: { tempo: '{dow:locale}', desc: 'Locale-relative day of week (1-7)' },
 	II: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
 	I: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
-	ww: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
-	w: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
+	ww: { tempo: '{woy:locale}', desc: 'Zero-padded week of year (locale)' },
+	w: { tempo: '{woy:locale:raw}', desc: 'Unpadded week of year (locale)' },
 	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	QQQQ: { tempo: '{#quarter}', desc: 'Full quarter name (via #quarter Term)' },
 	qqqq: { tempo: '{#quarter}', desc: 'Full standalone quarter name (via #quarter Term)' },
@@ -122,7 +122,7 @@ const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; re
 	G: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
 	g: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
 	z: { tempo: '{tz:offsetcompact}', desc: 'Numeric time zone offset (e.g. -0800)' },
-	Z: { tempo: '{tz:short}', desc: 'Time zone abbreviation / name (e.g. PST)' },
+	Z: { tempo: '{tz}', desc: 'Time zone name (e.g. Europe/Paris)' },
 	F: { tempo: '{yyyy}-{mm}-{dd}', desc: 'ISO 8601 date' },
 	T: { tempo: '{hh}:{mi}:{ss}', desc: 'ISO 8601 time' },
 	R: { tempo: '{hh}:{mi}', desc: '24-hour time' },
@@ -188,6 +188,7 @@ const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	dd: { tempo: '{www}', desc: '2-character weekday name' },
 	d: { tempo: '{dow:0}', desc: 'Day of week number where Sunday is 0 (0-6)' },
 	do: { tempo: '{dow:ord}', desc: 'Day of week with ordinal suffix' },
+	E: { tempo: '{dow}', desc: 'ISO day of week (1-7)' },
 	DDDD: { tempo: '{doy}', desc: 'Day of year zero-padded (001-366)' },
 	DDDo: { tempo: '{doy:ord}', desc: 'Day of year with ordinal suffix' },
 	DDD: { tempo: '{doy:raw}', desc: 'Unpadded day of year (1-366)' },
@@ -233,7 +234,7 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	DY: { tempo: '{www:upper}', desc: 'Short weekday name uppercase (e.g. WED)' },
 	Dy: { tempo: '{www}', desc: 'Short weekday name capitalized (e.g. Wed)' },
 	dy: { tempo: '{www:lower}', desc: 'Short weekday name lowercase (e.g. wed)' },
-	D: { tempo: '{dow}', desc: 'Day of week (1-7, ISO Monday=1)' },
+	D: { tempo: '{dow:locale}', desc: 'Day of week (1-7, numbering depends on NLS_TERRITORY)' },
 	HH24: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
 	HH12: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
 	HH: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
@@ -386,7 +387,7 @@ const MYSQL_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; reado
 	j: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	v: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
 	x: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
-	u: { tempo: '{woy:cal:raw}', desc: 'Week number with Monday as first day (00-53)' },
+	u: { tempo: '', desc: 'Week number with Monday as first day (00-53)' },
 	U: { tempo: '', desc: 'Week number with Sunday as first day (00-53)' },
 	V: { tempo: '', desc: 'Week number with Sunday as first day (01-53)' },
 	X: { tempo: '', desc: '4-digit year for week %V' },
@@ -394,7 +395,7 @@ const MYSQL_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; reado
 
 const RE_LDML = new RegExp(`'(''|[^'])*'|(${LDML_TOKENS.join('|')})`, 'g');
 const RE_STRFTIME = new RegExp(`%(-)?(\\d+)?([${STRFTIME_SPECIFIERS.join('')}])`, 'g');
-const RE_MOMENT = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
+const RE_MOMENT = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|E|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'MONTH',
 	'MON',
@@ -410,14 +411,14 @@ const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 const RE_ORACLE = new RegExp(ORACLE_TOKEN_REGEX.source, 'gi');
 const RE_GO_EXPLAIN = new RegExp(GO_TOKEN_REGEX.source, 'g');
 const RE_MYSQL = new RegExp(`%([${MYSQL_SPECIFIERS.join('')}])`, 'g');
-const RE_DOTNET = /'([^']*)'|"([^"]*)"|\\(.)|(fffffff|ffffff|fffff|ffff|fff|ff|f|FFFFFFF|FFFFFF|FFFFF|FFFF|FFF|FF|F|yyyyy|yyyy|yyy|yy|y|MMMM|MMM|MM|M|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|tt|t|zzz|zz|z|K|gg|g)/g;
+const RE_DOTNET = new RegExp(`'([^']*)'|"([^"]*)"|\\\\(.)|%?(${DOTNET_TOKENS.join('|')})`, 'g');
 
 const DOTNET_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	yyyyy: { tempo: '{yyyy}', desc: 'Year with at least 5 digits' },
 	yyyy: { tempo: '{yyyy}', desc: '4-digit year' },
 	yyy: { tempo: '{yyyy}', desc: 'Year with at least 3 digits' },
 	yy: { tempo: '{yy}', desc: '2-digit year' },
-	y: { tempo: '{yy}', desc: '1-2 digit year' },
+	y: { tempo: '{yy:raw}', desc: 'Unpadded 2-digit year (0-99)' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
 	MM: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
@@ -453,7 +454,7 @@ const DOTNET_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	zzz: { tempo: '{tz:offset}', desc: 'Full signed time zone offset (+00:00)' },
 	zz: { tempo: '{tz:offset:hh}', desc: 'Signed 2-digit hour offset (+00)' },
 	z: { tempo: '{tz:offset:hh}', desc: 'Signed hour offset (+0)' },
-	K: { tempo: '{tz:offset}', desc: 'UTC Z or signed time zone offset' },
+	K: { tempo: '{tz:offset:utc}', desc: 'UTC Z or signed time zone offset' },
 	gg: { tempo: '{era}', desc: 'Era designator (A.D.)' },
 	g: { tempo: '{era}', desc: 'Era designator (A.D.)' },
 };
@@ -545,7 +546,13 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 				if (spec === '%') {
 					pattern += '%';
 				} else if (spec === 'f') {
-					const prec = width ?? '6';
+					const n = Number(width ?? 6);
+					if (n < 1 || n > 9) {
+						pattern += appendLiteral(raw);
+						lastIndex = index + raw.length;
+						continue;
+					}
+					const prec = String(n);
 					const tempo = `{ff:${prec}}`;
 					pattern += tempo;
 					tokens.push({ source: raw, tempo, desc: `Fractional seconds (${prec} digits)` });
@@ -685,11 +692,12 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 		}
 
 		case DIALECT.DotNet: {
+			const normalizedMask = normalizeDotNetMask(mask);
 			let lastIndex = 0;
-			for (const match of mask.matchAll(RE_DOTNET)) {
+			for (const match of normalizedMask.matchAll(RE_DOTNET)) {
 				const index = match.index!;
 				if (index > lastIndex)
-					pattern += appendLiteral(mask.slice(lastIndex, index));
+					pattern += appendLiteral(normalizedMask.slice(lastIndex, index));
 
 				if (match[1] !== undefined) {
 					pattern += appendLiteral(match[1]);
@@ -702,15 +710,15 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					const info = DOTNET_EXPLAIN_MAP[token];
 					if (info) {
 						pattern += info.tempo || appendLiteral(token);
-						tokens.push({ source: token, tempo: info.tempo, desc: info.desc });
+						tokens.push({ source: match[0], tempo: info.tempo, desc: info.desc });
 					} else {
 						pattern += appendLiteral(token);
 					}
 				}
 				lastIndex = index + match[0].length;
 			}
-			if (lastIndex < mask.length)
-				pattern += appendLiteral(mask.slice(lastIndex));
+			if (lastIndex < normalizedMask.length)
+				pattern += appendLiteral(normalizedMask.slice(lastIndex));
 			break;
 		}
 
@@ -723,9 +731,11 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					continue;
 				}
 				const tok = t.value;
+				const raw = t.raw ?? tok;
+				const key = tok.toLowerCase();
 				let tempo = '';
 				let desc = '';
-				switch (tok) {
+				switch (key) {
 					case 'yyyy':
 						tempo = '{yyyy}';
 						desc = '4-digit year';
@@ -823,12 +833,27 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 						tempo = '.{ff:1}';
 						desc = 'Tenths of second (0-9)';
 						break;
+					case '[h]':
+					case '[hh]':
+						tempo = '';
+						desc = 'Elapsed hours';
+						break;
+					case '[m]':
+					case '[mm]':
+						tempo = '';
+						desc = 'Elapsed minutes';
+						break;
+					case '[s]':
+					case '[ss]':
+						tempo = '';
+						desc = 'Elapsed seconds';
+						break;
 					default:
-						pattern += appendLiteral(tok);
+						pattern += appendLiteral(raw);
 						continue;
 				}
-				pattern += tempo;
-				tokens.push({ source: tok, tempo, desc });
+				pattern += tempo || appendLiteral(raw);
+				tokens.push({ source: raw, tempo, desc });
 			}
 			break;
 		}

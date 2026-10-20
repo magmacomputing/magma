@@ -11,6 +11,7 @@ import {
 	resolveTimeComponents,
 	buildParsedZonedDateTime,
 	validateResolvedDateFields,
+	getSundayBasedWeek,
 } from './shared.compiler.js';
 
 const MYSQL_FORMAT_CACHE = new WeakCache<string, FormatterFn>();
@@ -29,6 +30,21 @@ export const MYSQL_SPECIFIERS = [
 export type MysqlSpecifier = (typeof MYSQL_SPECIFIERS)[number];
 
 export const MYSQL_SPECIFIER_REGEX = new RegExp(`%([${MYSQL_SPECIFIERS.join('')}])`, 'g');
+
+/**
+ * Calculates MySQL Mode 2 (Sunday-based, week 1 begins on first Sunday, week 01..53) week and year.
+ */
+function getMysqlMode2Week(z: Temporal.ZonedDateTime): { weekOfYear: number; yearOfWeek: number } {
+	const w0 = getSundayBasedWeek(z.year, z.dayOfYear, z.dayOfWeek);
+	if (w0 > 0) {
+		return { weekOfYear: w0, yearOfWeek: z.year };
+	}
+	// Days before the first Sunday of the year roll over to the previous year's last week
+	const prevYear = z.year - 1;
+	const dec31 = Temporal.PlainDate.from({ year: prevYear, month: 12, day: 31 });
+	const prevWeek = getSundayBasedWeek(prevYear, dec31.dayOfYear, dec31.dayOfWeek);
+	return { weekOfYear: prevWeek, yearOfWeek: prevYear };
+}
 
 /**
  * Compiles a MySQL DATE_FORMAT format mask into a high-performance formatter function.
@@ -101,7 +117,7 @@ export function compileMysqlFormatter(mask: string): FormatterFn {
 				parts.push((z) => pad(z.second, 2));
 				break;
 			case 'f':
-				parts.push((z) => pad(z.microsecond, 6));
+				parts.push((z) => pad(z.millisecond * 1000 + z.microsecond, 6));
 				break;
 			case 'p':
 				parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
@@ -138,31 +154,24 @@ export function compileMysqlFormatter(mask: string): FormatterFn {
 				break;
 			case 'u':
 				parts.push((z) => {
-					// Week 00-53 with Monday as first day
-					const jan1 = z.toPlainDate().with({ month: 1, day: 1 });
-					const jan1DayOfWeek = jan1.dayOfWeek; // 1 = Mon ... 7 = Sun
-					const daysSinceJan1 = z.dayOfYear - 1;
-					const w = Math.floor((daysSinceJan1 + (jan1DayOfWeek - 1)) / 7);
+					// MySQL Mode 1: Monday is first day of week, week 1 has 4+ days in this year (00-53)
+					const jan1Iso = z.toPlainDate().with({ month: 1, day: 1 }).dayOfWeek; // 1 = Mon ... 7 = Sun
+					const yday = z.dayOfYear - 1;
+					const w = Math.floor((yday + jan1Iso - 1) / 7) + (jan1Iso <= 4 ? 1 : 0);
 					return pad(w, 2);
 				});
 				break;
 			case 'U':
-				parts.push((z) => {
-					// Week 00-53 with Sunday as first day
-					const jan1 = z.toPlainDate().with({ month: 1, day: 1 });
-					const jan1SundayBased = jan1.dayOfWeek % 7;
-					const daysSinceJan1 = z.dayOfYear - 1;
-					const w = Math.floor((daysSinceJan1 + jan1SundayBased) / 7);
-					return pad(w, 2);
-				});
+				// MySQL Mode 0: Sunday is first day of week, week 1 begins on first Sunday (00-53)
+				parts.push((z) => pad(getSundayBasedWeek(z.year, z.dayOfYear, z.dayOfWeek), 2));
 				break;
 			case 'V':
-				// ISO Week with Sunday start (01-53)
-				parts.push((z) => pad(getIsoWeek(z).weekOfYear, 2));
+				// MySQL Mode 2: Sunday-based week with previous-year rollover (01-53)
+				parts.push((z) => pad(getMysqlMode2Week(z).weekOfYear, 2));
 				break;
 			case 'X':
-				// ISO Year with Sunday start
-				parts.push((z) => pad(getIsoWeek(z).yearOfWeek, 4));
+				// MySQL Mode 2: 4-digit year for week %V
+				parts.push((z) => pad(getMysqlMode2Week(z).yearOfWeek, 4));
 				break;
 			default:
 				parts.push(() => `%${specifier}`);
@@ -361,6 +370,10 @@ export function parseMysql(
 	const weekdayNum = getGroup('weekday_num');
 	const weekdayName = getGroup('weekday_name');
 	const weekdayAbbr = getGroup('weekday_abbr');
+
+	// Non-ISO MySQL week modes are not resolvable yet; refuse rather than guess.
+	if (getGroup('week_u') || getGroup('week_U') || getGroup('week_V') || getGroup('yyyy_X'))
+		return undefined;
 
 	if (yyyy) {
 		year = parseInt(yyyy, 10);

@@ -1,4 +1,4 @@
-import { pad, suffix, WeakCache, Enum, resolveTwoDigitYear, resolveDayOfYear, resolveFractionalSeconds, getIsoWeek, fromIsoWeek } from '@magmacomputing/tempo/library';
+import { pad, suffix, WeakCache, Enum, resolveTwoDigitYear, resolveDayOfYear, resolveFractionalSeconds, getIsoWeek, fromIsoWeek, ValueOf } from '@magmacomputing/tempo/library';
 import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
@@ -26,9 +26,14 @@ export const LDML_TOKENS = [
 	'a', 'c', 'e', 'E', 'w', 'W', 'Q', 'q', 'Z', 'z', 'I',
 ] as const;
 
-export type LdmlToken = (typeof LDML_TOKENS)[number];
+export type LdmlToken = ValueOf<typeof LDML_TOKENS>;
 
 const LDML_TOKEN_REGEX = new RegExp(`'(''|[^'])*'|(${LDML_TOKENS.join('|')})`, 'g');
+
+function getZdtIsoWeek(z: Temporal.ZonedDateTime) {
+	const plainDate = (z as any).withCalendar ? (z as any).withCalendar('iso8601').toPlainDate() : z.toPlainDate();
+	return getIsoWeek(plainDate);
+}
 
 /**
  * Compiles an LDML format mask into a high-performance string builder.
@@ -60,27 +65,27 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					parts.push((z) => (z.year <= 0 ? pad(1 - z.year, 4) : pad(z.year, 4)));
 					break;
 				case 'YYYY':
-					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).yearOfWeek, 4));
+					parts.push((z) => pad(getZdtIsoWeek(z).yearOfWeek, 4));
 					break;
 				case 'yy':
 					parts.push((z) => pad(((((z.year <= 0 ? 1 - z.year : z.year) % 100) + 100) % 100), 2));
 					break;
 				case 'YY':
-					parts.push((z) => pad(((getIsoWeek(z.toPlainDate()).yearOfWeek % 100) + 100) % 100, 2));
+					parts.push((z) => pad(((getZdtIsoWeek(z).yearOfWeek % 100) + 100) % 100, 2));
 					break;
 				case 'y':
 					parts.push((z) => String(z.year <= 0 ? 1 - z.year : z.year));
 					break;
 				case 'Y':
-					parts.push((z) => String(getIsoWeek(z.toPlainDate()).yearOfWeek));
+					parts.push((z) => String(getZdtIsoWeek(z).yearOfWeek));
 					break;
 				case 'II':
 				case 'ww':
-					parts.push((z) => pad(getIsoWeek(z.toPlainDate()).weekOfYear, 2));
+					parts.push((z) => pad(getZdtIsoWeek(z).weekOfYear, 2));
 					break;
 				case 'I':
 				case 'w':
-					parts.push((z) => String(getIsoWeek(z.toPlainDate()).weekOfYear));
+					parts.push((z) => String(getZdtIsoWeek(z).weekOfYear));
 					break;
 				case 'W':
 					parts.push((z) => String(Math.ceil(z.day / 7)));
@@ -217,10 +222,10 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 				}
 
 				case 'aaa':
-				case 'a':
 					parts.push((z) => (z.hour < 12 ? 'am' : 'pm'));
 					break;
 				case 'aa':
+				case 'a':
 					parts.push((z) => (z.hour < 12 ? 'AM' : 'PM'));
 					break;
 

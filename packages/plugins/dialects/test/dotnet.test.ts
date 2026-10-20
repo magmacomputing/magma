@@ -2,6 +2,7 @@ import { Tempo } from '@magmacomputing/tempo/core';
 import { FormatModule } from '@magmacomputing/tempo/format';
 import { ParseModule } from '@magmacomputing/tempo/parse';
 import { DialectsPlugin, DIALECT, DOTNET_TOKENS } from '../src/index.js';
+import { compileDotNetFormatter } from '../src/compiler/dotnet.compiler.js';
 
 describe('.NET Date and Time Format Dialect', () => {
 	beforeAll(() => {
@@ -56,11 +57,22 @@ describe('.NET Date and Time Format Dialect', () => {
 			expect(t.dialects.dotnet('yyyy\\-MM\\-dd')).toBe('2026-10-24');
 		});
 
-		it('supports standard format specifiers (O, s, u)', () => {
+		it('supports standard format specifiers (O, s, u, r, R)', () => {
 			const t = new Tempo('2026-10-24T15:30:45.1234567Z');
 			expect(t.dialects.dotnet('s')).toBe('2026-10-24T15:30:45');
 			expect(t.dialects.dotnet('u')).toBe('2026-10-24 15:30:45Z');
 			expect(t.dialects.dotnet('O')).toBe('2026-10-24T15:30:45.1234567Z');
+
+			// u and r/R convert to UTC when given a non-UTC instant
+			const tOffset = new Tempo('2026-10-24T15:30:45+10:00');
+			expect(tOffset.dialects.dotnet('u')).toBe('2026-10-24 05:30:45Z');
+			expect(tOffset.dialects.dotnet('r')).toBe('Sat, 24 Oct 2026 05:30:45 GMT');
+			expect(tOffset.dialects.dotnet('R')).toBe('Sat, 24 Oct 2026 05:30:45 GMT');
+
+			// Direct compilation behaves identically
+			expect(compileDotNetFormatter('u')(tOffset.zdt)).toBe('2026-10-24 05:30:45Z');
+			expect(compileDotNetFormatter('r')(tOffset.zdt)).toBe('Sat, 24 Oct 2026 05:30:45 GMT');
+			expect(compileDotNetFormatter('R')(tOffset.zdt)).toBe('Sat, 24 Oct 2026 05:30:45 GMT');
 		});
 
 		it('supports ecosystem aliases and auto-detection', () => {
@@ -117,18 +129,25 @@ describe('.NET Date and Time Format Dialect', () => {
 			const parsed = Tempo.dialects.parse('Sunday, October 24, 2026', 'dddd, MMMM d, yyyy', DIALECT.DotNet, { error: 'catch' });
 			expect(parsed.isValid).toBe(false);
 		});
-	});
 
-	describe('Explain & Transpilation', () => {
-		it('explains .NET masks into native Tempo braced tokens', () => {
-			const res = Tempo.dialects.explain('yyyy-MM-dd HH:mm:ss', DIALECT.DotNet);
-			expect(res.dialect).toBe(DIALECT.DotNet);
-			expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
+		it('rejects unrecognized weekday names', () => {
+			const parsed = Tempo.dialects.parse('Xyzday, October 24, 2026', 'dddd, MMMM d, yyyy', DIALECT.DotNet, { error: 'catch' });
+			expect(parsed.isValid).toBe(false);
 		});
 
-		it('explains weekday (dddd) and AM/PM (tt) correctly', () => {
-			const res = Tempo.dialects.explain('dddd, MMMM d, yyyy hh:mm tt', DIALECT.DotNet);
-			expect(res.pattern).toBe('{wkd}, {mon} {dd:raw}, {yyyy} {h12}:{mi} {mer:upper}');
+		it('parses standard UTC format specifiers (u, r, R) as UTC', () => {
+			const parsedU = Tempo.dialects.parse('2026-10-24 15:30:45Z', 'u', DIALECT.DotNet);
+			expect(parsedU.isValid).toBe(true);
+			expect(parsedU.tz).toBe('UTC');
+			expect(parsedU.yy).toBe(2026);
+			expect(parsedU.hh).toBe(15);
+
+			const parsedR = Tempo.dialects.parse('Sat, 24 Oct 2026 15:30:45 GMT', 'r', DIALECT.DotNet);
+			expect(parsedR.isValid).toBe(true);
+			expect(parsedR.tz).toBe('UTC');
+			expect(parsedR.yy).toBe(2026);
+			expect(parsedR.hh).toBe(15);
 		});
 	});
 });
+

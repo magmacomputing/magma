@@ -60,6 +60,16 @@ describe('Spreadsheet (Excel / Google Sheets) Format Dialect', () => {
 			expect(t.dialects.sheet('ss.0')).toBe('45.1');
 		});
 
+		it('formats cumulative elapsed-time tokens ([h], [m], [s])', () => {
+			// 15 hours, 30 minutes, 45 seconds = 15 hours, 930 minutes, 55845 seconds
+			const tElapsed = new Tempo('2026-10-24T15:30:45.000Z');
+			expect(tElapsed.dialects.sheet('[h]:mm:ss')).toBe('15:30:45');
+			expect(tElapsed.dialects.sheet('[hh]:mm:ss')).toBe('15:30:45');
+			expect(tElapsed.dialects.sheet('[m]:ss')).toBe('930:45');
+			expect(tElapsed.dialects.sheet('[mm]:ss')).toBe('930:45');
+			expect(tElapsed.dialects.sheet('[s]')).toBe('55845');
+		});
+
 		it('supports quoted literal escaping and backslash escaping', () => {
 			const t = new Tempo(dtString);
 			expect(t.dialects.sheet('"Date: "yyyy-mm-dd')).toBe('Date: 2026-10-24');
@@ -121,17 +131,5 @@ describe('Spreadsheet (Excel / Google Sheets) Format Dialect', () => {
 			expect(parsed.isValid).toBe(false);
 		});
 	});
-
-	describe('Explain & Transpilation', () => {
-		it('explains spreadsheet masks into native Tempo braced tokens', () => {
-			const res = Tempo.dialects.explain('yyyy-mm-dd hh:mm:ss', DIALECT.Sheet);
-			expect(res.dialect).toBe(DIALECT.Sheet);
-			expect(res.pattern).toBe('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}');
-		});
-
-		it('explains 12-hour AM/PM masks correctly', () => {
-			const res = Tempo.dialects.explain('hh:mm:ss AM/PM', DIALECT.Sheet);
-			expect(res.pattern).toBe('{h12}:{mi}:{ss} {mer:upper}');
-		});
-	});
 });
+

@@ -87,3 +87,25 @@ mjx-container {
   color: var(--vp-c-brand-2);
 }
 
+/* Frozen / sticky column headers for comparison charts and documentation tables */
+.vp-doc table {
+  display: block;
+  max-height: 72vh;
+  overflow: auto;
+  position: relative;
+  margin: 1.5rem 0;
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-divider);
+  scrollbar-width: thin;
+  scrollbar-color: var(--vp-c-divider) transparent;
+}
+
+.vp-doc table thead tr th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--vp-c-bg-soft);
+  box-shadow: 0 1px 0 var(--vp-c-divider);
+}
+
+

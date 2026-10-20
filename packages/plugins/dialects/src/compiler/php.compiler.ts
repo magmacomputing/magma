@@ -439,7 +439,7 @@ export function parsePhp(
 	if (isoWeekStr) {
 		const isoWeek = parseInt(isoWeekStr, 10);
 		if (isoWeek < 1 || isoWeek > 53) return undefined;
-		const isoYear = isoYearStr ? parseInt(isoYearStr, 10) : (yyyy ? year : ((ctx.today as any).yearOfWeek ?? ctx.today.year));
+		const isoYear = isoYearStr ? parseInt(isoYearStr, 10) : ((yyyy || yy) ? year : ((ctx.today as any).yearOfWeek ?? ctx.today.year));
 		const isoDay = resolveIsoDay() ?? 1;
 		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
 		const check = getIsoWeek(targetDate);

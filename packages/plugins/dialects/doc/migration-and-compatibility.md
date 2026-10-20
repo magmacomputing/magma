@@ -21,7 +21,7 @@ One of the most dangerous formatting bugs in modern web applications occurs duri
 * **In Moment.js & Day.js**: `YYYY` represents the standard calendar year (e.g. `2026`).
 * **In Unicode LDML (Luxon, date-fns)**: `yyyy` represents the calendar year, while `YYYY` represents the **ISO week-numbering year**.
 * **The Pitfall**: Formatting `2025-12-31` with `YYYY` under LDML outputs `2026` because December 31st belongs to the first week of 2026. This has historically caused catastrophic financial and billing errors.
-* **The Tempo Solution**: Tempo Core uses `{yyyy}` for the 4-digit calendar year and `{yw}` for the ISO week-numbering year. The Dialects plugin automatically normalizes these semantics when evaluating legacy masks.
+* **The Tempo Solution**: Tempo Core uses `{yyyy}` for the 4-digit calendar year and `{yow}` for the ISO week-numbering year. The Dialects plugin automatically normalizes these semantics when evaluating legacy masks.
 
 ### 2. Month vs Minute: `MM` vs `mm` vs `mi`
 

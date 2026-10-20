@@ -82,7 +82,7 @@ describe('Moment.js Formatting & Parsing Compatibility', () => {
 	});
 
 	it('rejects Moment tokens without LDML equivalents', () => {
-		const unsupported = ['dd', 'do', 'd', 'Mo', 'ww', 'w', 'gggg', 'gg', 'Wo', 'Qo', 'e'];
+		const unsupported = ['dd', 'do', 'd', 'Mo', 'ww', 'w', 'gggg', 'gg', 'Wo', 'Qo', 'e', 'X', 'x'];
 		for (const token of unsupported) {
 			expect(() => dt.format(token, { dialect: DIALECT.Moment })).toThrow(/no LDML equivalent/);
 			const parsed = Tempo.dialects.parse('2026', token, DIALECT.Moment, { error: 'catch' });
