@@ -48,7 +48,7 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $threadId, body: $body }) {
        comment { id }
      }
-   }' -F threadId="<THREAD_ID>" -F body="<Accepted / Skipped explanation>"
+   }' -f threadId="<THREAD_ID>" -f body="<Accepted / Skipped explanation>"
    ```
    - If **Accepted**: Briefly summarize the fix applied locally in the working tree.
    - If **Skipped**: State the clear technical rationale so CodeRabbit and team members understand why no change was needed.

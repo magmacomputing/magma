@@ -22,14 +22,25 @@ export async function reviewPr(args = []) {
 	const jsonOutput = args.includes('--json');
 
 	try {
-		const prInfoRaw = runGh(['pr', 'view', '--json', 'number,title,headRefName,url']);
+		const prInfoRaw = runGh(['pr', 'view', '--json', 'number,title,headRefName,url,headRepository,headRepositoryOwner']);
 		const prInfo = JSON.parse(prInfoRaw);
 
+		const repoOwner = prInfo.headRepositoryOwner?.login;
+		const repoName = prInfo.headRepository?.name;
+
+		if (!repoOwner || !repoName) {
+			throw new Error('Could not determine repository owner and name from selected PR.');
+		}
+
 		const query = `
-query($owner: String!, $repo: String!, $pr: Int!) {
+query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $pr) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 100, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
         nodes {
           id
           isResolved
@@ -49,21 +60,54 @@ query($owner: String!, $repo: String!, $pr: Int!) {
   }
 }`;
 
-		const repoOwner = 'magmacomputing';
-		const repoName = 'magma';
+		let hasNextPage = true;
+		let afterCursor = null;
+		const allThreads = [];
 
-		const gqlRaw = runGh([
-			'api',
-			'graphql',
-			'-f', `query=${query}`,
-			'-F', `owner=${repoOwner}`,
-			'-F', `repo=${repoName}`,
-			'-F', `pr=${prInfo.number}`,
-		]);
+		while (hasNextPage) {
+			const gqlArgs = [
+				'api',
+				'graphql',
+				'-f', `query=${query}`,
+				'-f', `owner=${repoOwner}`,
+				'-f', `repo=${repoName}`,
+				'-F', `pr=${prInfo.number}`,
+			];
+			if (afterCursor) {
+				gqlArgs.push('-f', `after=${afterCursor}`);
+			}
 
-		const data = JSON.parse(gqlRaw);
-		const threads = data?.data?.repository?.pullRequest?.reviewThreads?.nodes ?? [];
-		const unresolved = threads.filter(t => !t.isResolved);
+			let gqlRaw;
+			try {
+				gqlRaw = runGh(gqlArgs);
+			} catch (err) {
+				if (allThreads.length > 0) {
+					console.warn(`Warning: Could not fetch additional review threads: ${err.message}`);
+					break;
+				}
+				throw err;
+			}
+
+			const data = JSON.parse(gqlRaw);
+			const pullRequest = data?.data?.repository?.pullRequest;
+			if (!pullRequest) {
+				throw new Error(`Pull request #${prInfo.number} not found in repository ${repoOwner}/${repoName}.`);
+			}
+
+			const reviewThreads = pullRequest.reviewThreads;
+			const pageThreads = reviewThreads?.nodes ?? [];
+			allThreads.push(...pageThreads);
+
+			hasNextPage = Boolean(reviewThreads?.pageInfo?.hasNextPage);
+			afterCursor = reviewThreads?.pageInfo?.endCursor ?? null;
+
+			if (hasNextPage && !afterCursor) {
+				console.warn('Warning: hasNextPage is true but no endCursor was provided; pagination could not complete.');
+				break;
+			}
+		}
+
+		const unresolved = allThreads.filter(t => !t.isResolved);
 
 		const findings = [];
 		for (const t of unresolved) {

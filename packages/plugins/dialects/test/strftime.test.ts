@@ -215,6 +215,26 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		expect(parsedCentury.dd).toBe(10);
 	});
 
+	it('formats and parses unpadded 2-digit years (%-y) and standard 2-digit years (%y)', () => {
+		const t2006 = new Tempo('2006-04-05T00:00:00Z', { timeZone: 'UTC' });
+		expect(t2006.format('%y', { dialect: DIALECT.Strftime })).toBe('06');
+		expect(t2006.format('%-y', { dialect: DIALECT.Strftime })).toBe('6');
+
+		const t2026 = new Tempo('2026-10-24T00:00:00Z', { timeZone: 'UTC' });
+		expect(t2026.format('%y', { dialect: DIALECT.Strftime })).toBe('26');
+		expect(t2026.format('%-y', { dialect: DIALECT.Strftime })).toBe('26');
+
+		// Parse single digit with %-y
+		const parsedSingle = Tempo.dialects.parse('6-04-05', '%-y-%m-%d', DIALECT.Strftime, { timeZone: 'UTC' });
+		expect(parsedSingle.isValid).toBe(true);
+		expect(parsedSingle.yy).toBe(2006);
+
+		// Parse two digits with %-y
+		const parsedDouble = Tempo.dialects.parse('26-10-24', '%-y-%m-%d', DIALECT.Strftime, { timeZone: 'UTC' });
+		expect(parsedDouble.isValid).toBe(true);
+		expect(parsedDouble.yy).toBe(2026);
+	});
+
 	it('formats, parses, and validates calendar week numbers (%U, %W)', () => {
 		const t = new Tempo('2026-10-24T12:00:00Z', { timeZone: 'UTC' });
 		const formattedU = t.format('%Y-%m-%d %U', { dialect: DIALECT.Strftime });

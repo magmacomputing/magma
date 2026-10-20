@@ -36,6 +36,7 @@ const DIALECTS: DialectConfig[] = [
       { external: 'yyyy', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
       { external: 'yy', tempo: '{yy}', category: 'Year', description: '2-digit calendar year', example: '26' },
       { external: 'y', tempo: '{yyyy}', category: 'Year', description: 'Calendar year without zero-padding', example: '2026' },
+      { external: 'Y', tempo: '{yow}', category: 'Year', description: 'Week-numbering year without zero-padding', example: '2026' },
       { external: 'YYYY', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
       { external: 'YY', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
       { external: 'MM', tempo: '{mm}', category: 'Month', description: 'Zero-padded numeric month (01–12)', example: '10' },
@@ -141,6 +142,7 @@ const DIALECTS: DialectConfig[] = [
     tokens: [
       { external: '%Y', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
       { external: '%y', tempo: '{yy}', category: 'Year', description: '2-digit year (00–99)', example: '26' },
+      { external: '%-y', tempo: '{yy:raw}', category: 'Year', description: 'Unpadded 2-digit year (0–99)', example: '6' },
       { external: '%G', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
       { external: '%g', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
       { external: '%C', tempo: '{cen}', category: 'Year', description: 'Century number (00–99)', example: '20' },
@@ -218,11 +220,11 @@ const DIALECTS: DialectConfig[] = [
       { external: 't', tempo: '{mer:upper}', category: 'Hour', description: 'A / P marker', example: 'P' },
       { external: 'zzz', tempo: '{tz:offset}', category: 'Timezone', description: 'Hours and minutes offset with colon', example: '+08:00' },
       { external: 'zz / z', tempo: '{tz:offset:hh}', category: 'Timezone', description: 'Signed hour offset', example: '+08' },
-      { external: 'K', tempo: '{tz:offset}', category: 'Timezone', description: 'ISO 8601 offset representation', example: '+08:00' },
-      { external: 'O / o', tempo: 'Round-trip', category: 'Other', description: 'Standard Round-trip ISO-8601 specifier', example: '2026-10-24T15:30:45.1234567+08:00' },
-      { external: 's', tempo: 'Sortable', category: 'Other', description: 'Standard Sortable ISO specifier', example: '2026-10-24T15:30:45' },
-      { external: 'u', tempo: 'Universal', category: 'Other', description: 'Universal sortable pattern', example: '2026-10-24 15:30:45Z' },
-      { external: 'r / R', tempo: 'RFC 1123', category: 'Other', description: 'RFC 1123 format specifier', example: 'Sat, 24 Oct 2026 15:30:45 GMT' }
+      { external: 'K', tempo: '{tz:offset:utc}', category: 'Timezone', description: 'ISO 8601 offset representation (Z for UTC)', example: '+08:00' },
+      { external: 'O / o', tempo: 'Round-trip', category: 'Other', description: 'Standard Round-trip ISO-8601 specifier', example: '2026-10-24T15:30:45.1234567+08:00', notes: 'Standard .NET composite format specifier' },
+      { external: 's', tempo: 'Sortable', category: 'Other', description: 'Standard Sortable ISO specifier', example: '2026-10-24T15:30:45', notes: 'Standard .NET composite format specifier' },
+      { external: 'u', tempo: 'Universal', category: 'Other', description: 'Universal sortable pattern', example: '2026-10-24 15:30:45Z', notes: 'Standard .NET composite format specifier' },
+      { external: 'r / R', tempo: 'RFC 1123', category: 'Other', description: 'RFC 1123 format specifier', example: 'Sat, 24 Oct 2026 15:30:45 GMT', notes: 'Standard .NET composite format specifier' }
     ]
   },
   {
@@ -277,7 +279,7 @@ const DIALECTS: DialectConfig[] = [
       { external: '%Y', tempo: '{yyyy}', category: 'Year', description: '4-digit calendar year', example: '2026' },
       { external: '%y', tempo: '{yy}', category: 'Year', description: '2-digit calendar year (00–99)', example: '26' },
       { external: '%x', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year (with %v)', example: '2026' },
-      { external: '%X', tempo: '{yow}', category: 'Year', description: '4-digit year for week %V (Sunday-based Mode 2)', example: '2026' },
+      { external: '%X', tempo: '', category: 'Year', description: '4-digit year for week %V (Sunday-based Mode 2, unsupported)', example: '2026' },
       { external: '%m', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: '%c', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
       { external: '%b', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },
@@ -420,7 +422,8 @@ const DIALECTS: DialectConfig[] = [
       { external: '4', tempo: '{mi:raw}', category: 'Minute', description: 'Unpadded minute (0–59)', example: '30' },
       { external: '05', tempo: '{ss}', category: 'Second', description: 'Zero-padded second (00–59)', example: '45' },
       { external: '5', tempo: '{ss:raw}', category: 'Second', description: 'Unpadded second (0–59)', example: '45' },
-      { external: '.000 / .999', tempo: '{ms}', category: 'Fractional', description: 'Milliseconds (3 digits)', example: '.123' },
+      { external: '.000', tempo: '{ms}', category: 'Fractional', description: 'Milliseconds (3 digits)', example: '.123' },
+      { external: '.999', tempo: '', category: 'Fractional', description: 'Milliseconds with trailing zeros omitted (unsupported in tokens)', example: '.123' },
       { external: '.000000 / .999999', tempo: '{ff:6}', category: 'Fractional', description: 'Microseconds (6 digits)', example: '.123456' },
       { external: '.000000000 / .999999999', tempo: '{ff:9}', category: 'Fractional', description: 'Nanoseconds (9 digits)', example: '.123456789' },
       { external: 'PM', tempo: '{mer:upper}', category: 'Hour', description: 'Uppercase meridiem (AM / PM)', example: 'PM' },

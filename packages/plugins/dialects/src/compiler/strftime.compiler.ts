@@ -62,7 +62,7 @@ export function compileStrftimeFormatter(mask: string): FormatterFn {
 				parts.push((z) => pad(z.year, 4));
 				break;
 			case 'y':
-				parts.push((z) => pad(((z.year % 100) + 100) % 100, 2));
+				parts.push((z) => formatNum(((z.year % 100) + 100) % 100));
 				break;
 			case 'C':
 				parts.push((z) => pad(Math.abs(Math.floor(z.year / 100)), 2));
@@ -245,7 +245,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('yyyy', '[+-]\\d{4,6}|\\d{4}');
 				break;
 			case 'y':
-				pattern += group('yy', '\\d{2}');
+				pattern += group('yy', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'C':
 				pattern += group('century', '\\d{2}');
