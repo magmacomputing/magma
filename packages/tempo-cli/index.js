@@ -6,6 +6,7 @@ import { versionSync } from './commands/version-sync.js';
 import { catalogSync } from './commands/catalog-sync.js';
 import { syncProviders } from './commands/sync-providers.js';
 import { prepublish } from './commands/prepublish.js';
+import { reviewPr } from './commands/review-pr.js';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -31,6 +32,10 @@ switch (command) {
 	case 'prepublish':
 		await prepublish(args);
 		break;
+	case 'review-pr':
+	case 'review:pr':
+		await reviewPr(args);
+		break;
 	case '-h':
 	case '--help':
 	case 'help':
@@ -48,6 +53,7 @@ Available Commands:
   catalog-sync       Sync plugin catalog metadata
   sync-providers     Sync AI provider models and remote manifests
   prepublish         Verify git main branch and run build prior to publish
+  review-pr          Fetch unresolved CodeRabbit review findings from the open PR
 `);
 		break;
 	default:

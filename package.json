@@ -19,6 +19,8 @@
   "scripts": {
     "test": "vitest run",
     "review:agent": "coderabbit review --agent",
+    "review:uncommitted": "coderabbit review --agent --uncommitted",
+    "review:pr": "tempo-cli review-pr",
     "review:cli": "coderabbit review",
     "review:findings": "coderabbit review findings",
     "build:tempo": "npm run build:library && npm run build:std && npm run build --workspace=@magmacomputing/tempo",
