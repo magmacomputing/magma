@@ -359,6 +359,9 @@ describe('Dialect Explain & Migration Helper', () => {
 		const resK = Tempo.dialects.explain('yyyy-MM-ddTHH:mm:ssK', DIALECT.DotNet);
 		expect(resK.pattern).toBe('{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}{tz:offset:utc}');
 		expect(resK.tokens.find(t => t.source === 'K')?.tempo).toBe('{tz:offset:utc}');
+
+		const resEscaped = Tempo.dialects.explain("hh' o\\'clock'", DIALECT.DotNet);
+		expect(resEscaped.pattern).toBe("{h12} o'clock");
 	});
 });
 

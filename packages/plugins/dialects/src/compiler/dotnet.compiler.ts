@@ -31,7 +31,14 @@ export const DOTNET_TOKENS = [
 
 export type DotNetSpecifier = (typeof DOTNET_TOKENS)[number];
 
-const RE_DOTNET_TOKEN = new RegExp(`'([^']*)'|"([^"]*)"|\\\\(.)|%?(${DOTNET_TOKENS.join('|')})`, 'g');
+/**
+ * Unescapes backslash-escaped characters within .NET quoted string literals.
+ */
+export function unescapeDotNetQuoted(literal: string): string {
+	return literal.replace(/\\(.)/g, '$1');
+}
+
+const RE_DOTNET_TOKEN = new RegExp(`'((?:\\\\.|[^'])*)'|"((?:\\\\.|[^"])*)"|\\\\(.)|%?(${DOTNET_TOKENS.join('|')})`, 'g');
 
 const STANDARD_DOTNET_FORMATS: Record<string, string> = {
 	O: "yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fffffffK",
@@ -124,11 +131,11 @@ export function compileDotNetFormatter(rawMask: string): FormatterFn {
 
 		if (match[1] !== undefined) {
 			// Single quoted literal
-			const lit = match[1];
+			const lit = unescapeDotNetQuoted(match[1]);
 			parts.push(() => lit);
 		} else if (match[2] !== undefined) {
 			// Double quoted literal
-			const lit = match[2];
+			const lit = unescapeDotNetQuoted(match[2]);
 			parts.push(() => lit);
 		} else if (match[3] !== undefined) {
 			// Backslash-escaped single character
@@ -318,14 +325,13 @@ export function compileDotNetParser(rawMask: string): RegExp {
 				literal = literal.slice(0, -1);
 			}
 		}
-		if (literal.length > 0) {
+		if (literal.length > 0)
 			pattern += escapeRegex(literal);
-		}
 
 		if (match[1] !== undefined) {
-			pattern += escapeRegex(match[1]);
+			pattern += escapeRegex(unescapeDotNetQuoted(match[1]));
 		} else if (match[2] !== undefined) {
-			pattern += escapeRegex(match[2]);
+			pattern += escapeRegex(unescapeDotNetQuoted(match[2]));
 		} else if (match[3] !== undefined) {
 			pattern += escapeRegex(match[3]);
 		} else if (match[4] !== undefined) {

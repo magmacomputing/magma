@@ -61,6 +61,8 @@ describe('.NET Date and Time Format Dialect', () => {
 			expect(t.dialects.dotnet("yyyy'年'MM'月'dd'日'")).toBe('2026年10月24日');
 			expect(t.dialects.dotnet('yyyy"年"MM"月"dd"日"')).toBe('2026年10月24日');
 			expect(t.dialects.dotnet('yyyy\\-MM\\-dd')).toBe('2026-10-24');
+			expect(t.dialects.dotnet("hh' o\\'clock'")).toBe("03 o'clock");
+			expect(t.dialects.dotnet('hh" o\\"clock"')).toBe('03 o"clock');
 		});
 
 		it('supports standard format specifiers (O, s, u, r, R)', () => {

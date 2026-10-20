@@ -6,7 +6,7 @@ import { ORACLE_TOKEN_REGEX } from '../compiler/oracle.compiler.js';
 import { STRFTIME_SPECIFIERS } from '../compiler/strftime.compiler.js';
 import { GO_TOKEN_REGEX } from '../compiler/go.compiler.js';
 import { MYSQL_SPECIFIERS } from '../compiler/mysql.compiler.js';
-import { DOTNET_TOKENS, normalizeDotNetMask } from '../compiler/dotnet.compiler.js';
+import { DOTNET_TOKENS, normalizeDotNetMask, unescapeDotNetQuoted } from '../compiler/dotnet.compiler.js';
 import { tokenizeSheetMask } from '../compiler/sheet.compiler.js';
 import type { ExplainResult, ExplainedToken, ExplainOptions } from '../types.js';
 
@@ -411,7 +411,7 @@ const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 const RE_ORACLE = new RegExp(ORACLE_TOKEN_REGEX.source, 'gi');
 const RE_GO_EXPLAIN = new RegExp(GO_TOKEN_REGEX.source, 'g');
 const RE_MYSQL = new RegExp(`%([${MYSQL_SPECIFIERS.join('')}])`, 'g');
-const RE_DOTNET = new RegExp(`'([^']*)'|"([^"]*)"|\\\\(.)|%?(${DOTNET_TOKENS.join('|')})`, 'g');
+const RE_DOTNET = new RegExp(`'((?:\\\\.|[^'])*)'|"((?:\\\\.|[^"])*)"|\\\\(.)|%?(${DOTNET_TOKENS.join('|')})`, 'g');
 
 const DOTNET_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
 	yyyyy: { tempo: '{yyyy}', desc: 'Year with at least 5 digits' },
@@ -700,9 +700,9 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 					pattern += appendLiteral(normalizedMask.slice(lastIndex, index));
 
 				if (match[1] !== undefined) {
-					pattern += appendLiteral(match[1]);
+					pattern += appendLiteral(unescapeDotNetQuoted(match[1]));
 				} else if (match[2] !== undefined) {
-					pattern += appendLiteral(match[2]);
+					pattern += appendLiteral(unescapeDotNetQuoted(match[2]));
 				} else if (match[3] !== undefined) {
 					pattern += appendLiteral(match[3]);
 				} else if (match[4] !== undefined) {
