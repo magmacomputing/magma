@@ -81,9 +81,12 @@ describe('.NET Date and Time Format Dialect', () => {
 			expect(t.format('yyyy-MM-dd HH:mm:ss', { dialect: '.net' })).toBe('2026-10-24 15:30:45');
 			expect(t.format('yyyy-MM-dd HH:mm:ss', { dialect: 'c#' })).toBe('2026-10-24 15:30:45');
 
-			// Auto-detection on distinctive tokens (tt, dddd, zzz)
+			// Auto-detection on distinctive tokens (tt, dddd, fff, fffffffK, standalone O)
 			expect(t.dialects.format('yyyy-MM-dd hh:mm tt')).toBe('2026-10-24 03:30 PM');
 			expect(t.dialects.format('dddd, MMMM d, yyyy')).toBe('Saturday, October 24, 2026');
+			expect(t.dialects.format('yyyy-MM-dd HH:mm:ss.fff')).toBe('2026-10-24 15:30:45.123');
+			expect(t.dialects.format('yyyy-MM-ddTHH:mm:ss.fffffffK')).toBe('2026-10-24T15:30:45.1234567+10:00');
+			expect(t.dialects.format('O')).toBe('2026-10-24T15:30:45.1234567+10:00');
 		});
 	});
 

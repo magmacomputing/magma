@@ -120,6 +120,10 @@ describe('Dialect Export', () => {
 		expect(resSheet.dialect).toBe(DIALECT.Sheet);
 		expect(resSheet.pattern).toBe('yyyy-mm-dd hh:mm:ss AM/PM');
 		expect(resSheet.unsupported).toHaveLength(0);
+
+		const resSheetMs = Tempo.dialects.export('{ss}.{ms}', 'sheet');
+		expect(resSheetMs.pattern).toBe('ss.000');
+		expect(resSheetMs.unsupported).toHaveLength(0);
 	});
 
 	it('handles dynamic fractional precision width (ff:1 to ff:9)', () => {
@@ -190,6 +194,10 @@ describe('Dialect Export', () => {
 		const resPhpUnpaddedIso = Tempo.dialects.export('{yy:raw} {woy:raw}', 'php');
 		expect(resPhpUnpaddedIso.unsupported).toContain('{yy:raw}');
 		expect(resPhpUnpaddedIso.unsupported).toContain('{woy:raw}');
+
+		// .NET unsupported compact offset
+		const resDotNetOffsetCompact = Tempo.dialects.export('{tz:offsetcompact}', 'dotnet');
+		expect(resDotNetOffsetCompact.unsupported).toContain('{tz:offsetcompact}');
 	});
 
 	it('works seamlessly from instance namespace t.dialects.export', () => {

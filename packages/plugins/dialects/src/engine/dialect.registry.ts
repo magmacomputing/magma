@@ -17,7 +17,7 @@ const RE_LDML_CONFLICT = /\b(?:yyyy|mm|ss)\b/;
 const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b|\b2006[/-]0?1[/-]0?2\b/;
 const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
 const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ]/;
-const RE_DOTNET_DETECTION = /\b(?:tt|dddd|ffff|FFFF)\b|^[Oo]$/;
+const RE_DOTNET_DETECTION = /(?<![A-Za-z])(?:f{3,7}|F{3,7})K?(?![A-Za-z])|\b(?:tt|dddd)\b|^[Oo]$/;
 const RE_SHEET_DETECTION = /\[[hHmMsS]+\]|\bmmmmm\b|\b(?:AM\/PM|am\/pm|A\/P|a\/p)\b/;
 
 /**
@@ -53,10 +53,20 @@ export const MOMENT_TOKENS = [
 	'dddd', 'ddd', 'dd', 'do', 'd',
 	'Mo', 'WW', 'Wo', 'W', 'ww', 'w', 'Qo',
 	'ZZ', 'Z', 'E', 'e', 'A', 'a', 'X', 'x',
+	'LLLL', 'llll', 'LLL', 'lll', 'LTS', 'LT', 'LL', 'll', 'L', 'l',
 ] as const;
 
 export type MomentToken = ValueOf<typeof MOMENT_TOKENS>;
 
+/**
+ * Maps Moment.js token specifiers to their equivalent Unicode LDML targets.
+ *
+ * In Moment.js, `GGGG`/`GG` represent ISO-8601 week-numbering year (mapping to LDML `YYYY`/`YY`),
+ * `WW`/`W` represent ISO-8601 week of year (mapping to LDML `ww`/`w`), and `E` represents
+ * 1-indexed ISO weekday (mapping to LDML `e`). Locale-dependent week tokens (`gggg`, `gg`, `ww`, `w`)
+ * are deliberately omitted without mapping so they trigger unsupported-token errors, as Tempo
+ * strictly standardizes on ISO week rules.
+ */
 export const MOMENT_TO_LDML_MAP: Readonly<Record<string, string>> = {
 	YYYY: 'yyyy',
 	GGGG: 'YYYY',

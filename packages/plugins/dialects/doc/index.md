@@ -58,6 +58,9 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 | `'oracle'` | `DIALECT.Oracle` | `'sql'`, `'postgres'`, `'postgresql'`, `'snowflake'`, `'redshift'`, `'to_char'` | `YYYY-MM-DD HH24:MI:SS` | Oracle, PostgreSQL, Snowflake, AWS Redshift |
 | `'php'` | `DIALECT.Php` | `'laravel'`, `'wordpress'` | `Y-m-d H:i:s` | PHP, Laravel, WordPress, Symfony |
 | `'go'` | `DIALECT.Go` | `'golang'` | `2006-01-02 15:04:05` | Go (`time.Format`, `time.Parse`) |
+| `'mysql'` | `DIALECT.Mysql` | `'mariadb'` | `%Y-%m-%d %H:%i:%s` | MySQL, MariaDB (`DATE_FORMAT`) |
+| `'dotnet'` | `DIALECT.DotNet` | `'csharp'`, `'.net'`, `'c#'` | `yyyy-MM-dd HH:mm:ss.fff` | .NET, C#, PowerShell (`DateTime.ToString`) |
+| `'sheet'` | `DIALECT.Sheet` | `'spreadsheet'`, `'excel'`, `'sheets'` | `yyyy-mm-dd hh:mm:ss AM/PM` | Microsoft Excel, Google Sheets, LibreOffice Calc |
 
 > [!TIP]
 > **Native Tempo Syntax is Optimal**
@@ -78,7 +81,10 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`t.dialects.sql(mask)`** | Instance | SQL / Oracle mask | `string` | Convenience alias for `t.dialects.oracle(mask)`. |
 | **`t.dialects.php(mask)`** | Instance | PHP date mask | `string` | Fast-path formatter for PHP `date()` specifiers (`Y`, `m`, `d`, `H`, `i`, `s`, etc.). |
 | **`t.dialects.go(mask)`** | Instance | Go reference mask | `string` | Fast-path formatter for Go reference time layout (`2006`, `01`, `02`, `15`, `04`, `05`). |
-| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%`, Go, and SQL specifiers. |
+| **`t.dialects.mysql(mask)`** | Instance | MySQL format mask | `string` | Fast-path formatter for MySQL / MariaDB `DATE_FORMAT` specifiers (`%Y`, `%m`, `%d`, `%H`, `%i`, `%s`, etc.). |
+| **`t.dialects.dotnet(mask)`** | Instance | .NET format mask | `string` | Fast-path formatter for .NET / C# `DateTime.ToString` custom format strings (`yyyy`, `MM`, `dd`, `HH`, `mm`, `ss`, `fff`, etc.). |
+| **`t.dialects.sheet(mask)`** | Instance | Spreadsheet mask | `string` | Fast-path formatter for Excel / Google Sheets custom format strings (`yyyy`, `mm`, `dd`, `hh`, `ss`, `AM/PM`, etc.). |
+| **`t.dialects.format(mask, dialect?)`** | Instance | Mask, dialect identifier | `string` | Generic dialect instance formatter with auto-detection for `%`, Go, SQL, MySQL, .NET, and Sheet specifiers. |
 | **`t.dialects.explain(mask, dialectOrOptions?)`** | Instance | External format mask, dialect name or `{ dialect }` | `ExplainResult` | Analyzes mask and returns equivalent native Tempo `{token}` pattern and metadata. |
 | **`t.dialects.export(pattern, dialectOrOptions?)`** | Instance | Native Tempo pattern, target dialect name or `{ dialect }` | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
 | **`t.dialects.convert(mask, toOrOptions)`** / **`convert(mask, from, to)`** | Instance | Mask, target dialect, or `{ from, to }` options | `ConvertResult` | Converts a format mask directly from one dialect to another (source dialect auto-inferred if omitted). |

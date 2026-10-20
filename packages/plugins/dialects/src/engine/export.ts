@@ -113,7 +113,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'tz:short': { ldml: 'z', strftime: '%Z', oracle: 'TZD', moment: 'zz', php: 'T', go: 'MST', desc: 'Time zone daylight / short abbreviation' },
 	'tz:offset': { ldml: 'ZZZZZ', oracle: 'TZH:TZM', moment: 'Z', php: 'P', go: '-07:00', dotnet: 'zzz', desc: 'ISO-8601 time zone offset (e.g. +08:00)' },
 	'tz:longoffset': { ldml: 'ZZZZ', desc: 'Long localized GMT offset (e.g. GMT+08:00)' },
-	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', dotnet: 'zz', desc: 'Compact time zone offset (e.g. +0800)' },
+	'tz:offsetcompact': { ldml: 'ZZ', strftime: '%z', oracle: 'TZHTZM', moment: 'ZZ', php: 'O', go: '-0700', desc: 'Compact time zone offset (e.g. +0800)' },
 	'tz:offset:hh': { oracle: 'TZH', go: '-07', dotnet: 'zz', desc: 'Time zone offset hours with sign (e.g. +08, -05)' },
 	'tz:offset:mi': { oracle: 'TZM', desc: 'Time zone offset minutes without sign (e.g. 00, 30)' },
 	'tz:offset:ss': { go: '-07:00:00', desc: 'ISO-8601 time zone offset with seconds (e.g. +08:00:00)' },
@@ -324,10 +324,10 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 
 			const targetToken = info?.[dialect as keyof DialectTarget];
 			if (isDefined(info) && isDefined(targetToken)) {
-				if (dialect === DIALECT.Go && targetToken.startsWith('.')) {
+				if (targetToken.startsWith('.')) {
 					if (pattern.endsWith('.')) {
 						pattern = pattern.slice(0, -1);
-					} else {
+					} else if (dialect === DIALECT.Go) {
 						unsupported.push(fullToken);
 						tokens.push({
 							source: fullToken,
