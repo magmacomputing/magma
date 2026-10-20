@@ -291,5 +291,8 @@ describe('calendar.library', () => {
 		expect(resolveIsoCalendarYear(2015, 12, 29)).toBeUndefined();
 		expect(resolveIsoCalendarYear(2015, 12, 29, 1)).toBe(2014);
 		expect(resolveIsoCalendarYear(2015, 12, 29, 2)).toBe(2015);
+
+		// Year 0 leap day handling (0000-02-29 is Tuesday, ISO week 9 of year 0)
+		expect(resolveIsoCalendarYear(0, 2, 29)).toBe(0);
 	});
 });

@@ -186,4 +186,15 @@ describe('PHP Date Dialect Engine', () => {
 		expect(tTuesday.mm).toBe(12);
 		expect(tTuesday.dd).toBe(29);
 	});
+
+	it('validates parsed Y against resolved ISO calendar year candidate (o)', () => {
+		// Consistent Y and o: 2025-12-30 resolves to calendar year 2024
+		const tConsistent = Tempo.dialects.parse('2024 2025-12-30', 'Y o-m-d', DIALECT.Php, { timeZone: 'UTC' });
+		expect(tConsistent.isValid).toBe(true);
+		expect(tConsistent.yy).toBe(2024);
+
+		// Contradictory Y and o
+		const tConflicting = Tempo.dialects.parse('2025 2025-12-30', 'Y o-m-d', DIALECT.Php, { error: 'catch' });
+		expect(tConflicting.isValid).toBe(false);
+	});
 });

@@ -149,6 +149,10 @@
       {
         "text": "Production Use Cases & Architectural Patterns",
         "link": "/doc/9-plugins/dialects.use-cases-and-patterns"
+      },
+      {
+        "text": "Design Strategy & Deliberate Omissions",
+        "link": "/doc/9-plugins/dialects.design-philosophy-and-omissions"
       }
     ]
   },

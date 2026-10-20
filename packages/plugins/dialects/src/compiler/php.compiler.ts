@@ -478,6 +478,7 @@ export function parsePhp(
 		if (isoYearStr && (mm || mon_short || mon_long) && dd) {
 			const cand = resolveIsoCalendarYear(parseInt(isoYearStr, 10), month, day, expectedDay);
 			if (cand === undefined) return undefined;
+			if (yyyy && cand !== year) return undefined;
 			year = cand;
 		} else if (isoYearStr && !yyyy && !yy) {
 			year = parseInt(isoYearStr, 10);

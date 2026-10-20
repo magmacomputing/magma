@@ -59,6 +59,10 @@ describe('Unicode LDML Parsing', () => {
 		const t5 = Tempo.fromFormat('2026-01-06', 'YYYY-ww-ee');
 		expect(t5.isValid).toBe(true);
 		expect(t5.yy).toBe(2026);
+
+		const t6 = Tempo.fromFormat('2026-1-6', 'Y-w-e');
+		expect(t6.isValid).toBe(true);
+		expect(t6.yy).toBe(2026);
 	});
 
 	it('returns invalid when LDML textual month is unrecognized', () => {

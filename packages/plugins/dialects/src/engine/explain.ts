@@ -1,6 +1,13 @@
 import { deepFreeze, isUndefined } from '@magmacomputing/tempo/library';
 import { DIALECT } from '../constants.js';
 import { detectDialect } from './dialect.registry.js';
+import { LDML_TOKENS } from '../compiler/ldml.compiler.js';
+import { ORACLE_TOKEN_REGEX } from '../compiler/oracle.compiler.js';
+import { STRFTIME_SPECIFIERS } from '../compiler/strftime.compiler.js';
+import { GO_TOKEN_REGEX } from '../compiler/go.compiler.js';
+import { MYSQL_SPECIFIERS } from '../compiler/mysql.compiler.js';
+import { DOTNET_TOKENS } from '../compiler/dotnet.compiler.js';
+import { tokenizeSheetMask } from '../compiler/sheet.compiler.js';
 import type { ExplainResult, ExplainedToken, ExplainOptions } from '../types.js';
 
 export type { ExplainedToken, ExplainResult, ExplainOptions };
@@ -10,8 +17,8 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	YYYY: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
 	yy: { tempo: '{yy}', desc: '2-digit year' },
 	YY: { tempo: '{yow:short}', desc: '2-digit ISO week-numbering year' },
-	Y: { tempo: '{yow:locale}', desc: 'Week-numbering year (locale)' },
 	y: { tempo: '{yyyy}', desc: 'Year' },
+	Y: { tempo: '{yow}', desc: 'Week-numbering year' },
 	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
 	LLLL: { tempo: '{mon}', desc: 'Full standalone month name' },
 	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
@@ -24,6 +31,7 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	d: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
 	Do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
 	do: { tempo: '{dd:ord}', desc: 'Day of month with ordinal suffix' },
+	DDDo: { tempo: '{doy:ord}', desc: 'Day of year with ordinal suffix' },
 	DDD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	DD: { tempo: '{doy}', desc: 'Day of year (001-366)' },
 	D: { tempo: '{doy:raw}', desc: 'Unpadded day of year (1-366)' },
@@ -350,8 +358,42 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },
 };
 
-const RE_LDML = /'(''|[^'])*'|(GGGG|yyyy|YYYY|MMMM|LLLL|EEEE|cccc|QQQQ|qqqq|zzzz|zzz|ZZZZZ|ZZZZ|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|MMM|LLL|EEE|ccc|QQQ|qqq|GGG|ZZZ|yy|YY|MM|LL|dd|HH|hh|kk|mm|ss|SS|aaa|aa|Do|do|ww|II|QQ|qq|GG|ZZ|zz|DDD|DD|EE|ee|cc|a|d|D|G|H|h|k|m|s|S|c|e|E|w|W|y|Y|L|M|Q|q|Z|z|I)/g;
-const RE_STRFTIME = /%(-)?(\d+)?([%aAbBcCcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ])/g;
+const MYSQL_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
+	Y: { tempo: '{yyyy}', desc: '4-digit year' },
+	y: { tempo: '{yy}', desc: '2-digit year' },
+	m: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
+	c: { tempo: '{mm:raw}', desc: 'Unpadded month number (1-12)' },
+	M: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
+	b: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
+	d: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
+	e: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	D: { tempo: '{dd:ord}', desc: 'Day of month with English suffix (1st, 2nd, etc.)' },
+	H: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
+	k: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
+	h: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	I: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	l: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	i: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
+	s: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
+	S: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
+	f: { tempo: '{ff:6}', desc: 'Microseconds (000000-999999)' },
+	p: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	r: { tempo: '{h12}:{mi}:{ss} {mer:upper}', desc: '12-hour time (hh:mm:ss AM/PM)' },
+	T: { tempo: '{hh}:{mi}:{ss}', desc: '24-hour time (hh:mm:ss)' },
+	W: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
+	a: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
+	w: { tempo: '{dow:0}', desc: 'Day of week (0=Sunday..6=Saturday)' },
+	j: { tempo: '{doy}', desc: 'Day of year (001-366)' },
+	v: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
+	x: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
+	u: { tempo: '{woy:cal:raw}', desc: 'Week number with Monday as first day (00-53)' },
+	U: { tempo: '', desc: 'Week number with Sunday as first day (00-53)' },
+	V: { tempo: '', desc: 'Week number with Sunday as first day (01-53)' },
+	X: { tempo: '', desc: '4-digit year for week %V' },
+};
+
+const RE_LDML = new RegExp(`'(''|[^'])*'|(${LDML_TOKENS.join('|')})`, 'g');
+const RE_STRFTIME = new RegExp(`%(-)?(\\d+)?([${STRFTIME_SPECIFIERS.join('')}])`, 'g');
 const RE_MOMENT = /\[([^\]]+)\]|(YYYY|YY|gggg|GGGG|gg|GG|MMMM|MMM|MM|Mo|M|dddd|ddd|dd|DDDD|DDDo|DDD|DD|Do|D|do|d|HH|H|hh|h|mm|m|ss|s|SSSSSSSSS|SSSSSSSS|SSSSSSS|SSSSSS|SSSSS|SSSS|SSS|SS|S|WW|Wo|W|Qo|Q|A|a|X|x|ZZ|zz|Z|z)/g;
 const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'MONTH',
@@ -365,10 +407,58 @@ const ORACLE_CASE_SENSITIVE_TOKENS = new Set([
 	'P.M.',
 ]);
 
-const RE_ORACLE =
-	/"[^"]*"|TZH:TZM|tzh:tzm|HH24|hh24|HH12|hh12|SSSSS|sssss|MONTH|Month|month|IYYY|iyyy|YYYY|yyyy|RRRR|rrrr|A\.M\.|P\.M\.|a\.m\.|p\.m\.|MON|Mon|mon|YYY|yyy|IYY|iyy|TZD|tzd|TZR|tzr|TZH|tzh|TZM|tzm|DAY|Day|day|DDTH|ddth|DDD|ddd|FF[1-9]?|ff[1-9]?|FM|fm|FX|fx|IW|iw|WW|ww|YY|yy|RR|rr|IY|iy|MM|mm|DD|dd|DY|Dy|dy|HH|hh|MI|mi|SS|ss|AM|PM|am|pm|RM|rm|OF|of|[DWQYIJdwqyij]/g;
-const RE_GO_EXPLAIN =
-	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
+const RE_ORACLE = new RegExp(ORACLE_TOKEN_REGEX.source, 'gi');
+const RE_GO_EXPLAIN = new RegExp(GO_TOKEN_REGEX.source, 'g');
+const RE_MYSQL = new RegExp(`%([${MYSQL_SPECIFIERS.join('')}])`, 'g');
+const RE_DOTNET = /'([^']*)'|"([^"]*)"|\\(.)|(fffffff|ffffff|fffff|ffff|fff|ff|f|FFFFFFF|FFFFFF|FFFFF|FFFF|FFF|FF|F|yyyyy|yyyy|yyy|yy|y|MMMM|MMM|MM|M|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|tt|t|zzz|zz|z|K|gg|g)/g;
+
+const DOTNET_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
+	yyyyy: { tempo: '{yyyy}', desc: 'Year with at least 5 digits' },
+	yyyy: { tempo: '{yyyy}', desc: '4-digit year' },
+	yyy: { tempo: '{yyyy}', desc: 'Year with at least 3 digits' },
+	yy: { tempo: '{yy}', desc: '2-digit year' },
+	y: { tempo: '{yy}', desc: '1-2 digit year' },
+	MMMM: { tempo: '{mon}', desc: 'Full month name (e.g. October)' },
+	MMM: { tempo: '{mmm}', desc: 'Short month name (e.g. Oct)' },
+	MM: { tempo: '{mm}', desc: 'Zero-padded month (01-12)' },
+	M: { tempo: '{mm:raw}', desc: 'Unpadded month number (1-12)' },
+	dddd: { tempo: '{wkd}', desc: 'Full weekday name (e.g. Saturday)' },
+	ddd: { tempo: '{www}', desc: 'Short weekday name (e.g. Sat)' },
+	dd: { tempo: '{dd}', desc: 'Zero-padded day of month (01-31)' },
+	d: { tempo: '{dd:raw}', desc: 'Unpadded day of month (1-31)' },
+	HH: { tempo: '{hh}', desc: '24-hour clock (00-23)' },
+	H: { tempo: '{hh:raw}', desc: 'Unpadded 24-hour clock (0-23)' },
+	hh: { tempo: '{h12}', desc: '12-hour clock (01-12)' },
+	h: { tempo: '{h12:raw}', desc: 'Unpadded 12-hour clock (1-12)' },
+	mm: { tempo: '{mi}', desc: 'Zero-padded minute (00-59)' },
+	m: { tempo: '{mi:raw}', desc: 'Unpadded minute (0-59)' },
+	ss: { tempo: '{ss}', desc: 'Zero-padded second (00-59)' },
+	s: { tempo: '{ss:raw}', desc: 'Unpadded second (0-59)' },
+	fffffff: { tempo: '{ff:7}', desc: 'Fractional seconds (7 digits / 100ns ticks)' },
+	ffffff: { tempo: '{ff:6}', desc: 'Microseconds (6 digits)' },
+	fffff: { tempo: '{ff:5}', desc: 'Fractional seconds (5 digits)' },
+	ffff: { tempo: '{ff:4}', desc: 'Fractional seconds (4 digits)' },
+	fff: { tempo: '{ms}', desc: 'Millisecond (000-999)' },
+	ff: { tempo: '{ff:2}', desc: 'Fractional seconds (hundredths: 00-99)' },
+	f: { tempo: '{ff:1}', desc: 'Fractional seconds (tenths: 0-9)' },
+	FFFFFFF: { tempo: '{ff:7}', desc: 'Non-zero fractional seconds (up to 7 digits)' },
+	FFFFFF: { tempo: '{ff:6}', desc: 'Non-zero microseconds (up to 6 digits)' },
+	FFFFF: { tempo: '{ff:5}', desc: 'Non-zero fractional seconds (up to 5 digits)' },
+	FFFF: { tempo: '{ff:4}', desc: 'Non-zero fractional seconds (up to 4 digits)' },
+	FFF: { tempo: '{ms}', desc: 'Non-zero milliseconds (up to 3 digits)' },
+	FF: { tempo: '{ff:2}', desc: 'Non-zero fractional seconds (up to 2 digits)' },
+	F: { tempo: '{ff:1}', desc: 'Non-zero tenths of second' },
+	tt: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
+	t: { tempo: '{mer:upper}', desc: 'A/P marker' },
+	zzz: { tempo: '{tz:offset}', desc: 'Full signed time zone offset (+00:00)' },
+	zz: { tempo: '{tz:offset:hh}', desc: 'Signed 2-digit hour offset (+00)' },
+	z: { tempo: '{tz:offset:hh}', desc: 'Signed hour offset (+0)' },
+	K: { tempo: '{tz:offset}', desc: 'UTC Z or signed time zone offset' },
+	gg: { tempo: '{era}', desc: 'Era designator (A.D.)' },
+	g: { tempo: '{era}', desc: 'Era designator (A.D.)' },
+};
+
+const RE_SHEET_AM_PM = /\b(?:am\/pm|a\/p)\b/i;
 
 const RE_ORACLE_FF_PRECISION = /^FF([1-9])$/i;
 const RE_LDML_FRACTIONAL = /^S{1,9}$/;
@@ -565,6 +655,181 @@ export function explain(mask: string, dialectOrOptions?: any): ExplainResult {
 			}
 			if (lastIndex < mask.length)
 				pattern += appendLiteral(mask.slice(lastIndex));
+			break;
+		}
+
+		case DIALECT.Mysql: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(RE_MYSQL)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += appendLiteral(mask.slice(lastIndex, index));
+
+				const [raw, spec] = match;
+				if (spec === '%') {
+					pattern += '%';
+				} else {
+					const info = MYSQL_EXPLAIN_MAP[spec];
+					if (info) {
+						pattern += info.tempo || appendLiteral(raw);
+						tokens.push({ source: raw, tempo: info.tempo, desc: info.desc });
+					} else {
+						pattern += appendLiteral(raw);
+					}
+				}
+				lastIndex = index + raw.length;
+			}
+			if (lastIndex < mask.length)
+				pattern += appendLiteral(mask.slice(lastIndex));
+			break;
+		}
+
+		case DIALECT.DotNet: {
+			let lastIndex = 0;
+			for (const match of mask.matchAll(RE_DOTNET)) {
+				const index = match.index!;
+				if (index > lastIndex)
+					pattern += appendLiteral(mask.slice(lastIndex, index));
+
+				if (match[1] !== undefined) {
+					pattern += appendLiteral(match[1]);
+				} else if (match[2] !== undefined) {
+					pattern += appendLiteral(match[2]);
+				} else if (match[3] !== undefined) {
+					pattern += appendLiteral(match[3]);
+				} else if (match[4] !== undefined) {
+					const token = match[4];
+					const info = DOTNET_EXPLAIN_MAP[token];
+					if (info) {
+						pattern += info.tempo || appendLiteral(token);
+						tokens.push({ source: token, tempo: info.tempo, desc: info.desc });
+					} else {
+						pattern += appendLiteral(token);
+					}
+				}
+				lastIndex = index + match[0].length;
+			}
+			if (lastIndex < mask.length)
+				pattern += appendLiteral(mask.slice(lastIndex));
+			break;
+		}
+
+		case DIALECT.Sheet: {
+			const is12Hour = RE_SHEET_AM_PM.test(mask);
+			const tokenMatches = tokenizeSheetMask(mask);
+			for (const t of tokenMatches) {
+				if (t.type === 'literal') {
+					pattern += appendLiteral(t.value);
+					continue;
+				}
+				const tok = t.value;
+				let tempo = '';
+				let desc = '';
+				switch (tok) {
+					case 'yyyy':
+						tempo = '{yyyy}';
+						desc = '4-digit year';
+						break;
+					case 'yy':
+						tempo = '{yy}';
+						desc = '2-digit year';
+						break;
+					case 'mmmmm':
+						tempo = '{mon:1}';
+						desc = 'First letter of month';
+						break;
+					case 'mmmm':
+						tempo = '{mon}';
+						desc = 'Full month name';
+						break;
+					case 'mmm':
+						tempo = '{mmm}';
+						desc = 'Short month name';
+						break;
+					case 'mm':
+						if (t.isMinute) {
+							tempo = '{mi}';
+							desc = 'Zero-padded minute (00-59)';
+						} else {
+							tempo = '{mm}';
+							desc = 'Zero-padded month (01-12)';
+						}
+						break;
+					case 'm':
+						if (t.isMinute) {
+							tempo = '{mi:raw}';
+							desc = 'Unpadded minute (0-59)';
+						} else {
+							tempo = '{mm:raw}';
+							desc = 'Unpadded month (1-12)';
+						}
+						break;
+					case 'dddd':
+						tempo = '{wkd}';
+						desc = 'Full weekday name';
+						break;
+					case 'ddd':
+						tempo = '{www}';
+						desc = 'Short weekday name';
+						break;
+					case 'dd':
+						tempo = '{dd}';
+						desc = 'Zero-padded day of month (01-31)';
+						break;
+					case 'd':
+						tempo = '{dd:raw}';
+						desc = 'Unpadded day of month (1-31)';
+						break;
+					case 'hh':
+						if (is12Hour) {
+							tempo = '{h12}';
+							desc = 'Zero-padded 12-hour clock (01-12)';
+						} else {
+							tempo = '{hh}';
+							desc = 'Zero-padded 24-hour clock (00-23)';
+						}
+						break;
+					case 'h':
+						if (is12Hour) {
+							tempo = '{h12:raw}';
+							desc = 'Unpadded 12-hour clock (1-12)';
+						} else {
+							tempo = '{hh:raw}';
+							desc = 'Unpadded 24-hour clock (0-23)';
+						}
+						break;
+					case 'ss':
+						tempo = '{ss}';
+						desc = 'Zero-padded second (00-59)';
+						break;
+					case 's':
+						tempo = '{ss:raw}';
+						desc = 'Unpadded second (0-59)';
+						break;
+					case 'am/pm':
+					case 'a/p':
+						tempo = '{mer:upper}';
+						desc = 'AM/PM marker';
+						break;
+					case '.000':
+						tempo = '.{ms}';
+						desc = 'Millisecond (000-999)';
+						break;
+					case '.00':
+						tempo = '.{ff:2}';
+						desc = 'Hundredths of second (00-99)';
+						break;
+					case '.0':
+						tempo = '.{ff:1}';
+						desc = 'Tenths of second (0-9)';
+						break;
+					default:
+						pattern += appendLiteral(tok);
+						continue;
+				}
+				pattern += tempo;
+				tokens.push({ source: tok, tempo, desc });
+			}
 			break;
 		}
 

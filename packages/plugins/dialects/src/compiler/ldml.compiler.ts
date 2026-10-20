@@ -22,7 +22,7 @@ export const LDML_TOKENS = [
 	'MMM', 'LLL', 'EEE', 'ccc', 'EE', 'QQQQ', 'qqqq', 'QQQ', 'qqq', 'GGG', 'ZZZ', 'zzz',
 	'yy', 'YY', 'MM', 'LL', 'dd', 'HH', 'hh', 'kk', 'mm', 'ss', 'aaa', 'aa',
 	'Do', 'do', 'ww', 'II', 'QQ', 'qq', 'GG', 'ZZ', 'zz', 'cc', 'ee',
-	'DDDo', 'DDD', 'DD', 'y', 'M', 'L', 'd', 'D', 'G', 'H', 'h', 'k', 'm', 's',
+	'DDDo', 'DDD', 'DD', 'y', 'Y', 'M', 'L', 'd', 'D', 'G', 'H', 'h', 'k', 'm', 's',
 	'a', 'c', 'e', 'E', 'w', 'W', 'Q', 'q', 'Z', 'z', 'I',
 ] as const;
 
@@ -70,6 +70,9 @@ export function compileLdmlFormatter(mask: string): FormatterFn {
 					break;
 				case 'y':
 					parts.push((z) => String(z.year <= 0 ? 1 - z.year : z.year));
+					break;
+				case 'Y':
+					parts.push((z) => String(getIsoWeek(z.toPlainDate()).yearOfWeek));
 					break;
 				case 'II':
 				case 'ww':
@@ -331,6 +334,9 @@ export function compileLdmlParser(mask: string): RegExp {
 					break;
 				case 'y':
 					pattern += group('yyyy', '\\d{1,6}');
+					break;
+				case 'Y':
+					pattern += group('yyyy_week', '\\d{1,6}');
 					break;
 				case 'II':
 				case 'ww':

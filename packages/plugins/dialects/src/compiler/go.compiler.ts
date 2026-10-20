@@ -16,7 +16,7 @@ import {
 const GO_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
 const GO_PARSER_CACHE = new WeakCache<string, RegExp>();
 
-const GO_TOKEN_REGEX =
+export const GO_TOKEN_REGEX =
 	/(?:January|Monday|\.000000000|\.999999999|-07:00:00|-070000|Z07:00:00|Z070000|\.000000|\.999999|-07:00|Z07:00|\.000|\.999|-0700|Z0700|2006|002|__2|MST|Mon(?![a-z])|Jan(?![a-z])|-07|Z07|01|02|03|04|05|15|06|PM|pm|_2|1|2|3|4|5)/g;
 
 /** Returns the fractional second in nanoseconds, excluding whole seconds. */

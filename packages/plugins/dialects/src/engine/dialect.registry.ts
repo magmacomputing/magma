@@ -5,6 +5,9 @@ import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js'
 import { formatOracle, parseOracle } from '../compiler/oracle.compiler.js';
 import { formatPhp, parsePhp } from '../compiler/php.compiler.js';
 import { formatGo, parseGo } from '../compiler/go.compiler.js';
+import { formatMysql, parseMysql } from '../compiler/mysql.compiler.js';
+import { formatDotNet, parseDotNet } from '../compiler/dotnet.compiler.js';
+import { formatSheet, parseSheet } from '../compiler/sheet.compiler.js';
 
 import type { DialectOptions } from '../compiler/shared.compiler.js';
 
@@ -14,6 +17,8 @@ const RE_LDML_CONFLICT = /\b(?:yyyy|mm|ss)\b/;
 const RE_GO_DETECTION = /\b2006\b.*(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b)|(?:\b(?:01|02|15:04|0?3:04|Jan|MST)\b).*\b2006\b|\b(?:0[12][/-]0[12][/-]06|06[/-]0[12][/-]0[12])\b|\b(?:15|0?3):04(?::05)?\b|\b2006[/-]0?1[/-]0?2\b/;
 const RE_QUOTED_LITERALS = /'(''|[^'])*'/g;
 const RE_STRFTIME_SPECIFIERS = /%(-)?([1-9])?[%aAbBcdDeEfFGghHIjklmMpPRsSTuUVwWyYzZ]/;
+const RE_DOTNET_DETECTION = /\b(?:tt|dddd|zzz|ffff|FFFF)\b|^[Oo]$/;
+const RE_SHEET_DETECTION = /\[[hms]+\]|\bmmmmm\b|\b(?:AM\/PM|am\/pm|A\/P|a\/p)\b/i;
 
 /**
  * Detects the dialect from a format mask string if not explicitly supplied.
@@ -32,9 +37,12 @@ export function detectDialect(mask: string, dialectOrOptions?: any): Dialect {
 	// Strip single-quoted string literals to prevent quoted text in LDML from triggering false positives
 	const clean = mask.replace(RE_QUOTED_LITERALS, '');
 
+	if (/%i/.test(clean)) return DIALECT.Mysql;
 	if (RE_STRFTIME_SPECIFIERS.test(clean)) return DIALECT.Strftime;
 	if (!RE_LDML_CONFLICT.test(clean) && RE_GO_DETECTION.test(clean)) return DIALECT.Go;
 	if (RE_ORACLE_DETECTION.test(clean) || (!RE_LDML_CONFLICT.test(clean) && RE_ORACLE_UPPER.test(clean))) return DIALECT.Oracle;
+	if (RE_DOTNET_DETECTION.test(clean)) return DIALECT.DotNet;
+	if (RE_SHEET_DETECTION.test(clean)) return DIALECT.Sheet;
 
 	return DIALECT.Ldml;
 }
@@ -109,6 +117,12 @@ export function formatWithDialect(
 			return formatPhp(zdt, mask);
 		case DIALECT.Go:
 			return formatGo(zdt, mask);
+		case DIALECT.Mysql:
+			return formatMysql(zdt, mask);
+		case DIALECT.DotNet:
+			return formatDotNet(zdt, mask);
+		case DIALECT.Sheet:
+			return formatSheet(zdt, mask);
 		case DIALECT.Ldml:
 		default:
 			return formatLdml(zdt, mask);
@@ -125,7 +139,7 @@ export function formatWithDialect(
 export function parseWithDialect(
 	input: string,
 	mask: string,
-	options: DialectOptions = {}
+	options: DialectOptions = {},
 ): Temporal.ZonedDateTime | undefined {
 	const dialect = detectDialect(mask, options.dialect);
 	switch (dialect) {
@@ -144,6 +158,12 @@ export function parseWithDialect(
 			return parsePhp(input, mask, options);
 		case DIALECT.Go:
 			return parseGo(input, mask, options);
+		case DIALECT.Mysql:
+			return parseMysql(input, mask, options);
+		case DIALECT.DotNet:
+			return parseDotNet(input, mask, options);
+		case DIALECT.Sheet:
+			return parseSheet(input, mask, options);
 		case DIALECT.Ldml:
 		default:
 			return parseLdml(input, mask, options);

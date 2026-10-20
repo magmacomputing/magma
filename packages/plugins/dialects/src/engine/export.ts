@@ -9,6 +9,9 @@ interface DialectTarget {
 	readonly moment?: string;
 	readonly php?: string;
 	readonly go?: string;
+	readonly mysql?: string;
+	readonly dotnet?: string;
+	readonly sheet?: string;
 	readonly desc: string;
 }
 
@@ -28,6 +31,7 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'yow:-2': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
 	'yow:short': { ldml: 'YY', strftime: '%g', oracle: 'IY', moment: 'GG', desc: '2-digit ISO week-numbering year' },
 	'yow:-1': { oracle: 'I', desc: 'Last digit of ISO week-numbering year' },
+	'yow:raw': { ldml: 'Y', desc: 'Unpadded ISO week-numbering year' },
 
 	// Month
 	mm: { ldml: 'MM', strftime: '%m', oracle: 'MM', moment: 'MM', php: 'm', go: '01', desc: 'Zero-padded month (01-12)' },
@@ -235,6 +239,12 @@ function quoteLiteral(str: string, dialect: Dialect): string {
 		case DIALECT.Go:
 			return str;
 
+		case DIALECT.DotNet:
+			return RE_LDML_LITERAL.test(str) ? `'${str}'` : str;
+
+		case DIALECT.Sheet:
+			return RE_LDML_LITERAL.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+
 		default:
 			return str;
 	}
@@ -287,6 +297,7 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 					strftime: prec === 6 ? '%f' : `%${prec}f`,
 					oracle: `FF${prec}`,
 					moment: 'S'.repeat(prec),
+					dotnet: 'f'.repeat(prec),
 					desc: `Fractional seconds (${prec} digits)`,
 				};
 			}

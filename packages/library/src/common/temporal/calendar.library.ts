@@ -287,8 +287,8 @@ export function resolveIsoCalendarYear(
 				if (expectedDayOfWeek !== undefined && plainDate.dayOfWeek !== expectedDayOfWeek) continue;
 				matching.push(y);
 			} else {
-				const d = new Date(Date.UTC(y, month - 1, day));
-				d.setUTCFullYear(y);
+				const d = new Date(0);
+				d.setUTCFullYear(y, month - 1, day);
 				if (d.getUTCFullYear() !== y || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) continue;
 				if (getIsoWeek({ year: y, month, day }).yearOfWeek !== targetIsoYear) continue;
 				const dayOfWeek = d.getUTCDay() || 7;

@@ -30,7 +30,7 @@ const oracleEscaped = ORACLE_TOKENS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, 
 const dddIdx = oracleEscaped.indexOf('DDD');
 oracleEscaped.splice(dddIdx + 1, 0, 'FF[1-9]?');
 
-const ORACLE_TOKEN_REGEX = new RegExp(`"[^"]*"|${oracleEscaped.join('|')}`, 'gi');
+export const ORACLE_TOKEN_REGEX = new RegExp(`"[^"]*"|${oracleEscaped.join('|')}`, 'gi');
 
 const ROMAN_MONTHS: readonly string[] = [
 	'', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII',
@@ -53,6 +53,10 @@ function applyCase(str: string, token: string): string {
 	if (token === token.toUpperCase()) return str.toUpperCase();
 	if (token === token.toLowerCase()) return str.toLowerCase();
 	return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
+function getZdtIsoWeek(z: Temporal.ZonedDateTime) {
+	return getIsoWeek(z.calendarId === 'iso8601' ? z : z.withCalendar('iso8601'));
 }
 
 /**
@@ -93,7 +97,7 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					parts.push((z) => pad(z.year, 4));
 					break;
 				case 'IYYY':
-					parts.push((z) => pad(getIsoWeek(z).yearOfWeek, 4));
+					parts.push((z) => pad(getZdtIsoWeek(z).yearOfWeek, 4));
 					break;
 				case 'YYY':
 					parts.push((z) => pad(Math.abs(z.year) % 1000, 3));
@@ -103,16 +107,16 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 					parts.push((z) => pad(Math.abs(z.year) % 100, 2));
 					break;
 				case 'IYY':
-					parts.push((z) => pad(Math.abs(getIsoWeek(z).yearOfWeek) % 1000, 3));
+					parts.push((z) => pad(Math.abs(getZdtIsoWeek(z).yearOfWeek) % 1000, 3));
 					break;
 				case 'IY':
-					parts.push((z) => pad(Math.abs(getIsoWeek(z).yearOfWeek) % 100, 2));
+					parts.push((z) => pad(Math.abs(getZdtIsoWeek(z).yearOfWeek) % 100, 2));
 					break;
 				case 'Y':
 					parts.push((z) => String(Math.abs(z.year) % 10));
 					break;
 				case 'I':
-					parts.push((z) => String(Math.abs(getIsoWeek(z).yearOfWeek) % 10));
+					parts.push((z) => String(Math.abs(getZdtIsoWeek(z).yearOfWeek) % 10));
 					break;
 
 				case 'MM':
@@ -213,7 +217,7 @@ export function compileOracleFormatter(mask: string): FormatterFn {
 
 				case 'IW':
 					parts.push((z) => {
-						const w = getIsoWeek(z).weekOfYear;
+						const w = getZdtIsoWeek(z).weekOfYear;
 						return isFm ? String(w) : pad(w, 2);
 					});
 					break;
@@ -292,7 +296,7 @@ export function formatOracle(zdt: Temporal.ZonedDateTime, mask: string): string 
 
 /**
  * Format tokens supported by formatOracle but unsupported for reverse parsing in parseOracle:
- * YYY, IYY, IY, Y, I, J, W, Q, IW, WW, SSSSS, TZH, TZM.
+ * YYY, IYY, IY, Y, I, J, W, Q, WW, SSSSS, TZH, TZM.
  */
 export const ORACLE_UNSUPPORTED_PARSE_TOKENS: ReadonlySet<string> = new Set([
 	'YYY', 'IYY', 'IY', 'Y', 'I', 'J', 'W', 'Q', 'WW', 'SSSSS', 'TZH', 'TZM',
@@ -548,6 +552,7 @@ export function parseOracle(
 		if (iyyy) {
 			const cand = resolveIsoCalendarYear(parseInt(iyyy, 10), month, day, resolvedWeekday);
 			if (cand === undefined) return undefined;
+			if (yyyy && cand !== year) return undefined;
 			year = cand;
 		}
 

@@ -11,6 +11,9 @@ import {
 	PHP_TOKENS,
 	MOMENT_TOKENS,
 	MOMENT_TO_LDML_MAP,
+	MYSQL_SPECIFIERS,
+	DOTNET_TOKENS,
+	SHEET_TOKENS,
 	validateResolvedDateFields,
 } from '../src/index.js';
 
@@ -50,6 +53,14 @@ describe('Dialect Compiler Invariants & Token Parity', () => {
 
 		it('ensures source ORACLE_TOKENS strictly orders longer forms before shorter prefixes', () => {
 			expect(() => assertPrefixOrdering(ORACLE_TOKENS, 'ORACLE_TOKENS')).not.toThrow();
+		});
+
+		it('ensures source DOTNET_TOKENS strictly orders longer forms before shorter prefixes', () => {
+			expect(() => assertPrefixOrdering(DOTNET_TOKENS, 'DOTNET_TOKENS')).not.toThrow();
+		});
+
+		it('ensures source SHEET_TOKENS strictly orders longer forms before shorter prefixes', () => {
+			expect(() => assertPrefixOrdering(SHEET_TOKENS, 'SHEET_TOKENS')).not.toThrow();
 		});
 	});
 
@@ -117,6 +128,16 @@ describe('Dialect Compiler Invariants & Token Parity', () => {
 		});
 	});
 
+	describe('Dialect Token Parity: MySQL', () => {
+		it('compiles valid parser regexes for all canonical MySQL specifiers', () => {
+			for (const spec of MYSQL_SPECIFIERS) {
+				if (spec === '%') continue;
+				const mask = `%Y-%m-%d %${spec}`;
+				expect(() => Tempo.dialects.parse('2026-10-24 val', mask, DIALECT.Mysql, { error: 'catch' })).not.toThrow();
+			}
+		});
+	});
+
 	describe('Dialect Token Inventory Specification', () => {
 		it('verifies canonical token count invariants per source modules', () => {
 			expect(LDML_TOKENS.length).toBeGreaterThanOrEqual(48);
@@ -124,34 +145,59 @@ describe('Dialect Compiler Invariants & Token Parity', () => {
 			expect(STRFTIME_SPECIFIERS.length).toBeGreaterThanOrEqual(30);
 			expect(PHP_TOKENS.length).toBeGreaterThanOrEqual(30);
 			expect(MOMENT_TOKENS.length).toBeGreaterThanOrEqual(25);
+			expect(MYSQL_SPECIFIERS.length).toBeGreaterThanOrEqual(30);
 		});
 	});
 
 	describe('Explain Map Coverage Invariants', () => {
-		it('explains all standard LDML tokens without throwing or returning empty tempo tokens', () => {
-			const tokens = ['yyyy', 'YYYY', 'yy', 'YY', 'MMMM', 'MMM', 'MM', 'M', 'dd', 'd', 'Do', 'HH', 'hh', 'mm', 'ss', 'SSS', 'EEEE', 'EEE', 'ww', 'w', 'II', 'I'];
-			for (const tok of tokens) {
+		it('explains all canonical LDML tokens without throwing or returning empty descriptions', () => {
+			for (const tok of LDML_TOKENS) {
 				const res = Tempo.dialects.explain(tok, DIALECT.Ldml);
 				expect(res.tokens.length).toBeGreaterThanOrEqual(1);
+				expect(res.tokens[0].source).toBe(tok);
+				expect(res.tokens[0].desc.length).toBeGreaterThan(0);
 				expect(res.pattern).toMatch(/^\{/);
 			}
 		});
 
-		it('explains all standard Oracle tokens with defined Tempo representations', () => {
-			const tokens = ['YYYY', 'RRRR', 'IYYY', 'MM', 'MONTH', 'Mon', 'DD', 'DDTH', 'DDD', 'HH24', 'HH12', 'MI', 'SS', 'AM', 'IW', 'D'];
-			for (const tok of tokens) {
+		it('explains all canonical Oracle tokens with defined descriptions and tokens', () => {
+			for (const tok of ORACLE_TOKENS) {
 				const res = Tempo.dialects.explain(tok, DIALECT.Oracle);
 				expect(res.tokens.length).toBeGreaterThanOrEqual(1);
-				expect(res.pattern).toMatch(/^\{/);
+				expect(res.tokens[0].desc.length).toBeGreaterThan(0);
 			}
 		});
 
-		it('explains all standard Strftime specifiers with defined Tempo representations', () => {
-			const specifiers = ['%Y', '%y', '%m', '%B', '%b', '%d', '%e', '%H', '%I', '%M', '%S', '%p', '%A', '%a', '%j', '%z', '%Z', '%V', '%G'];
-			for (const spec of specifiers) {
-				const res = Tempo.dialects.explain(spec, DIALECT.Strftime);
+		it('explains all canonical PHP tokens with defined descriptions and tokens', () => {
+			for (const tok of PHP_TOKENS) {
+				const res = Tempo.dialects.explain(tok, DIALECT.Php);
 				expect(res.tokens.length).toBeGreaterThanOrEqual(1);
-				expect(res.pattern).toMatch(/^\{/);
+				expect(res.tokens[0].source).toBe(tok);
+				expect(res.tokens[0].desc.length).toBeGreaterThan(0);
+			}
+		});
+
+		it('explains all canonical Strftime specifiers with defined descriptions and tokens', () => {
+			for (const spec of STRFTIME_SPECIFIERS) {
+				if (spec === '%') {
+					expect(Tempo.dialects.explain('%%', DIALECT.Strftime).pattern).toBe('%');
+					continue;
+				}
+				const res = Tempo.dialects.explain(`%${spec}`, DIALECT.Strftime);
+				expect(res.tokens.length).toBeGreaterThanOrEqual(1);
+				expect(res.tokens[0].desc.length).toBeGreaterThan(0);
+			}
+		});
+
+		it('explains all canonical MySQL specifiers with defined descriptions and tokens', () => {
+			for (const spec of MYSQL_SPECIFIERS) {
+				if (spec === '%') {
+					expect(Tempo.dialects.explain('%%', DIALECT.Mysql).pattern).toBe('%');
+					continue;
+				}
+				const res = Tempo.dialects.explain(`%${spec}`, DIALECT.Mysql);
+				expect(res.tokens.length).toBeGreaterThanOrEqual(1);
+				expect(res.tokens[0].desc.length).toBeGreaterThan(0);
 			}
 		});
 

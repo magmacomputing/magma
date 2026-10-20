@@ -6,121 +6,151 @@
 
 # Token Specification & Cross-Ecosystem Matrix
 
-This document provides a comprehensive cross-reference matrix comparing date formatting and parsing tokens across **Native Tempo Core**, **Unicode LDML / UTS #35 (date-fns, CLDR)**, **Luxon**, **Moment.js / Day.js**, **POSIX `strftime` (C, Python)**, **Oracle / SQL `TO_CHAR`**, **PHP `date()`**, and **Go (`time.Format`)**.
+This document provides a comprehensive cross-reference matrix comparing date formatting and parsing tokens across **Native Tempo Core** and nine major ecosystem dialects:
+* **Unicode LDML / UTS #35** (`ldml` – date-fns, Luxon, CLDR)
+* **Moment.js / Day.js** (`moment` – Day.js, Moment)
+* **POSIX `strftime`** (`strftime` – C, Python `datetime`, Ruby, Linux)
+* **.NET / C#** (`dotnet` – C#, PowerShell, ASP.NET)
+* **Excel / Google Sheets** (`sheet` – Spreadsheets, Calc)
+* **MySQL / MariaDB** (`mysql` – `DATE_FORMAT`, `STR_TO_DATE`)
+* **Oracle / PostgreSQL** (`oracle` – `TO_CHAR`, `TO_DATE`, Snowflake)
+* **PHP `date()`** (`php` – Laravel, WordPress, Symfony)
+* **Go `time.Format`** (`go` – Golang reference layouts)
 
 ---
 
-## 1. Comprehensive Token Cross-Reference Matrix
+## 1. Interactive Dialect Token Navigator
 
-| Category | Description | LDML | Luxon | Moment | POSIX | Oracle | PHP | Go | Native Tempo |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Year** | 4-digit year (`2026`) | `yyyy` | `yyyy` | `YYYY` | `%Y` | `YYYY` | `Y` | `2006` | `{yyyy}` |
-| | 2-digit year (`26`) | `yy` | `yy` | `YY` | `%y` | `YY` | `y` | `06` | `{yy}` |
-| | 4-digit ISO week year | `YYYY` | `kkkk` | `GGGG` | `%G` | `IYYY` | `o` | N/A | `{yow}` |
-| **Month** | Zero-padded (`01`-`12`) | `MM` | `MM` | `MM` | `%m` | `MM` | `m` | `01` | `{mm}` |
-| | Unpadded (`1`-`12`) | `M` | `M` | `M` | `%-m` | `FMMM` | `n` | `1` | `{mm:raw}` |
-| | Short name (`Oct`) | `MMM` | `LLL` | `MMM` | `%b` | `Mon` | `M` | `Jan` | `{mmm}` |
-| | Full name (`October`) | `MMMM` | `LLLL` | `MMMM` | `%B` | `Month` | `F` | `January` | `{mon}` |
-| | Days in month (`28`-`31`) | N/A | N/A | N/A | N/A | N/A | `t` | N/A | N/A |
-| **Day** | Zero-padded day (`01`-`31`) | `dd` | `dd` | `DD` | `%d` | `DD` | `d` | `02` | `{dd}` |
-| | Unpadded day (`1`-`31`) | `d` | `d` | `D` | `%-d` | `FMDD` | `j` | `2` | `{dd:raw}` |
-| | Ordinal day (`24th`) | `do`* | N/A | `Do` | N/A | N/A | `jS` | N/A | `{dd:ord}` |
-| **Era** | Era abbreviated (`AD` / `BC`) | `G` | `G` | N/A | N/A | N/A | N/A | N/A | `{era}` |
-| | Era full (`Anno Domini`) | `GGGG` | `GG` | N/A | N/A | N/A | N/A | N/A | `{era:long}` |
-| **Day of Year** | Day of year (`001`-`366`) | `DDD` | `ooo` | `DDDD` | `%j` | `DDD` | `z`* | `002` | `{doy}` |
-| **Week of Year**| ISO week (`01`-`53`) | `II`* | `WW` | `WW` | `%V` | `IW` | `W` | N/A | `{woy}` |
-| | Sunday-start week (`00`-`53`) | N/A | N/A | N/A | `%U` | N/A | N/A | N/A | N/A |
-| | Monday-start week (`00`-`53`) | N/A | N/A | N/A | `%W` | N/A | N/A | N/A | N/A |
-| **Weekday** | Full name (`Saturday`) | `EEEE` | `EEEE` | `dddd` | `%A` | `Day` | `l` | `Monday` | `{wkd}` |
-| | Short name (`Sat`) | `EEE` | `EEE` | `ddd` | `%a` | `Dy` | `D` | `Mon` | `{www}` |
-| | ISO day of week (`1`-`7`) | `e`* | `E` | `E` | `%u` | `D`* | `N` | N/A | `{dow}` |
-| | Sunday = 0 (`0`-`6`) | N/A | N/A | `d` | `%w` | N/A | `w` | N/A | `{dow:0}` / `{dow:zero}` |
-| **Hour (24h)** | Zero-padded (`00`-`23`) | `HH` | `HH` | `HH` | `%H` | `HH24` | `H` | `15` | `{hh}` |
-| | Unpadded (`0`-`23`) | `H` | `H` | `H` | `%-H` | `FMHH24`| `G` | N/A | `{hh:raw}` |
-| **Hour (12h)** | Zero-padded (`01`-`12`) | `hh` | `hh` | `hh` | `%I` | `HH12` | `h` | `03` | `{h12}` |
-| | Unpadded (`1`-`12`) | `h` | `h` | `h` | `%-I` | `FMHH12`| `g` | `3` | `{h12:raw}` |
-| **Meridiem** | Uppercase (`AM` / `PM`) | `aa` | `a` | `A` | `%p` | `AM` | `A` | `PM` | `{mer:upper}` |
-| | Lowercase (`am` / `pm`) | `aaa` | N/A | `a` | `%P` | `am` | `a` | `pm` | `{mer}` |
-| **Minute** | Zero-padded (`00`-`59`) | `mm` | `mm` | `mm` | `%M` | `MI` | `i` | `04` | `{mi}` |
-| | Unpadded (`0`-`59`) | `m` | `m` | `m` | `%-M` | `FMMI` | N/A | `4` | `{mi:raw}` |
-| **Second** | Zero-padded (`00`-`59`) | `ss` | `ss` | `ss` | `%S` | `SS` | `s` | `05` | `{ss}` |
-| | Unpadded (`0`-`59`) | `s` | `s` | `s` | `%-S` | `FMSS` | N/A | `5` | `{ss:raw}` |
-| **Fractional** | Milliseconds (`000`-`999`) | `SSS`| `SSS` | `SSS` | `%3f*` | `FF3` | `v` | `.000` | `{ms}` |
-| | Microseconds (`6` digits) | `SSSSSS`| N/A | `SSSSSS`| `%f*` | `FF6` | `u` | `.000000`| `{ff:6}` |
-| | Nanoseconds (`9` digits) | `SSSSSSSSS`| N/A | `SSSSSSSSS`| `%9f*` | `FF9` | N/A | `.000000000`| `{ff:9}` |
-| **Timezone** | Short abbreviation / IANA | `z` | `z` | `zz` | `%Z` | `TZD` | `T` | `MST` | `{tz:short}` |
-| | Standard offset (`+08:00`) | `ZZZZZ`| `ZZ` | `Z` | N/A | `TZH:TZM` / `OF`| `P` | `-07:00` | `{tz:offset}` |
-| | Compact offset (`+0800`) | `ZZ` | `ZZZ` | `ZZ` | `%z` | `TZHTZM` | `O` | `-0700` | `{tz:offsetcompact}` |
-| | Offset hours with sign (`+08`) | N/A | N/A | N/A | N/A | `TZH` | N/A | `-07` | `{tz:offset:hh}` |
-| | Offset minutes (`00`, `30`) | N/A | N/A | N/A | N/A | `TZM` | N/A | N/A | `{tz:offset:mi}` |
-| | Offset with seconds (`+08:00:00`) | N/A | N/A | N/A | N/A | N/A | N/A | `-07:00:00` | `{tz:offset:ss}` |
-| | Compact offset with seconds (`+080000`) | N/A | N/A | N/A | N/A | N/A | N/A | `-070000` | `{tz:offsetcompact:ss}` |
-| | UTC `Z` or ISO offset | N/A | N/A | N/A | N/A | N/A | N/A | `Z07:00` | `{tz:offset:z}` |
-| | UTC `Z` or compact offset | N/A | N/A | N/A | N/A | N/A | N/A | `Z0700` | `{tz:offsetcompact:z}` |
-| | UTC `Z` or offset with seconds | N/A | N/A | N/A | N/A | N/A | N/A | `Z07:00:00` | `{tz:offset:ss:z}` |
-| | UTC `Z` or compact with seconds | N/A | N/A | N/A | N/A | N/A | N/A | `Z070000` | `{tz:offsetcompact:ss:z}` |
-| **Timestamp** | Unix epoch (seconds) | N/A | `X` | `X` | `%s` | N/A | `U` | N/A | `{ts}` (emits ms by default; requires `timeStamp: 'ss'`) |
-| **Quarter** | Quarter number (`1`-`4`) | `Q` | `q` | `Q` | N/A | `Q` | N/A | N/A | `{#quarter}` |
-| | Quarter zero-padded (`01`-`04`) | `QQ` | `qq` | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
-| | Quarter with ordinal (`3rd`) | N/A | N/A | `Qo` | N/A | N/A | N/A | N/A | `{#quarter:ord}` |
-| | Full quarter name (`3rd quarter`) | `QQQQ` | N/A | N/A | N/A | N/A | N/A | N/A | `{#quarter}` |
+Select a dialect tab below to view all supported specifiers, their Native Tempo equivalents, copyable tags, and live code examples. Use the filter bar to quickly locate tokens by keyword (e.g., `year`, `hour`, `ord`, `fractional`, `timezone`).
+
+<DialectTabs />
+
+---
+
+## 2. Core Standards Comparison Matrix
+
+For a high-level overview across the most common date-formatting paradigms, the table below highlights primary date and time components compared to Native Tempo:
+
+| Component | Description | LDML / date-fns | Moment / Day.js | POSIX `strftime` | .NET / C# | Native Tempo |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Year (4-digit)** | 4-digit calendar year (`2026`) | `yyyy` | `YYYY` | `%Y` | `yyyy` | `{yyyy}` |
+| **Year (2-digit)** | 2-digit calendar year (`26`) | `yy` | `YY` | `%y` | `yy` | `{yy}` |
+| **ISO Week Year** | 4-digit ISO week-numbering year | `YYYY` | `GGGG` | `%G` | N/A | `{yow}` |
+| **Month (padded)** | Zero-padded month (`01`–`12`) | `MM` | `MM` | `%m` | `MM` | `{mm}` |
+| **Month (raw)** | Unpadded month (`1`–`12`) | `M` | `M` | `%-m` | `M` | `{mm:raw}` |
+| **Month Name (short)** | Abbreviated month (`Oct`) | `MMM` / `LLL` | `MMM` | `%b` | `MMM` | `{mmm}` |
+| **Month Name (full)** | Full month name (`October`) | `MMMM` / `LLLL` | `MMMM` | `%B` | `MMMM` | `{mon}` |
+| **Day (padded)** | Zero-padded day (`01`–`31`) | `dd` | `DD` | `%d` | `dd` | `{dd}` |
+| **Day (raw)** | Unpadded day (`1`–`31`) | `d` | `D` | `%-d` | `d` | `{dd:raw}` |
+| **Day (ordinal)** | Ordinal suffix (`24th`) | N/A | `Do` | N/A | N/A | `{dd:ord}` |
+| **Day of Year** | Day of year (`001`–`366`) | `DDD` | `DDDD` | `%j` | N/A | `{doy}` |
+| **Week of Year** | ISO week number (`01`–`53`) | `ww` | `WW` | `%V` | N/A | `{woy}` |
+| **Weekday (full)** | Full weekday (`Saturday`) | `EEEE` | `dddd` | `%A` | `dddd` | `{wkd}` |
+| **Weekday (short)** | Abbreviated weekday (`Sat`) | `EEE` | `ddd` | `%a` | `ddd` | `{www}` |
+| **Weekday (ISO)** | ISO weekday (`1`=Mon .. `7`=Sun) | `e` / `c` | `E` | `%u` | N/A | `{dow}` |
+| **Hour (24h padded)** | 24-hour clock (`00`–`23`) | `HH` | `HH` | `%H` | `HH` | `{hh}` |
+| **Hour (24h raw)** | 24-hour clock unpadded (`0`–`23`) | `H` | `H` | `%-H` | `H` | `{hh:raw}` |
+| **Hour (12h padded)** | 12-hour clock (`01`–`12`) | `hh` | `hh` | `%I` | `hh` | `{h12}` |
+| **Hour (12h raw)** | 12-hour clock unpadded (`1`–`12`) | `h` | `h` | `%-I` | `h` | `{h12:raw}` |
+| **Meridiem (upper)** | Uppercase indicator (`AM` / `PM`) | `aa` | `A` | `%p` | `tt` | `{mer:upper}` |
+| **Minute (padded)** | Zero-padded minute (`00`–`59`) | `mm` | `mm` | `%M` | `mm` | `{mi}` |
+| **Second (padded)** | Zero-padded second (`00`–`59`) | `ss` | `ss` | `%S` | `ss` | `{ss}` |
+| **Milliseconds** | 3-digit fractional seconds (`123`) | `SSS` | `SSS` | `%3f*` | `fff` | `{ms}` |
+| **Microseconds** | 6-digit fractional seconds (`123456`) | `SSSSSS` | `SSSSSS` | `%f*` | `ffffff` | `{ff:6}` |
+| **Timezone Offset** | Offset with colon (`+08:00`) | `ZZZZZ` / `XXX` | `Z` | `%:z` | `zzz` / `K` | `{tz:offset}` |
+| **Compact Offset** | Offset without colon (`+0800`) | `ZZ` | `ZZ` | `%z` | N/A | `{tz:offsetcompact}` |
+| **Timezone Name** | Abbreviation or IANA (`EDT`) | `z` | `z` | `%Z` | N/A | `{tz:short}` |
+| **Unix Epoch** | Seconds since Unix epoch | N/A | `X` | `%s` | N/A | `{ts}` |
 
 > [!NOTE]
-> `*` In LDML (`e`) and Oracle (`D`), day-of-week numeric indexing is territory/locale-dependent; Moment uses `E` for standard ISO weekdays (1–7). In LDML, `ww` is locale-dependent week of year (date-fns uses `II` for ISO week of year). Go’s `15` layout always zero-pads 24-hour hours (no unpadded equivalent). In POSIX `strftime`, `%V` formats the ISO 8601 week (`01`–`53`), while `%U` (Sunday-first) and `%W` (Monday-first) format calendar week numbers (`00`–`53`). `%3f`, `%6f`, and `%9f` are Tempo-specific extensions to `strftime` to specify explicit subsecond precision widths; standard POSIX `strftime` does not define subsecond specifiers (Python uses `%f` for 6-digit microseconds). Tempo preserves the documented widths and parsing/formatting behavior. In PHP `date()`, `z` is a 0-indexed day of year (`0`–`365`), while `t` provides the number of days in the given month (`28`–`31`). Go layout `2006` is a calendar year layout; ISO week-numbering year is unsupported in standard Go layout strings (requires explicit conversion using `time.Time.ISOWeek()`). PHP `date()` zero-pads `i` (minute) and `s` (second); unpadded values are unsupported in PHP date formatting. LDML `d` produces a numeric day of month; date-fns adds `do` for ordinal day of month, while Moment supports `Do`.
+> `*` In POSIX `strftime`, standard implementations do not specify fractional seconds; `%f` is Python's 6-digit microsecond specifier, while `%3f`, `%6f`, and `%9f` are Tempo extensions designed for deterministic subsecond formatting and parsing.
 
 ---
 
-## 2. Literal Text Escaping Rules
+## 3. Literal Text Escaping Rules
 
-When embedding arbitrary plain text inside format strings, each dialect implements distinct syntax:
+When embedding plain text inside masks, each dialect implements distinct escaping conventions:
 
-### A. Unicode LDML & Luxon
-* Wrap arbitrary characters in **single quotes**: `'Date: ' yyyy-MM-dd`.
+### A. Unicode LDML & Luxon (`ldml`)
+* Enclose text in **single quotes**: `'Date: ' yyyy-MM-dd`.
 * To emit a literal single quote, use **two consecutive single quotes**: `''yyyy''` $\rightarrow$ `'2026'`.
 
 ```typescript
-// LDML Escaping Example
-const str1 = t.format("'Report generated on' yyyy-MM-dd 'at' HH:mm", { dialect: 'ldml' });
-// Output: "Report generated on 2026-10-24 at 15:30"
+const str = t.format("'Report generated on' yyyy-MM-dd 'at' HH:mm", { dialect: 'ldml' });
+// => "Report generated on 2026-10-24 at 15:30"
 ```
 
-### B. Moment.js & Day.js
-* Wrap arbitrary characters in **square brackets**: `[Report generated on] YYYY-MM-DD`.
-* Single characters outside brackets that do not match known tokens are emitted as literals.
+### B. Moment.js & Day.js (`moment`)
+* Enclose text in **square brackets**: `[Report generated on] YYYY-MM-DD`.
+* Bare characters outside tokens remain literal text.
 
 ```typescript
-// Moment Escaping Example
-const str2 = t.format('[Invoice #] YYYY-MM-DD [due by] HH:mm', { dialect: 'moment' });
-// Output: "Invoice # 2026-10-24 due by 15:30"
+const str = t.format('[Invoice #] YYYY-MM-DD [due by] HH:mm', { dialect: 'moment' });
+// => "Invoice # 2026-10-24 due by 15:30"
 ```
 
-### C. POSIX `strftime`
-* Any character not prefixed by `%` is treated as literal text.
-* To emit a literal percent sign, use `%%`: `%% %Y-%m-%d` $\rightarrow$ `% 2026-10-24`.
+### C. POSIX `strftime` & MySQL (`strftime`, `mysql`)
+* Characters not prefixed by `%` are treated as literal text.
+* To emit a literal percent symbol, use `%%`: `%% %Y-%m-%d` $\rightarrow$ `% 2026-10-24`.
 
 ```typescript
-// strftime Escaping Example
-const str3 = t.format('%% System status at %Y-%m-%d %H:%M:%S %%', { dialect: 'strftime' });
-// Output: "% System status at 2026-10-24 15:30:45 %"
+const str = t.format('%% Processed at %Y-%m-%d %H:%M:%S %%', { dialect: 'strftime' });
+// => "% Processed at 2026-10-24 15:30:45 %"
 ```
 
-### D. Native Tempo Core
+### D. .NET / C# (`dotnet`)
+* Enclose text in single quotes `'text'` or double quotes `"text"`.
+* Escape individual characters using a backslash `\`.
+
+```typescript
+const str = t.format("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff", { dialect: 'dotnet' });
+// => "2026-10-24T15:30:45.123"
+```
+
+### E. Excel / Google Sheets (`sheet`)
+* Enclose arbitrary strings in double quotes: `"Order Date: " yyyy-mm-dd`.
+* Escape individual characters using backslash `\`.
+* Formatting decorators like `_ ` (space reservation) and `* ` (fill character) are ignored in standard parsing/formatting.
+
+```typescript
+const str = t.format('"Total: $" 0.00 "as of" mmmm d, yyyy', { dialect: 'sheet' });
+// => "Total: $ 0.00 as of October 24, 2026"
+```
+
+### F. Native Tempo Core
 * In Native Tempo syntax, tokens are enclosed in curly braces `{token}`. Everything outside braces is literal text by default.
 * To emit a literal <code>&#123;</code> or <code>&#125;</code>, use <span v-pre><code>&#123;&#123;</code></span> or <span v-pre><code>&#125;&#125;</code></span>:
 
 ```typescript
-// Native Tempo Escaping Example
-const str4 = t.format('Total balance: ${0} as of {yyyy}-{mm}-{dd}', { dialect: null });
-// Output: "Total balance: $0 as of 2026-10-24"
+const str = t.format('Total balance: ${0} as of {yyyy}-{mm}-{dd}', { dialect: null });
+// => "Total balance: $0 as of 2026-10-24"
 ```
 
 ---
 
-## 3. Hour Parsing & Normalization Details
+## 4. Ecosystem-Specific Nuances
 
-When parsing 24-hour clocks, differing standards support both `00-23` (`HH`, `H`) and `01-24` (`kk`, `k`):
+### A. Context-Sensitive `mm` in Spreadsheets
+In spreadsheet software (Excel, Google Sheets, Calc), the mask `m` or `mm` represents:
+* **Minutes** when immediately preceded by an hour (`h` or `hh`) or immediately followed by a second (`s` or `ss`), such as `hh:mm:ss`.
+* **Months** everywhere else, such as `yyyy-mm-dd` or `mm/dd/yyyy`.
 
-* In Unicode LDML, `kk` indicates hours from `01` to `24`. Hour `24:00` represents midnight at the end of the day, which standard Temporal engines normalize to `00:00`.
+Tempo's `sheet` dialect automatically inspects token neighbors during tokenization to guarantee accurate resolution without manual intervention.
+
+### B. Standard .NET Single-Character Specifiers
+In .NET, single-letter format strings expand into standard system patterns:
+* `O` or `o`: Round-trip ISO-8601 (`yyyy-MM-ddTHH:mm:ss.fffffffK`)
+* `s`: Sortable date/time (`yyyy-MM-ddTHH:mm:ss`)
+* `u`: Universal sortable (`yyyy-MM-dd HH:mm:ssZ`)
+* `r` or `R`: RFC 1123 (`ddd, dd MMM yyyy HH:mm:ss GMT`)
+* `d` / `D`: Short / Long date
+* `t` / `T`: Short / Long time
+
+Tempo compiles these specifiers directly into optimal matching pipelines.
+
+### C. Hour Normalization (`24:00` Midnight)
+When parsing 24-hour clocks, differing standards support `00-23` (`HH`, `H`) and `01-24` (`kk`, `k`):
+* In Unicode LDML and Moment, `kk` indicates hours from `01` to `24`. Hour `24:00` represents midnight at the close of day, which Temporal engines normalize to `00:00`.
 * The Dialects parser safely normalizes `24:00` to hour `0`, while strictly rejecting out-of-range hours like `25:00` or `00:00` for `kk` tokens:
 
 ```typescript

@@ -1,6 +1,11 @@
 import type { Tempo } from '@magmacomputing/tempo';
 import type { Evaluable } from '@magmacomputing/tempo/library';
 import type { Dialect } from './constants.js';
+import type { MysqlSpecifier } from './compiler/mysql.compiler.js';
+import type { DotNetSpecifier } from './compiler/dotnet.compiler.js';
+import type { SheetSpecifier } from './compiler/sheet.compiler.js';
+
+export type { MysqlSpecifier, DotNetSpecifier, SheetSpecifier };
 
 export interface ExplainedToken {
 	readonly source: string;
@@ -81,6 +86,18 @@ export interface DialectsInstanceNamespace {
 	 * Formats this instance using Go reference time format layout (e.g. '2006-01-02 15:04:05').
 	 */
 	go(mask: string): string;
+	/**
+	 * Formats this instance using MySQL / MariaDB DATE_FORMAT specifiers (e.g. '%Y-%m-%d %H:%i:%s').
+	 */
+	mysql(mask: string): string;
+	/**
+	 * Formats this instance using .NET custom or standard format specifiers (e.g. 'yyyy-MM-dd HH:mm:ss').
+	 */
+	dotnet(mask: string): string;
+	/**
+	 * Formats this instance using Excel / Google Sheets format masks (e.g. 'yyyy-mm-dd hh:mm:ss').
+	 */
+	sheet(mask: string): string;
 	/**
 	 * Formats this instance using a specified dialect mask.
 	 */

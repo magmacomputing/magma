@@ -112,7 +112,7 @@ In Tempo, **all text outside curly braces is literal by default**:
 t.format("Recorded on {yyyy}-{mm}-{dd} at {hh}:{mi}!");
 // "Recorded on 2026-10-24 at 15:30!"
 ```
-To print literal braces, simply double them: `{{` produces `{` and `}}` produces `}`. No quotes, brackets, or backslash escapes needed.
+To print literal braces, simply double them: <span v-pre><code>&#123;&#123;</code></span> produces <code>&#123;</code> and <span v-pre><code>&#125;&#125;</code></span> produces <code>&#125;</code>. No quotes, brackets, or backslash escapes needed.
 
 ---
 
@@ -149,7 +149,7 @@ When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, 
 | **Case Sensitivity** | Critical (typos silently alter data targets) | All lowercase primary tokens (`{yyyy}`, `{mm}`, `{dd}`, `{hh}`) |
 | **API Alignment** | Methods and tokens use completely different vocabularies | Direct mirror (`t.yy` $\longleftrightarrow$ `{yyyy}` / `{yy}`, `t.mm` $\longleftrightarrow$ `{mm}`) |
 | **Variations & Styling**| Hundreds of arbitrary single-character tokens | Orthogonal, chainable modifiers (`:upper`, `:lower`, `:ord`, `:roman`, `:locale`) |
-| **Literal Text** | Requires quotes (`'...'`), brackets (`[...]`), or is unescapable (Go) | Literal by default; doubled braces (`{{`, `}}`) for escape |
+| **Literal Text** | Requires quotes (`'...'`), brackets (`[...]`), or is unescapable (Go) | Literal by default; doubled braces (<span v-pre><code>&#123;&#123;</code></span>, <span v-pre><code>&#125;&#125;</code></span>) for escape |
 | **Week-Year Standard**| Mixes ISO and divergent locale-based week years | Anchored strictly to deterministic ISO 8601 by default (`{yow}`, `{woy}`), with explicit `:locale` opt-in (`{yow:locale}`, `{woy:locale}`) |
 | **Grammatical Inflection**| Duplicate token families (`LLLL` vs `MMMM`, `cccc` vs `EEEE`) | Automatic via standard `Intl` integration (`{mon:locale}`) |
 | **Domain Terms** | Rigid, static token sets | Extensible Terms (`#quarter`, `#isoWeek`, `#dayOfYear`) |

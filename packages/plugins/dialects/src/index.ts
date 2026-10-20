@@ -10,6 +10,9 @@ import { formatStrftime, parseStrftime, STRFTIME_SPECIFIERS, type StrftimeSpecif
 import { formatOracle, parseOracle, ORACLE_TOKENS, ORACLE_UNSUPPORTED_PARSE_TOKENS, type OracleToken } from './compiler/oracle.compiler.js';
 import { formatPhp, parsePhp, PHP_TOKENS, type PhpToken } from './compiler/php.compiler.js';
 import { formatGo, parseGo } from './compiler/go.compiler.js';
+import { formatMysql, parseMysql, MYSQL_SPECIFIERS, type MysqlSpecifier } from './compiler/mysql.compiler.js';
+import { formatDotNet, parseDotNet, DOTNET_TOKENS, type DotNetSpecifier } from './compiler/dotnet.compiler.js';
+import { formatSheet, parseSheet, SHEET_TOKENS, type SheetSpecifier } from './compiler/sheet.compiler.js';
 import { validateResolvedDateFields, type ExtractedDateMetadata } from './compiler/shared.compiler.js';
 import { MOMENT_TOKENS, MOMENT_TO_LDML_MAP, type MomentToken } from './engine/dialect.registry.js';
 import { explain } from './engine/explain.js';
@@ -40,6 +43,15 @@ export {
 	PHP_TOKENS,
 	formatGo,
 	parseGo,
+	formatMysql,
+	parseMysql,
+	MYSQL_SPECIFIERS,
+	formatDotNet,
+	parseDotNet,
+	DOTNET_TOKENS,
+	formatSheet,
+	parseSheet,
+	SHEET_TOKENS,
 	validateResolvedDateFields,
 	MOMENT_TOKENS,
 	MOMENT_TO_LDML_MAP,
@@ -67,6 +79,9 @@ export type {
 	OracleToken,
 	PhpToken,
 	MomentToken,
+	MysqlSpecifier,
+	DotNetSpecifier,
+	SheetSpecifier,
 };
 
 /**
@@ -184,6 +199,9 @@ export const DialectsPlugin: TempoPlugin = definePlugin({
 						sql: (mask: string) => format(mask, DIALECT.Oracle),
 						php: (mask: string) => format(mask, DIALECT.Php),
 						go: (mask: string) => format(mask, DIALECT.Go),
+						mysql: (mask: string) => format(mask, DIALECT.Mysql),
+						dotnet: (mask: string) => format(mask, DIALECT.DotNet),
+						sheet: (mask: string) => format(mask, DIALECT.Sheet),
 						format,
 						explain: (mask: string, dialectOrOptions?: DialectInput | ExplainOptions): ExplainResult => explain(mask, dialectOrOptions),
 						export: (mask: string, dialectOrOptions?: DialectInput | ExportOptions): ExportResult => exportDialect(mask, dialectOrOptions),

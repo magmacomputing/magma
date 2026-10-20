@@ -47,6 +47,10 @@ describe('Dialect Explain & Migration Helper', () => {
 
 		const res3 = Tempo.dialects.explain('QQQQ yyyy', DIALECT.Ldml);
 		expect(res3.pattern).toBe('{#quarter} {yyyy}');
+
+		const res4 = Tempo.dialects.explain('Y-w-e', DIALECT.Ldml);
+		expect(res4.pattern).toBe('{yow}-{woy:raw}-{dow:locale}');
+		expect(res4.tokens[0]).toEqual({ source: 'Y', tempo: '{yow}', desc: 'Week-numbering year' });
 	});
 
 	it('translates timezone tokens into Tempo tz modifiers', () => {
@@ -259,8 +263,8 @@ describe('Dialect Explain & Migration Helper', () => {
 		const resTokens = Tempo.dialects.explain('yyyy-DD EE ee cc', DIALECT.Ldml);
 		expect(resTokens.pattern).toBe('{yyyy}-{doy} {www} {dow:locale} {dow:locale}');
 
-		const resWeek = Tempo.dialects.explain('YYYY Y ww w', DIALECT.Ldml);
-		expect(resWeek.pattern).toBe('{yow} {yow:locale} {woy} {woy:raw}');
+		const resWeek = Tempo.dialects.explain('YYYY ww w', DIALECT.Ldml);
+		expect(resWeek.pattern).toBe('{yow} {woy} {woy:raw}');
 		expect(Tempo.dialects.explain('YY', DIALECT.Ldml).pattern).toBe('{yow:short}');
 
 		// Moment locale week-year gggg and gg
@@ -272,5 +276,20 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(resStrftimeRaw.pattern).toBe('{yyyy}-{mm:raw}-{dd:raw}');
 		expect(resStrftimeRaw.tokens.find(t => t.source === '%-Y')?.desc).toBe('4-digit year');
 		expect(resStrftimeRaw.tokens.find(t => t.source === '%-d')?.desc).toBe('Unpadded day of month (1-31)');
+	});
+
+	it('treats Y consistently as week-numbering year in both LDML explain and format', () => {
+		const resExplain = Tempo.dialects.explain('Y', DIALECT.Ldml);
+		expect(resExplain.pattern).toBe('{yow}');
+		expect(resExplain.tokens).toEqual([{ source: 'Y', tempo: '{yow}', desc: 'Week-numbering year' }]);
+
+		const dt = new Tempo('2026-10-24T12:00:00Z');
+		expect(dt.dialects.format('Y', DIALECT.Ldml)).toBe('2026');
+	});
+
+	it('explains LDML DDDo as ordinal day of year', () => {
+		const res = Tempo.dialects.explain('yyyy-DDDo', DIALECT.Ldml);
+		expect(res.pattern).toBe('{yyyy}-{doy:ord}');
+		expect(res.tokens.find(t => t.source === 'DDDo')?.desc).toBe('Day of year with ordinal suffix');
 	});
 });

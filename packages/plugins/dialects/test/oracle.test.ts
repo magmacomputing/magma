@@ -274,6 +274,15 @@ describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {
 		expect(tTuesday.yy).toBe(2015);
 		expect(tTuesday.mm).toBe(12);
 		expect(tTuesday.dd).toBe(29);
+
+		// Consistent YYYY and IYYY: 2025-12-30 resolves to calendar year 2024
+		const tConsistent = Tempo.dialects.parse('2024 2025-12-30', 'YYYY IYYY-MM-DD', 'oracle');
+		expect(tConsistent.isValid).toBe(true);
+		expect(tConsistent.yy).toBe(2024);
+
+		// Contradictory YYYY and IYYY
+		const tConflicting = Tempo.dialects.parse('2025 2025-12-30', 'YYYY IYYY-MM-DD', 'oracle', { error: 'catch' });
+		expect(tConflicting.isValid).toBe(false);
 	});
 
 	it('parses two-digit years with YY (current century) and RR (pivot century)', () => {
