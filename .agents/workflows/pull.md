@@ -40,19 +40,20 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      npm run build:all
      ```
 
-6. **Post Explanatory Comments on PR Threads (Do Not Resolve)**:
-   For each evaluated finding, post a concise reply comment to its GitHub PR review thread using `gh api graphql`:
-   ```bash
-   gh api graphql -f query='
-   mutation($threadId: ID!, $body: String!) {
-     addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $threadId, body: $body }) {
-       comment { id }
-     }
-   }' -f threadId="<THREAD_ID>" -f body="<Accepted / Skipped explanation>"
-   ```
-   - If **Accepted**: Briefly summarize the fix applied locally in the working tree.
-   - If **Skipped**: State the clear technical rationale so CodeRabbit and team members understand why no change was needed.
-   - **Do NOT mark threads as resolved**: Leave thread resolution for the user to manually review and resolve on GitHub once they inspect diffs and push commits.
+6. **Post Explanatory Comments on PR Threads**:
+   - For each evaluated finding, post a concise reply comment to its GitHub PR review thread using `gh api graphql`:
+     ```bash
+     gh api graphql -f query='
+     mutation($threadId: ID!, $body: String!) {
+       addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $threadId, body: $body }) {
+         comment { id }
+       }
+     }' -f threadId="<THREAD_ID>" -f body="<Accepted. ... / Skipped. ...>"
+     ```
+   - If **Accepted**: Format reply starting with `Accepted. <Brief summary of the local fix applied in the working tree>`.
+     *(Note: This format signals CodeRabbit's GitHub App bot to confirm the remediation and manage thread auto-resolution according to its native workflow).*
+   - If **Skipped**: Format reply starting with `Skipped. <Clear technical rationale why no change was needed>`.
+   - **Do NOT call `resolveReviewThread` directly**: The agent never manually executes thread resolution mutations; thread resolution is handled natively by CodeRabbit's bot confirmation or left for the user's manual review.
 
 7. **Summary & User Handoff**:
    - Provide a concise summary table or list detailing:
@@ -60,4 +61,4 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      - Confirmation that thread reply comments were posted on GitHub.
      - Modified files left in the working tree.
      - Test run results.
-   - Prompt the user to inspect `git diff`, push commits, and mark threads as resolved on GitHub when ready.
+   - Prompt the user to inspect `git diff`, push commits, and verify any remaining unresolved threads on GitHub.
