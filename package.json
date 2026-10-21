@@ -23,6 +23,7 @@
     "review:pr": "tempo-cli review-pr",
     "review:cli": "coderabbit review",
     "review:findings": "coderabbit review findings",
+    "review:limit": "tempo-cli review-limit",
     "build:tempo": "npm run build:library && npm run build:std && npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "build:std": "npm run build --workspace=@magmacomputing/tempo-std",

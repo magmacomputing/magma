@@ -7,6 +7,7 @@ import { catalogSync } from './commands/catalog-sync.js';
 import { syncProviders } from './commands/sync-providers.js';
 import { prepublish } from './commands/prepublish.js';
 import { reviewPr } from './commands/review-pr.js';
+import { reviewLimit } from './commands/review-limit.js';
 
 const [command, ...args] = process.argv.slice(2);
 
@@ -36,6 +37,10 @@ switch (command) {
 	case 'review:pr':
 		await reviewPr(args);
 		break;
+	case 'review-limit':
+	case 'review:limit':
+		await reviewLimit(args);
+		break;
 	case '-h':
 	case '--help':
 	case 'help':
@@ -54,6 +59,7 @@ Available Commands:
   sync-providers     Sync AI provider models and remote manifests
   prepublish         Verify git main branch and run build prior to publish
   review-pr          Fetch unresolved CodeRabbit review findings from the open PR
+  review-limit       Check local review history and hourly sliding window limits
 `);
 		break;
 	default:

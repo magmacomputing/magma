@@ -251,7 +251,7 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('century', '\\d{2}');
 				break;
 			case 'm':
-				pattern += group('mm', '\\d{1,2}');
+				pattern += group('mm', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'B':
 				pattern += group('month_name', '[A-Za-z]+');
@@ -261,16 +261,16 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('month_abbr', '[A-Za-z]{3,}');
 				break;
 			case 'd':
-				pattern += group('dd', '\\d{1,2}');
+				pattern += group('dd', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'e':
 				pattern += group('dd', '\\s?\\d{1,2}');
 				break;
 			case 'H':
-				pattern += group('hh', '\\d{1,2}');
+				pattern += group('hh', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'I':
-				pattern += group('h12', '\\d{1,2}');
+				pattern += group('h12', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'l':
 				pattern += group('h12', '\\s?\\d{1,2}');
@@ -285,22 +285,22 @@ export function compileStrftimeParser(mask: string): RegExp {
 				pattern += group('iyy', '\\d{2}');
 				break;
 			case 'V':
-				pattern += group('iw', '\\d{1,2}');
+				pattern += group('iw', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'U':
-				pattern += group('week_u', '\\d{1,2}');
+				pattern += group('week_u', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'W':
-				pattern += group('week_w', '\\d{1,2}');
+				pattern += group('week_w', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'D':
 				pattern += `${group('mm', '\\d{2}')}/${group('dd', '\\d{2}')}/${group('yy', '\\d{2}')}`;
 				break;
 			case 'M':
-				pattern += group('mi', '\\d{1,2}');
+				pattern += group('mi', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'S':
-				pattern += group('ss', '\\d{1,2}');
+				pattern += group('ss', flag === '-' ? '\\d{1,2}' : '\\d{2}');
 				break;
 			case 'f': {
 				const w = width ? Math.min(9, Math.max(1, Number(width))) : 6;

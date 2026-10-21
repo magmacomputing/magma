@@ -25,11 +25,12 @@ export async function reviewPr(args = []) {
 		const prInfoRaw = runGh(['pr', 'view', '--json', 'number,title,headRefName,url,headRepository,headRepositoryOwner']);
 		const prInfo = JSON.parse(prInfoRaw);
 
-		const repoOwner = prInfo.headRepositoryOwner?.login;
-		const repoName = prInfo.headRepository?.name;
+		const urlMatch = prInfo.url?.match(/\/([^/]+)\/([^/]+)\/pull\/\d+/);
+		const repoOwner = urlMatch ? urlMatch[1] : prInfo.headRepositoryOwner?.login;
+		const repoName = urlMatch ? urlMatch[2] : prInfo.headRepository?.name;
 
 		if (!repoOwner || !repoName) {
-			throw new Error('Could not determine repository owner and name from selected PR.');
+			throw new Error('Could not determine base repository owner and name from selected PR.');
 		}
 
 		const query = `
@@ -77,16 +78,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 				gqlArgs.push('-f', `after=${afterCursor}`);
 			}
 
-			let gqlRaw;
-			try {
-				gqlRaw = runGh(gqlArgs);
-			} catch (err) {
-				if (allThreads.length > 0) {
-					console.warn(`Warning: Could not fetch additional review threads: ${err.message}`);
-					break;
-				}
-				throw err;
-			}
+			const gqlRaw = runGh(gqlArgs);
 
 			const data = JSON.parse(gqlRaw);
 			const pullRequest = data?.data?.repository?.pullRequest;
@@ -102,8 +94,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 			afterCursor = reviewThreads?.pageInfo?.endCursor ?? null;
 
 			if (hasNextPage && !afterCursor) {
-				console.warn('Warning: hasNextPage is true but no endCursor was provided; pagination could not complete.');
-				break;
+				throw new Error(`Review-thread pagination failed: hasNextPage is true but no endCursor was returned for PR #${prInfo.number}.`);
 			}
 		}
 

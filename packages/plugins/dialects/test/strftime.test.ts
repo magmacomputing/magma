@@ -233,6 +233,15 @@ describe('POSIX strftime Formatting & Parsing', () => {
 		const parsedDouble = Tempo.dialects.parse('26-10-24', '%-y-%m-%d', DIALECT.Strftime, { timeZone: 'UTC' });
 		expect(parsedDouble.isValid).toBe(true);
 		expect(parsedDouble.yy).toBe(2026);
+
+		// Adjacent %-y%m: March 2006 formats to '603' and parses back without greedy yy capture
+		const tMar2006 = new Tempo('2006-03-15T00:00:00Z', { timeZone: 'UTC' });
+		const fmtAdjacent = tMar2006.format('%-y%m', { dialect: DIALECT.Strftime });
+		expect(fmtAdjacent).toBe('603');
+		const parsedAdjacent = Tempo.dialects.parse('603', '%-y%m', DIALECT.Strftime, { timeZone: 'UTC' });
+		expect(parsedAdjacent.isValid).toBe(true);
+		expect(parsedAdjacent.yy).toBe(2006);
+		expect(parsedAdjacent.mm).toBe(3);
 	});
 
 	it('formats, parses, and validates calendar week numbers (%U, %W)', () => {
