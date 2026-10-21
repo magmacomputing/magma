@@ -161,22 +161,27 @@ export type Until = (Options & { unit?: Unit }) | Unit
 export type Mutate = 'start' | 'mid' | 'end'
 export type TermOffset = { [K: `#${string}`]: number | string }
 export type SetFields = {
-	[K in Mutate]?: Unit | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek' | `#${string}`;
+	[K in Mutate]?: Unit | 'yow' | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek' | `#${string}`;
 } & {
 	[K in 'date' | 'time' | 'event' | 'period']?: string;
 } & {
-	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
+	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'yow' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
 export type SlickKey = SLICK_KEYS[number];
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
 	yy?: LooseUnion<number | Mutate>;
+	/** @internal */
 	yw?: LooseUnion<number | Mutate>;
+	yow?: LooseUnion<number | Mutate>;
 	isoYear?: LooseUnion<number | Mutate>;
 	isoyear?: LooseUnion<number | Mutate>;
 	mm?: LooseUnion<mm | Mutate>;
+	/** @internal */
 	wy?: LooseUnion<wy | Mutate>;
+	woy?: LooseUnion<woy | Mutate>;
+	/** @deprecated Use `woy` instead. */
 	ww?: LooseUnion<wy | Mutate>;
 	isoWeek?: LooseUnion<number | Mutate>;
 	isoweek?: LooseUnion<number | Mutate>;
@@ -195,7 +200,7 @@ export type MutateSet = SetFields & MutateShorthand & {
 	calendar?: Temporal.CalendarLike;
 } & TermOffset | DateTime
 export type AddUnits = { [K in Unit]?: number };
-export type MutateAdd = AddUnits & { [K in Element | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek']?: number } & TermOffset | DateTime
+export type MutateAdd = AddUnits & { [K in Element | 'yow' | 'yw' | 'isoYear' | 'isoyear' | 'isoWeek' | 'isoweek']?: number } & TermOffset | DateTime
 
 export type Modifier = '=' | '-' | '+' | '<' | '<=' | '-=' | '>' | '>=' | '+=' | 'this' | 'next' | 'prev' | 'last' | 'first' | undefined
 export type Relative = 'ago' | 'hence' | 'prior' | 'from now'
@@ -209,9 +214,11 @@ export type ms = IntRange<0, 999>
 export type us = IntRange<0, 999>
 export type ns = IntRange<0, 999>
 /** ISO 8601 week number (1-53) */
-export type wy = IntRange<1, 53>
-/** alias for `wy` */
-export type ww = IntRange<1, 53>
+export type woy = IntRange<1, 53>
+/** @internal alias for `woy` */
+export type wy = woy;
+/** @deprecated Use `woy` instead. */
+export type ww = woy;
 export type wkd = IntRange<1, 7>
 
 export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & {
@@ -241,12 +248,20 @@ export type FormatRegistry = enums.FormatEnum;
  */
 export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
-	yyyy: true; yy: true; yw: true;
+	yyyy: true; yy: true; yow: true;
+	/** @internal */
+	yw: true;
 	// ── week-of-year ─────────────────────────────────
-	wy: true; yywy: true;
-	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `wy` instead. */
+	woy: true;
+	/** @deprecated Easily composed via `{yow}{woy}`. To be removed in v5.0.0. */
+	yywoy: true;
+	/** @internal */
+	wy: true;
+	/** @internal */
+	yywy: true;
+	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `woy` instead. */
 	ww: true;
-	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `yywy` instead. */
+	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `{yow}{woy}` instead. */
 	yyww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
@@ -263,6 +278,8 @@ export interface TempoFormatTokens {
 	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true;
+	// ── specialized tokens & counters ─────────────────
+	cen: true; century: true; dim: true; jj: true; julian: true; wom: true;
 	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
 	tzd: true;
 }

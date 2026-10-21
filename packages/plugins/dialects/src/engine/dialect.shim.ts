@@ -1,6 +1,7 @@
 import type { Tempo } from '@magmacomputing/tempo';
-import { formatWithDialect } from '../engine/dialect.registry.js';
+import { formatWithDialect, detectDialect } from './dialect.registry.js';
 import { DIALECT } from '../constants.js';
+import { isFunction, hasKey } from '@magmacomputing/tempo/library';
 
 /**
  * Attaches convenience shims for developers migrating from Luxon or Moment.
@@ -10,9 +11,9 @@ export function attachDialectShims(TempoClass: any): void {
 	if (!TempoClass.prototype.toFormat) {
 		Object.defineProperty(TempoClass.prototype, 'toFormat', {
 			value: function toFormat(this: Tempo, mask: string, options: Tempo.FormatOptions = {}): string {
-				if (typeof (this as any).hasModule === 'function' && !(this as any).hasModule('FormatModule')) {
+				if (hasKey(this, 'hasModule', isFunction) && !this.hasModule('FormatModule'))
 					throw new Error("[Tempo Dialects] Formatting requires 'FormatModule'. Call 'Tempo.use(FormatModule)' first.");
-				}
+
 				const zdt = this.toDateTime();
 				return formatWithDialect(zdt, mask, {
 					...this.config,
@@ -46,11 +47,37 @@ export function attachDialectShims(TempoClass: any): void {
 	if (!TempoClass.fromFormats) {
 		Object.defineProperty(TempoClass, 'fromFormats', {
 			value: function fromFormats(input: string, masks: string[], options: Tempo.Options = {}): Tempo {
-				return (TempoClass as any).from(input, {
-					...options,
-					format: masks,
-					dialect: options.dialect ?? DIALECT.Ldml,
-				});
+				if (options.dialect != null) {
+					return (TempoClass as any).from(input, {
+						...options,
+						format: masks,
+					});
+				}
+				let lastInstance: any;
+				let firstError: unknown;
+				for (const mask of masks) {
+					try {
+						const t = (TempoClass as any).from(input, {
+							...options,
+							format: mask,
+							dialect: detectDialect(mask),
+						});
+						if (t && t.isValid) return t;
+						lastInstance = t;
+					} catch (err) {
+						if (firstError === undefined) firstError = err;
+					}
+				}
+				try {
+					return lastInstance ?? (TempoClass as any).from(input, {
+						...options,
+						format: masks,
+						dialect: DIALECT.Ldml,
+					});
+				} catch (fallbackErr) {
+					if (firstError !== undefined) throw firstError;
+					throw fallbackErr;
+				}
 			},
 			writable: false,
 			configurable: true,

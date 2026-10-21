@@ -21,7 +21,7 @@ One of the most dangerous formatting bugs in modern web applications occurs duri
 * **In Moment.js & Day.js**: `YYYY` represents the standard calendar year (e.g. `2026`).
 * **In Unicode LDML (Luxon, date-fns)**: `yyyy` represents the calendar year, while `YYYY` represents the **ISO week-numbering year**.
 * **The Pitfall**: Formatting `2025-12-31` with `YYYY` under LDML outputs `2026` because December 31st belongs to the first week of 2026. This has historically caused catastrophic financial and billing errors.
-* **The Tempo Solution**: Tempo Core uses `{yyyy}` for the 4-digit calendar year and `{yw}` for the ISO week-numbering year. The Dialects plugin automatically normalizes these semantics when evaluating legacy masks.
+* **The Tempo Solution**: Tempo Core uses `{yyyy}` for the 4-digit calendar year and `{yow}` for the ISO week-numbering year. The Dialects plugin automatically normalizes these semantics when evaluating legacy masks.
 
 ### 2. Month vs Minute: `MM` vs `mm` vs `mi`
 
@@ -93,6 +93,49 @@ function migrateLegacyMask(legacyMask: string, dialect?: string): string {
 const modernPattern = migrateLegacyMask("yyyy-MM-dd 'T' HH:mm:ss.SSS zzzz", 'ldml');
 console.log(modernPattern);
 // Output: "{yyyy}-{mm}-{dd} T {hh}:{mi}:{ss}.{ms} {tz:long}"
+```
+
+---
+
+## Exporting Dialect Models: `Tempo.dialects.export()`
+
+To emit external dialect masks from canonical Tempo patterns (for example, generating SQL/Oracle `TO_CHAR` format models or POSIX `strftime` masks from shared application templates), use `Tempo.dialects.export()`:
+
+```typescript
+// Export canonical Tempo pattern to Oracle / SQL TO_CHAR model
+const oracleExport = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', 'oracle');
+console.log(oracleExport.pattern);
+// Output: "YYYY-MM-DD HH24:MI:SS"
+
+// Export to POSIX strftime
+const posixExport = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', 'strftime');
+console.log(posixExport.pattern);
+// Output: "%Y-%m-%d %H:%M:%S"
+```
+
+Any tokens that cannot be directly mapped to the target ecosystem are tracked in `unsupported`.
+
+---
+
+## Universal Cross-Dialect Conversion: `Tempo.dialects.convert()`
+
+With Tempo serving as an Intermediate Representation (IR), you can convert format masks directly between any supported external ecosystems in a single call:
+
+```typescript
+// Convert POSIX strftime directly to Oracle / SQL TO_CHAR
+const sqlMask = Tempo.dialects.convert('%Y-%m-%d %H:%M:%S', 'strftime', 'oracle');
+console.log(sqlMask.pattern);
+// Output: "YYYY-MM-DD HH24:MI:SS"
+
+// Convert Moment.js directly to POSIX strftime
+const posixMask = Tempo.dialects.convert('YYYY-MM-DD HH:mm:ss', 'moment', 'strftime');
+console.log(posixMask.pattern);
+// Output: "%Y-%m-%d %H:%M:%S"
+
+// Auto-detect source dialect
+const toLdml = Tempo.dialects.convert('%Y-%m-%d', 'ldml');
+console.log(toLdml.pattern);
+// Output: "yyyy-MM-dd"
 ```
 
 ---

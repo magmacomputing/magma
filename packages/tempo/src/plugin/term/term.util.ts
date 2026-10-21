@@ -4,6 +4,7 @@ import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { deepFreeze } from '#library/utility.library.js';
+import { cast } from '#library/type.library.js';
 
 import { TEMPO_VERSION } from '../../tempo.version.js';
 import { getHost } from '../plugin.util.js';
@@ -646,7 +647,7 @@ export function resolveRangeFormat(
 	if (isNullish(curr) || isFunction(curr)) return undefined;
 
 	if (isTempo(curr))
-		return (curr as Tempo).format('{yyyy}-{mm}-{dd}');
+		return cast<Tempo>(curr).format('{yyyy}-{mm}-{dd}');
 
 	return isObject(curr)
 		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)

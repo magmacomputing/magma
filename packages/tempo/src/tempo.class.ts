@@ -5,7 +5,7 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage, isTestEnvironment } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
-import { ownKeys, ownEntries, ownValues, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, ownValues, unwrap, hasKey, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
@@ -17,13 +17,13 @@ import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getI
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
 import { Interval } from '#library/scheduling/interval.class.js';
+import { Enum } from '#library/enumerate.library.js';
 import { LOG } from '#library/logger.class.js';
 import type { Secure } from '#library/type.library.js';
 
 import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
 import { registerTerm, getTermRange } from './plugin/term/term.util.js';
-import type { PluginFactory } from './plugin/plugin.type.js';
-import type { TermPlugin, TermFactory } from './plugin/term/term.type.js';
+import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
 import { PatternCompiler } from './engine/engine.pattern.js';
@@ -31,10 +31,11 @@ import { createMasterGuard } from './engine/engine.guard.js';
 import { DEFAULT_LAYOUT_CLASS, resolveLayoutOrder, getLayoutOrder } from './engine/engine.layout.js';
 
 import { resolveConfig, resolveConfigSync } from './config/config.resolve.js';
+import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
-import { resolveMonthDay, setProperty, proto, hasOwn } from './support/support.util.js';
+import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, Enum, STATE, DISCOVERY, $Internal, $setConfig, $Identity, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $Discover, $setDiscovery, $LogConfig, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
 import { TEMPO_VERSION } from './tempo.version.js';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
@@ -454,12 +455,11 @@ export class Tempo {
 		}
 
 		// 4. Process Plugins & Plugin Options
-		if (discovery.pluginOptions && isPlainObject(discovery.pluginOptions)) {
+		if (discovery.pluginOptions && isPlainObject(discovery.pluginOptions))
 			opts = { ...opts, pluginOptions: isPlainObject(opts.pluginOptions) ? { ...opts.pluginOptions, ...discovery.pluginOptions } : discovery.pluginOptions };
-		}
 
 		/** @deprecated Providing configuration dictionaries under 'discovery.plugins' is deprecated. Use 'discovery.pluginOptions' instead. */
-		if (discovery.plugins && isPlainObject(discovery.plugins) && !('install' in discovery.plugins) && !('key' in discovery.plugins)) {
+		if (discovery.plugins && isPlainObject(discovery.plugins) && hasNoneOf(discovery.plugins, 'install', 'key')) {
 			opts = {
 				...opts,
 				plugins: isPlainObject(opts.plugins) ? { ...opts.plugins, ...discovery.plugins } : discovery.plugins,
@@ -582,12 +582,12 @@ export class Tempo {
 		const isPluginLike = (arg: any): boolean =>
 			Array.isArray(arg) ||
 			isFunction(arg) ||
-			(isObject(arg) && ('install' in arg || 'define' in arg || sym.$PluginType in arg));
+			hasAnyOf(arg, 'install', 'define', sym.$PluginType);
 
 		const isPlainConfigDict = (arg: any) =>
 			isPlainObject(arg) &&
 			!ownKeys(arg).some(key => DISCOVERY.has(key as any)) &&
-			!('name' in arg) && !('key' in arg) && !('install' in arg) && !('define' in arg) && !(sym.$PluginType in arg) &&
+			hasNoneOf(arg, 'name', 'key', 'install', 'define', sym.$PluginType) &&
 			ownKeys(arg).length > 0 &&
 			ownKeys(arg).every(k => isObject(arg[k]));
 
@@ -646,18 +646,18 @@ export class Tempo {
 					} else if (plugin.length === 0 && callSiteOptions !== undefined) {
 						// Potential factory function passed in tuple: [factoryFn, opts]
 						const res = (plugin as any)(callSiteOptions);
-						if (res && (isObject(res) || isFunction(res)) && ((res as any).install || (res as any).define || (sym.$PluginType in res))) {
+						if (hasAnyOf(res, 'install', 'define', sym.$PluginType)) {
 							plugin = res;
 							callSiteOptions = { ...((res as any).options ?? {}), ...(callSiteOptions ?? {}) };
 						}
 					}
-				} else if (isObject(plugin) && (plugin as any).options) {
+				} else if (hasKey(plugin, 'options') && plugin.options) {
 					callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
 				}
 
 				let pluginType = (plugin as any)?.[sym.$PluginType] || (plugin as any)?.type;
-				if (!pluginType && isFunction((plugin as any)?.define) && (plugin as any)?.key) pluginType = 'term';
-				if (!pluginType && isFunction((plugin as any)?.install)) pluginType = 'plugin';
+				if (!pluginType && hasKey(plugin, 'define', isFunction) && hasKey(plugin, 'key')) pluginType = 'term';
+				if (!pluginType && hasKey(plugin, 'install', isFunction)) pluginType = 'plugin';
 
 				if (!pluginType && isFunction(plugin)) {
 					// Legacy Standard Plugin registration callback: (Tempo, options, rehydrator)
@@ -885,7 +885,7 @@ export class Tempo {
 							// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
 							const isPlainConfigDict = isPlainObject(discovery) &&
 								!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
-								!('name' in discovery) && !('key' in discovery) && !('install' in discovery);
+								hasNoneOf(discovery, 'name', 'key', 'install');
 							if (isPlainConfigDict) {
 								const state = this[$Internal]();
 								/** @deprecated Supplying plain configuration dictionaries in the plugins array is deprecated. Use 'pluginOptions' instead. */
@@ -893,7 +893,7 @@ export class Tempo {
 								state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...discovery };
 							}
 
-							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || (isObject(discovery.plugins) && ('name' in discovery.plugins || 'key' in discovery.plugins || 'install' in discovery.plugins))))
+							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || hasAnyOf(discovery.plugins, 'name', 'key', 'install')))
 								this.use(discovery.plugins);
 
 							// only trigger init if we're assigning a new discovery object to a symbol
@@ -1034,13 +1034,13 @@ export class Tempo {
 		);
 
 		const pluginsToInstall = options.plugins ?? data?.plugins;
-		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || (isObject(pluginsToInstall) && ('name' in pluginsToInstall || 'key' in pluginsToInstall || 'install' in pluginsToInstall || sym.$PluginType in pluginsToInstall || (pluginsToInstall as any).type)))) {
+		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || hasAnyOf(pluginsToInstall, 'name', 'key', 'install', sym.$PluginType, 'type'))) {
 			let toInstall = pluginsToInstall;
 			if (Array.isArray(pluginsToInstall)) {
 				const isPlainConfigDict = (item: any) =>
 					isPlainObject(item) &&
 					!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
-					!('name' in item) && !('key' in item) && !('install' in item) && !('define' in item) && !(sym.$PluginType in item);
+					hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
 
 				const remaining: any[] = [];
 				for (const item of pluginsToInstall) {
@@ -1191,12 +1191,12 @@ export class Tempo {
 			setLogLevel(state.config.debug ?? options.debug ?? Default?.debug ?? LOG.Info);
 
 			const isInstallable = (item: any) =>
-				Array.isArray(item) || isFunction(item) || (isObject(item) && ('name' in item || 'key' in item || 'install' in item || sym.$PluginType in item || item.type));
+				Array.isArray(item) || isFunction(item) || hasAnyOf(item, 'name', 'key', 'install', sym.$PluginType, 'type');
 
 			const isPlainConfigDict = (item: any) =>
 				isPlainObject(item) &&
 				!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
-				!('name' in item) && !('key' in item) && !('install' in item) && !('define' in item) && !(sym.$PluginType in item);
+				hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
 
 			const extractConfigDicts = (plugins: any): any => {
 				if (!Array.isArray(plugins)) return plugins;
@@ -1296,7 +1296,7 @@ export class Tempo {
 
 	/** Compares two `Tempo` instances or date-time values. Returns -1 (earlier), 0 (equal), or 1 (later). */
 	static compare(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options) {
-		const host = (this && (this as any)[$Identity]) ? (this as any) : Tempo;
+		const host = hasKey(this, $Identity) ? this : Tempo;
 		const one = host.isTempo(tempo1) ? tempo1 : new host(tempo1 as t.DateTime),
 			two = host.isTempo(tempo2) ? tempo2 : new host(tempo2 as t.DateTime);
 
@@ -1410,7 +1410,9 @@ export class Tempo {
 		});
 
 		// treats `Tempo.terms` as array-like and indexable by key, scope, or alias.
-		return indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key))) as unknown as Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>>;
+		return cast<Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>>>(
+			indexedArray(list, key => list.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key)))
+		);
 	}
 
 	/** static Tempo.registry */
@@ -1477,8 +1479,8 @@ export class Tempo {
 	 * @param instance - The instance to check
 	 * @returns True if the instance is a Tempo object
 	 */
-	static [Symbol.hasInstance](instance: any) {
-		return isDefined(instance?.[$Identity])
+	static [Symbol.hasInstance](instance: any): boolean {
+		return hasKey(instance, $Identity);
 	}
 
 	/** check if a supplied variable is a valid Tempo instance */
@@ -1523,7 +1525,7 @@ export class Tempo {
 	/** current parsing depth to manage state isolation */		#parseDepth = 0;
 	/** current mutation depth to manage infinite recursion */#mutateDepth = 0;
 	/** instance values to complement static values */				#local = {
-		/** instance configuration */															config: { [$LogConfig]: true } as unknown as Internal.Config,
+		/** instance configuration */															config: cast<Internal.Config>({ [$LogConfig]: true }),
 		/** instance parse rules (only populated if provided) */	parse: { result: [] as Internal.MatchResult[] } as Internal.Parse
 	} as Internal.State;
 
@@ -1854,14 +1856,16 @@ export class Tempo {
 	 * @deprecated Use `eon` (Tempo canonical) or `zdt.eraYear` instead. To be removed in v5.0.0.
 	 */
 	get eraYear() { return this.toDateTime().eraYear; }
-	/** 4-digit iso week-numbering year */										get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
-	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
-	/** iso week number of the year */												get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @internal 4-digit ISO week-numbering year */					get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
+	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
+	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/**
 	 * ISO week number of the year.
-	 * @deprecated Use `wy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
+	 * @deprecated Use `woy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
 	 */
 	get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/**
 	 * Day of the month (1-31).
@@ -1915,6 +1919,11 @@ export class Tempo {
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
+	/** Total days in the current month, using the instance calendar. */								get dim() { return this.toDateTime().daysInMonth }
+	/** Integer Julian day number for the local ISO calendar date, ignoring time of day (1970-01-01 = 2440588). */											get jj() {
+		const pd = this.toDateTime().toPlainDate().withCalendar('iso8601');
+		return 2440588 + Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
+	}
 	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDateTime().toInstant().toString() }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }

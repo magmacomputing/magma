@@ -5,11 +5,12 @@
 import { isRegExp, isNullish, isEmpty, isString } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 import { asArray } from '#library/coercion.library.js';
-import { ownEntries, ownKeys } from '#library/primitive.library.js';
+import { ownEntries, ownKeys, hasOwn } from '#library/primitive.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { Match, Snippet, Layout } from '../support/support.default.js';
-import { getSymbol, hasOwn, logWarn, logError } from '../support/support.util.js';
+import { getSymbol, logWarn, logError } from '../support/support.util.js';
 import { Token } from '../support/support.symbol.js';
-import enums, { Enum } from '../support/support.enum.js';
+import enums from '../support/support.enum.js';
 import type * as t from '../tempo.type.js';
 
 const BRACES_REGEX = new RegExp(Match.braces, 'g');

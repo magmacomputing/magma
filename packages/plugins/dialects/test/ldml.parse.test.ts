@@ -46,6 +46,23 @@ describe('Unicode LDML Parsing', () => {
 		expect(t2.yy).toBe(2026);
 		expect(t2.mm).toBe(10);
 		expect(t2.dd).toBe(24);
+
+		const t3 = Tempo.fromFormat('Sat, 24 Oct 2026', 'EE, d MMM yyyy');
+		expect(t3.isValid).toBe(true);
+		expect(t3.dd).toBe(24);
+
+		const t4 = Tempo.fromFormat('2026-05', 'yyyy-DD');
+		expect(t4.isValid).toBe(true);
+		expect(t4.mm).toBe(1);
+		expect(t4.dd).toBe(5);
+
+		const t5 = Tempo.fromFormat('2026-01-06', 'YYYY-ww-ee');
+		expect(t5.isValid).toBe(true);
+		expect(t5.yy).toBe(2026);
+
+		const t6 = Tempo.fromFormat('2026-1-6', 'Y-w-e');
+		expect(t6.isValid).toBe(true);
+		expect(t6.yy).toBe(2026);
 	});
 
 	it('returns invalid when LDML textual month is unrecognized', () => {
@@ -77,6 +94,10 @@ describe('Unicode LDML Parsing', () => {
 		const t2 = Tempo.fromFormat('2026-10-24 15:30:45 Z', 'yyyy-MM-dd HH:mm:ss Z');
 		expect(t2.isValid).toBe(true);
 		expect(t2.toDateTime().offset).toBe('+00:00');
+
+		const t3 = Tempo.fromFormat('2026-10-24 15:30:45 GMT+05:00', 'yyyy-MM-dd HH:mm:ss ZZZZ');
+		expect(t3.isValid).toBe(true);
+		expect(t3.toDateTime().offset).toBe('+05:00');
 	});
 
 	it('matches first candidate format across array of masks', () => {
@@ -91,5 +112,106 @@ describe('Unicode LDML Parsing', () => {
 		expect(t2.isValid).toBe(true);
 		expect(t2.dd).toBe(24);
 		expect(t2.mm).toBe(10);
+	});
+
+	it('parses week of year and validates week limits for the given year', () => {
+		const validWeek = Tempo.fromFormat('2025-52-1', 'yyyy-ww-e');
+		expect(validWeek.isValid).toBe(true);
+		expect(validWeek.yy).toBe(2025);
+
+		// 2025 has 52 ISO weeks, so week 53 rolls into 2026 and should be rejected
+		const invalidWeek = Tempo.fromFormat('2025-53-1', 'yyyy-ww-e', { error: 'catch' });
+		expect(invalidWeek.isValid).toBe(false);
+	});
+
+	it('parses day of year (DDD) and ordinal day (Do)', () => {
+		const tDoy = Tempo.fromFormat('2026-297', 'yyyy-DDD');
+		expect(tDoy.isValid).toBe(true);
+		expect(tDoy.yy).toBe(2026);
+		expect(tDoy.mm).toBe(10);
+		expect(tDoy.dd).toBe(24);
+
+		const tOrd = Tempo.fromFormat('24th October 2026', 'Do MMMM yyyy');
+		expect(tOrd.isValid).toBe(true);
+		expect(tOrd.yy).toBe(2026);
+		expect(tOrd.mm).toBe(10);
+		expect(tOrd.dd).toBe(24);
+	});
+
+	it('parses quarter tokens (Q, QQ, QQQ, QQQQ)', () => {
+		const t1 = Tempo.fromFormat('2026-4', 'yyyy-Q');
+		expect(t1.isValid).toBe(true);
+		expect(t1.yy).toBe(2026);
+		expect(t1.mm).toBe(10);
+
+		const t2 = Tempo.fromFormat('2026-02', 'yyyy-QQ');
+		expect(t2.isValid).toBe(true);
+		expect(t2.yy).toBe(2026);
+		expect(t2.mm).toBe(4);
+
+		const t3 = Tempo.fromFormat('2026-Q3', 'yyyy-QQQ');
+		expect(t3.isValid).toBe(true);
+		expect(t3.yy).toBe(2026);
+		expect(t3.mm).toBe(7);
+
+		// Quarter-only mask leaves day at 1 (start of quarter) rather than today.day
+		const tQtrOnly = Tempo.dialects.parse('Q2', 'QQQ');
+		expect(tQtrOnly.isValid).toBe(true);
+		expect(tQtrOnly.mm).toBe(4);
+		expect(tQtrOnly.dd).toBe(1);
+	});
+
+	it('parses LDML with custom calendar option converting from ISO', () => {
+		const parsed = Tempo.dialects.parse('2026-10-24 12:00:00', 'yyyy-MM-dd HH:mm:ss', { calendar: 'hebrew' });
+		expect(parsed.isValid).toBe(true);
+		expect(parsed.zdt.calendarId).toBe('hebrew');
+	});
+
+	it('parses era tokens (G, GGGG) and normalizes BC to ISO astronomical years', () => {
+		const tBc = Tempo.fromFormat('0001-05-15 BC', 'yyyy-MM-dd G');
+		expect(tBc.isValid).toBe(true);
+		expect(tBc.yy).toBe(0); // 1 BC is ISO year 0
+		expect(tBc.mm).toBe(5);
+		expect(tBc.dd).toBe(15);
+
+		const tBcLong = Tempo.fromFormat('0002-05-15 Before Christ', 'yyyy-MM-dd GGGG');
+		expect(tBcLong.isValid).toBe(true);
+		expect(tBcLong.yy).toBe(-1); // 2 BC is ISO year -1
+
+		const tAd = Tempo.fromFormat('2026-05-15 AD', 'yyyy-MM-dd G');
+		expect(tAd.isValid).toBe(true);
+		expect(tAd.yy).toBe(2026);
+	});
+
+	it('validates day-of-year against explicit month, day, weekday, and quarter in LDML', () => {
+		// 2026-10-24 is DOY 297, Saturday (EEEE), Q4
+		const tValid = Tempo.fromFormat('2026-10-24 297', 'yyyy-MM-dd D');
+		expect(tValid.isValid).toBe(true);
+		expect(tValid.yy).toBe(2026);
+		expect(tValid.mm).toBe(10);
+		expect(tValid.dd).toBe(24);
+
+		// Month mismatch
+		const tMonthMismatch = Tempo.fromFormat('2026-11-24 297', 'yyyy-MM-dd D', { error: 'catch' });
+		expect(tMonthMismatch.isValid).toBe(false);
+
+		// Day mismatch
+		const tDayMismatch = Tempo.fromFormat('2026-10-25 297', 'yyyy-MM-dd D', { error: 'catch' });
+		expect(tDayMismatch.isValid).toBe(false);
+
+		// Weekday validation with DOY
+		const tWeekdayValid = Tempo.fromFormat('2026-297 Saturday', 'yyyy-D EEEE');
+		expect(tWeekdayValid.isValid).toBe(true);
+		expect(tWeekdayValid.dd).toBe(24);
+
+		const tWeekdayMismatch = Tempo.fromFormat('2026-297 Monday', 'yyyy-D EEEE', { error: 'catch' });
+		expect(tWeekdayMismatch.isValid).toBe(false);
+
+		// Quarter validation with DOY
+		const tQuarterValid = Tempo.fromFormat('2026-297 Q4', 'yyyy-D QQQ');
+		expect(tQuarterValid.isValid).toBe(true);
+
+		const tQuarterMismatch = Tempo.fromFormat('2026-297 Q1', 'yyyy-D QQQ', { error: 'catch' });
+		expect(tQuarterMismatch.isValid).toBe(false);
 	});
 });

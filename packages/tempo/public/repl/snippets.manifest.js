@@ -174,32 +174,45 @@ return \`Christmas: \${christmas.holidays.name} (Next work day: \${nextWorkDay.f
 	},
 
 	dialects: {
-		label: 'Preset: Dialects (Luxon, strftime, Moment)',
+		label: 'Preset: Dialects (LDML, strftime, Oracle, .NET, MySQL, Sheet)',
 		plugin: 'dialects',
-		code: `// 🌐 External Dialect Formatting & Parsing
+		code: `// 🌐 External Dialect Formatting, Parsing & Transpilation
 // Dynamic import of @magmacomputing/tempo-plugin-dialects
 const { DialectsPlugin, DIALECT } = await import('@magmacomputing/tempo-plugin-dialects');
 Tempo.use(DialectsPlugin);
 
-const t = new Tempo('2026-10-24T15:30:45');
+const t = new Tempo('2026-10-24T15:30:45.123');
 
-// 1. Luxon-style toFormat & LDML
-console.log('Luxon drop-in .toFormat():', t.toFormat('dd LLL yyyy, HH:mm'));
-console.log('Dialect namespace LDML:', t.dialects.ldml('yyyy/MM/dd HH:mm'));
+// 1. Format across external ecosystems
+console.log('Luxon / LDML:', t.toFormat('dd LLL yyyy, HH:mm'));
+console.log('POSIX strftime:', t.dialects.strftime('%Y-%m-%d %H:%M:%S'));
+console.log('Oracle / SQL TO_CHAR:', t.dialects.oracle('YYYY-MM-DD HH24:MI:SS'));
+console.log('.NET DateTime:', t.dialects.dotnet('yyyy-MM-dd HH:mm:ss.fff'));
+console.log('MySQL DATE_FORMAT:', t.dialects.mysql('%Y-%m-%d %H:%i:%s'));
+console.log('Excel / Sheets:', t.dialects.sheet('yyyy-mm-dd hh:mm:ss'));
 
-// 2. POSIX strftime
-console.log('strftime .strftime():', t.dialects.strftime('%Y-%m-%d %H:%M:%S'));
-console.log('strftime auto-detect:', t.format('%A, %B %d %Y (%I:%M %p)', { dialect: DIALECT.Strftime }));
+// 2. Ingest & Explain legacy masks into native Tempo {token} syntax
+const inspection = Tempo.dialects.explain('[Report for] MMMM Do, YYYY [at] hh:mm A', DIALECT.Moment);
+console.log('Explained Moment -> Tempo IR:', inspection.pattern);
 
-// 3. Flexible Multi-Candidate Parsing via Tempo.fromFormats()
+// 3. Export canonical Tempo templates to external dialect models
+const sqlExport = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', DIALECT.Oracle);
+console.log('Exported Tempo -> SQL TO_CHAR model:', sqlExport.pattern);
+const sheetExport = Tempo.dialects.export('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}', DIALECT.Sheet);
+console.log('Exported Tempo -> Spreadsheet mask:', sheetExport.pattern);
+
+// 4. Universal Cross-Dialect Transpilation (.convert)
+const posixToOracle = Tempo.dialects.convert('%Y-%m-%d %H:%M:%S', DIALECT.Strftime, DIALECT.Oracle);
+console.log('Converted POSIX -> Oracle:', posixToOracle.pattern);
+
+// 5. Multi-candidate fallback parser
 const parsed = Tempo.fromFormats('24/10/2026 15:30', [
 	'yyyy-MM-dd HH:mm',
 	'dd/MM/yyyy HH:mm',
-	'MM/dd/yyyy HH:mm',
 ]);
-console.log('Parsed ISO (multi-candidate):', parsed.iso);
+console.log('Parsed multi-candidate ISO:', parsed.iso);
 
-return t.toFormat('dd LLL yyyy (HH:mm:ss)');`,
+return \`Transpiled POSIX to Oracle: \${posixToOracle.pattern}\`;`,
 	},
 
 	celestial: {

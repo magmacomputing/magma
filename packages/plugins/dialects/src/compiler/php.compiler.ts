@@ -1,0 +1,525 @@
+import { WeakCache, suffix, Enum, getISOWeekOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveTwoDigitYear, resolveDayOfYear } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
+import {
+	type FormatterFn,
+	type DialectOptions,
+	escapeRegex,
+	resolveMonth,
+	resolveWeekday,
+	createGroupExtractor,
+	resolveParseContext,
+	resolveTimeComponents,
+	buildParsedZonedDateTime,
+	validateResolvedDateFields,
+} from './shared.compiler.js';
+
+const PHP_FORMATTER_CACHE = new WeakCache<string, FormatterFn>();
+const PHP_PARSER_CACHE = new WeakCache<string, RegExp>();
+
+export const PHP_TOKENS = [
+	'Y', 'y', 'o',
+	'm', 'n', 'M', 'F', 't',
+	'd', 'j', 'S', 'z',
+	'l', 'D', 'N', 'w', 'W',
+	'H', 'G', 'h', 'g', 'i', 's', 'v', 'u',
+	'a', 'A',
+	'O', 'P', 'T', 'e', 'U',
+	'c', 'r',
+] as const;
+
+export type PhpToken = (typeof PHP_TOKENS)[number];
+
+/**
+ * Compiles a PHP date format mask into a high-performance formatter function.
+ * A backslash makes the next character literal; unrecognized characters are retained.
+ * Month and weekday names are English; an unavailable zone abbreviation falls back to the zone identifier.
+ */
+export function compilePhpFormatter(mask: string): FormatterFn {
+	const cached = PHP_FORMATTER_CACHE.get(mask);
+	if (cached) return cached;
+
+	const parts: FormatterFn[] = [];
+	let i = 0;
+
+	while (i < mask.length) {
+		const char = mask[i];
+
+		// Handle backslash escape
+		if (char === '\\' && i + 1 < mask.length) {
+			const literal = mask[i + 1];
+			parts.push(() => literal);
+			i += 2;
+			continue;
+		}
+
+		switch (char) {
+			// Year
+			case 'Y':
+				parts.push((zdt) => zdt.year.toString().padStart(4, '0'));
+				break;
+			case 'y':
+				parts.push((zdt) => (Math.abs(zdt.year) % 100).toString().padStart(2, '0'));
+				break;
+			case 'o':
+				parts.push((zdt) => getISOWeekOfYear(zdt).yearOfWeek.toString().padStart(4, '0'));
+				break;
+
+			// Month
+			case 'm':
+				parts.push((zdt) => zdt.month.toString().padStart(2, '0'));
+				break;
+			case 'n':
+				parts.push((zdt) => zdt.month.toString());
+				break;
+			case 'M':
+				parts.push((zdt) => Enum.keyOf(enums.MONTH, zdt.month) ?? '');
+				break;
+			case 'F':
+				parts.push((zdt) => Enum.keyOf(enums.MONTHS, zdt.month) ?? '');
+				break;
+			case 't':
+				parts.push((zdt) => zdt.daysInMonth.toString());
+				break;
+
+			// Day
+			case 'd':
+				parts.push((zdt) => zdt.day.toString().padStart(2, '0'));
+				break;
+			case 'j':
+				parts.push((zdt) => zdt.day.toString());
+				break;
+			case 'S':
+				parts.push((zdt) => suffix(zdt.day).slice(-2));
+				break;
+			case 'z':
+				// PHP: 0-indexed day of year (0 through 365)
+				parts.push((zdt) => (zdt.dayOfYear - 1).toString());
+				break;
+
+			// Weekday
+			case 'l': // full weekday name
+				parts.push((zdt) => Enum.keyOf(enums.WEEKDAYS, zdt.dayOfWeek) ?? '');
+				break;
+			case 'D': // 3-letter weekday
+				parts.push((zdt) => Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek) ?? '');
+				break;
+			case 'N': // ISO-8601 day of week (1 for Monday to 7 for Sunday)
+				parts.push((zdt) => zdt.dayOfWeek.toString());
+				break;
+			case 'w': // 0 for Sunday to 6 for Saturday
+				parts.push((zdt) => (zdt.dayOfWeek % 7).toString());
+				break;
+			case 'W': // ISO-8601 week number
+				parts.push((zdt) => getISOWeekOfYear(zdt).weekOfYear.toString().padStart(2, '0'));
+				break;
+
+			// Clock & Time
+			case 'H': // 24-hr zero-padded (00-23)
+				parts.push((zdt) => zdt.hour.toString().padStart(2, '0'));
+				break;
+			case 'G': // 24-hr unpadded (0-23)
+				parts.push((zdt) => zdt.hour.toString());
+				break;
+			case 'h': // 12-hr zero-padded (01-12)
+				parts.push((zdt) => (((zdt.hour % 12) || 12)).toString().padStart(2, '0'));
+				break;
+			case 'g': // 12-hr unpadded (1-12)
+				parts.push((zdt) => (((zdt.hour % 12) || 12)).toString());
+				break;
+			case 'i': // Minutes (00-59)
+				parts.push((zdt) => zdt.minute.toString().padStart(2, '0'));
+				break;
+			case 's': // Seconds (00-59)
+				parts.push((zdt) => zdt.second.toString().padStart(2, '0'));
+				break;
+			case 'v': // Milliseconds (3 digits)
+				parts.push((zdt) => zdt.millisecond.toString().padStart(3, '0'));
+				break;
+			case 'u': // Microseconds (6 digits)
+				parts.push((zdt) => ((zdt.millisecond * 1000) + zdt.microsecond).toString().padStart(6, '0'));
+				break;
+			case 'a': // am or pm
+				parts.push((zdt) => (zdt.hour >= 12 ? 'pm' : 'am'));
+				break;
+			case 'A': // AM or PM
+				parts.push((zdt) => (zdt.hour >= 12 ? 'PM' : 'AM'));
+				break;
+
+			// Timezone
+			case 'O': // Difference to GMT without colon (+0200)
+				parts.push((zdt) => zdt.offset.replace(':', ''));
+				break;
+			case 'P': // Difference to GMT with colon (+02:00)
+				parts.push((zdt) => zdt.offset);
+				break;
+			case 'T': // Timezone abbreviation (e.g. UTC, EST)
+				parts.push((zdt) => {
+					try {
+						const parts = new Intl.DateTimeFormat('en-US', {
+							timeZone: zdt.timeZoneId,
+							timeZoneName: 'short',
+						}).formatToParts(new Date(zdt.epochMilliseconds));
+						return parts.find((p) => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
+					} catch {
+						return zdt.timeZoneId;
+					}
+				});
+				break;
+			case 'e': // Timezone identifier
+				parts.push((zdt) => zdt.timeZoneId);
+				break;
+			case 'U': // Epoch seconds
+				parts.push((zdt) => Math.floor(zdt.epochMilliseconds / 1000).toString());
+				break;
+
+			// Combined formats
+			case 'c': // ISO 8601: Y-m-d\TH:i:sP
+				parts.push((zdt) => {
+					const y = zdt.year.toString().padStart(4, '0');
+					const m = zdt.month.toString().padStart(2, '0');
+					const d = zdt.day.toString().padStart(2, '0');
+					const h = zdt.hour.toString().padStart(2, '0');
+					const min = zdt.minute.toString().padStart(2, '0');
+					const sec = zdt.second.toString().padStart(2, '0');
+					return `${y}-${m}-${d}T${h}:${min}:${sec}${zdt.offset}`;
+				});
+				break;
+
+			case 'r': // RFC 2822: D, d M Y H:i:s O
+				parts.push((zdt) => {
+					const dow = Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek) ?? '';
+					const d = zdt.day.toString().padStart(2, '0');
+					const m = Enum.keyOf(enums.MONTH, zdt.month) ?? '';
+					const y = zdt.year.toString().padStart(4, '0');
+					const h = zdt.hour.toString().padStart(2, '0');
+					const min = zdt.minute.toString().padStart(2, '0');
+					const sec = zdt.second.toString().padStart(2, '0');
+					const off = zdt.offset.replace(':', '');
+					return `${dow}, ${d} ${m} ${y} ${h}:${min}:${sec} ${off}`;
+				});
+				break;
+
+			default:
+				parts.push(() => char);
+				break;
+		}
+
+		i++;
+	}
+
+	const formatter: FormatterFn = (zdt: Temporal.ZonedDateTime) => {
+		let res = '';
+		for (let idx = 0; idx < parts.length; idx++) {
+			res += parts[idx](zdt);
+		}
+		return res;
+	};
+
+	PHP_FORMATTER_CACHE.set(mask, formatter);
+	return formatter;
+}
+
+/**
+ * Formats a Temporal.ZonedDateTime using a PHP date format mask.
+ */
+export function formatPhp(
+	temporal: Temporal.ZonedDateTime,
+	mask: string,
+	_options: any = {}
+): string {
+	return compilePhpFormatter(mask)(temporal);
+}
+
+/**
+ * Compiles a PHP date format mask into a regular expression for parsing.
+ */
+export function compilePhpParser(mask: string): RegExp {
+	const cached = PHP_PARSER_CACHE.get(mask);
+	if (cached) return cached;
+
+	let pattern = '^';
+	let i = 0;
+	let groupIndex = 0;
+	const group = (name: string, rx: string) => `(?<${name}_${groupIndex++}>${rx})`;
+
+	while (i < mask.length) {
+		const char = mask[i];
+
+		if (char === '\\' && i + 1 < mask.length) {
+			pattern += escapeRegex(mask[i + 1]);
+			i += 2;
+			continue;
+		}
+
+		switch (char) {
+			case 'Y':
+				pattern += group('yyyy', '\\d{4}');
+				break;
+			case 'y':
+				pattern += group('yy', '\\d{2}');
+				break;
+			case 'm':
+				pattern += group('mm', '\\d{2}');
+				break;
+			case 'n':
+				pattern += group('mm', '\\d{1,2}');
+				break;
+			case 'M':
+				pattern += group('mon_short', '[A-Za-z]{3}');
+				break;
+			case 'F':
+				pattern += group('mon_long', '[A-Za-z]+');
+				break;
+			case 'd':
+				pattern += group('dd', '\\d{2}');
+				break;
+			case 'j':
+				pattern += group('dd', '\\d{1,2}');
+				break;
+			case 'D':
+				pattern += group('weekday_abbr', '[A-Za-z]{3}');
+				break;
+			case 'l':
+				pattern += group('weekday_name', '[A-Za-z]+');
+				break;
+			case 'N':
+				pattern += group('weekday_n', '[1-7]');
+				break;
+			case 'w':
+				pattern += group('weekday_w', '[0-6]');
+				break;
+			case 'W':
+				pattern += group('iso_week', '\\d{1,2}');
+				break;
+			case 'o':
+				pattern += group('iso_year', '\\d{4}');
+				break;
+			case 't':
+				pattern += group('days_in_month', '2[89]|3[01]');
+				break;
+			case 'S':
+				pattern += '(?:st|nd|rd|th)';
+				break;
+			case 'z':
+				pattern += group('doy', '\\d{1,3}');
+				break;
+			case 'H':
+				pattern += group('hh', '\\d{2}');
+				break;
+			case 'G':
+				pattern += group('hh', '\\d{1,2}');
+				break;
+			case 'h':
+				pattern += group('h12', '\\d{2}');
+				break;
+			case 'g':
+				pattern += group('h12', '\\d{1,2}');
+				break;
+			case 'i':
+				pattern += group('mi', '\\d{2}');
+				break;
+			case 's':
+				pattern += group('ss', '\\d{2}');
+				break;
+			case 'v':
+				pattern += group('ms', '\\d{3}');
+				break;
+			case 'u':
+				pattern += group('us', '\\d{6}');
+				break;
+			case 'a':
+			case 'A':
+				pattern += group('mer', 'am|pm|AM|PM');
+				break;
+			case 'P':
+				pattern += group('tz_offset', '[+-]\\d{2}:\\d{2}|Z');
+				break;
+			case 'O':
+				pattern += group('tz_offset', '[+-]\\d{4}');
+				break;
+			case 'e':
+			case 'T':
+				pattern += group('tz_name', '[-A-Za-z0-9_/+.:]+');
+				break;
+			case 'U':
+				pattern += group('epoch_sec', '-?\\d+');
+				break;
+			case 'c':
+				pattern += `${group('yyyy', '\\d{4}')}-${group('mm', '\\d{2}')}-${group('dd', '\\d{2}')}T${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}:${group('ss', '\\d{2}')}${group('tz_offset', '[+-]\\d{2}:\\d{2}|Z')}`;
+				break;
+			case 'r':
+				pattern += `(?:[A-Za-z]{3}), ${group('dd', '\\d{1,2}')} ${group('mon_short', '[A-Za-z]{3}')} ${group('yyyy', '\\d{4}')} ${group('hh', '\\d{2}')}:${group('mi', '\\d{2}')}:${group('ss', '\\d{2}')} ${group('tz_offset', '[+-]\\d{4}')}`;
+				break;
+			default:
+				pattern += escapeRegex(char);
+				break;
+		}
+
+		i++;
+	}
+
+	pattern += '$';
+	const regex = new RegExp(pattern, 'i');
+	PHP_PARSER_CACHE.set(mask, regex);
+	return regex;
+}
+
+/**
+ * Parses an input string using a PHP date format mask into a Temporal.ZonedDateTime.
+ * Matching is case-insensitive without trimming input. Missing date fields default to the reference year, January,
+ * and day 1; missing time fields default to zero. Two-digit years use a sliding pivot window based on the reference date (pivot default 75).
+ * `U` takes precedence over other date/time fields and denotes signed Unix seconds, producing an ISO calendar result.
+ *
+ * @param options - `today` supplies the reference year; otherwise uses the current date in the resolved zone.
+ * Parsed offsets or zone names override `timeZone` (default UTC); `calendar` defaults to iso8601 for non-epoch input.
+ * @returns The parsed date-time, or undefined for a mismatch or rejected fields, time zone, or calendar.
+ * Temporal construction errors are caught and return undefined.
+ */
+export function parsePhp(
+	input: string,
+	mask: string,
+	options: DialectOptions = {}
+): Temporal.ZonedDateTime | undefined {
+	const regex = compilePhpParser(mask);
+	const match = regex.exec(input);
+	if (!match) return undefined;
+
+	const getGroup = createGroupExtractor(match);
+
+	const ctx = resolveParseContext(getGroup, options);
+	if (!ctx) return undefined;
+
+	const epoch_sec = getGroup('epoch_sec');
+	if (epoch_sec) {
+		const sec = parseInt(epoch_sec, 10);
+		try {
+			const isoZdt = Temporal.Instant.fromEpochMilliseconds(sec * 1000).toZonedDateTimeISO(ctx.tz);
+			return ctx.cal === 'iso8601' ? isoZdt : isoZdt.withCalendar(ctx.cal);
+		} catch {
+			return undefined;
+		}
+	}
+
+	let year = ctx.today.year;
+	const yyyy = getGroup('yyyy');
+	const yy = getGroup('yy');
+	const isoYearStr = getGroup('iso_year');
+	const isoWeekStr = getGroup('iso_week');
+	const weekdayN = getGroup('weekday_n');
+	const weekdayW = getGroup('weekday_w');
+	const weekdayName = getGroup('weekday_name');
+	const weekdayAbbr = getGroup('weekday_abbr');
+	const daysInMonth = getGroup('days_in_month');
+
+	const resolveIsoDay = (): number | undefined => {
+		if (weekdayN) {
+			const d = parseInt(weekdayN, 10);
+			return d >= 1 && d <= 7 ? d : undefined;
+		}
+		if (weekdayW) {
+			const w = parseInt(weekdayW, 10);
+			if (w < 0 || w > 6) return undefined;
+			return w === 0 ? 7 : w;
+		}
+		if (weekdayName || weekdayAbbr) {
+			return resolveWeekday(weekdayName || weekdayAbbr!);
+		}
+		return undefined;
+	};
+
+	if (yyyy) {
+		year = parseInt(yyyy, 10);
+	} else if (yy) {
+		year = resolveTwoDigitYear(parseInt(yy, 10), ctx.pivot, ctx.today);
+	}
+
+	let month = 1;
+	let day = 1;
+
+	if (isoWeekStr) {
+		const isoWeek = parseInt(isoWeekStr, 10);
+		if (isoWeek < 1 || isoWeek > 53) return undefined;
+		const isoYear = isoYearStr ? parseInt(isoYearStr, 10) : ((yyyy || yy) ? year : ((ctx.today as any).yearOfWeek ?? ctx.today.year));
+		const isoDay = resolveIsoDay() ?? 1;
+		const targetDate = fromIsoWeek(isoYear, isoWeek, isoDay);
+		const check = getIsoWeek(targetDate);
+		if (check.yearOfWeek !== isoYear || check.weekOfYear !== isoWeek) return undefined;
+		year = targetDate.year;
+		month = targetDate.month;
+		day = targetDate.day;
+	} else {
+		const mm = getGroup('mm');
+		const mon_short = getGroup('mon_short');
+		const mon_long = getGroup('mon_long');
+		if (mm) {
+			month = parseInt(mm, 10);
+		} else if (mon_short) {
+			const m = resolveMonth(mon_short);
+			if (m === undefined) return undefined;
+			month = m;
+		} else if (mon_long) {
+			const m = resolveMonth(mon_long);
+			if (m === undefined) return undefined;
+			month = m;
+		}
+
+		const dd = getGroup('dd');
+		const doy = getGroup('doy');
+		if (dd) {
+			day = parseInt(dd, 10);
+		} else if (doy && !mm && !mon_short && !mon_long) {
+			const res = resolveDayOfYear(year, parseInt(doy, 10) + 1);
+			if (!res) return undefined;
+			month = res.month;
+			day = res.day;
+		}
+
+		const expectedDay = resolveIsoDay();
+		if (isoYearStr && (mm || mon_short || mon_long) && dd) {
+			const cand = resolveIsoCalendarYear(parseInt(isoYearStr, 10), month, day, expectedDay);
+			if (cand === undefined) return undefined;
+			if (yyyy && cand !== year) return undefined;
+			year = cand;
+		} else if (isoYearStr && !yyyy && !yy) {
+			year = parseInt(isoYearStr, 10);
+		}
+		if (expectedDay !== undefined || daysInMonth) {
+			if (!validateResolvedDateFields({ year, month, day }, {
+				expectedDayOfWeek: expectedDay,
+				expectedDaysInMonth: daysInMonth ? parseInt(daysInMonth, 10) : undefined,
+			}))
+				return undefined;
+		}
+	}
+
+	const timeComp = resolveTimeComponents(getGroup);
+	if (!timeComp) return undefined;
+
+	const ms = getGroup('ms');
+	const us = getGroup('us');
+	let millisecond = 0;
+	let microsecond = 0;
+	if (ms) {
+		millisecond = parseInt(ms, 10);
+	}
+	if (us) {
+		const totalMicros = parseInt(us, 10);
+		millisecond = Math.floor(totalMicros / 1000);
+		microsecond = totalMicros % 1000;
+	}
+
+	return buildParsedZonedDateTime(
+		{
+			year,
+			month,
+			day,
+			hour: timeComp.hour,
+			minute: timeComp.minute,
+			second: timeComp.second,
+			millisecond,
+			microsecond,
+			nanosecond: 0,
+		},
+		ctx
+	);
+}

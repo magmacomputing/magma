@@ -1,4 +1,5 @@
 import { isString, isSymbol, isDefined } from '#library/assertion.library.js';
+import { fromRoman } from '#library/number.library.js';
 import { Match } from '#tempo/support/support.default.js';
 
 /**
@@ -10,6 +11,9 @@ export interface MasterGuard {
 
 /**
  * Create a new Master Guard scanner based on a list of allowed tokens.
+ * Accepts case-insensitive tokens, bracketed content, digits, and permitted punctuation.
+ * Valid Roman numerals are also accepted when uppercase or adjacent to a separator or digit.
+ * Empty, whitespace-only, and unrecognized input return false.
  * 
  * @param words - List of strings or symbols that are valid in the current context.
  * @returns An object with a .test() method that performs a greedy scan-and-consume validation.
@@ -70,7 +74,30 @@ export function createMasterGuard(words: (string | symbol)[]): MasterGuard {
 				}
 				if (matched) continue;
 
-				// 4. Try Fallback char (Match.guard)
+				// 4. Try Roman numeral sequence
+				if ((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')) {
+					const wordMatch = input.substring(i).match(/^[a-zA-Z]+/);
+					if (wordMatch) {
+						const word = wordMatch[0];
+						const isAllUpper = word === word.toUpperCase();
+						const prev = i > 0 ? input[i - 1] : undefined;
+						const next = i + word.length < len ? input[i + word.length] : undefined;
+						const isAdjacentToSepOrDigit =
+							(prev !== undefined && (Match.separator.test(prev) || /\d/.test(prev))) ||
+							(next !== undefined && (Match.separator.test(next) || /\d/.test(next)));
+
+						if (isAllUpper || isAdjacentToSepOrDigit) {
+							const val = fromRoman(word);
+							if (!Number.isNaN(val)) {
+								i += word.length;
+								matchedAny = true;
+								continue;
+							}
+						}
+					}
+				}
+
+				// 5. Try Fallback char (Match.guard)
 				if (Match.guard.test(char)) {
 					i++;
 					matchedAny = true;

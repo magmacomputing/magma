@@ -1,7 +1,9 @@
 import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale, hasOwn } from '#library/assertion.library.js';
+import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
+import { cast } from '#library/type.library.js';
 
 import type { LooseUnion } from '#library/type.library.js';
 
@@ -17,7 +19,7 @@ export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
  * @internal 
  */
 export const hasIntl = (feature?: LooseUnion<keyof typeof Intl>): boolean =>
-	typeof Intl !== 'undefined' && (!feature || (hasOwn(Intl, feature) && isCallable((Intl as Record<string, unknown>)[feature])));
+	typeof Intl !== 'undefined' && (!feature || hasOwn(Intl, feature, isCallable));
 
 /**
  * Cleanses a raw locale string by trimming whitespace, converting POSIX underscores
@@ -62,7 +64,7 @@ export const getPR = memoizeFunction((locale?: LocaleInput, options?: Intl.Plura
 	try {
 		return new Intl.PluralRules(cleanLocaleTag(locale), options);
 	} catch (e) {
-		return { select: () => 'other' } as unknown as Intl.PluralRules;
+		return cast<Intl.PluralRules>({ select: () => 'other' });
 	}
 });
 
@@ -97,6 +99,8 @@ function getPropOrCall(obj: any, method: string, fallbackProp?: string): any {
 export interface LocaleWeekInfo {
 	/** First day of the week: 1 (Mon) .. 7 (Sun) */
 	readonly firstDay: number;
+	/** Minimum days required in the first week of the year */
+	readonly minimalDays?: number;
 	/** Regional weekend days (e.g. [6, 7] or [5, 6]) */
 	readonly weekend: readonly number[];
 }
@@ -109,6 +113,7 @@ export interface ResolvedLocaleInfo {
 	readonly script?: string | undefined;
 	readonly weekInfo: LocaleWeekInfo;
 	readonly firstDay: number;
+	readonly minimalDays: number;
 	readonly weekend: readonly number[];
 	readonly hourCycle: string;
 	readonly hourCycles: readonly string[];
@@ -181,6 +186,9 @@ export interface TempoIntlNamespace {
 	/** @deprecated Use `intl.info.firstDay` instead. To be removed in v5.0.0. */
 	readonly firstDay: number;
 
+	/** Minimum days required in the first week of the year */
+	readonly minimalDays: number;
+
 	/** @deprecated Use `intl.info.weekend` instead. To be removed in v5.0.0. */
 	readonly weekend: readonly number[];
 
@@ -239,6 +247,12 @@ const SUNDAY_START_REGIONS = new Set(['US', 'CA', 'MX', 'BR', 'IL', 'JP', 'TW', 
 const SATURDAY_START_REGIONS = new Set(['SA', 'AF', 'BH', 'DJ', 'DZ', 'EG', 'IQ', 'IR', 'JO', 'KW', 'LY', 'OM', 'QA', 'SD', 'SY', 'YE']);
 const FRIDAY_START_REGIONS = new Set(['MV']);
 const FRI_SAT_WEEKEND_REGIONS = new Set(['SA', 'BH', 'DJ', 'DZ', 'EG', 'IQ', 'JO', 'KW', 'LY', 'OM', 'QA', 'SD', 'SY', 'YE']);
+const MINIMAL_DAYS_4_REGIONS = new Set([
+	'AD', 'AN', 'AT', 'AX', 'BE', 'BG', 'CH', 'CZ', 'DE', 'DK', 'EE', 'ES', 'FI', 'FJ', 'FO',
+	'FR', 'GB', 'GF', 'GG', 'GI', 'GP', 'GR', 'HU', 'IE', 'IM', 'IS', 'IT', 'JE', 'LI', 'LT',
+	'LU', 'LV', 'MC', 'MQ', 'NL', 'NO', 'PL', 'PT', 'RE', 'RO', 'RU', 'SE', 'SI', 'SJ', 'SK',
+	'SM', 'VA', 'YT',
+]);
 const RTL_LANGUAGES = new Set(['ar', 'he', 'fa', 'ur', 'yi', 'ps', 'sd', 'ug', 'ckb']);
 const RTL_SCRIPTS = new Set(['Arab', 'Hebr', 'Thaa', 'Syrc', 'Mand', 'Samr', 'Nkoo']);
 
@@ -263,6 +277,13 @@ function getFallbackWeekend(region?: string): readonly number[] {
 	if (region === 'AF') return WEEKEND_THU_FRI;
 	if (FRI_SAT_WEEKEND_REGIONS.has(region)) return WEEKEND_FRI_SAT;
 	return WEEKEND_SAT_SUN;
+}
+
+/** Fallback minimalDays resolver for legacy engines lacking Intl.Locale.prototype.getWeekInfo */
+function getFallbackMinimalDays(region?: string): number {
+	if (!region) return 1;
+	if (MINIMAL_DAYS_4_REGIONS.has(region)) return 4;
+	return 1;
 }
 
 /** Fallback direction resolver for legacy engines lacking Intl.Locale.prototype.getTextInfo */
@@ -310,6 +331,7 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 	// 1. WeekInfo: firstDay & weekend (guards native getWeekInfo() and legacy .weekInfo)
 	const rawWeek = getPropOrCall(loc, 'getWeekInfo', 'weekInfo');
 	const firstDay = rawWeek?.firstDay ?? getFallbackFirstDay(region);
+	const minimalDays = rawWeek?.minimalDays ?? getFallbackMinimalDays(region);
 	const weekend = Array.isArray(rawWeek?.weekend)
 		? Object.freeze([...rawWeek.weekend])
 		: getFallbackWeekend(region);
@@ -340,7 +362,7 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		? Object.freeze([...rawTimeZones])
 		: Object.freeze([]);
 
-	const weekInfo: LocaleWeekInfo = Object.freeze({ firstDay, weekend });
+	const weekInfo: LocaleWeekInfo = Object.freeze({ firstDay, minimalDays, weekend });
 
 	return Object.freeze({
 		locale: loc,
@@ -350,6 +372,7 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		script,
 		weekInfo,
 		firstDay,
+		minimalDays,
 		weekend,
 		hourCycle: hourCycles[0],
 		hourCycles,
@@ -399,6 +422,7 @@ export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput, timeZo
 			return getNF(targetLocale, options);
 		},
 		firstDay: info.firstDay,
+		minimalDays: info.minimalDays,
 		weekend: info.weekend,
 		direction: info.direction,
 		hourCycle: info.hourCycle,
@@ -734,7 +758,6 @@ export const getHemisphere = memoizeFunction((timeZone: string = getDateTimeForm
 });
 
 type input = {
-	toPlainDate?: () => any,
 	year: number, month: number, day: number, dayOfWeek: number,
 	weekOfYear?: number | undefined, yearOfWeek?: number | undefined
 }
@@ -762,7 +785,7 @@ export function getISOWeekOfYear(zdt: input): result {
 	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
 	// to avoid crossing daylight saving boundaries when adding/subtracting days.
 	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
-	const pd = (isFunction(zdt.toPlainDate) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
+	const pd = (hasKey(zdt, 'toPlainDate', isFunction<Temporal.PlainDate>) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
 	if (isDefined(pd.weekOfYear) && isDefined(pd.yearOfWeek))
 		return { weekOfYear: pd.weekOfYear, yearOfWeek: pd.yearOfWeek };
 
@@ -776,6 +799,52 @@ export function getISOWeekOfYear(zdt: input): result {
 
 	// The week number is exactly the nearest Thursday's dayOfYear divided by 7
 	const weekOfYear = Math.ceil(nearestThursday.dayOfYear / 7);
+
+	return { weekOfYear, yearOfWeek };
+}
+
+/**
+ * Calculates the week-of-year and week-numbering year for a given date according to locale-specific week rules.
+ *
+ * @param zdt - The ZonedDateTime or matching input object
+ * @param weekInfo - Optional week rules with firstDay (1=Mon..7=Sun) and minimalDays (defaults to 1 when omitted, or derived from region)
+ * @returns An object containing the weekOfYear and yearOfWeek
+ * @example
+ * ```ts
+ * const { weekOfYear, yearOfWeek } = getLocaleWeekOfYear(Temporal.Now.zonedDateTimeISO(), { firstDay: 7, minimalDays: 1 });
+ * ```
+ */
+export function getLocaleWeekOfYear(
+	zdt: input,
+	weekInfo?: { firstDay?: number | undefined; minimalDays?: number | undefined; region?: string | undefined },
+): result {
+	const region = weekInfo?.region;
+	const rawFirstDay = weekInfo?.firstDay ?? getFallbackFirstDay(region);
+	const rawMinimalDays = weekInfo?.minimalDays ?? getFallbackMinimalDays(region);
+	const firstDay = Math.max(1, Math.min(7, Math.floor(rawFirstDay) || 1));
+	const minimalDays = Math.max(1, Math.min(7, Math.floor(rawMinimalDays) || 1));
+
+	if (firstDay === 1 && minimalDays === 4)
+		return getISOWeekOfYear(zdt);
+
+	const pd = (hasKey(zdt, 'toPlainDate', isFunction<Temporal.PlainDate>)
+		? zdt.toPlainDate()
+		: Temporal.PlainDate.from(zdt)
+	).withCalendar('iso8601');
+
+	const localDow = ((pd.dayOfWeek - firstDay + 7) % 7) + 1;
+	const pivotOffset = (8 - minimalDays) - localDow;
+	const pivot = pivotOffset === 0
+		? pd
+		: (pivotOffset > 0 ? pd.add({ days: pivotOffset }) : pd.subtract({ days: -pivotOffset }));
+
+	const yearOfWeek = pivot.year;
+	const pivotDow = pivot.dayOfWeek;
+
+	const jan1 = Temporal.PlainDate.from({ year: yearOfWeek, month: 1, day: 1 });
+	const firstPivotDay = 1 + ((pivotDow - jan1.dayOfWeek + 7) % 7);
+
+	const weekOfYear = Math.round((pivot.dayOfYear - firstPivotDay) / 7) + 1;
 
 	return { weekOfYear, yearOfWeek };
 }

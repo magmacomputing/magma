@@ -1,6 +1,7 @@
 import { clone, stringify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject, RE_INTEGER } from '#library/assertion.library.js';
+import { hasKey } from '#library/primitive.library.js';
 import { trimAll } from '#library/string.library.js';
 
 /**
@@ -289,11 +290,11 @@ export const nullishToValue = <T, R>(obj: T, value: R) => obj ?? value;
 export function asError(err: unknown): Error & { code?: string | number } {
 	if (isError(err)) return err as Error & { code?: string | number };
 
-	const error = new Error(isObject(err) && isString(err.message) ? err.message : String(err));
+	const error: Error & { code?: string | number } = new Error(hasKey(err, 'message', isString) ? err.message : String(err));
 	if (isObject(err)) {
-		error.name = isString(err.name) ? err.name : 'Error';
-		if ('code' in err && (isString(err.code) || isNumber(err.code))) (error as any).code = err.code;
-		if ('stack' in err && isString(err.stack)) error.stack = err.stack;
+		error.name = hasKey(err, 'name', 'string') ? err.name : 'Error';
+		if (hasKey(err, 'code', 'string', 'number')) error.code = err.code;
+		if (hasKey(err, 'stack', 'string')) error.stack = err.stack;
 	}
-	return error as Error & { code?: string | number };
+	return error;
 }

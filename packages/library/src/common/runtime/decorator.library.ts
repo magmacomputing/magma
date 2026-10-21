@@ -1,6 +1,7 @@
 import { $Mutable, $Unwrapped } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isString, isSymbol, isCallable, isPlainObject, hasOwn } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol, isCallable } from '#library/assertion.library.js';
+import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
 import type { Constructor, Type } from '#library/type.library.js';
@@ -95,9 +96,10 @@ function shouldSkipMember(name: string | symbol, skipList: any): boolean {
 		if (isString(entry) || isSymbol(entry)) {
 			return entry === name;
 		}
-		if (isPlainObject(entry) && 'name' in entry) {
+		if (hasKey(entry, 'name')) {
 			if (entry.name !== name) return false;
-			return isCallable(entry.condition) ? Boolean(entry.condition()) : Boolean(entry.condition ?? true);
+			const cond = (entry as any).condition;
+			return isCallable(cond) ? Boolean(cond()) : Boolean(cond ?? true);
 		}
 		return false;
 	});
@@ -445,7 +447,7 @@ export function Mutable(targetOrCondition?: MutableCondition | any, context?: an
 		});
 	};
 
-	if (isPlainObject(context) && 'kind' in context)
+	if (hasKey(context, 'kind'))
 		return applyMutable(context, true);
 
 	return (_value: any, ctx: any) => {

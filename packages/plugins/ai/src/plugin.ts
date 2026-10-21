@@ -1,5 +1,4 @@
-import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
-import { isObject, hasOwn } from '@magmacomputing/library/primitives/assertion.library.js';
+import { definePlugin, deepFreeze, isObject, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import { initAI, resetAI, getAiRateLimits, getAiProviderRateLimits, getAiConfig } from './core/init.js';
 import { listProviderModels } from './core/models.js';
 import { parseAI } from './functions/parse.js';

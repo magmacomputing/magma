@@ -2,8 +2,6 @@ import { StringTag } from '#library/decorator.library.js';
 import { isCallable, isNumber, isAbortSignal } from '#library/assertion.library.js';
 import { TIMEOUT_MAX } from '#library/number.library.js';
 
-export { isAbortSignal, isAbortController } from '#library/assertion.library.js';
-
 /**
  * ## Aborter
  * Disposable AbortController implementing TC39 Disposable.

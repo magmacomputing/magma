@@ -8,6 +8,11 @@ When invoked with a package argument (e.g. `/bump tempo`, `/bump celestial`, `/b
    - Locate the target package's `package.json`.
    - Increment the semantic version (patch by default, unless minor or major is specified).
    - Verify workspace inter-package dependencies if applicable.
+   - **Plugin Catalog Synchronization**:
+     - When bumping any plugin in `packages/plugins/*` (e.g. `dialects`, `ai`, `celestial`, `snap`, etc.), synchronize the bumped version and description in:
+       - `packages/plugins/.setup/catalog.json`
+       - `packages/tempo/.vitepress/theme/data/catalog.json`
+       - `packages/tempo/public/repl/plugins.manifest.js` (if registered for online REPL loading)
 
 2. **CHANGELOG Update**:
    - Add a new release section to the target package's `CHANGELOG.md` with the bumped version and current date.

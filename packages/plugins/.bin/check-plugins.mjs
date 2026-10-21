@@ -10,9 +10,24 @@ const REPO_ROOT = join(__dirname, '../../..');
 const PLUGINS_DIR = join(REPO_ROOT, 'packages/plugins');
 const MAIN_BRANCH = process.argv[2] || 'main';
 
+const SEMVER_REGEX = /^v?(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/;
+const DIGITS_ONLY_REGEX = /^\d+$/;
+const REGEX_ESCAPE_CHARS = /[.*+?^${}()|[\]\\]/g;
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const UNRELEASED_LABEL_REGEX = /unreleased/i;
+const UNRELEASED_HEADER_REGEX = /^##\s+\[?Unreleased\]?/mi;
+
+function escapeRegex(str) {
+	return str.replace(REGEX_ESCAPE_CHARS, '\\$&');
+}
+
+function createChangelogHeaderRegex(version) {
+	return new RegExp(`^##\\s+\\[?v?${escapeRegex(version)}\\]?\\s*(?:[-–—]\\s*(.*))?$`, 'm');
+}
+
 function parseSemver(v) {
 	if (!v) return null;
-	const m = String(v).trim().match(/^v?(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
+	const m = String(v).trim().match(SEMVER_REGEX);
 	if (!m) return null;
 	return {
 		major: parseInt(m[1], 10),
@@ -40,8 +55,8 @@ function compareSemver(a, b) {
 		const ap = aParts[i];
 		const bp = bParts[i];
 		if (ap === bp) continue;
-		const aNum = /^\d+$/.test(ap);
-		const bNum = /^\d+$/.test(bp);
+		const aNum = DIGITS_ONLY_REGEX.test(ap);
+		const bNum = DIGITS_ONLY_REGEX.test(bp);
 		if (aNum && bNum) return parseInt(ap, 10) > parseInt(bp, 10) ? 1 : -1;
 		if (aNum && !bNum) return -1;
 		if (!aNum && bNum) return 1;
@@ -55,6 +70,29 @@ function getGitOutput(cmd) {
 		return execSync(cmd, { cwd: REPO_ROOT, stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf8' }).trim();
 	} catch {
 		return '';
+	}
+}
+
+function getChangelogInfo(pkgFullPath, branchVersion) {
+	const changelogPath = join(pkgFullPath, 'CHANGELOG.md');
+	if (!existsSync(changelogPath)) {
+		return { exists: false, isDated: false, isUnreleased: false, entryFound: false, label: null };
+	}
+	try {
+		const content = readFileSync(changelogPath, 'utf8');
+		const match = content.match(createChangelogHeaderRegex(branchVersion));
+		if (match) {
+			const label = (match[1] || '').trim();
+			const isDated = ISO_DATE_REGEX.test(label);
+			const isUnreleased = UNRELEASED_LABEL_REGEX.test(label) || label === '';
+			return { exists: true, entryFound: true, isDated, isUnreleased, label };
+		}
+		if (UNRELEASED_HEADER_REGEX.test(content)) {
+			return { exists: true, entryFound: false, isDated: false, isUnreleased: false, label: 'Unreleased' };
+		}
+		return { exists: true, entryFound: false, isDated: false, isUnreleased: false, label: null };
+	} catch {
+		return { exists: false, isDated: false, isUnreleased: false, entryFound: false, label: null };
 	}
 }
 
@@ -140,7 +178,7 @@ async function main() {
 	let hasError = false;
 
 	for (let i = 0; i < packageDirs.length; i++) {
-		const { name, pkgJson, relPath } = packageDirs[i];
+		const { name, pkgJson, relPath, fullPath } = packageDirs[i];
 		const branchVersion = pkgJson.version ?? '0.0.0';
 		const npmVersion = npmVersions[i];
 
@@ -164,6 +202,7 @@ async function main() {
 
 		const isBumpedOverMain = mainVersion !== '[NEW]' && compareSemver(branchVersion, mainVersion) > 0;
 		const isNpmAhead = npmVersion !== 'unreleased' && npmVersion !== 'error' && compareSemver(branchVersion, npmVersion) > 0;
+		const changelog = getChangelogInfo(fullPath, branchVersion);
 
 		let status = '🟢 Up to date';
 
@@ -171,7 +210,15 @@ async function main() {
 			status = `🆕 New Package (v${branchVersion})`;
 		} else if (srcCount > 0) {
 			if (isBumpedOverMain) {
-				status = `🚀 Ready to Publish (v${branchVersion})`;
+				if (changelog.isDated) {
+					status = `🚀 Ready to Publish (v${branchVersion})`;
+				} else if (!changelog.entryFound) {
+					status = `📝 Missing CHANGELOG (v${branchVersion})`;
+				} else if (changelog.isUnreleased) {
+					status = `⏳ Unreleased (v${branchVersion})`;
+				} else {
+					status = `⏳ Unreleased (v${branchVersion})`;
+				}
 			} else {
 				status = '🚨 Needs Version Bump!';
 				hasError = true;
@@ -183,7 +230,11 @@ async function main() {
 				status = '📝 Doc Only (Clean)';
 			}
 		} else if (isBumpedOverMain) {
-			status = `📦 Version Bumped (v${branchVersion})`;
+			if (changelog.isUnreleased) {
+				status = `⏳ Unreleased (v${branchVersion})`;
+			} else {
+				status = `📦 Version Bumped (v${branchVersion})`;
+			}
 		} else if (isNpmAhead) {
 			status = `📦 Pending Publish (v${branchVersion})`;
 		} else if (npmVersion === 'unreleased') {

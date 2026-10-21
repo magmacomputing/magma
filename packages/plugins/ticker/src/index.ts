@@ -4,7 +4,7 @@ import {
 	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
-	isUndefined, Finalizer, Reactive, cast, logError,
+	isUndefined, Finalizer, Reactive, cast, logError, hasKey,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -593,7 +593,7 @@ export const TickerPlugin = definePlugin({
 		const opts = options as TickerPluginOptions | undefined;
 		const installedClass = TempoClass || this;
 		const tickerFactory = function (this: any, arg1?: any, arg2?: any): Ticker.Instance {
-			const cls = (this as any)?.prototype ? this : ((this as any)?.constructor?.prototype ? (this as any).constructor : installedClass);
+			const cls = hasKey(this, 'prototype') ? this : (hasKey(this?.constructor, 'prototype') ? this.constructor : installedClass);
 			const defaultOpts = opts ?? (cls as any)?.config?.pluginOptions?.ticker;
 			if (defaultOpts && isObject(defaultOpts)) {
 				if (isUndefined(arg1))

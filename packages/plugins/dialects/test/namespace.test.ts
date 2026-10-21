@@ -23,4 +23,27 @@ describe('Dialects Namespace & Shims', () => {
 			(Tempo.dialects as any).custom = () => { };
 		}).toThrow();
 	});
+
+	it('auto-detects dialect in Tempo.dialects.parse() when omitted', () => {
+		const parsedStrftime = Tempo.dialects.parse('2026-10-24', '%Y-%m-%d');
+		expect(parsedStrftime.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		const parsedGo = Tempo.dialects.parse('2026-10-24', '2006-01-02');
+		expect(parsedGo.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+		const parsedOracle = Tempo.dialects.parse('2026-10-24 15:30:45', 'YYYY-MM-DD HH24:MI:SS');
+		expect(parsedOracle.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2026-10-24 15:30:45');
+	});
+
+	it('supports options objects across static Tempo.dialects methods', () => {
+		const explained = Tempo.dialects.explain('%Y-%m-%d', { dialect: 'strftime' });
+		expect(explained.tokens.length).toBe(3);
+		expect(explained.pattern).toBe('{yyyy}-{mm}-{dd}');
+
+		const exported = Tempo.dialects.export('{yyyy}-{mm}-{dd}', { dialect: 'strftime' });
+		expect(exported.pattern).toBe('%Y-%m-%d');
+
+		const converted = Tempo.dialects.convert('%Y-%m-%d', { from: 'strftime', to: 'ldml' });
+		expect(converted.pattern).toBe('yyyy-MM-dd');
+	});
 });

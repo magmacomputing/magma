@@ -6,6 +6,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.0] - 2026-10-16
+
+### Added & Architecture
+- **Specialized Tokens, Scope Modifiers & Generalized Zero-Indexing**:
+  - Added `{jj}` (and semantic alias `{julian}`) for astronomical Julian Day count since 4713 BC (`2461331` for 2026-10-17, resolving Oracle `J`), with companion `t.jj` instance getter.
+  - Added `{dim}` for total days in the month (`28`–`31`, resolving PHP `t`), with companion `t.dim` instance getter.
+  - Added `{cen}` (and `{century}`) for 2-digit century representation (`00`–`99`, resolving POSIX `%C`).
+  - Added `{wom}` for week of month (`1`–`5`, resolving Oracle `W` and Unicode LDML `W`), with `{ww:month}` / `{woy:month}` as semantic aliases.
+  - Added `{woy:cal}` for week of year starting January 1st (`01`–`53`, resolving Oracle `WW`).
+  - Added dimensional time-scope modifiers:
+    - `{ss:day}`: Seconds past midnight (`0`–`86399`, resolving Oracle `SSSSS`).
+    - `{mi:day}`: Minute of day (`0`–`1439`).
+    - `{ms:day}`: Millisecond of day (`0`–`86399999`).
+    - `{ns:day}`: Nanosecond of day (`0`–`86,399,999,999,999 ns`).
+    - `{hh:week}`: Hour of week (`0`–`167`).
+    - `{dd:year}`: Day of year (`1`–`366`, resolving mainframe "Julian" date codes).
+  - Added generalized zero-indexing modifier (`:zero` canonical, `:0` shorthand):
+    - `{doy:zero}` / `{doy:0}` (and `{dd:year:zero}` / `{dd:year:0}`): `000`–`365` (or `{doy:raw:0}`: `0`–`365`, resolving PHP `z`).
+    - `{dow:zero}` / `{dow:0}`: `0`–`6` with Sunday = 0 (resolving POSIX `%w`, JS `Date.getDay()` parity).
+    - `{mm:zero}` / `{mm:0}`: `00`–`11` (or `{mm:raw:0}`: `0`–`11`, resolving JS `Date.getMonth()` parity).
+    - `{woy:zero}` / `{woy:0}`: `00`–`52`.
+- **Numeric Tail-Slicing & Space-Padding Format Modifiers**:
+  - Added negative-number tail slicing (`{token:-N}`) to format masks:
+    - `{yyyy:-3}` (last 3 digits of calendar year, e.g. `'026'`)
+    - `{yyyy:-1}` (last digit of calendar year, e.g. `'6'`)
+    - `{yow:-3}` (last 3 digits of ISO week-numbering year)
+    - `{yow:-2}` and semantic alias `{yow:short}` (2-digit ISO week-numbering year)
+    - `{yow:-1}` (last digit of ISO week-numbering year)
+    - Retains left-to-right precision slicing for fractional seconds (`{ff:N}`).
+  - Added `:space` modifier support to numeric tokens (`padStart(width, ' ')`):
+    - `{dd:space}` / `{dd:2:space}` → Space-padded day of month ` 1`–`31` (resolves Go `_2`, Strftime `%e`).
+    - `{doy:space}` / `{doy:3:space}` → Space-padded day of year `  1`–`366` (resolves Go `__2`).
+    - `{hh:space}` / `{hh:2:space}` → Space-padded 24-hour ` 0`–`23` (resolves Strftime `%k`).
+    - `{h12:space}` / `{h12:2:space}` → Space-padded 12-hour ` 1`–`12` (resolves Strftime `%l`).
+  - Updated `Match.formatBraces` in `support.default.ts` to support chained hyphenated modifiers (`:[\w-]+`).
+- **Extended Timezone Offset Modifiers (`{tz:...}`)**:
+  - Expanded `{tz:offset...}` with granular component modifiers:
+    - `{tz:offset:hh}` / `{tz:offset:hour}` → Hour with sign (e.g. `+08`, `-05`, `+00`) (resolves Oracle `TZH`, Go `-07`).
+    - `{tz:offset:mi}` (and alias `:min`) → Minutes without sign (e.g. `00`, `30`) (resolves Oracle `TZM`).
+    - `{tz:offset:ss}` (and alias `:sec`) → Offset with seconds (`+08:00:00`, or compact `{tz:offset:compact:ss}` → `+080000`) (resolves Go `-07:00:00`, `-070000`).
+    - `{tz:offset:z}` / `{tz:offset:compact:z}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else numeric offset (resolves Go `Z07:00`, `Z0700`, `Z07`, `Z07:00:00`, `Z070000`).
+- **ISO Week-Numbering Getters & Tokens (`.woy` & `.yow`)**:
+  - Added canonical `.woy` (ISO week number of year, 1–53) and `.yow` (4-digit ISO week-numbering year) getters to `Tempo` instances.
+  - Native format token support for `{woy}` (zero-padded `01`–`53`), `{woy:raw}` (unpadded `1`–`53`), `{woy:ord}` (ordinal suffix `1st`–`53rd`), and `{yow}` (4-digit ISO week-numbering year).
+  - Deprecated legacy `.ww` getter in favor of `.woy` (scheduled for removal in v5.0.0), while preserving `.wy` and `.yw` for backward compatibility.
+- **Roman Numeral Date Formatting & Round-Trip Mask Parsing**:
+  - Added `:roman` modifier support to format masks (`{yyyy:roman}`, `{yy:roman}`, `{mm:roman}`, `{dd:roman}`, `{hh:roman}`) converting date/time components into Roman numerals via `toRoman`.
+  - Added symmetric `:roman` modifier support in format mask parsing (`module.parse.ts`), enabling seamless lossless round-trip date parsing (e.g. `str = t.format('{yy:roman}-{mm:roman}-{dd:roman}'); new Tempo(str, { format: '{yy:roman}-{mm:roman}-{dd:roman}' })`).
+  - Added native Roman numeral lexer tokens and patterns:
+    - `Token.Rm`: Roman month numbers (`I` through `XII`).
+    - `Token.Ry`: Roman years (1–3999, e.g. `MMXXVI`, `MCMXCIV`).
+    - `Token.dRy`: Day-RomanMonth-Year patterns (e.g. `14.X.2026`, `14-X-2026`).
+    - `Token.Ryy`: Archival Roman year patterns, including `anno domini` and copyright notices (e.g. `MMXXVI`, `Copyright © MMXXVI`, `anno domini MCMXCIV`).
+- **Engine Guard Pre-Filtering & Sequence Validation**:
+  - Enhanced `engine.guard.ts` with Roman sequence validation: accepts uppercase Roman numerals and separator/digit-adjacent Roman numerals (e.g. `14.X.2026`, `MMXXVI`), while safely filtering common lowercase English prose words (`did`, `mix`, `civil`) to prevent false-positive date parsing.
+- **Classical Roman Calendar Architecture**:
+  - Added design specification in `packages/tempo/plan/tempo-plugin-roman.md` outlining the architecture for a dedicated `@magmacomputing/tempo-plugin-roman` plugin covering AUC (*ab urbe condita*) years, Kalends, Nones, and Ides mechanics.
+
 ## [4.6.0] - 2026-10-11
 
 ### Added & Architecture

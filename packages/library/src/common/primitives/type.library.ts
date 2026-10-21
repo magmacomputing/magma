@@ -407,6 +407,79 @@ export type TypeValue<T> = { [K in Type]: { type: K, value: GetType<K, T> } }[Ty
 /** late-binding Type utility for augmented modules */
 export type GetType<K extends string, T = any> = K extends keyof TypeValueMap<T> ? TypeValueMap<T>[K]['value'] : any;
 
+/** Standard typeof primitive type names plus common structural types */
+export type TypeofTag =
+	| 'string'
+	| 'number'
+	| 'boolean'
+	| 'function'
+	| 'object'
+	| 'bigint'
+	| 'symbol'
+	| 'undefined'
+	| 'array'
+	| 'null'
+	| 'any'
+	| 'unknown';
+
+export type TypeofMap = {
+	string: string;
+	number: number;
+	boolean: boolean;
+	function: (...args: any[]) => unknown;
+	object: object;
+	bigint: bigint;
+	symbol: symbol;
+	undefined: undefined;
+	array: unknown[];
+	null: null;
+	any: any;
+	unknown: unknown;
+};
+
+type Trim<T extends string> = T extends ` ${infer R}`
+	? Trim<R>
+	: T extends `${infer R} `
+	? Trim<R>
+	: T extends `\t${infer R}`
+	? Trim<R>
+	: T extends `${infer R}\t`
+	? Trim<R>
+	: T;
+
+/**
+ * Resolves a type tag string (case-insensitive, e.g. `'string'`, `'String'`, `'Number'`)
+ * to its corresponding TypeScript type.
+ */
+export type ResolveTypeTag<S extends string> = string extends S
+	? unknown
+	: S extends any
+	? Lowercase<Trim<S>> extends keyof TypeofMap
+		? TypeofMap[Lowercase<Trim<S>>]
+		: never
+	: never;
+
+/**
+ * Resolves an individual type guard (either a case-insensitive type tag string or an assertion/predicate function)
+ * to its narrowed TypeScript type.
+ */
+export type ResolveTypeGuard<G> = G extends (val: any) => val is infer V
+	? V
+	: G extends (val: any) => boolean
+	? unknown
+	: G extends string
+	? ResolveTypeTag<G>
+	: unknown;
+
+/**
+ * Resolves a tuple/array of type guards into a TypeScript union type.
+ */
+export type ResolveTypeGuards<G extends readonly unknown[]> = G extends readonly [infer Head, ...infer Tail]
+	? ResolveTypeGuard<Head> | ResolveTypeGuards<Tail>
+	: G extends readonly (infer Item)[]
+	? ResolveTypeGuard<Item>
+	: never;
+
 // https://dev.to/harry0000/a-bit-convenient-typescript-type-definitions-for-objectentries-d6g
 type TupleEntry<T extends readonly unknown[], I extends unknown[] = [], R = never> =
 	T extends readonly [infer Head, ...infer Tail]

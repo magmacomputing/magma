@@ -1,6 +1,6 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet, isDate, isRegExp, isSafeKey, isPrimitive } from '#library/assertion.library.js';
-import { getType } from '#library/type.library.js';
+import { getType, cast } from '#library/type.library.js';
 import type { UnsafeKey } from '#library/assertion.library.js';
 import type { Extend, Property } from '#library/type.library.js';
 
@@ -62,7 +62,7 @@ export const asObject = <T>(obj?: Record<PropertyKey, any>): T => {
 		return obj as T;
 
 	if (isArray(obj))
-		return obj.map(item => asObject(item)) as unknown as T;
+		return cast<T>(obj.map(item => asObject(item)));
 
 	if (isDate(obj) || isRegExp(obj) || isMap(obj) || isSet(obj))
 		return obj as T;

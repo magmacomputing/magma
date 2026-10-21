@@ -38,20 +38,23 @@ export const toHex = (num: TValues<number> = [], len?: number) =>
  * suffix(23); // '23rd'
  * ```
  */
-export const suffix = (idx: number = 0) => {
-	const str = String(idx);
+export const suffix = (idx: number = 0): string => {
+	const n = Math.abs(idx);
+	const mod100 = n % 100;
+	if (mod100 >= 11 && mod100 <= 13)
+		return `${idx}th`;
 
-	switch (true) {
-		case str.endsWith('1') && !str.endsWith('11'):
-			return str + 'st';
-		case str.endsWith('2') && !str.endsWith('12'):
-			return str + 'nd';
-		case str.endsWith('3') && !str.endsWith('13'):
-			return str + 'rd';
+	switch (n % 10) {
+		case 1:
+			return `${idx}st`;
+		case 2:
+			return `${idx}nd`;
+		case 3:
+			return `${idx}rd`;
 		default:
-			return str + 'th';
+			return `${idx}th`;
 	}
-}
+};
 
 /**
  * Splits a number or string by a delimiter and parses the chunks.
@@ -98,3 +101,89 @@ export const fix = (nbr: string | number = 0, max = 2) =>
  */
 export const asTime = (hhmi: string | number) =>
 	Number(String(hhmi).replace(':', ''));
+
+const ROMAN_MATRIX: readonly (readonly [number, string])[] = [
+	[1000, 'M'],
+	[900, 'CM'],
+	[500, 'D'],
+	[400, 'CD'],
+	[100, 'C'],
+	[90, 'XC'],
+	[50, 'L'],
+	[40, 'XL'],
+	[10, 'X'],
+	[9, 'IX'],
+	[5, 'V'],
+	[4, 'IV'],
+	[1, 'I'],
+]
+
+const ROMAN_VALUES: Record<string, number> = {
+	I: 1,
+	V: 5,
+	X: 10,
+	L: 50,
+	C: 100,
+	D: 500,
+	M: 1000,
+}
+
+const RE_ROMAN_NUMERALS = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/;
+
+/**
+ * Converts a positive integer into its Roman numeral string representation.
+ * 
+ * @param num - An integer from 1 through 3999
+ * @returns Uppercase subtractive Roman numerals, or an empty string for non-integers or values outside that range
+ * @example
+ * ```ts
+ * toRoman(2026); // 'MMXXVI'
+ * toRoman(14); // 'XIV'
+ * ```
+ */
+export function toRoman(num: number): string {
+	if (!Number.isInteger(num) || num < 1 || num > 3999)
+		return '';
+
+	let n = num;
+	let result = '';
+
+	for (const [value, symbol] of ROMAN_MATRIX) {
+		while (n >= value) {
+			result += symbol;
+			n -= value;
+		}
+	}
+
+	return result;
+}
+
+/**
+ * Converts a Roman numeral string into its numeric integer value.
+ *
+ * @param roman - Standard subtractive Roman numerals; matching is case-insensitive and surrounding whitespace is ignored
+ * @returns The integer value (1-3999), or NaN if invalid
+ * @example
+ * ```ts
+ * fromRoman('MMXXVI'); // 2026
+ * fromRoman('XIV'); // 14
+ * fromRoman('IIII'); // NaN
+ * ```
+ */
+export function fromRoman(roman: string): number {
+	const str = roman?.trim?.().toUpperCase();
+	if (!str || !RE_ROMAN_NUMERALS.test(str))
+		return NaN;
+
+	let total = 0;
+	for (let i = 0; i < str.length; i++) {
+		const current = ROMAN_VALUES[str[i]] ?? 0;
+		const next = ROMAN_VALUES[str[i + 1]] ?? 0;
+
+		total += current < next ? -current : current;
+	}
+
+	return total;
+}
+
+

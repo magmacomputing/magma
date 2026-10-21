@@ -1,6 +1,6 @@
 {
   "name": "tempo-monorepo",
-  "version": "4.6.0",
+  "version": "4.7.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -19,8 +19,11 @@
   "scripts": {
     "test": "vitest run",
     "review:agent": "coderabbit review --agent",
+    "review:uncommitted": "coderabbit review --agent --uncommitted",
+    "review:pr": "tempo-cli review-pr",
     "review:cli": "coderabbit review",
     "review:findings": "coderabbit review findings",
+    "review:limit": "tempo-cli review-limit",
     "build:tempo": "npm run build:library && npm run build:std && npm run build --workspace=@magmacomputing/tempo",
     "build:library": "npm run build --workspace=@magmacomputing/library",
     "build:std": "npm run build --workspace=@magmacomputing/tempo-std",

@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo/core';
-import { Enum } from '#tempo/support';
+import { Enum } from '#library/enumerate.library.js';
 import { FormatModule } from '#tempo/format';
 import { parseWeekday, parseDate } from '#tempo/engine/engine.lexer.js';
 import '#tempo/parse';

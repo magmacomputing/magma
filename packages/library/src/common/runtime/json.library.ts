@@ -1,4 +1,5 @@
-import { isCallable, isString, isPlainObject, hasOwn } from '#library/assertion.library.js';
+import { isCallable, isString, isPlainObject } from '#library/assertion.library.js';
+import { hasOwn } from '#library/primitive.library.js';
 
 /**
  * Type for a JSONC reviver function that transforms parsed values.
@@ -218,7 +219,7 @@ export function isRawJSON(obj: unknown): boolean {
 	if (isCallable((JSON as any).isRawJSON))
 		return (JSON as any).isRawJSON(obj);
 
-	return isPlainObject(obj) && hasOwn(obj, 'rawJSON') && isString(obj.rawJSON);
+	return isPlainObject(obj) && hasOwn(obj, 'rawJSON', 'string');
 }
 
 /**

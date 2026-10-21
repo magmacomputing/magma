@@ -241,12 +241,13 @@ export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
 export const LOCALE = proxify(STATE.LOCALE, true, true);
 
 /** date-time element tokens */
-const elementKeys = ['yy', 'mm', 'wy', 'ww', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
+const elementKeys = ['yy', 'mm', 'wy', 'ww', 'woy', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
 export const ELEMENT = enumify({
 	/** Year element */ yy: 'year',
 	/** Month element */ mm: 'month',
-	/** ISO week number element */ wy: 'week',
+	/** @internal ISO week number element */ wy: 'week',
 	/** Week element */ ww: 'week',
+	/** ISO week number element */ woy: 'week',
 	/** Day element */ dd: 'day',
 	/** Hour element */ hh: 'hour',
 	/** Minute element */ mi: 'minute',
@@ -259,7 +260,7 @@ export type ELEMENT = ValueOf<typeof ELEMENT>
 export type Element = KeyOf<typeof ELEMENT>
 
 /** allowed mutation keys for .set() and .add() */
-const mutationKeys = [...elementKeys, 'yw', 'isoYear', 'isoyear', 'isoWeek', 'isoweek', 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
+const mutationKeys = [...elementKeys, 'yw', 'yow', 'isoYear', 'isoyear', 'isoWeek', 'isoweek', 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
 export const MUTATION = enumify(mutationKeys, false);
 export type MUTATION = ValueOf<typeof MUTATION>
 export type Mutation = KeyOf<typeof MUTATION>
@@ -333,4 +334,7 @@ export default {
 	Enum,
 }
 
+/**
+ * @deprecated Deprecated in v4.7.0; to be removed in v5.0.0. Import from `@magmacomputing/tempo/library`.
+ */
 export { Enum } from '#library/enumerate.library.js';

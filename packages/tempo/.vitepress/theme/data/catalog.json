@@ -51,7 +51,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ai",
     "plan": "community",
     "status": "active",
-    "version": "2.3.1"
+    "version": "2.3.2"
   },
   {
     "id": "ticker",
@@ -84,9 +84,9 @@
   {
     "id": "dialects",
     "name": "Dialects Plugin",
-    "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, and POSIX strftime",
+    "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, POSIX strftime, and Oracle/SQL TO_CHAR",
     "packageName": "@magmacomputing/tempo-plugin-dialects",
-    "version": "1.0.3",
+    "version": "1.1.0",
     "plan": "community",
     "status": "active"
   },
