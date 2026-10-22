@@ -274,4 +274,20 @@ describe(`${label} format method`, () => {
     expect(tNoTrans.format('{geo.sphere:locale}')).toBe('south');
   });
 
+  test('guides developer to install tempo-plugin-dialects when unbraced format mask is passed', () => {
+    const t = new Tempo('2026-10-24T15:30:00');
+    expect(() => t.format('YYYY-MM-DD')).toThrowError(
+      "[Tempo] Formatting unbraced format mask 'YYYY-MM-DD' requires '@magmacomputing/tempo-plugin-dialects'."
+    );
+    expect(() => t.format('%Y-%m-%d')).toThrowError(
+      "[Tempo] Formatting unbraced format mask '%Y-%m-%d' requires '@magmacomputing/tempo-plugin-dialects'."
+    );
+
+    // Respects config.catch
+    const tCatch = new Tempo('2026-10-24T15:30:00', { catch: true, silent: true });
+    expect(() => tCatch.format('YYYY-MM-DD')).not.toThrow();
+    expect(tCatch.format('YYYY-MM-DD')).toBe('');
+  });
+
 });
+

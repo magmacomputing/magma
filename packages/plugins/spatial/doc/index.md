@@ -12,6 +12,17 @@ By decoupling geographic mathematics from network lookup into a dedicated plugin
 
 ---
 
+## Key Features
+
+- **Great-Circle Navigation**: Haversine distance (`Tempo.spatial.distance`), compass bearing (`Tempo.spatial.bearing`), and geographic midpoint (`Tempo.spatial.midpoint`) between any two coordinates.
+- **Impossible Travel Detection**: `Tempo.spatial.isImpossibleTravel(from, to)` flags sessions with transit speeds exceeding commercial aviation feasibility (default: > 900 km/h).
+- **Transit Velocity**: `Tempo.spatial.velocity(from, to)` computes speed of travel between two timestamped `Tempo` instances.
+- **Spatial Geofencing**: Radial proximity check (`isWithin`) and rectangular bounding box containment (`inBoundingBox`) with antimeridian crossing support.
+- **Natural Solar Time Offset**: `Tempo.spatial.solarOffset(coords)` derives meridian offset in minutes (4 min/degree) for circadian rhythm alignment.
+- **Immutable Namespace**: `Tempo.spatial` is recursively frozen and mounted tamper-proof onto `Tempo`.
+
+---
+
 ## Installation
 
 ```bash
@@ -20,15 +31,27 @@ npm install @magmacomputing/tempo-plugin-spatial
 
 ---
 
-## Architecture & Namespacing
+## Quickstart
 
-Installing `SpatialPlugin` mounts an immutable, locked-down **`Tempo.spatial`** static namespace onto the `Tempo` class and adds fluent instance helpers to `Tempo.prototype`:
+<PluginRepl plugin="spatial" />
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
 
 Tempo.use(SpatialPlugin);
+
+const sydney = { lat: -33.8688, lng: 151.2093 };
+const london = { lat: 51.5074, lng: -0.1278 };
+
+const distKm = Tempo.spatial.distance(sydney, london, 'km');
+console.log('Distance:', distKm.toFixed(1), 'km'); // ~16988.0 km
+
+const heading = Tempo.spatial.bearing(sydney, london);
+console.log('Compass Bearing:', heading.toFixed(1) + '°'); // ~302.2° (WNW)
+
+const mid = Tempo.spatial.midpoint(sydney, london);
+console.log('Midpoint:', mid.latitude, mid.longitude);
 ```
 
 ### Auto-Installation (Side-Effect Import)
@@ -38,20 +61,29 @@ import { Tempo } from '@magmacomputing/tempo';
 import '@magmacomputing/tempo-plugin-spatial/install';
 ```
 
+### Impossible Travel Anomaly Detection
+
+```typescript
+const login1 = new Tempo('2026-06-21T10:00:00Z', {
+  geo: { lat: 51.5074, lng: -0.1278 }, // London
+});
+
+const login2 = new Tempo('2026-06-21T11:00:00Z', {
+  geo: { lat: 40.7128, lng: -74.0060 }, // New York (1 hour later)
+});
+
+const speed = Tempo.spatial.velocity(login1, login2);
+console.log('Velocity:', speed.toFixed(1), 'km/h'); // ~5570.2 km/h
+
+const alert = Tempo.spatial.isImpossibleTravel(login1, login2);
+console.log('Impossible Travel Alert?', alert); // true
+```
+
 ---
 
-## Documentation Guide
+## API Reference
 
-Explore detailed guides on specific capabilities:
-
-- **[Transit & Navigation](./transit-and-navigation.md)**: Great-Circle distance, compass bearing, geographic midpoint, transit velocity, and impossible travel anomaly detection.
-- **[Spatial Geofencing](./geofencing.md)**: Proximity checking (`isWithin`), rectangular bounding boxes (`inBoundingBox`), and antimeridian crossing resolution.
-- **[Natural Solar Time Offset](./solar-offset.md)**: Longitude delta calculations (`solarOffset`), meridian drift, and circadian rhythm alignment.
-- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Zero-trust impossible travel detection, depot geofencing, flight sector planning, and physical solar noon alignment.
-
----
-
-## Comprehensive `Tempo.spatial` API Surface
+### Comprehensive `Tempo.spatial` API Surface
 
 | Method / Property | Category | Description |
 | :--- | :--- | :--- |
@@ -77,51 +109,17 @@ Explore detailed guides on specific capabilities:
 
 ---
 
-## Quickstart Examples
+## Topic Guides
 
-<PluginRepl plugin="spatial" />
+Explore detailed guides on specific capabilities:
 
-### 1. Great-Circle Distance & Bearing
-
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
-
-Tempo.use(SpatialPlugin);
-
-const sydney = { lat: -33.8688, lng: 151.2093 };
-const london = { lat: 51.5074, lng: -0.1278 };
-
-const distKm = Tempo.spatial.distance(sydney, london, 'km');
-console.log('Distance:', distKm.toFixed(1), 'km'); // ~16988.0 km
-
-const heading = Tempo.spatial.bearing(sydney, london);
-console.log('Compass Bearing:', heading.toFixed(1) + '°'); // ~302.2° (WNW)
-
-const mid = Tempo.spatial.midpoint(sydney, london);
-console.log('Midpoint:', mid.latitude, mid.longitude);
-```
-
-### 2. Impossible Travel Anomaly Detection
-
-```typescript
-const login1 = new Tempo('2026-06-21T10:00:00Z', {
-  geo: { lat: 51.5074, lng: -0.1278 }, // London
-});
-
-const login2 = new Tempo('2026-06-21T11:00:00Z', {
-  geo: { lat: 40.7128, lng: -74.0060 }, // New York (1 hour later)
-});
-
-const speed = Tempo.spatial.velocity(login1, login2);
-console.log('Velocity:', speed.toFixed(1), 'km/h'); // ~5570.2 km/h
-
-const alert = Tempo.spatial.isImpossibleTravel(login1, login2);
-console.log('Impossible Travel Alert?', alert); // true
-```
+- **[Transit & Navigation](./transit-and-navigation.md)**: Great-Circle distance, compass bearing, geographic midpoint, transit velocity, and impossible travel anomaly detection.
+- **[Spatial Geofencing](./geofencing.md)**: Proximity checking (`isWithin`), rectangular bounding boxes (`inBoundingBox`), and antimeridian crossing resolution.
+- **[Natural Solar Time Offset](./solar-offset.md)**: Longitude delta calculations (`solarOffset`), meridian drift, and circadian rhythm alignment.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Zero-trust impossible travel detection, depot geofencing, flight sector planning, and physical solar noon alignment.
 
 ---
 
 ## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

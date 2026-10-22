@@ -9,7 +9,7 @@ import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 
-import { isTempo, enums, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces } from '#tempo/support';
+import { isTempo, enums, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -227,19 +227,21 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const isNamedFormat = isString(fmt) && hasOwn(formats, fmt);
 	const dialect = evaluate(options?.dialect ?? config?.dialect);
-	if (dialect && isString(fmt) && !isNamedFormat && !hasNativeFormatBraces(fmt, dialect)) {
+	if (isString(fmt) && !isNamedFormat && !hasNativeFormatBraces(fmt, dialect)) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
 		const dialectsRegistry = config?.registry?.dialects
 			?? (getRuntime() as any).dialects
 			?? (getRuntime().modules as any)?.['DialectsModule']
 			?? (globalThis as any)[Symbol.for('Tempo.dialects')]
 			?? (TempoClass as any)?.dialectsRegistry;
-		const formatter = dialectsRegistry?.format ?? dialectsRegistry?.[dialect]?.format;
+		const formatter = dialectsRegistry?.format ?? (dialect ? dialectsRegistry?.[dialect]?.format : undefined);
 
 		if (isFunction(formatter))
 			return formatter(zdt, String(fmt), { ...config, dialect });
 
-		throw new Error(`[Tempo] Formatting with dialect '${dialect}' requires '@magmacomputing/tempo-plugin-dialects'.`);
+		const dialectDetail = dialect ? `with dialect '${dialect}' ` : '';
+		raise(`[Tempo] Formatting ${dialectDetail}unbraced format mask '${fmt}' requires '@magmacomputing/tempo-plugin-dialects'.`, config);
+		return '';
 	}
 
 	let template = (isString(fmt) && formats && (fmt as string in formats))

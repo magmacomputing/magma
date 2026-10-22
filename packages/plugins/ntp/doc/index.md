@@ -10,6 +10,17 @@ A lightweight, high-precision Community plugin for the [Tempo](https://github.co
 
 ---
 
+## Key Features
+
+- **Cristian's Algorithm**: Computes client clock offset from round-trip time (`Δ = T_server - (T_client + RTT / 2)`) without altering the OS clock.
+- **Sub-Millisecond Headers**: Reads `Server-Timing: clock=...` with automatic fallback to the standard HTTP `Date` header.
+- **Jitter Rejection & EMA Smoothing**: Discards high-latency samples and smooths drift with an Exponential Moving Average.
+- **Passive Calibration**: Optionally intercepts `fetch` responses from trusted origins to calibrate with zero extra requests.
+- **Synchronous Calibrated Time**: `Tempo.ntp.now()` returns true server-aligned time with no `await`.
+- **Universal HTTP Baseline**: Runs identically in browsers, Node.js, Bun, Deno, and Cloudflare Workers.
+
+---
+
 ## Installation
 
 ```bash
@@ -18,23 +29,29 @@ npm install @magmacomputing/tempo-plugin-ntp
 
 ---
 
-## Architecture & Registration
+## Quickstart
 
-### Plugin Installation
+<PluginRepl plugin="ntp" />
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
 
+// 1. Install the plugin with target server endpoint
 Tempo.use(NtpPlugin, {
-  server: '/api/time',                        // Default time synchronization endpoint
-  syncInterval: '15m',                        // Automatic periodic re-sync
-  interceptFetch: ['https://api.mycorp.com', '/api/'] // Passively calibrate only on trusted endpoints
+  server: '/api/time',                                 // Default time synchronization endpoint
+  syncInterval: '15m',                                 // Automatic periodic re-sync
+  interceptFetch: ['https://api.mycorp.com', '/api/']  // Passively calibrate only on trusted endpoints
 });
 
-// Explicitly calibrate against the server before querying calibrated time
+// 2. Perform an initial sync
 await Tempo.ntp.sync();
-const now = Tempo.ntp.now();
+
+// 3. Query true calibrated atomic time (100% synchronous!)
+const atomicNow = Tempo.ntp.now();
+console.log(`True UTC Time: ${atomicNow.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}')}`);
+console.log(`Measured Drift Offset: ${Tempo.ntp.offset}ms`);
+console.log(`Uncertainty Window: ±${Tempo.ntp.drift.uncertaintyMs}ms`);
 ```
 
 ### Configuration Options (`NtpSyncOptions`)
@@ -61,40 +78,7 @@ const now = Tempo.ntp.now();
 
 ---
 
-## Documentation Guide
-
-Explore detailed guides on architecture, production use-cases, and algorithms:
-
-- **[Use Cases & Production Patterns](./use-cases-and-patterns.md)**: Real-world architectures for financial countdowns, live auctions, zero-overhead passive calibration (`interceptFetch`), distributed logging synchronization, and TOTP authentication.
-- **[Ticker Integration & Atomic Clocks](./ticker-integration.md)**: Integrating with `@magmacomputing/tempo-plugin-ticker` to build true-time, drift-compensated continuous execution loops and scheduled intervals (`ntp: true`).
-- **[Cristian Algorithm & Precision Specs](./algorithms-and-precision.md)**: Mathematical models for round-trip time (RTT) offset calculations, sub-millisecond `Server-Timing` headers, statistical jitter filtering, and EMA smoothing.
-
----
-
-## Interactive REPL
-
-<PluginRepl plugin="ntp" />
-
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
-
-// 1. Install the plugin (points to same-origin or CORS-enabled time endpoint)
-Tempo.use(NtpPlugin, { server: '/api/time' });
-
-// 2. Perform an initial sync
-await Tempo.ntp.sync();
-
-// 3. Query true calibrated atomic time (100% synchronous!)
-const atomicNow = Tempo.ntp.now();
-console.log(`True UTC Time: ${atomicNow.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}.{ms}')}`);
-console.log(`Measured Drift Offset: ${Tempo.ntp.offset}ms`);
-console.log(`Uncertainty Window: ±${Tempo.ntp.drift.uncertaintyMs}ms`);
-```
-
----
-
-## Comprehensive API Reference
+## API Reference
 
 ### `Tempo.ntp.now(timeZone?: string): Tempo`
 Synchronously returns a new `Tempo` instance anchored to the calibrated atomic server timestamp.
@@ -127,6 +111,14 @@ Instance method that returns a new `Tempo` instance offset by the current NTP cl
 
 ---
 
-## Licensing
+## Topic Guides
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+- [Cristian Algorithm & Precision Specs](./algorithms-and-precision.md) - RTT offset mathematics, `Server-Timing` precision, jitter filtering, and EMA smoothing.
+- [Ticker Integration & Atomic Clocks](./ticker-integration.md) - Drift-compensated continuous execution loops with `@magmacomputing/tempo-plugin-ticker` (`ntp: true`).
+- [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) - Financial countdowns, live auctions, passive calibration, distributed logging, and TOTP authentication.
+
+---
+
+## License
+
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

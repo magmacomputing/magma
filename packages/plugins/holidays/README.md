@@ -91,4 +91,4 @@ const fiveDaysLater = addBusinessDays(t, 5, { country: 'US' });
 
 ## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the [MIT License](./LICENSE). No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the [MIT License](./LICENSE).

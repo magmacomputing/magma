@@ -142,6 +142,59 @@ Tempo.init({
 
 ---
 
+# 🚀 Tempo v4.7.0 Updates: Format Masks & Dialects Migration
+
+Tempo v4.7.0 formalizes date formatting ergonomics, introduces seamless interop with external library formatting standards via `@magmacomputing/tempo-plugin-dialects`, and guides developers when unbraced masks are detected.
+
+## 💡 The Braced Templating Model: "Template Strings for Dates"
+
+In Tempo, native formatting masks follow an intuitive template-literal paradigm (`{token}`):
+- **Zero-Escaping**: Plain text requires no escaping. Only tokens enclosed in `{...}` are replaced.
+  ```typescript
+  // In Tempo: no bracket or quote escaping needed around literal words!
+  t.format('Meeting on {wkd}, {dd:ord} of {mon} at {h12}:{mi} {mer}');
+  // Output: "Meeting on Tuesday, 24th of October at 03:30 pm"
+  ```
+- **Composable with ES Template Strings**:
+  Because ECMAScript evaluates backtick template literals (`` `...` ``) before passing arguments into `.format()`, you can seamlessly interpolate application variables alongside Tempo date tokens:
+  ```typescript
+  const user = 'Alice';
+  const role = 'Admin';
+  t.format(`Welcome ${user} (${role})! Your session expires on {wkd} at {h12}:{mi}{mer}`);
+  ```
+
+---
+
+## 🔁 Migrating from Day.js, Moment.js, and Luxon
+
+If your codebase relies on external format strings (`YYYY-MM-DD`, `yyyy-MM-dd`, or `%Y-%m-%d`), you do not need to rewrite your masks.
+
+### 1. Install `@magmacomputing/tempo-plugin-dialects`
+```bash
+npm install @magmacomputing/tempo-plugin-dialects
+```
+
+### 2. Drop-in Replacement for Luxon (`toFormat`)
+```typescript
+import '@magmacomputing/tempo-plugin-dialects/install';
+import { Tempo } from '@magmacomputing/tempo';
+
+const t = new Tempo('2026-10-24');
+console.log(t.toFormat('yyyy-MM-dd HH:mm')); // Luxon standard drop-in
+```
+
+### 3. Automatic Unbraced Mask Routing & Migration Guard
+When `@magmacomputing/tempo-plugin-dialects` is registered, calling `t.format('YYYY-MM-DD')` automatically routes through the dialects compiler.
+
+If an unbraced format mask is passed without the dialects plugin installed:
+```typescript
+t.format('YYYY-MM-DD');
+// ❌ Throws: [Tempo] Formatting unbraced format mask 'YYYY-MM-DD' requires '@magmacomputing/tempo-plugin-dialects'.
+```
+This safeguards developers from accidental silent formatting bugs and immediately guides them to the right solution.
+
+---
+
 # ⚠️ Migrating to Tempo v3.x
 
 Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into standalone, licensed packages.

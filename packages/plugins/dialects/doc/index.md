@@ -12,15 +12,28 @@ It provides transparent drop-in compatibility shims, multi-candidate fallback pa
 
 ---
 
-## 🚀 Installation & Quickstart
+## Key Features
+
+- **Drop-In Formatter Compatibility**: `t.toFormat(mask)` (Luxon), `t.dialects.strftime(mask)` (POSIX), `t.dialects.oracle(mask)` (SQL), `t.dialects.moment(mask)` (Moment/Day.js), and more.
+- **Multi-Candidate Fallback Parsing**: `Tempo.fromFormats(input, masks[])` tries candidates in order and returns on first successful match.
+- **Automated Dialect Ingestion**: `.explain(mask)` translates any legacy format mask into equivalent native Tempo `{token}` syntax with reasoning metadata.
+- **Bidirectional Transpilation**: `.convert(mask, from, to)` converts format strings directly between any two supported dialects.
+- **9 Supported Dialects**: LDML (Luxon/date-fns), strftime (POSIX/C/Python), Moment/Day.js, Oracle/SQL, PHP, Go, MySQL, .NET, and Spreadsheet (Excel/Sheets).
+- **Lazy-Evaluated & Immutable**: Zero overhead until invoked; `Tempo.dialects` is recursively frozen against tampering.
+
+---
+
+## Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-dialects
 ```
 
-<PluginRepl plugin="dialects" />
+---
 
-### Registration
+## Quickstart
+
+<PluginRepl plugin="dialects" />
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -36,7 +49,7 @@ console.log(t.format('%Y-%m-%d %H:%M:%S', { dialect: DIALECT.Strftime })); // "2
 console.log(t.format('[Recorded on] MMMM Do YYYY', { dialect: DIALECT.Moment })); // "Recorded on October 24th 2026"
 ```
 
-#### Zero-Boilerplate Auto-Installation (Side-Effect Import)
+### Auto-Installation (Side-Effect Import)
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -48,7 +61,7 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 
 ---
 
-## 🔤 Supported Dialects
+## Supported Dialects
 
 | Dialect Identifier | Canonical Constant | Common Aliases | Format Example | Primary Ecosystems |
 | :--- | :--- | :--- | :--- | :--- |
@@ -68,7 +81,7 @@ console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"
 
 ---
 
-## 📚 API Surface Catalog
+## API Reference
 
 The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance utilities onto `t.dialects`, and attaches convenience shims directly onto `Tempo`:
 
@@ -96,9 +109,15 @@ The Dialects plugin mounts cohesive static tools onto `Tempo.dialects`, instance
 | **`Tempo.dialects.export(pattern, dialectOrOptions?)`** | Static | Native Tempo pattern, target dialect name or `{ dialect }` | `ExportResult` | Exports a native Tempo `{token}` pattern into an external dialect format model. |
 | **`Tempo.dialects.convert(mask, toOrOptions)`** / **`convert(mask, from, to)`** | Static | Mask, target dialect, or `{ from, to }` options | `ConvertResult` | Transpiles a format mask directly between dialects (source dialect auto-inferred if omitted). |
 
+### Performance & Lazy Evaluation
+
+1. **Pre-Compiled Formatters**: Formatting masks are tokenized and compiled into high-speed closure interpolators on first run and cached in memory. Subsequent executions bypass tokenization and compilation overhead, evaluating directly through cached closures.
+2. **Lazy-Evaluated Namespace**: Accessing `t.dialects` utilizes Tempo's zero-overhead proxy pattern, consuming zero CPU cycles until explicitly invoked on an instance.
+3. **Immutable Static Namespace**: `Tempo.dialects` is recursively frozen via `deepFreeze()` to protect the host class against runtime tampering.
+
 ---
 
-## 📖 Architecture & Specialized Guides
+## Topic Guides
 
 To explore technical deep-dives, token compatibility matrices, and production patterns, consult the dedicated guides below:
 
@@ -109,14 +128,6 @@ To explore technical deep-dives, token compatibility matrices, and production pa
 
 ---
 
-## ⚡ Performance & Lazy Evaluation
+## License
 
-1. **Pre-Compiled Formatters**: Formatting masks are tokenized and compiled into high-speed closure interpolators on first run and cached in memory. Subsequent executions bypass tokenization and compilation overhead, evaluating directly through cached closures.
-2. **Lazy-Evaluated Namespace**: Accessing `t.dialects` utilizes Tempo's zero-overhead proxy pattern, consuming zero CPU cycles until explicitly invoked on an instance.
-3. **Immutable Static Namespace**: `Tempo.dialects` is recursively frozen via `deepFreeze()` to protect the host class against runtime tampering.
-
----
-
-## 📄 Licensing
-
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

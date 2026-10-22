@@ -109,4 +109,4 @@ const isClose = t1.isWithin({ lat: -33.87, lng: 151.21 }, 5, 'km');
 
 ## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

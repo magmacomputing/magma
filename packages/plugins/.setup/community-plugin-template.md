@@ -224,6 +224,83 @@ Whenever introducing a new multi-page plugin or adding sub-pages:
 2. **Ordering Convention**: Always list `'index'` first, followed by the logical progression of sub-topic concept pages (from fundamental concepts to advanced operational caveats), concluding with `'use-cases-and-patterns'`.
 3. If the plugin name requires custom title capitalization in the sidebar accordion, register it in `getPluginGroupName()` in `harvest-plugins.mjs`.
 
+### Standard `doc/index.md` Section Skeleton
+
+Every plugin's `doc/index.md` must present a **consistent face** so readers moving between plugins find the same sections in the same order. The canonical reference implementation is [`holidays/doc/index.md`](../holidays/doc/index.md). Use these H2 headings, in this order, separated by `---` horizontal rules:
+
+| # | Element | Heading | Required | Notes |
+| :-: | :--- | :--- | :-: | :--- |
+| 1 | Logo | *(none)* `![Tempo Plugin](/plugin-logo.svg)` | Yes | First line of the file. |
+| 2 | Title | `# @magmacomputing/tempo-plugin-[name]` | Yes | Single H1 per page. |
+| 3 | Badges | *(none)* centered `<p align="center">` row | Yes | 4 badges (see below). |
+| 4 | Overview | *(none)* 1–2 sentence paragraph | Yes | Opens with what the plugin provides, linking to Tempo. Optional second paragraph or `::: warning` notice for critical caveats (e.g. security). |
+| 5 | Key Features | `## Key Features` | Yes | Bulleted list of **bold-lead** features, one line each. |
+| 6 | Installation | `## Installation` | Yes | `bash` block with `npm install @magmacomputing/tempo-plugin-[name]`. |
+| 7 | Quickstart | `## Quickstart` | Yes | `<PluginRepl plugin="[name]" />` **immediately** under the heading, then a runnable, validated TypeScript block. |
+| 8 | Reference *(optional)* | `## API Reference` / `## Configuration Options` | No | Plugin-specific tables or API catalog. Place **after** Quickstart and **before** Topic Guides. |
+| 9 | Topic Guides | `## Topic Guides` | Yes | Bulleted links: `[Title](./file.md) - one-line description`. Always include `use-cases-and-patterns.md`. |
+| 10 | License | `## License` | Yes | Final section. Standard community wording (see below). |
+
+````markdown
+![Tempo Plugin](/plugin-logo.svg)
+
+# @magmacomputing/tempo-plugin-[name]
+
+<p align="center"> ...4 badges... </p>
+
+The **[Name] Plugin** provides ... for [Tempo](https://github.com/magmacomputing/magma/tree/main/packages/tempo).
+
+---
+
+## Key Features
+
+- **Feature One**: What it does and why it matters.
+- **Feature Two**: ...
+
+---
+
+## Installation
+
+```bash
+npm install @magmacomputing/tempo-plugin-[name]
+```
+
+---
+
+## Quickstart
+
+<PluginRepl plugin="[name]" />
+
+```typescript
+import '@magmacomputing/tempo-plugin-[name]/install';
+import { Tempo } from '@magmacomputing/tempo';
+
+// minimal, validated example with expected output in comments
+```
+
+---
+
+## Topic Guides
+
+- [Concept Guide](./concept.md) - One-line summary.
+- [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) - One-line summary.
+
+---
+
+## License
+
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
+````
+
+> [!IMPORTANT]
+> **Conventions that keep plugins familiar:**
+> - **Heading names are fixed**: use `## Key Features`, `## Installation`, `## Quickstart`, `## Topic Guides`, `## License`. Do **not** invent variants such as `## Documentation Guide`, `## Guides`, `## Installation & Quickstart`, `## Architecture & Registration`, `## Interactive REPL`, or `## Licensing`.
+> - **Installation and Quickstart are separate sections.** Never merge them into one heading.
+> - **`<PluginRepl />` lives in `## Quickstart` only**, directly beneath the heading.
+> - **Quickstart is the first code the reader sees.** Auto-install (`/install`) or `Tempo.use(...)` registration, plus a short working example, belong there. Secondary patterns (auto-install variants, config tables, API catalogs) follow in their own sections or are delegated to Topic Guides.
+> - **Reference material goes after Quickstart**, never between Installation and Quickstart.
+> - **Deviation is allowed only where the plugin genuinely differs** (e.g. an extra `::: warning` security notice for `ai`, or a plugin-specific `## Configuration Options` table). Add sections; do not rename or reorder the standard ones.
+
 ### Primary Landing Page Structure Details (`README.md` & `doc/index.md`)
 
 - **Logo**: `![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)` (for README) or `![Tempo Plugin](/plugin-logo.svg)` (for docs, styled with max-width: 90px).
@@ -243,10 +320,18 @@ Whenever introducing a new multi-page plugin or adding sub-pages:
     ```
 - **Description**: A short, concise summary.
 - **Installation**: Code block with `npm install @magmacomputing/tempo-plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
-- **Usage & Live Interactive REPL**:
-  - In `doc/index.md` (Web Documentation): Insert the `<PluginRepl plugin="[name]" />` component under `## Usage Examples`. This renders a zero-overhead static code preview with an on-demand "Run Live Interactive Demo" button that mounts the in-browser ESM sandbox.
-  - In `README.md` (GitHub / NPM): Insert an in-context callout link immediately below the primary usage code example:
-    `> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=[name])**`
+- **Quickstart & Live Interactive REPL Placement Strategy**:
+  - **In `doc/index.md` (VitePress Documentation)**: 
+    - Standardize under the **`## Quickstart`** (or **`## Quickstart Examples`**) heading.
+    - Insert the `<PluginRepl plugin="[name]" />` component directly below the `## Quickstart` heading, immediately preceding the first runnable TypeScript quickstart code block.
+    - The `<PluginRepl />` component renders an interactive "Run Live Interactive Demo" toolbar directly over the quickstart code block that seamlessly mounts the in-browser sandbox on demand.
+    > [!IMPORTANT]
+    > **Never create a detached or separate `## Interactive REPL` heading.**
+    > The quickstart section itself serves as the interactive sandbox experience. Creating a standalone `## Interactive REPL` heading causes confusing duplicate example blocks and breaks consistency with monorepo plugin standards (`holidays`, `celestial`, `geo`, `spatial`, `dialects`, `ai`, `ticker`).
+  - **In `README.md` (GitHub & npm)**: 
+    - Custom Vue components like `<PluginRepl />` cannot render in standard GitHub/npm markdown.
+    - Place the standardized interactive sandbox callout link immediately beneath the primary quickstart code block under `## 🚀 Quick Start`:
+      `> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=[name])**`
 - **Documentation Link** (README only): Link to full docs at `https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html`.
 - **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license."
 

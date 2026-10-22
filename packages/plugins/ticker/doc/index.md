@@ -12,6 +12,17 @@ Unlike raw `setInterval`, Tempo Ticker handles calendar arithmetic, month-length
 
 ---
 
+## Key Features
+
+- **Zero-Drift Scheduling**: Calendar-aware intervals with month-length adjustments, DST shift correction, and cron/RRULE recurrence.
+- **Explicit Resource Management**: First-class `using` / `await using` disposer support (`Symbol.dispose` / `Symbol.asyncDispose`) for leak-free scoped lifecycles.
+- **Async Generator Streams**: `for await (const t of ticker)` streaming loop support for reactive pipelines and telemetry.
+- **Rich Event Listeners**: `.on('pulse')`, `.on('stop')`, `.on('catch')` hooks for fine-grained control and error isolation.
+- **Registry Diagnostics**: `Ticker.active` snapshot of all running tickers for health monitoring.
+- **Multi-Clock Synchronization**: Synchronize multiple tickers to shared NTP-corrected clocks via `@magmacomputing/tempo-plugin-ntp`.
+
+---
+
 ## Installation
 
 ```bash
@@ -20,15 +31,22 @@ npm install @magmacomputing/tempo-plugin-ticker
 
 ---
 
-## Architecture & Registration
+## Quickstart
 
-### Plugin Installation
+<PluginRepl plugin="ticker" />
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import '@magmacomputing/tempo-plugin-ticker/install';
 
-Tempo.use(TickerPlugin);
+{
+  await using ticker = Tempo.ticker({ seconds: 1 }, (t) => {
+    console.log('Tick:', t.format('{hh}:{mi}:{ss}'));
+  });
+
+  // Keep scope alive to observe repeated ticks
+  await new Promise((resolve) => setTimeout(resolve, 2500));
+} // ⚡ Cleaned up automatically upon leaving scope
 ```
 
 ### Auto-Installation (Side-Effect Import)
@@ -40,20 +58,32 @@ import '@magmacomputing/tempo-plugin-ticker/install';
 const ticker = Tempo.ticker({ seconds: 1 });
 ```
 
+### Plugin Registration
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+
+Tempo.use(TickerPlugin);
+```
+
+### Async Generator Stream
+
+```typescript
+async function streamClock() {
+  await using ticker = Tempo.ticker({ seconds: 1 });
+  let count = 0;
+
+  for await (const t of ticker) {
+    console.log('Stream tick:', t.iso);
+    if (++count >= 5) break;
+  }
+}
+```
+
 ---
 
-## Documentation Guide
-
-Explore detailed guides on specific capabilities:
-
-- **[Intervals & Scheduling Engines](./intervals-and-scheduling.md)**: Semantic durations (`{ months: 1 }`), calendar terms (`#timeOfDay`), 5-field Cron expressions (`0 9 * * 1-5`), RFC 5545 RRULE, countdowns, and one-shot meeting alerts.
-- **[Resource Management & Lifecycle](./resource-management.md)**: Explicit resource management (`using` / `await using`), async generators (`for await`), programmatic controls (`stop`, `info`, `pulse`), limits, and zombie process prevention.
-- **[Event Streams & Reactive Clocks](./reactive-clocks-and-events.md)**: Event listeners (`.on('pulse')`, `.on('stop')`, `.on('catch')`), registry diagnostics (`Ticker.active`), and zero-drift multi-timezone dashboards with UI signals.
-- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Zero-drift telemetry heartbeats, leak prevention via `using`, streaming market tick generators, multi-timezone cron schedules, and laptop sleep recovery.
-
----
-
-## Comprehensive `Ticker` API Surface
+## API Reference
 
 ### Creation: `Tempo.ticker(intervalOrOptions?, callback?)`
 
@@ -99,42 +129,17 @@ Explore detailed guides on specific capabilities:
 
 ---
 
-## Quickstart Examples
+## Topic Guides
 
-<PluginRepl plugin="ticker" />
+Explore detailed guides on specific capabilities:
 
-### 1. Disposer Pattern (Zero Leakage)
-
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
-
-{
-  await using ticker = Tempo.ticker({ seconds: 1 }, (t) => {
-    console.log('Tick:', t.format('{hh}:{mi}:{ss}'));
-  });
-
-  // Keep scope alive to observe repeated ticks
-  await new Promise((resolve) => setTimeout(resolve, 2500));
-} // ⚡ Cleaned up automatically upon leaving scope
-```
-
-### 2. Async Generator Stream
-
-```typescript
-async function streamClock() {
-  await using ticker = Tempo.ticker({ seconds: 1 });
-  let count = 0;
-
-  for await (const t of ticker) {
-    console.log('Stream tick:', t.iso);
-    if (++count >= 5) break;
-  }
-}
-```
+- **[Intervals & Scheduling Engines](./intervals-and-scheduling.md)**: Semantic durations (`{ months: 1 }`), calendar terms (`#timeOfDay`), 5-field Cron expressions (`0 9 * * 1-5`), RFC 5545 RRULE, countdowns, and one-shot meeting alerts.
+- **[Resource Management & Lifecycle](./resource-management.md)**: Explicit resource management (`using` / `await using`), async generators (`for await`), programmatic controls (`stop`, `info`, `pulse`), limits, and zombie process prevention.
+- **[Event Streams & Reactive Clocks](./reactive-clocks-and-events.md)**: Event listeners (`.on('pulse')`, `.on('stop')`, `.on('catch')`), registry diagnostics (`Ticker.active`), and zero-drift multi-timezone dashboards with UI signals.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Zero-drift telemetry heartbeats, leak prevention via `using`, streaming market tick generators, multi-timezone cron schedules, and laptop sleep recovery.
 
 ---
 
 ## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

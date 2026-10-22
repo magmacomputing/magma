@@ -227,6 +227,24 @@
     ]
   },
   {
+    "text": "Roman Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/roman.index"
+      },
+      {
+        "text": "Classical Fasti & Lunar Anchors",
+        "link": "/doc/9-plugins/roman.calendar-mechanics"
+      },
+      {
+        "text": "Use Cases & Production Patterns",
+        "link": "/doc/9-plugins/roman.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Snap Plugin",
     "collapsed": true,
     "items": [

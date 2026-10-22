@@ -78,6 +78,6 @@ Converts any existing `Tempo` instance to its calibrated NTP-adjusted equivalent
 
 ## 📄 Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use.
 
 📖 **[Read the Official NTP Plugin Documentation](https://magmacomputing.github.io/magma/doc/9-plugins/ntp.index.html)**

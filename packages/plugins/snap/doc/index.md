@@ -12,11 +12,25 @@ By default, the plugin effortlessly snaps dates to a configurable minute-interva
 
 ---
 
-## 🚀 Installation & Quickstart
+## Key Features
+
+- **Interval Snapping**: Rounds to the nearest interval of any time unit: `hh`, `mi`, `ss`, `ms`, `us`, or `ns`.
+- **Sensible Default**: `t.snap()` snaps to the nearest 15 minutes.
+- **Directional Control**: `direction: 'up' | 'down'` selects ceiling or floor snapping.
+- **Immutable**: Returns a **new** `Tempo` instance with sub-units cleared to zero.
+- **Time Components Only**: Date units are intentionally disallowed; use `.startOf()` or `.add()` for calendar math.
+
+---
+
+## Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-snap
 ```
+
+---
+
+## Quickstart
 
 <PluginRepl plugin="snap" />
 
@@ -54,7 +68,7 @@ console.log(t.snap().format('{hh}:{mi}')); // "14:15"
 
 ---
 
-## 📚 API Surface Catalog
+## API Reference
 
 The Snap plugin extends `Tempo.prototype` with a fluent, immutable `snap()` method:
 
@@ -80,12 +94,12 @@ The options object accepts exactly one time component mapped to a numeric step:
 
 ---
 
-## 📖 Architecture & Specialized Guides
+## Topic Guides
 
 - **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Interactive calendar UI scheduling grids (15m/30m drop slots), InfluxDB/Prometheus telemetry downsampling buckets, and 60fps/25fps multimedia frame boundary snapping.
 
 ---
 
-## 📄 Licensing
+## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

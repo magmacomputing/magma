@@ -65,7 +65,7 @@ Following the standard Tempo plugin architecture:
 
 | Phase | Milestone | Deliverables |
 | :--- | :--- | :--- |
-| **Phase 1** | Mathematical Foundations | Kalends/Nones/Ides calculator, Leap year/bissextile handling, AUC year converter. |
+| **Phase 1** | Mathematical Foundations | **Delivered (v1.0.0)**: Kalends/Nones/Ides calculator, Leap year/bissextile handling, AUC year converter. |
 | **Phase 2** | Formatting Engine | Full Latin and abbreviated format tokens, grammatical case switches (nominative, accusative, ablative). |
 | **Phase 3** | Classical Parser | NLP pattern recognition for Latin date strings and consular abbreviations. |
 | **Phase 4** | Consular Catalog & Docs | Historical consular database (509 BCE–541 CE), documentation, REPL presets, and cookbook recipes. |

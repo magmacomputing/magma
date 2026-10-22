@@ -8,13 +8,25 @@
 
 A specialized namespace plugin for Tempo that provides fiscal year and financial date utilities.
 
+---
+
+## Key Features
+
+- **Namespaced API**: All utilities are grouped under `t.finance`.
+- **Fiscal Calendar Properties**: Read `t.finance.fiscalQuarter` and `t.finance.taxYear` directly from any `Tempo` instance.
+- **Boundary Helpers**: `t.finance.isFiscalYearStart()` flags fiscal year boundaries.
+
+---
+
 ## Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-finance
 ```
 
-## Usage
+---
+
+## Quickstart
 
 <PluginRepl plugin="finance" />
 
@@ -47,6 +59,8 @@ const t = new Tempo('2024-07-01');
 console.log(t.finance.fiscalQuarter); // 3
 ```
 
-## Licensing
+---
+
+## License
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

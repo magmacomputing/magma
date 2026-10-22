@@ -22,8 +22,9 @@ Tempo already leverages several cutting-edge platform primitives:
 - **`WeakCache` (`WeakRef` & `Finalizer`)**: Universal weak-value object and regular expression memoization with automatic GC pruning in `packages/library/src/common/runtime/weakcache.class.ts`.
 - **`Finalizer` (`finalizer.class`)**: Safe Garbage Collection finalization hook wrapper around `FinalizationRegistry` with self-guarding idempotent execution in `packages/library/src/common/runtime/finalizer.class.ts`.
 - **`Reactive<T>` Push/Pull Stream Engine (`reactive.class`)**: Bidirectional asynchronous stream primitive unifying push-based event listeners (`.on('data')`), pull-based async iteration (`.pull()`, `for await`), $O(1)$ multicast fan-out (`.cast()`), composable `.until(signal)` cancellation, and explicit resource management (`using sub = stream.on(...)`) with leak-proof GC safety in `packages/library/src/common/runtime/reactive.class.ts`.
-- **Ticker & AtomicClock Auto-Finalization & Stream Delegation**: GC-backed zombie timer prevention, weak-reference lifecycle tracking, and reactive stream delegation in `@magmacomputing/tempo-plugin-ticker` (v2.5.2) and `@magmacomputing/tempo-plugin-sync` (v1.1.1).
-- **Atomic Cross-Thread Synchronization**: Lock-free nanosecond time synchronization across Web Workers and `worker_threads` via `SharedArrayBuffer` & `Atomics` in `@magmacomputing/tempo-plugin-sync` (v1.1.1).
+- **Ticker & AtomicClock Auto-Finalization & Stream Delegation**: GC-backed zombie timer prevention, weak-reference lifecycle tracking, and reactive stream delegation in `@magmacomputing/tempo-plugin-ticker` (v2.6.1) and `@magmacomputing/tempo-plugin-sync` (v1.1.2).
+- **Atomic Cross-Thread Synchronization**: Lock-free nanosecond time synchronization across Web Workers and `worker_threads` via `SharedArrayBuffer` & `Atomics` in `@magmacomputing/tempo-plugin-sync` (v1.1.2).
+- **Client-Server Clock Drift Compensation & Monotonic Network Time**: Cristian's algorithm, microsecond-resolution `Server-Timing` / `Date` header synchronization, EMA drift smoothing, and passive `fetch` calibration in `@magmacomputing/tempo-plugin-ntp` (v1.0.0).
 - **Pledge GC Lifecycle Safety**: Zero-boilerplate finalization safety for unhandled/abandoned promises in `packages/library/src/common/runtime/pledge.class.ts`.
 - **`Intl.DurationFormat` (`getDF`)**: Memoized duration formatting via native `Intl.DurationFormat` in `packages/library/src/common/runtime/international.library.ts`.
 - **`Intl.Locale` Week Info (`getLI`)**: Native retrieval of `firstDay` and `weekend` definitions via `getLI` in `packages/library/src/common/runtime/international.library.ts` without external calendar data tables (aligning with finalized ECMA-402 Intl.Locale info specifications).
@@ -55,16 +56,16 @@ Tempo already leverages several cutting-edge platform primitives:
 * **The Problem**: Standard `setTimeout` / `setInterval` can be throttled in background tabs, fight against UI animations during render cycles, and lack task priority levels.
 * **The Solution**:
   - Integrate `scheduler.postTask(callback, { priority: 'user-visible' | 'background', signal })` for priority-aware task execution.
-  - Standardize cancellation using `AbortSignal.timeout(ms)` and composite `AbortSignal.any([...])` for timeout and cancellation management.
+  - Standardized cancellation using `AbortSignal.timeout(ms)`, composite `anySignal([...])`, and disposable `Aborter` in `#library` (delivered in v4.4.4).
 * **Cross-Platform Caveats & Ethos Alignment**:
   - **Divergent Runtime Schedulers**: `scheduler.postTask` is Chrome/Edge/Deno-specific; Node.js relies on `setImmediate()` / `process.nextTick()`.
-  - **Architectural Fit**: `AbortSignal.timeout` is universal across Node.js (18+) and modern browsers. Scheduling in Core requires an isomorphic abstraction layer that uses `scheduler.postTask` where present, falling back to microtasks / `setImmediate` in Node.js.
+  - **Architectural Fit**: `AbortSignal.timeout` and composite signals are universal in `#library`. Priority scheduling in Core requires an isomorphic abstraction layer that leverages `scheduler.postTask` where present, falling back to microtasks / `setImmediate` in Node.js.
 
 ---
 
 ### C. Automatic Ticker, Sync & Stream Finalization (`Finalizer` / `FinalizationRegistry`)
 **Target**: *`@magmacomputing/tempo-plugin-ticker` & `@magmacomputing/tempo-plugin-sync`*  
-**Status**: **Delivered (Ticker v2.5.2, Sync v1.1.1, Library v4.4.4, Tempo v4.4.4)**
+**Status**: **Delivered (Ticker v2.6.1, Sync v1.1.2, Library v4.7.0, Tempo v4.7.0)**
 
 * **The Problem**: If a developer instantiates an active ticker or event stream without calling `.stop()` or using `using`, active timer handles (`setInterval` / `setTimeout`) remain alive as orphaned zombie processes in the event loop.
 * **The Solution**:
@@ -78,16 +79,20 @@ Tempo already leverages several cutting-edge platform primitives:
 ---
 
 ### D. Client-Server Clock Drift Compensation (HTTP `Date` & `Server-Timing`)
-**Target**: *Dedicated Plugin (`@magmacomputing/tempo-plugin-ntp` / `drift`)*
+**Target**: *`@magmacomputing/tempo-plugin-ntp`*  
+**Status**: **Delivered (v1.0.0, Tempo ^4.5.0)**
 
-* **The Problem**: End-user device clocks are often desynchronized from true atomic time by seconds or minutes.
+* **The Problem**: End-user device clocks are often desynchronized from true atomic time by seconds or minutes due to dead CMOS batteries, manual time changes, or aggressive battery-saver throttles.
 * **The Solution**:
-  - A lightweight fetch interceptor or HEAD ping measures round-trip time (RTT) and calculates client clock drift:
-    `Δ = T_server - (T_client + RTT / 2)`
-  - Applies a monotonic drift offset to `Tempo.now()`, ensuring accurate bidding, financial timestamp validation, and auction countdowns without altering OS system clocks.
+  - Implemented `@magmacomputing/tempo-plugin-ntp` using Cristian's Algorithm with round-trip time (RTT) calculation:
+    $$\Delta = T_{\text{server}} - \left(T_{\text{client}} + \frac{\text{RTT}}{2}\right)$$
+  - Extracts microsecond-resolution timestamps from `Server-Timing: clock=...` response headers, with automatic fallback to standard HTTP `Date` headers.
+  - Applies Exponential Moving Average (EMA) smoothing and high-latency RTT sample rejection to eliminate network jitter.
+  - Exposes an immutable static `Tempo.ntp` API (`.now()`, `.sync()`, `.drift`, `.offset`, `.isCalibrated`, `.reset()`) and `Tempo.prototype.toNtpTime()`.
+  - Supports passive synchronization by intercepting global `fetch` responses (`{ interceptFetch: true }`) without extra network roundtrips, alongside zero-boilerplate side-effect imports via `@magmacomputing/tempo-plugin-ntp/install`.
 * **Cross-Platform Caveats & Ethos Alignment**:
   - **Universal HTTP vs UDP NTP**: Native UDP NTP (RFC 5905, port 123) requires Node.js `dgram` sockets and is blocked in browser sandboxes.
-  - **Architectural Fit**: The universal baseline should use HTTP `Date` / `Server-Timing` headers over standard `fetch`, ensuring 100% parity across Browser, Node.js, and Cloudflare Workers. An optional UDP NTP socket driver can be provided for server-only runtimes.
+  - **Architectural Fit**: The universal baseline uses HTTP `Server-Timing` and `Date` headers over standard `fetch`, ensuring 100% isomorphic parity across Web Browsers, Node.js, Bun, Deno, and Cloudflare Workers with zero external dependencies.
 
 ---
 
@@ -110,7 +115,7 @@ Tempo already leverages several cutting-edge platform primitives:
 
 ### F. Atomic Cross-Thread Synchronization (`SharedArrayBuffer` & `Atomics`)
 **Target**: *`@magmacomputing/tempo-plugin-sync`*  
-**Status**: **Delivered (v1.1.1)**
+**Status**: **Delivered (v1.1.2)**
 
 * **The Problem**: Multi-threaded applications (Web Workers, `worker_threads`) require zero-latency, non-blocking access to synchronized nanosecond clocks without inter-thread message-passing overhead.
 * **The Solution**:
@@ -142,11 +147,11 @@ Tempo already leverages several cutting-edge platform primitives:
 | **`Finalizer` GC Hooks** | Core `#library` (`finalizer.class.ts`) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered (v4.4.3)** |
 | **`Reactive<T>` Stream Engine** | Core `#library` (`reactive.class.ts`) / Plugin SDK | Universal (ES2022+) | Medium | **Universal Isomorphic** | **Delivered (v4.4.4 / Ticker v2.5.2)** |
 | **`Aborter` & Signal Utilities** | Core `#library` (`aborter.library.ts`) / Plugin SDK | Universal (ES2022+) | Low | **Universal Isomorphic** | **Delivered (v4.4.4)** |
-| **Ticker & AtomicClock Finalization** | Ticker (v2.5.2) & Sync (v1.1.1) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered** |
+| **Ticker & AtomicClock Finalization** | Ticker (v2.6.1) & Sync (v1.1.2) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered** |
 | **Pledge GC Safety** | Core `#library` (`pledge.class.ts`) | Universal (ES2021+) | Low | **Universal Isomorphic** | **Delivered (v4.4.3)** |
-| **Atomic Cross-Thread Sync** | `@magmacomputing/tempo-plugin-sync` | Browser / Node.js (Workers) | Medium | **Universal Isomorphic** (Workers & Threads) | **Delivered (v1.1.1)** |
+| **Atomic Cross-Thread Sync** | `@magmacomputing/tempo-plugin-sync` | Browser / Node.js (Workers) | Medium | **Universal Isomorphic** (Workers & Threads) | **Delivered (v1.1.2)** |
 | **Web Locks Leader Tab** | `@magmacomputing/tempo-plugin-tabsync` | Browser (Modern) | Medium | **Plugin-Only** (Browser Multi-Tab) | High (Multi-tab efficiency) |
 | **`scheduler.postTask()`** | Core Ticker | Chrome/Edge/Deno (Polyfillable) | Low | **Cross-Platform Adapter Required** | High (Render-aligned pacing) |
-| **Network Clock Drift** | `@magmacomputing/tempo-plugin-ntp` | Universal (via HTTP `Date`) | Low | **Universal Baseline** (HTTP HEAD / Date) | High (Financial/auction precision) |
+| **Network Clock Drift** | `@magmacomputing/tempo-plugin-ntp` | Universal (via HTTP `Date` / `Server-Timing`) | Low | **Universal Isomorphic Plugin** | **Delivered (v1.0.0)** |
 | **TC39 Signals** | `@magmacomputing/tempo-plugin-signals` | Early TC39 Stage 1 | High | **Hold Off** (Rely on `Reactive<T>` / AsyncIterable) | Low ROI until Stage 3 |
 | **Screen Wake Lock** | Ticker / Countdown Option | Browser (Mobile/Desktop) | Low | **Progressive Enhancement** (Silent No-Op) | Medium (Presentation/Kiosk DX) |

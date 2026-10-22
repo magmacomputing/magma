@@ -10,27 +10,7 @@ A Community plugin for [Tempo](https://github.com/magmacomputing/magma) providin
 
 ---
 
-## Installation
-
-```bash
-npm install @magmacomputing/tempo-plugin-celestial
-```
-
----
-
-## Documentation Guide
-
-Explore detailed guides on specific celestial capabilities:
-
-- **[Astronomical Seasons, Solstices & Equinoxes](./astro.md)**: Solar quarters, equinoxes, solstices, hemisphere-aware seasonal labels (`t.term.astro`, `t.term.equinox`, `t.term.solstice`), and sub-minute Meeus ephemeris boundaries.
-- **[Solar Day Cycles & Ephemeris](./solar.md)**: Twilight bands (`civil`, `nautical`, `astronomical`), atmospheric elevation dip correction, exact apparent solar noon (`solar.noon`), and Local Apparent Solar Time (`solar.solarTime`).
-- **[Lunar Ephemeris, Topocentric Ephemeris & Eclipses](./lunar.md)**: 8 synodic lunar phases, illumination ratio, lunar age, hemisphere-aware emojis, topocentric horizon events (`moonrise`/`moonset`), meridian transits (`transit`), real-time sky position (`altitude`/`azimuth`), crescent tilt (`crescentTiltDeg`), orbital distance (`isSupermoon`/`isMicromoon`), and local solar/lunar eclipse detection (`eclipse`/`obscuration`).
-- **[Astronomical Tidal Mechanics](./tidal.md)**: Syzygy, quadrature, and perigee calculations (`spring`, `neap`, `king` tides), solar-lunar alignment angles, and 745-minute tidal cycles.
-- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Photovoltaic microgrid inverter modes, greenhouse DLI supplemental lighting, maritime keel clearance windows, and golden hour drone flight scheduling.
-
----
-
-## Features Overview
+## Key Features
 
 - **Solar Day Cycles**: Calculates `daylight`, `night`, `civil-twilight`, `nautical-twilight`, and `astronomical-twilight`.
 - **Solar Ephemeris Data**: Returns `sunrise`, `sunset`, `noon`, `solarTime` (Local Apparent Solar Time), total `daylightDurationMs`, and observer `elevation` horizon dip adjustments.
@@ -40,22 +20,11 @@ Explore detailed guides on specific celestial capabilities:
 
 ---
 
-## Geographic Coordinates & Null Contract
+## Installation
 
-::: tip Pure Astronomical Calculations
-Tidal state resolution and synodic lunar phases rely on deterministic celestial mechanics for reproducible, offset-independent math across all time zones.
-:::
-
-::: warning Location-Dependent Null Contract
-- **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.lunar.illumination`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
-- **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `solar.solarTime`, `lunar.moonrise`, `lunar.moonset`, `lunar.transit`, `lunar.altitude`, `lunar.azimuth`, `lunar.crescentTiltDeg`, `lunar.distanceKm`, `lunar.eclipse`, `lunar.obscuration`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
-- **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
-:::
-
-::: tip Coordinates, Sphere & Timezone Resolution
-- **`sphere` Derivation**: Setting `{ geo: { lat, lng } }` automatically computes the observer's hemisphere (`'north'`, `'south'`, or `'equator'`).
-- **`timeZone` Requirement**: Geographic coordinates (`lat`, `lng`) calculate the exact physical UTC moments of astronomical events, but **do not** auto-derive political timezone boundaries in core Tempo. Always supply an explicit `timeZone` (e.g. `'America/New_York'` or `'UTC'`) to ensure local day and night ranges project deterministically across different host environments and CI runners.
-:::
+```bash
+npm install @magmacomputing/tempo-plugin-celestial
+```
 
 ---
 
@@ -121,8 +90,37 @@ const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 
 console.log(t.term.sun);
 ```
 
+### Geographic Coordinates & Null Contract
+
+::: tip Pure Astronomical Calculations
+Tidal state resolution and synodic lunar phases rely on deterministic celestial mechanics for reproducible, offset-independent math across all time zones.
+:::
+
+::: warning Location-Dependent Null Contract
+- **Global Astronomical Properties** (`t.term.moon`, `t.term.lunar.phase`, `t.term.lunar.illumination`, `t.term.tides.isSpringTide`, `t.term.tides.alignmentDeg`) resolve location-independently and are always computed.
+- **Geo-Dependent Properties** (`t.term.sun`, `solar.sunrise`, `solar.sunset`, `solar.noon`, `solar.solarTime`, `lunar.moonrise`, `lunar.moonset`, `lunar.transit`, `lunar.altitude`, `lunar.azimuth`, `lunar.crescentTiltDeg`, `lunar.distanceKm`, `lunar.eclipse`, `lunar.obscuration`, `tides.lunarTideMinute`) evaluate to `null` when geographic coordinates (`geo: { lat, lng }`) are omitted.
+- **Distinction**: Property access on `t.term` evaluates to `undefined` if `CelestialPlugin` is not loaded, and to `null` if the plugin is active but location coordinates were not supplied. When `debug >= 1` is enabled in `Tempo` configuration, a developer warning is logged when evaluating geo-dependent keys without coordinates.
+:::
+
+::: tip Coordinates, Sphere & Timezone Resolution
+- **`sphere` Derivation**: Setting `{ geo: { lat, lng } }` automatically computes the observer's hemisphere (`'north'`, `'south'`, or `'equator'`).
+- **`timeZone` Requirement**: Geographic coordinates (`lat`, `lng`) calculate the exact physical UTC moments of astronomical events, but **do not** auto-derive political timezone boundaries in core Tempo. Always supply an explicit `timeZone` (e.g. `'America/New_York'` or `'UTC'`) to ensure local day and night ranges project deterministically across different host environments and CI runners.
+:::
+
 ---
 
-## Licensing
+## Topic Guides
+
+Explore detailed guides on specific celestial capabilities:
+
+- **[Astronomical Seasons, Solstices & Equinoxes](./astro.md)**: Solar quarters, equinoxes, solstices, hemisphere-aware seasonal labels (`t.term.astro`, `t.term.equinox`, `t.term.solstice`), and sub-minute Meeus ephemeris boundaries.
+- **[Solar Day Cycles & Ephemeris](./solar.md)**: Twilight bands (`civil`, `nautical`, `astronomical`), atmospheric elevation dip correction, exact apparent solar noon (`solar.noon`), and Local Apparent Solar Time (`solar.solarTime`).
+- **[Lunar Ephemeris, Topocentric Ephemeris & Eclipses](./lunar.md)**: 8 synodic lunar phases, illumination ratio, lunar age, hemisphere-aware emojis, topocentric horizon events (`moonrise`/`moonset`), meridian transits (`transit`), real-time sky position (`altitude`/`azimuth`), crescent tilt (`crescentTiltDeg`), orbital distance (`isSupermoon`/`isMicromoon`), and local solar/lunar eclipse detection (`eclipse`/`obscuration`).
+- **[Astronomical Tidal Mechanics](./tidal.md)**: Syzygy, quadrature, and perigee calculations (`spring`, `neap`, `king` tides), solar-lunar alignment angles, and 745-minute tidal cycles.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Photovoltaic microgrid inverter modes, greenhouse DLI supplemental lighting, maritime keel clearance windows, and golden hour drone flight scheduling.
+
+---
+
+## License
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
