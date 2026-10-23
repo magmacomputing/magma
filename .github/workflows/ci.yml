@@ -85,7 +85,7 @@ jobs:
       - name: Build Core
         run: npm run build:tempo
       - name: Run plugin tests
-        run: npm test --if-present --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-celestial --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker --workspace=@magmacomputing/tempo-plugin-ai
+        run: npm test --if-present --workspace=@magmacomputing/tempo-plugin-snap --workspace=@magmacomputing/tempo-plugin-batch --workspace=@magmacomputing/tempo-plugin-finance --workspace=@magmacomputing/tempo-plugin-celestial --workspace=@magmacomputing/tempo-plugin-sync --workspace=@magmacomputing/tempo-plugin-ticker --workspace=@magmacomputing/tempo-plugin-ai --workspace=@magmacomputing/tempo-plugin-roman
         working-directory: packages/plugins
 
   functions:

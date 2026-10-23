@@ -5,6 +5,14 @@ All notable changes to `@magmacomputing/tempo-plugin-holidays` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-10-24
+
+### Changed & Performance
+- **Civil Calendar Integer Arithmetic**:
+  - Replaced JavaScript `Date` object allocations in `computus.ts` with pure integer calendar math (`civilToDays`, `isoWeekdayFromDays`, `epochMsFromParts`, `partsFromEpochMs`, and `getDaysInMonth`) imported from `@magmacomputing/tempo/library`.
+  - Optimized `offsetDate` using direct millisecond offset calculation (`86_400_000` ms/day) and `partsFromEpochMs` decomposition.
+  - Accelerated `getNthWeekdayOfMonth` and `getIsoDayOfWeek` with zero-allocation day-of-week indexing directly from civil days.
+
 ## [1.0.2] - 2026-10-02
 
 ### Changed

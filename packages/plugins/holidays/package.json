@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-holidays",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

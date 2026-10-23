@@ -405,6 +405,39 @@ if (t.ai?.limits?.remainingRequests !== undefined) {
 
 return t.iso;`,
 	},
+
+	roman: {
+		label: 'Preset: Classical Roman Calendar & Fasti',
+		plugin: 'roman',
+		code: `// 🏛️ Classical Roman Calendar, Parsing & Consuls (@magmacomputing/tempo-plugin-roman)
+const { RomanPlugin } = await import('@magmacomputing/tempo-plugin-roman');
+Tempo.use(RomanPlugin);
+
+// 1. Classical Date Formatting & Declensions
+const today = new Tempo('2026-10-16');
+console.log('Today (Latin):', today.format('{roman:classical}')); // "ante diem XVII Kalendas Novembres"
+console.log('Abbreviated:  ', today.format('{roman:short}'));     // "a.d. XVII Kal. Nov."
+console.log('Year AUC:     ', today.format('{roman:auc}'));       // "AUC MMDCCLXXIX"
+
+// 2. The Ides of March (44 BCE = -43)
+const ides44 = new Tempo('-000043-03-15');
+console.log('Ides of March:', ides44.format('{roman:classical}')); // "Idibus Martiis"
+console.log('Presiding Consuls:', ides44.consuls);                 // "C. Julio Caesare V, M. Antonio coss."
+
+// 3. Classical Latin Expression Parser (Phase 3)
+const parsed = Tempo.roman.parse('a.d. IV Id. Mart. 710 AUC');
+console.log('Parsed expression:', parsed.format('{yyyy}-{mm}-{dd}')); // "-000043-03-12"
+
+// 4. Consular Fasti Search (509 BCE–541 CE)
+const ciceroEntries = Tempo.roman.findConsuls('Cicero');
+console.log('Cicero Consulship:', ciceroEntries[0]?.formatted);
+
+// 5. Parse date by consular pair
+const byConsuls = Tempo.roman.parse('Idibus Martiis Cicerone coss.');
+console.log('Consular Date:', byConsuls.format('{yyyy}-{mm}-{dd}')); // "-000062-03-15" (63 BCE)
+
+return \`Today: \${today.format('{roman:classical}')} (\${today.auc} AUC)\`;`,
+	},
 };
 
 export default SNIPPETS;
