@@ -44,7 +44,7 @@ console.log(booking.ai?.conflictBumped);                         // true (pushed
 | :--- | :--- | :--- |
 | **`anchor`** | `TempoDateInput` | Anchor reference time to evaluate relative dates from. Defaults to workstation/browser current time. |
 | **`events`** | `Array<ScheduleEventInput>` | A list of existing busy calendar intervals or booked events that the meeting must not overlap with. |
-| **`workingHours`** | `TempoWorkingHours` | Daily time window constraint (HH:MM formats) inside which slots must fit. |
+| **`workingHours`** | `TempoWorkingHours` | Daily time window constraint (hour:minute format) inside which slots must fit. |
 | **`timeZone`** | `string` | Target IANA timezone to calculate the booking slot and boundaries within. |
 | **`minConfidence`**| `number` | Minimum confidence score threshold (0.0 to 1.0) required to return a valid slot. |
 | **`mode`** | `AiMode` | Concurrency routing strategy (`fallback`, `race`, `consensus`, `hedged`, `roundrobin`, `adaptive`). Refer to the [Multi-Provider Execution Modes Guide](./modes.md). |

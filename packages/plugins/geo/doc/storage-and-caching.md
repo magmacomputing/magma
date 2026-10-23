@@ -10,7 +10,7 @@ This guide covers coordinate persistence, 24-hour TTL caching, multi-tenant part
 
 ---
 
-## 1. Ambient Stashing & 24-Hour Bounded Cache
+## 1. Ambient Storage & 24-Hour Bounded Cache
 
 To prevent redundant network requests, `Tempo.geo.lookup()` automatically caches coordinates for 24 hours using `BoundedCache` from `@magmacomputing/tempo/library`.
 
@@ -48,8 +48,8 @@ In a shared backend process handling concurrent requests for different tenants, 
 Pass a tenant identifier or user ID:
 
 ```typescript
-// Stash coordinates for Tenant Alpha
-Tempo.geo.stash(tenantACoords, undefined, 'tenant-alpha');
+// Store coordinates for Tenant Alpha
+Tempo.geo.set(tenantACoords, undefined, 'tenant-alpha');
 
 // Read coordinates for Tenant Alpha
 const alphaCoords = Tempo.geo.get('tenant-alpha');

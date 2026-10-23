@@ -1,4 +1,4 @@
-import { definePlugin, deepFreeze, isFunction, isNumber, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, isFunction, isNumber, isLeapYear, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 import type {
 	ClassicalRomanDate,
@@ -13,7 +13,6 @@ import {
 	calculateGregorianFromRoman,
 	getIdesDay,
 	getNonesDay,
-	isLeapYear,
 	yearToAuc,
 } from './math.js';
 

@@ -344,6 +344,24 @@ When writing user documentation (`README.md`, `doc/index.md`, concept pages, or 
 - **Verify exact numbers & calendar outputs**: Run code examples in Node.js against the compiled plugin/Tempo builds or write automated Vitest tests to confirm that printed dates, day counts, and returned values are 100% mathematically and chronologically accurate.
 - **Verify statutory vs. industry rules**: Confirm whether a calendar rule represents a national statutory holiday or an exchange-specific closure before documenting it as a built-in behavior.
 
+### Date & Time Token Dialect
+
+When referring to date or time formats in documentation prose, code comments, or table descriptions, **avoid LDML / Moment.js-style uppercase tokens** (e.g. `YYYY-MM-DD`, `DD/MM/YYYY`, `HH:MM`) unless the surrounding context explicitly references the **dialects plugin** (which bridges those token conventions). Outside of that context, these tokens belong to third-party libraries (Moment.js, Day.js, LDML) and will confuse readers about which library's format syntax applies.
+
+Use one of the following alternatives instead:
+
+| ❌ Avoid (outside dialects context) | ✅ Prefer |
+| :--- | :--- |
+| `YYYY-MM-DD` | `year-month-day` (ISO 8601) or Tempo's `{yyyy}-{mm}-{dd}` token |
+| `DD/MM/YYYY` | `day/month/year` |
+| `HH:MM` or `HH:MM:SS` | `hour:minute` or `hour:minute:second` |
+| `MM/DD/YYYY` | `month/day/year` |
+
+> [!NOTE]
+> Tempo's own format tokens use **lowercase letters inside curly braces** (e.g. `{yyyy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`). When showing a concrete format string in code examples, always use Tempo's token syntax. In prose or comments that describe a *concept* (e.g. "the value must be an ISO 8601 date"), prefer plain English words over any token shorthand. LDML / Moment-style tokens are appropriate in the **dialects plugin** documentation, where explaining cross-library format compatibility is the explicit purpose.
+
+---
+
 ### Standard Icons & UI Actions
 
 To maintain complete visual and design consistency across READMEs, documentation pages, and `ecosystem.md`:

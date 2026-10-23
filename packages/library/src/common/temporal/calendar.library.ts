@@ -94,16 +94,13 @@ export function getUtcParts(date: Date = new Date()): UtcParts {
 	}
 }
 
-/**
- * Returns the total number of days in the specified month of a given year (1-indexed month, 1..12).
- *
- * @param year - The full calendar year (e.g. 2026)
- * @param month - The 1-indexed month number (1 for January through 12 for December)
- * @returns Total number of days in that month (28..31)
- */
-export function getDaysInMonth(year: number, month: number): number {
-	return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
+const DAYS_PER_MONTH = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
+const MONTH_DAYS_NORMAL = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
+const MONTH_DAYS_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
+export const MS_PER_DAY = 86_400_000;
+export const MS_PER_HOUR = 3_600_000;
+export const MS_PER_MINUTE = 60_000;
+export const MS_PER_SECOND = 1_000;
 
 /**
  * Determines whether a given calendar year is a leap year in the Gregorian calendar.
@@ -111,8 +108,125 @@ export function getDaysInMonth(year: number, month: number): number {
  * @param year - The full calendar year to test (e.g. 2024)
  * @returns `true` if the year is a leap year, otherwise `false`
  */
-export function isLeapYear(year: number): boolean {
-	return (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+export function isLeapYear(year: number, isJulian: boolean = false): boolean {
+	return (isJulian)
+		// Julian calendar: leap year every 4 years
+		? ((year % 4) + 4) % 4 === 0
+		// Gregorian calendar rules
+		: (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+}
+
+/**
+ * Returns the total number of days in the specified month of a given year (1-indexed month, 1..12).
+ * Operates purely on integer arithmetic with zero Date allocations.
+ *
+ * @param year - The full calendar year (e.g. 2026)
+ * @param month - The 1-indexed month number (1 for January through 12 for December)
+ * @returns Total number of days in that month (28..31)
+ */
+export function getDaysInMonth(year: number, month: number, isJulian: boolean = false): number {
+	if (month >= 1 && month <= 12) {
+		if (month === 2) return isLeapYear(year, isJulian) ? 29 : 28;
+		return DAYS_PER_MONTH[month];
+	}
+	const y = year + Math.floor((month - 1) / 12);
+	const m = ((month - 1) % 12 + 12) % 12 + 1;
+
+	if (m === 2) return isLeapYear(y, isJulian) ? 29 : 28;
+	return DAYS_PER_MONTH[m];
+}
+
+/**
+ * Computes Unix epoch days (days since 1970-01-01) from proleptic Gregorian calendar components.
+ * Pure integer arithmetic based on Howard Hinnant's Euclidean affine algorithms — zero heap allocations.
+ *
+ * @param year - Gregorian calendar year (e.g. 2026)
+ * @param month - 1-indexed month (1..12)
+ * @param day - 1-indexed day of month (1..31)
+ * @returns Unix epoch days count
+ */
+export function civilToDays(year: number, month: number, day: number): number {
+	const y = year - (month <= 2 ? 1 : 0);
+	const era = Math.floor((y >= 0 ? y : y - 399) / 400);
+	const yoe = y - era * 400;
+	const doy = Math.floor((153 * (month > 2 ? month - 3 : month + 9) + 2) / 5) + day - 1;
+	const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
+	return era * 146097 + doe - 719468;
+}
+
+/**
+ * Computes proleptic Gregorian calendar components from Unix epoch days.
+ * Pure integer arithmetic based on Howard Hinnant's Euclidean affine algorithms — zero heap allocations.
+ *
+ * @param days - Unix epoch days count (days since 1970-01-01)
+ * @returns Object containing `{ year, month, day }`
+ */
+export function daysToCivil(days: number): { year: number; month: number; day: number } {
+	const z = days + 719468;
+	const era = Math.floor((z >= 0 ? z : z - 146096) / 146097);
+	const doe = z - era * 146097;
+	const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
+	const y = yoe + era * 400;
+	const doy = doe - (365 * yoe + Math.floor(yoe / 4) - Math.floor(yoe / 100));
+	const mp = Math.floor((5 * doy + 2) / 153);
+	const day = doy - Math.floor((153 * mp + 2) / 5) + 1;
+	const month = mp < 10 ? mp + 3 : mp - 9;
+	return { year: y + (month <= 2 ? 1 : 0), month, day };
+}
+
+/**
+ * Computes 1-indexed ISO weekday (1=Monday, ..., 7=Sunday) from Unix epoch days.
+ *
+ * @param days - Unix epoch days count
+ * @returns 1-indexed ISO weekday (1=Monday .. 7=Sunday)
+ */
+export function isoWeekdayFromDays(days: number): number {
+	return ((days % 7) + 10) % 7 + 1;
+}
+
+/**
+ * Computes Unix epoch milliseconds from structured 1-indexed calendar components and optional clock values.
+ * Pure integer arithmetic with zero Date allocations.
+ */
+export function epochMsFromParts(
+	year: number,
+	month: number,
+	day: number,
+	hours = 0,
+	minutes = 0,
+	seconds = 0,
+	milliseconds = 0
+): number {
+	const days = civilToDays(year, month, day);
+	return (
+		days * MS_PER_DAY +
+		hours * MS_PER_HOUR +
+		minutes * MS_PER_MINUTE +
+		seconds * MS_PER_SECOND +
+		milliseconds
+	);
+}
+
+/**
+ * Extracts structured UTC calendar and clock components from Unix epoch milliseconds.
+ * Pure integer arithmetic with zero Date allocations.
+ */
+export function partsFromEpochMs(epochMs: number): UtcParts {
+	const days = Math.floor(epochMs / MS_PER_DAY);
+	let rem = epochMs - days * MS_PER_DAY;
+	if (rem < 0) rem += MS_PER_DAY;
+
+	const { year, month, day } = daysToCivil(days);
+	const weekday = isoWeekdayFromDays(days);
+
+	const hours = Math.floor(rem / MS_PER_HOUR);
+	rem %= MS_PER_HOUR;
+	const minutes = Math.floor(rem / MS_PER_MINUTE);
+	rem %= MS_PER_MINUTE;
+	const seconds = Math.floor(rem / MS_PER_SECOND);
+	const milliseconds = rem % MS_PER_SECOND;
+
+	return { year, month, day, weekday, hours, minutes, seconds, milliseconds };
 }
 
 /**
@@ -148,14 +262,12 @@ export function fromUtcParts(parts: UtcPartsOptions): Date {
 		seconds = 0,
 		milliseconds = 0,
 	} = parts;
-	const d = new Date(0);
-	d.setUTCFullYear(year, month - 1, day);
-	d.setUTCHours(hours, minutes, seconds, milliseconds);
-	return d;
+	return new Date(epochMsFromParts(year, month, day, hours, minutes, seconds, milliseconds));
 }
 
 /**
  * Validates whether a given year, 1-indexed month, and day constitute a valid calendar date in the Gregorian calendar.
+ * Pure integer arithmetic with zero Date allocations.
  *
  * @param year - The full calendar year (e.g. 2026)
  * @param month - The 1-indexed month number (1..12)
@@ -165,9 +277,7 @@ export function fromUtcParts(parts: UtcPartsOptions): Date {
 export function isValidDate(year: number, month: number, day: number): boolean {
 	if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) return false;
 	if (month < 1 || month > 12 || day < 1) return false;
-	const d = new Date(0);
-	d.setUTCFullYear(year, month - 1, day);
-	return d.getUTCFullYear() === year && d.getUTCMonth() === month - 1 && d.getUTCDate() === day;
+	return day <= getDaysInMonth(year, month);
 }
 
 /**
@@ -178,9 +288,7 @@ export function isValidDate(year: number, month: number, day: number): boolean {
  * @returns A new Date instance offset by the specified number of days
  */
 export function addUtcDays(date: Date, days: number): Date {
-	const result = new Date(date.getTime());
-	result.setUTCDate(result.getUTCDate() + days);
-	return result;
+	return new Date(date.getTime() + days * MS_PER_DAY);
 }
 
 /**
@@ -196,9 +304,6 @@ export function withUtcParts(date: Date, parts: Partial<UtcPartsOptions>): Date 
 	return fromUtcParts({ ...current, ...parts });
 }
 
-const MONTH_DAYS_NORMAL = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-const MONTH_DAYS_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-
 /**
  * Resolves 1-indexed day-of-year (1..366) to month (1..12) and day (1..31) using pure integer arithmetic.
  * Returns undefined for a day outside the given year, including day 366 in a non-leap year.
@@ -210,9 +315,9 @@ export function resolveDayOfYear(year: number, dayOfYear: number): { month: numb
 	const days = leap ? MONTH_DAYS_LEAP : MONTH_DAYS_NORMAL;
 	let rem = dayOfYear;
 	for (let m = 0; m < 12; m++) {
-		if (rem <= days[m]) {
+		if (rem <= days[m])
 			return { month: m + 1, day: rem };
-		}
+
 		rem -= days[m];
 	}
 	return undefined;
@@ -221,35 +326,34 @@ export function resolveDayOfYear(year: number, dayOfYear: number): { month: numb
 /**
  * Returns numeric week and week-year fields when both are supplied; otherwise computes them
  * from the Gregorian year, month, and day using standard ISO 8601 rules.
+ * Pure integer arithmetic — zero Date allocations.
  */
 export function getIsoWeek(z: { year: number; month: number; day: number; weekOfYear?: number | undefined; yearOfWeek?: number | undefined }): { weekOfYear: number; yearOfWeek: number } {
 	if (typeof z.weekOfYear === 'number' && typeof z.yearOfWeek === 'number') {
 		return { weekOfYear: z.weekOfYear, yearOfWeek: z.yearOfWeek };
 	}
-	const d = new Date(Date.UTC(z.year, z.month - 1, z.day));
-	d.setUTCFullYear(z.year);
-	const dayNum = d.getUTCDay() || 7;
-	d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-	const yearOfWeek = d.getUTCFullYear();
-	const yearStart = new Date(Date.UTC(yearOfWeek, 0, 1));
-	yearStart.setUTCFullYear(yearOfWeek);
-	const weekOfYear = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+	const targetDays = civilToDays(z.year, z.month, z.day);
+	const weekday = isoWeekdayFromDays(targetDays);
+	const thurDays = targetDays + 4 - weekday;
+	const thurCivil = daysToCivil(thurDays);
+	const yearOfWeek = thurCivil.year;
+	const yearStartDays = civilToDays(yearOfWeek, 1, 1);
+	const weekOfYear = Math.floor((thurDays - yearStartDays) / 7) + 1;
 	return { weekOfYear, yearOfWeek };
 }
 
 /**
- * Resolves an ISO week date (isoYear, isoWeek, isoDay) into calendar year, month, and day
- * using lightweight UTC Date calculations. `isoDay` uses Monday=1 through Sunday=7 and defaults to Monday.
+ * Resolves an ISO week date (isoYear, isoWeek, isoDay) into calendar year, month, and day.
+ * `isoDay` uses Monday=1 through Sunday=7 and defaults to Monday.
  * Out-of-range week and day values roll into adjacent dates rather than being rejected.
+ * Pure integer arithmetic — zero Date allocations.
  */
 export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1): { year: number; month: number; day: number } {
-	const jan4 = new Date(Date.UTC(isoYear, 0, 4));
-	jan4.setUTCFullYear(isoYear);
-	const dayOfWeek = jan4.getUTCDay() || 7;
-	const week1MondayTime = jan4.getTime() - (dayOfWeek - 1) * 86400000;
-	const targetTime = week1MondayTime + ((isoWeek - 1) * 7 + (isoDay - 1)) * 86400000;
-	const target = new Date(targetTime);
-	return { year: target.getUTCFullYear(), month: target.getUTCMonth() + 1, day: target.getUTCDate() };
+	const jan4Days = civilToDays(isoYear, 1, 4);
+	const jan4DayOfWeek = isoWeekdayFromDays(jan4Days);
+	const week1MondayDays = jan4Days - (jan4DayOfWeek - 1);
+	const targetDays = week1MondayDays + (isoWeek - 1) * 7 + (isoDay - 1);
+	return daysToCivil(targetDays);
 }
 
 /**
@@ -257,6 +361,7 @@ export function fromIsoWeek(isoYear: number, isoWeek: number, isoDay: number = 1
  * for a specified month and day, testing adjacent calendar-year candidates.
  * Uses expectedDayOfWeek (1=Monday..7=Sunday) to disambiguate when available,
  * and rejects ambiguous dates that match multiple candidate years without weekday disambiguation.
+ * Pure integer arithmetic — zero Date allocations.
  *
  * @param targetIsoYear - The ISO week-numbering year
  * @param month - The 1-indexed calendar month (1..12)
@@ -280,24 +385,12 @@ export function resolveIsoCalendarYear(
 	const matching: number[] = [];
 
 	for (const y of candidates) {
-		try {
-			if (typeof Temporal !== 'undefined' && Temporal.PlainDate) {
-				const plainDate = Temporal.PlainDate.from({ year: y, month, day }, { overflow: 'reject' });
-				if (getIsoWeek(plainDate).yearOfWeek !== targetIsoYear) continue;
-				if (expectedDayOfWeek !== undefined && plainDate.dayOfWeek !== expectedDayOfWeek) continue;
-				matching.push(y);
-			} else {
-				const d = new Date(0);
-				d.setUTCFullYear(y, month - 1, day);
-				if (d.getUTCFullYear() !== y || d.getUTCMonth() + 1 !== month || d.getUTCDate() !== day) continue;
-				if (getIsoWeek({ year: y, month, day }).yearOfWeek !== targetIsoYear) continue;
-				const dayOfWeek = d.getUTCDay() || 7;
-				if (expectedDayOfWeek !== undefined && dayOfWeek !== expectedDayOfWeek) continue;
-				matching.push(y);
-			}
-		} catch {
-			continue;
-		}
+		if (!isValidDate(y, month, day)) continue;
+		if (getIsoWeek({ year: y, month, day }).yearOfWeek !== targetIsoYear) continue;
+		const targetDays = civilToDays(y, month, day);
+		const dayOfWeek = isoWeekdayFromDays(targetDays);
+		if (expectedDayOfWeek !== undefined && dayOfWeek !== expectedDayOfWeek) continue;
+		matching.push(y);
 	}
 
 	return (matching.length === 1)

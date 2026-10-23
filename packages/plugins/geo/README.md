@@ -99,15 +99,15 @@ const t = new Tempo('2026-06-21', { geo: coords });
 | Method / Property | Description |
 | :--- | :--- |
 | `Tempo.geo.lookup(opts?)` | Universal geolocation lookup (browser hardware GPS or server IP lookup) cached for 24h. Supports `{ refresh: true }`. |
-| `Tempo.geo.reverse(coords, opts?)` | Reverse geocodes coordinates to place/locality metadata using the active provider. |
 | `Tempo.geo.forward(query, opts?)` | Forward geocodes query string to coordinates using the active provider. |
+| `Tempo.geo.reverse(coords, opts?)` | Reverse geocodes coordinates to place/locality metadata using the active provider. |
 | `Tempo.geo.setProvider(provider)` | Sets the active custom geocoding provider (e.g. OpenStreetMap, Mapbox, internal IP proxy). |
 | `Tempo.geo.getProvider()` | Retrieves the active custom geocoding provider. |
 | `Tempo.geo.resolve(input, opts?)` | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
 | `Tempo.geo.coerce(input)` | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, etc.) into a canonical `GeoConfig`. |
-| `Tempo.geo.stash(coords, ttl?, keyOrOpts?)` | Stashes coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
-| `Tempo.geo.clear(keyOrOpts?)` | Purges stashed coordinates from storage. |
-| `Tempo.geo.get(keyOrOpts?)` | Reads stashed coordinates for the specified tenant/IP or ambient default. |
+| `Tempo.geo.get(keyOrOpts?)` | Reads stored coordinates for the specified tenant/IP or ambient default. |
+| `Tempo.geo.set(coords, ttl?, keyOrOpts?)` | Sets coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
+| `Tempo.geo.clear(keyOrOpts?)` | Purges stored coordinates from storage. |
 | `Tempo.geo.current` | **Read-only getter** returning the active global/ambient coordinates snapshot (`getStashedGeo() ?? Tempo.config.geo`). |
 | `Tempo.geo.server(opts?)` | Low-level server-side IP geolocation handler. |
 | `Tempo.geo.browser(opts?)` | Low-level browser Geolocation API handler. |

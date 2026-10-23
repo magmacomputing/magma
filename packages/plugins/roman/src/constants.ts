@@ -11,25 +11,6 @@ export const AUC_OFFSET = 753;
 export const MOMJ_MONTHS: ReadonlySet<number> = new Set([3, 5, 7, 10]);
 
 /**
- * Standard days per month in a non-leap year (1-indexed).
- */
-export const DAYS_IN_MONTH: readonly number[] = Object.freeze([
-	0,
-	31, // January
-	28, // February
-	31, // March
-	30, // April
-	31, // May
-	30, // June
-	31, // July
-	31, // August
-	30, // September
-	31, // October
-	30, // November
-	31, // December
-]);
-
-/**
  * Latin anchor names in the Ablative case (used for dates on the anchor itself).
  */
 export const ANCHOR_ABLATIVE: Readonly<Record<RomanAnchor, string>> = Object.freeze({

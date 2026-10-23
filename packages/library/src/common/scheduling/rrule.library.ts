@@ -9,6 +9,11 @@ import {
 	isValidDate,
 	addUtcDays,
 	withUtcParts,
+	civilToDays,
+	isoWeekdayFromDays,
+	epochMsFromParts,
+	partsFromEpochMs,
+	MS_PER_DAY,
 	type DayKey,
 	type MonthKey,
 } from '#library/calendar.library.js';
@@ -112,11 +117,24 @@ export function parseRRule(rrule: string): ParsedRRule {
 					const month = parseInt(trimmedVal.slice(4, 6), 10);
 					const day = parseInt(trimmedVal.slice(6, 8), 10);
 					if (isValidDate(year, month, day))
-						untilMs = fromUtcParts({ year, month, day, hours: 23, minutes: 59, seconds: 59, milliseconds: 999 }).getTime();
+						untilMs = epochMsFromParts(year, month, day, 23, 59, 59, 999);
 				} else {
-					const uStr = trimmedVal.replace(RE_UNTIL_TIMESTAMP, '$1-$2-$3T$4:$5:$6Z');
-					const parsedDate = new Date(uStr);
-					untilMs = isNumber(parsedDate.getTime()) ? parsedDate.getTime() : undefined;
+					const m = trimmedVal.match(RE_UNTIL_TIMESTAMP);
+					if (m) {
+						const year = parseInt(m[1], 10);
+						const month = parseInt(m[2], 10);
+						const day = parseInt(m[3], 10);
+						const hours = isDefined(m[4]) ? parseInt(m[4], 10) : 0;
+						const minutes = isDefined(m[5]) ? parseInt(m[5], 10) : 0;
+						const seconds = isDefined(m[6]) ? parseInt(m[6], 10) : 0;
+						if (isValidDate(year, month, day))
+							untilMs = epochMsFromParts(year, month, day, hours, minutes, seconds, 0);
+					}
+					if (!isNumber(untilMs)) {
+						const uStr = trimmedVal.replace(RE_UNTIL_TIMESTAMP, '$1-$2-$3T$4:$5:$6Z');
+						const parsedDate = new Date(uStr);
+						untilMs = isNumber(parsedDate.getTime()) ? parsedDate.getTime() : undefined;
+					}
 				}
 				break;
 			}
@@ -199,7 +217,7 @@ export function expandRRuleEpochs(
 		minutes: anchorMinutes,
 		seconds: anchorSeconds,
 		milliseconds: anchorMs,
-	} = getUtcParts(anchorDate);
+	} = partsFromEpochMs(anchorEpochMs);
 
 	while (resultsCount < maxToFetch && step < MAX_STEPS) {
 		let periodBases: Date[] = [];
@@ -208,9 +226,10 @@ export function expandRRuleEpochs(
 			case 'WEEKLY': {
 				const steppedDate = addUtcDays(anchorDate, step * rule.interval * DAYS_IN_WEEK);
 				if (rule.byDay && rule.byDay.length > 0) {
+					const steppedDays = Math.floor(steppedDate.getTime() / MS_PER_DAY);
+					const currentDow = isoWeekdayFromDays(steppedDays);
 					periodBases = rule.byDay.map(bd => {
 						const targetDay = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
-						const currentDow = getUtcParts(steppedDate).weekday;
 						const diff = (targetDay - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK;
 						return addUtcDays(steppedDate, diff);
 					});
@@ -228,21 +247,23 @@ export function expandRRuleEpochs(
 				if (rule.byDay && rule.byDay.length > 0) {
 					const daysInMonth = getDaysInMonth(targetYear, targetMonth);
 					const candidateDays: Date[] = [];
+					const monthStartDays = civilToDays(targetYear, targetMonth, 1);
 					for (const bd of rule.byDay) {
 						const targetDow = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
 						const matchingDates: Date[] = [];
 						for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-							const d = fromUtcParts({
-								year: targetYear,
-								month: targetMonth,
-								day: dayNum,
-								hours: anchorHours,
-								minutes: anchorMinutes,
-								seconds: anchorSeconds,
-								milliseconds: anchorMs,
-							});
-							const dow = getUtcParts(d).weekday;
-							if (dow === targetDow) matchingDates.push(d);
+							const dow = isoWeekdayFromDays(monthStartDays + dayNum - 1);
+							if (dow === targetDow) {
+								matchingDates.push(fromUtcParts({
+									year: targetYear,
+									month: targetMonth,
+									day: dayNum,
+									hours: anchorHours,
+									minutes: anchorMinutes,
+									seconds: anchorSeconds,
+									milliseconds: anchorMs,
+								}));
+							}
 						}
 
 						if (isDefined(bd.nth)) {
@@ -280,21 +301,23 @@ export function expandRRuleEpochs(
 				for (const m of months) {
 					if (rule.byDay && rule.byDay.length > 0) {
 						const daysInMonth = getDaysInMonth(targetYear, m);
+						const monthStartDays = civilToDays(targetYear, m, 1);
 						for (const bd of rule.byDay) {
 							const targetDow = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
 							const matchingDates: Date[] = [];
 							for (let dayNum = 1; dayNum <= daysInMonth; dayNum++) {
-								const d = fromUtcParts({
-									year: targetYear,
-									month: m,
-									day: dayNum,
-									hours: anchorHours,
-									minutes: anchorMinutes,
-									seconds: anchorSeconds,
-									milliseconds: anchorMs,
-								});
-								const dow = getUtcParts(d).weekday;
-								if (dow === targetDow) matchingDates.push(d);
+								const dow = isoWeekdayFromDays(monthStartDays + dayNum - 1);
+								if (dow === targetDow) {
+									matchingDates.push(fromUtcParts({
+										year: targetYear,
+										month: m,
+										day: dayNum,
+										hours: anchorHours,
+										minutes: anchorMinutes,
+										seconds: anchorSeconds,
+										milliseconds: anchorMs,
+									}));
+								}
 							}
 
 							if (isDefined(bd.nth)) {

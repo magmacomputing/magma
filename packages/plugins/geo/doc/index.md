@@ -18,7 +18,7 @@ For geometric GIS math, Great-Circle navigation, and impossible travel anomaly d
 - **Forward & Reverse Geocoding**: `Tempo.geo.forward(query)` converts place names to coordinates; `Tempo.geo.reverse(coords)` resolves locality metadata.
 - **Pluggable Provider Architecture**: Swap geocoding backends (`OpenStreetMapProvider`, `IpApiProvider`, `MockGeoProvider`) or supply a custom provider via `Tempo.geo.setProvider()`.
 - **Cultural Locale Synchronization**: `t.geoLocate({ setLocale: 'native' })` automatically infers BCP-47 locale from resolved country and territory.
-- **Multi-Tenant Bounded Caching**: Partitioned coordinate stash with 24h TTL and tenant-isolated keys via `Tempo.geo.stash()` / `Tempo.geo.get()`.
+- **Multi-Tenant Bounded Caching**: Partitioned coordinate storage with 24h TTL and tenant-isolated keys via `Tempo.geo.set()` / `Tempo.geo.get()`.
 - **Immutable Namespace**: `Tempo.geo` is recursively frozen—tamper-proof and zero-mutation.
 
 ---
@@ -99,16 +99,16 @@ console.log(enriched.geo?.city, enriched.geo?.country); // Sydney, AU
 | Method / Property | Category | Description |
 | :--- | :--- | :--- |
 | `Tempo.geo.lookup(opts?)` | Lookup | Universal geolocation lookup (browser hardware GPS or server IP lookup) cached for 24h. Supports `{ refresh: true }`. |
-| `Tempo.geo.reverse(coords, opts?)` | Geocoding | Reverse geocodes coordinates to locality/address metadata (`city`, `country`, `displayName`, etc.) using active provider. |
 | `Tempo.geo.forward(query, opts?)` | Geocoding | Forward geocodes place query string to coordinates using active provider. |
+| `Tempo.geo.reverse(coords, opts?)` | Geocoding | Reverse geocodes coordinates to locality/address metadata (`city`, `country`, `displayName`, etc.) using active provider. |
 | `Tempo.geo.setProvider(provider)` | Provider Gateway | Sets custom geolocation/geocoding provider gateway (e.g. OpenStreetMap, Mapbox, internal IP proxy). |
 | `Tempo.geo.getProvider()` | Provider Gateway | Retrieves the active custom geolocation provider. |
 | `Tempo.geo.resolve(input, opts?)` | Utility | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
 | `Tempo.geo.coerce(input)` | Geometry | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, tuples, etc.) into a canonical `GeoConfig`. |
 | `resolveCulturalLocale(locale?, country?, mode?)` | Cultural Sync | Standalone function resolving synchronized BCP 47 locale from current locale and ISO country code/name. |
-| `Tempo.geo.stash(coords, ttl?, keyOrOpts?)` | Storage | Stashes coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
-| `Tempo.geo.clear(keyOrOpts?)` | Storage | Purges stashed coordinates from storage. |
-| `Tempo.geo.get(keyOrOpts?)` | Storage | Reads stashed coordinates for the specified tenant/IP or ambient default. |
+| `Tempo.geo.get(keyOrOpts?)` | Storage | Reads stored coordinates for the specified tenant/IP or ambient default. |
+| `Tempo.geo.set(coords, ttl?, keyOrOpts?)` | Storage | Sets coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
+| `Tempo.geo.clear(keyOrOpts?)` | Storage | Purges stored coordinates from storage. |
 | `Tempo.geo.current` | Storage | **Read-only getter** returning the active global/ambient coordinates snapshot (`getStashedGeo() ?? Tempo.config.geo`). |
 | `Tempo.geo.server(opts?)` | Low-Level | Low-level server-side IP geolocation handler. |
 | `Tempo.geo.browser(opts?)` | Low-Level | Low-level browser Geolocation API handler. |

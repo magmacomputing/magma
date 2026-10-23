@@ -5,6 +5,13 @@ All notable changes to the `@magmacomputing/tempo-plugin-geo` project will be do
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-10-23
+
+### Breaking Changes
+- **API Surface Symmetry (`Tempo.geo.set`)**:
+  - Renamed the static namespace method `Tempo.geo.stash()` to `Tempo.geo.set()` for clean semantic symmetry with `Tempo.geo.get()` and `Tempo.geo.clear()`.
+  - Updated namespace TypeScript interface definition and documentation examples.
+
 ## [1.4.2] - 2026-10-03
 
 ### Changed

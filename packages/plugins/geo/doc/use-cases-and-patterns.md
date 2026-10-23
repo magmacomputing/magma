@@ -20,7 +20,7 @@ The `@magmacomputing/tempo-plugin-geo` plugin provides an extensible provider ga
 When an international customer visits an e-commerce or booking platform, their browser locale might be generic (`en-US`), but their physical IP or GPS location is Australia, Japan, or Egypt.
 
 Using `resolveCulturalLocale`, apps dynamically align formatting conventions:
-- **`'regional'` mode**: Preserves user language while adjusting regional formatting (e.g. `en-US` in `AU` $\rightarrow$ `en-AU` for `DD/MM/YYYY` dates).
+- **`'regional'` mode**: Preserves user language while adjusting regional formatting (e.g. `en-US` in `AU` $\rightarrow$ `en-AU` for day/month/year dates).
 - **`'native'` mode**: Fully translates to the country's primary official language (e.g. `en-US` in `JP` $\rightarrow$ `ja-JP`, or `EG` $\rightarrow$ `ar-EG`).
 
 ```typescript
@@ -44,7 +44,7 @@ export function formatInvoiceDateForVisitor(
 }
 
 // Example 1: American tourist booking in Sydney, Australia
-// Output switches to DD/MM/YYYY convention
+// Output switches to day/month/year convention
 const sydneyBooking = formatInvoiceDateForVisitor('2026-03-05', 'en-US', 'AU');
 console.log(sydneyBooking); // '05/03/2026'
 
@@ -99,7 +99,7 @@ console.log(location.country, location.lat, location.lng);
 
 ## 3. Multi-Tenant Partitioned Geo Storage & 24h Caching
 
-Calling external geocoding APIs on every incoming HTTP request degrades latency and exhausts rate limits. `Tempo.geo.stash` and `Tempo.geo.get` provide built-in partitioned storage with TTL support:
+Calling external geocoding APIs on every incoming HTTP request degrades latency and exhausts rate limits. `Tempo.geo.set` and `Tempo.geo.get` provide built-in partitioned storage with TTL support:
 
 ```typescript
 import '@magmacomputing/tempo-plugin-geo/install';
@@ -120,8 +120,8 @@ export async function resolveTenantLocation(
   // 2. Perform external geocoding lookup
   const resolved = await Tempo.geo.forward(rawAddress);
 
-  // 3. Stash coordinates in tenant's isolated partition for 24 hours
-  Tempo.geo.stash(resolved, {
+  // 3. Store coordinates in tenant's isolated partition for 24 hours
+  Tempo.geo.set(resolved, {
     partition: partitionKey,
     ttl: 86_400_000 // 24 hours in ms
   });

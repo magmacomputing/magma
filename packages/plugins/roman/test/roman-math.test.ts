@@ -1,10 +1,11 @@
+
+import { isLeapYear } from '@magmacomputing/tempo/library';
 import {
 	aucToYear,
 	calculateClassicalRomanDate,
 	calculateGregorianFromRoman,
 	getIdesDay,
 	getNonesDay,
-	isLeapYear,
 	yearToAuc,
 } from '../src/math.js';
 
