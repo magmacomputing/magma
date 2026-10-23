@@ -5,7 +5,9 @@ import type {
 	RomanAnchor,
 	RomanCalculationOptions,
 	RomanDateRelation,
+	RomanFormatOptions,
 } from './types.js';
+import { formatClassicalRomanDate } from './format.js';
 import {
 	ANCHOR_ABLATIVE,
 	ANCHOR_ACCUSATIVE,
@@ -131,7 +133,8 @@ export function calculateClassicalRomanDate(
 	}
 
 	const auc = yearToAuc(year);
-	return Object.freeze({
+
+	const base = {
 		anchor,
 		anchorMonth,
 		anchorYear,
@@ -145,6 +148,20 @@ export function calculateClassicalRomanDate(
 		auc,
 		latin,
 		shortLatin,
+	} as ClassicalRomanDate;
+
+	const nominative = formatClassicalRomanDate(base, { case: 'nominative', style: 'classical' });
+	const accusative = formatClassicalRomanDate(base, { case: 'accusative', style: 'classical' });
+	const ablative = formatClassicalRomanDate(base, { case: 'ablative', style: 'classical' });
+
+	return Object.freeze({
+		...base,
+		nominative,
+		accusative,
+		ablative,
+		format(this: ClassicalRomanDate, opts?: RomanFormatOptions): string {
+			return formatClassicalRomanDate(this, opts);
+		},
 	});
 }
 

@@ -16,6 +16,8 @@ A lightweight, zero-dependency Community plugin for the [Tempo](https://github.c
 - **Latin Phrasing**: Emits full (`ante diem XVII Kalendas Novembres`) and abbreviated (`a.d. XVII Kal. Nov.`) forms with correct Ablative/Accusative declensions.
 - **Bissextile Day**: Reproduces the classical leap-year doubling of the sixth day before the March Kalends (`a.d. bis VI Kal. Mart.`).
 - **AUC Year Reckoning**: Bidirectional *Ab Urbe Condita* conversion for CE, BCE, and astronomical years.
+- **Classical Latin Parser**: Robust parser recognizing arbitrary Latin expressions (e.g. `a.d. IV Id. Mart. 710 AUC`, `Idibus Martiis Cicerone coss.`) with calendar validation.
+- **Fasti Consulares (509 BCE–541 CE)**: Complete historical catalog of Roman Consuls with Latin ablative absolute (`coss.`) formatting and searching.
 - **Lossless Round-Trips**: `Tempo.roman.fromClassical()` maps any classical date back to its exact calendar day.
 - **Immutable Results**: Every structured result is frozen; zero runtime dependencies beyond Tempo.
 
@@ -45,7 +47,7 @@ const today = new Tempo('2026-10-16');
 const classical = today.toRomanClassical();
 
 console.log(`Roman Date: ${classical.latin}`);      // "ante diem XVII Kalendas Novembres"
-console.log(`Abbreviated: ${classical.shortLatin}`); // "a.d. XVII Kal. Nov."
+console.log(`Abbreviated: ${classical.shortLatin}`);// "a.d. XVII Kal. Nov."
 console.log(`Anchor: ${classical.anchor}`);         // "Kalends"
 console.log(`Year AUC: ${today.auc} AUC`);          // 2779 AUC
 
@@ -58,6 +60,15 @@ console.log(idesOfMarch.toAUC());                   // 710 (AUC)
 const leapDay = new Tempo('2024-02-24');
 console.log(leapDay.toRomanClassical().latin);      // "ante diem bis sextum Kalendas Martias"
 console.log(leapDay.toRomanClassical().shortLatin); // "a.d. bis VI Kal. Mart."
+
+// 5. Classical Latin Date Parsing (Phase 3)
+const parsed = Tempo.roman.parse('a.d. IV Id. Mart. 710 AUC');
+console.log(parsed.format('{yyyy}-{mm}-{dd}'));     // "-000043-03-12" (March 12, 44 BCE)
+
+// 6. Consular Dating & Fasti Catalog (Phase 4)
+const ciceroYear = new Tempo('-000062-03-15');
+console.log(ciceroYear.consuls);                    // "M. Tullio Cicerone, C. Antonio Hybrida coss."
+console.log(ciceroYear.format('{roman:consul}'));   // "M. Tullio Cicerone, C. Antonio Hybrida coss."
 ```
 
 ### Auto-Installation (Side-Effect Import)
@@ -87,6 +98,21 @@ Static calculation function resolving `Tempo`, native JavaScript `Date`, or plai
 
 ### `Tempo.roman.fromClassical(anchor, anchorMonth, anchorYear, relation, count?, isBissextile?, isJulian?): { year, month, day }`
 Resolves classical Roman calendar anchor parameters back to modern calendar coordinates.
+
+### `Tempo.roman.parse(input: string, options?: RomanParseOptions): Tempo`
+Parses a natural classical Latin date string (e.g. `'a.d. IV Id. Mart. 710 AUC'` or `'Idibus Martiis Cicerone coss.'`) directly into a `Tempo` instance.
+
+### `Tempo.roman.parseDate(input: string, options?: RomanParseOptions): ParsedRomanDate`
+Parses a Latin date string into calendar coordinates (`{ year, month, day, auc, classical }`) without constructing an instance.
+
+### `Tempo.roman.getConsuls(year: number): readonly string[] | undefined`
+Retrieves the eponymous Roman consuls for an astronomical year from the Fasti consulares (509 BCE–541 CE).
+
+### `Tempo.roman.formatConsuls(year: number, style?: 'ablative' | 'nominative'): string | undefined`
+Renders the eponymous consuls into a classical Latin dating formula (e.g. `"M. Tullio Cicerone, C. Antonio Hybrida coss."`).
+
+### `Tempo.roman.findConsuls(query: string): ConsularPair[]`
+Performs a substring search against the Fasti consulares and returns matching years and names.
 
 ### `Tempo.roman.yearToAuc(year: number, era?: 'CE' | 'BCE'): number`
 Converts an astronomical year (or positive BCE year with explicit era) into AUC.

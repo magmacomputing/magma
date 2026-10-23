@@ -6,7 +6,9 @@ import type {
 	RomanAnchor,
 	RomanCalculationOptions,
 	RomanDateRelation,
+	RomanFormatOptions,
 	RomanNamespace,
+	RomanParseOptions,
 } from './types.js';
 import {
 	aucToYear,
@@ -16,12 +18,23 @@ import {
 	getNonesDay,
 	yearToAuc,
 } from './math.js';
+import { createRomanTokenEvaluator, formatClassicalRomanDate } from './format.js';
+import { parseClassicalRomanDate } from './parser.js';
+import { findConsulYears, formatConsuls, getConsulsByYear } from './consuls.js';
 
 export * from './types.js';
 export * from './constants.js';
 export * from './math.js';
+export * from './format.js';
+export * from './parser.js';
+export * from './consuls.js';
 
 declare module '@magmacomputing/tempo' {
+	/** Registers `{roman}` (and `{roman:...}` modifiers) for compile-time format validation. */
+	interface TempoFormatTokens {
+		roman: true;
+	}
+
 	namespace Tempo {
 		/**
 		 * Classical Roman calendar and Ab Urbe Condita (AUC) namespace.
@@ -60,6 +73,33 @@ declare module '@magmacomputing/tempo' {
 		 * Year reckoned Ab Urbe Condita (AUC).
 		 */
 		readonly auc: number;
+
+		/**
+		 * Formats this instance using classical Roman calendar conventions and Latin declensions.
+		 *
+		 * @param options - Formatting configuration (case, style, AUC, words, casing)
+		 * @returns Formatted classical Roman date string
+		 * @example
+		 * ```ts
+		 * const t = new Tempo('2026-10-16');
+		 * console.log(t.formatRoman({ case: 'nominative' }));
+		 * console.log(t.format('{roman:classical}')); // "ante diem XVII Kalendas Novembres"
+		 * console.log(t.format('{roman:short}'));     // "a.d. XVII Kal. Nov."
+		 * console.log(t.format('{roman:auc}'));       // "AUC MMDCCLXXIX"
+		 * ```
+		 */
+		formatRoman(options?: RomanFormatOptions): string;
+
+		/**
+		 * Structured Classical Roman calendar date.
+		 */
+		readonly roman: ClassicalRomanDate;
+
+		/**
+		 * Formatted classical Roman consular dating formula (e.g. `"M. Tullio Cicerone, C. Antonio Hybrida coss."`),
+		 * or undefined if no ordinary consuls are recorded in the Fasti for this year.
+		 */
+		readonly consuls?: string;
 	}
 }
 
@@ -91,8 +131,16 @@ function extractDateComponents(date: any): { year: number; month: number; day: n
 /**
  * Creates the static RomanNamespace implementation.
  */
-function createRomanNamespace(): RomanNamespace {
+function createRomanNamespace(TempoClass: any): RomanNamespace {
 	return {
+		parse(input: string, options?: RomanParseOptions): Tempo {
+			const { year, month, day } = parseClassicalRomanDate(input, options);
+			return new TempoClass({ year, month, day });
+		},
+
+		parseDate(input: string, options?: RomanParseOptions) {
+			return parseClassicalRomanDate(input, options);
+		},
 		toClassical(
 			date: Tempo | Date | { year: number; month: number; day: number },
 			options?: RomanCalculationOptions,
@@ -143,6 +191,27 @@ function createRomanNamespace(): RomanNamespace {
 				isJulian,
 			);
 		},
+
+		format(
+			date: Tempo | Date | { year: number; month: number; day: number },
+			options?: RomanFormatOptions,
+		): string {
+			const { year, month, day } = extractDateComponents(date);
+			const roman = calculateClassicalRomanDate(year, month, day, options);
+			return formatClassicalRomanDate(roman, options);
+		},
+
+		getConsuls(year: number): readonly string[] | undefined {
+			return getConsulsByYear(year);
+		},
+
+		formatConsuls(year: number, style?: any): string | undefined {
+			return formatConsuls(year, style);
+		},
+
+		findConsuls(query: string) {
+			return findConsulYears(query);
+		},
 	};
 }
 
@@ -153,7 +222,7 @@ function createRomanNamespace(): RomanNamespace {
 export const RomanPlugin: TempoPlugin = definePlugin({
 	name: 'roman',
 	install(TempoClass: any): void {
-		const romanNamespace = createRomanNamespace();
+		const romanNamespace = createRomanNamespace(TempoClass);
 
 		// 1. Mount static Tempo.roman namespace
 		Object.defineProperty(TempoClass, 'roman', {
@@ -174,6 +243,17 @@ export const RomanPlugin: TempoPlugin = definePlugin({
 			};
 		}
 
+		if (!TempoClass.prototype.formatRoman) {
+			TempoClass.prototype.formatRoman = function (
+				this: Tempo,
+				options?: RomanFormatOptions,
+			): string {
+				const { year, month, day } = extractDateComponents(this);
+				const roman = calculateClassicalRomanDate(year, month, day, options);
+				return formatClassicalRomanDate(roman, options);
+			};
+		}
+
 		if (!TempoClass.prototype.toAUC) {
 			TempoClass.prototype.toAUC = function (this: Tempo): number {
 				const { year } = extractDateComponents(this);
@@ -191,6 +271,38 @@ export const RomanPlugin: TempoPlugin = definePlugin({
 				enumerable: false,
 			});
 		}
+
+		if (!Object.getOwnPropertyDescriptor(TempoClass.prototype, 'roman')) {
+			Object.defineProperty(TempoClass.prototype, 'roman', {
+				get(this: Tempo): ClassicalRomanDate {
+					const { year, month, day } = extractDateComponents(this);
+					return calculateClassicalRomanDate(year, month, day);
+				},
+				configurable: true,
+				enumerable: false,
+			});
+		}
+
+		if (!Object.getOwnPropertyDescriptor(TempoClass.prototype, 'consuls')) {
+			Object.defineProperty(TempoClass.prototype, 'consuls', {
+				get(this: Tempo): string | undefined {
+					const { year } = extractDateComponents(this);
+					return formatConsuls(year);
+				},
+				configurable: true,
+				enumerable: false,
+			});
+		}
+
+		// 3. Register custom {roman:...} format token evaluator
+		const tokenEvaluator = createRomanTokenEvaluator((y, m, d) => calculateClassicalRomanDate(y, m, d));
+		TempoClass.use({
+			registry: {
+				tokens: {
+					roman: tokenEvaluator,
+				},
+			},
+		});
 	},
 });
 

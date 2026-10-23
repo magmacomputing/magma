@@ -56,7 +56,7 @@ function resolveInscriptionDate(record: InscriptionRecord): Tempo {
   });
 }
 
-// Example: "a.d. XVII Kal. Nov. 2779 AUC"
+// Example: Inscription recording "a.d. XVII Kal. Nov. 2779 AUC"
 const tempoDate = resolveInscriptionDate({
   id: 'c-104',
   catalogNumber: 'CIL VI 2065',
@@ -69,6 +69,10 @@ const tempoDate = resolveInscriptionDate({
 });
 
 console.log(tempoDate.format('{yyyy}-{mm}-{dd}')); // "2026-10-16"
+
+// Or resolve the inscription text directly using the Phase 3 Classical Parser:
+const parsedFromText = Tempo.roman.parse('a.d. XVII Kal. Nov. 2779 AUC');
+console.log(parsedFromText.format('{yyyy}-{mm}-{dd}')); // "2026-10-16"
 ```
 
 ---
@@ -154,6 +158,38 @@ console.log(leapCharter.formalLatin);
 const idesEveCharter = verifyCharterDating(2026, 10, 14);
 console.log(idesEveCharter.formalLatin);
 // "Pridie Idus Octobres"
+```
+
+---
+
+## 4. Consular Dating & Fasti Chronology
+
+### The Challenge
+Historical sources and decrees from the Roman Republic and early Empire were rarely dated by year numbers; they were dated by the eponymous Roman consuls holding office. Historians need to match consular dating formulas (e.g., *"C. Julio Caesare V, M. Antonio coss."*) with exact astronomical and civil calendar coordinates.
+
+### Implementation Pattern
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-roman/install';
+
+// 1. Resolve an astronomical date and format its presiding consuls
+const ides44BCE = new Tempo('-000043-03-15');
+console.log(ides44BCE.consuls);
+// "C. Julio Caesare V, M. Antonio coss."
+
+// 2. Format with standard Tempo tokens
+console.log(ides44BCE.format('{roman:classical}, {roman:consul}'));
+// "Idibus Martiis, C. Julio Caesare V, M. Antonio coss."
+
+// 3. Search the Fasti consulares (509 BCE–541 CE) by consul name
+const ciceroEntries = Tempo.roman.findConsuls('Cicero');
+console.log(ciceroEntries[0]);
+// { year: -62, consuls: ['M. Tullius Cicero', 'C. Antonius Hybrida'], formatted: 'M. Tullio Cicerone, C. Antonio Hybrida coss.' }
+
+// 4. Parse classical text with a consular dating formula directly
+const dateFromConsuls = Tempo.roman.parse('Idibus Martiis Cicerone coss.');
+console.log(dateFromConsuls.format('{yyyy}-{mm}-{dd}')); // "-000062-03-15" (March 15, 63 BCE)
 ```
 
 ---

@@ -5,10 +5,10 @@ All notable changes to the `@magmacomputing/tempo-plugin-roman` project will be 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-10-22
+## [1.0.0] - 2026-10-24
 
 ### Added
-- **Initial Bootstrap Release (Phase 1: Mathematical Foundations)**:
+- **Phase 1: Mathematical Foundations**:
   - Classical Roman calendar date calculator resolving lunar anchors:
     - **Kalends** (*Kalendae*): 1st of every month.
     - **Nones** (*Nonae*): 7th in MOM-J months (March, October, May, July); 5th in all others.
@@ -20,3 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Attached static `Tempo.roman` namespace with `.toClassical()`, `.fromClassical()`, `.yearToAuc()`, `.aucToYear()`, `.getNonesDay()`, `.getIdesDay()`, and `.isLeapYear()`.
   - Added `Tempo.prototype.toRomanClassical()` and `Tempo.prototype.toAUC()` instance methods, along with `Tempo.prototype.auc` getter.
   - Provided side-effect zero-boilerplate import via `@magmacomputing/tempo-plugin-roman/install`.
+- **Phase 2: Formatting Engine & Latin Declensions**:
+  - Full Latin and abbreviated formatting tokens: `{roman:classical}`, `{roman:short}`, `{roman:auc}`, `{roman:nominative}`, `{roman:accusative}`, `{roman:ablative}`.
+  - Added `.formatRoman()` method on `Tempo.prototype`.
+  - Added Latin ordinal word generator for countdowns (`words: true`).
+- **Phase 3: Classical Latin Date Parser**:
+  - Implemented `parseClassicalRomanDate(input, options?)` and `Tempo.roman.parse(input, options?)` / `Tempo.roman.parseDate()`.
+  - Natural parsing of classical Latin expressions, supporting Kalends, Nones, Ides, Pridie, Ante Diem, bissextile leap day (`a.d. bis VI Kal. Mart.`), grammatical case declensions, and Latin ordinal words.
+  - Multi-era year support (AUC, BCE/CE, and astronomical integer years).
+  - Bidirectional verification against calendar arithmetic to reject impossible Roman dates.
+- **Phase 4: Consular Fasti Catalog (509 BCE–541 CE)**:
+  - Built-in historical database of Roman eponymous consuls from the founding of the Roman Republic (509 BCE) through the final ordinary consul of the West (541 CE).
+  - Added consular formatting engine with Latin ablative absolute (`coss.` / `cos.`) and nominative case styles (`formatConsuls(year, style?)`).
+  - Added `Tempo.roman.getConsuls(year)` and fuzzy search utility `Tempo.roman.findConsuls(query)`.
+  - Added `{roman:consul}` format token support and `tempo.consuls` instance getter.
+  - Classical parser automatically resolves consular pairs (e.g. `Idibus Martiis Cicerone coss.`).

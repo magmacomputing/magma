@@ -73,27 +73,6 @@ export interface UtcParts {
 	milliseconds: number;	// 0..999
 }
 
-/**
- * Extracts all UTC calendar and clock components from a Date instance as a structured object.
- * Month and weekday are 1-indexed (1 for January, 1 for Monday through 7 for Sunday).
- * Defaults to current timestamp (`new Date()`) if no date is provided.
- *
- * @param date - Optional Date instance to inspect (defaults to `new Date()`)
- * @returns An object containing `{ year, month, day, weekday, hours, minutes, seconds, milliseconds }`
- */
-export function getUtcParts(date: Date = new Date()): UtcParts {
-	return {
-		year: date.getUTCFullYear(),
-		month: date.getUTCMonth() + 1,
-		day: date.getUTCDate(),
-		weekday: date.getUTCDay() || DAY_MAP.SUN,
-		hours: date.getUTCHours(),
-		minutes: date.getUTCMinutes(),
-		seconds: date.getUTCSeconds(),
-		milliseconds: date.getUTCMilliseconds(),
-	}
-}
-
 const DAYS_PER_MONTH = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
 const MONTH_DAYS_NORMAL = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
 const MONTH_DAYS_LEAP = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31] as const;
@@ -134,6 +113,28 @@ export function getDaysInMonth(year: number, month: number, isJulian: boolean = 
 
 	if (m === 2) return isLeapYear(y, isJulian) ? 29 : 28;
 	return DAYS_PER_MONTH[m];
+}
+
+/**
+ * Shifts a Date by an exact number of 24-hour days (86,400,000 ms per day).
+ *
+ * @remarks
+ * This function performs fixed-duration timestamp arithmetic in UTC.
+ * It is non-mutating and allocation-light.
+ *
+ * **DST / Wall-Clock Warning:**
+ * Because this applies a fixed 86,400,000 ms offset, it does NOT adjust for
+ * Daylight Saving Time (DST) wall-clock shifts in local timezones (e.g. 23-hour
+ * or 25-hour days). If wall-clock preservation across DST transitions in a
+ * specific timezone is required, use timezone-aware calendar arithmetic
+ * (such as Temporal or `tempo-fns`).
+ *
+ * @param date - The baseline Date instance
+ * @param days - Number of 24-hour days to add (can be negative)
+ * @returns A new Date instance offset by the specified number of 24-hour periods
+ */
+export function shiftDateByDays(date: Date, days: number): Date {
+	return new Date(date.getTime() + days * MS_PER_DAY);
 }
 
 /**
@@ -281,17 +282,6 @@ export function isValidDate(year: number, month: number, day: number): boolean {
 }
 
 /**
- * Adds an integer number of days to a Date in UTC, returning a new Date instance.
- *
- * @param date - The baseline Date instance
- * @param days - Number of days to add (can be negative)
- * @returns A new Date instance offset by the specified number of days
- */
-export function addUtcDays(date: Date, days: number): Date {
-	return new Date(date.getTime() + days * MS_PER_DAY);
-}
-
-/**
  * Returns a new Date instance with updated UTC calendar or clock fields applied to the given date.
  * Non-mutating (pure copy-on-write).
  *
@@ -300,7 +290,7 @@ export function addUtcDays(date: Date, days: number): Date {
  * @returns A new UTC Date instance with the specified parts updated
  */
 export function withUtcParts(date: Date, parts: Partial<UtcPartsOptions>): Date {
-	const current = getUtcParts(date);
+	const current = partsFromEpochMs(date.getTime());
 	return fromUtcParts({ ...current, ...parts });
 }
 

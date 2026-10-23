@@ -120,6 +120,22 @@ The plugin provides exact mathematical conversions between astronomical years, C
 
 ---
 
+## Consular Chronology (*Fasti Consulares*)
+
+In everyday Roman civic and legal life, years were designated by naming the two ordinary consuls (*consules ordinarii*) who entered office on the Kalends of January:
+
+$$\text{\textit{Cicerone et Antonio consulibus}} \implies 63 \text{ BCE} \text{ (astronomical } -62)$$
+
+The plugin includes the definitive historical catalog of ordinary consuls spanning from the founding of the Roman Republic in 509 BCE (`-508`) through the final recorded consul in the West, Decius Theodorius Paulinus and Anicius Faustus Albinus Basilius in 541 CE (`541`).
+
+```typescript
+const idesMarch44 = new Tempo('-000043-03-15');
+console.log(idesMarch44.consuls);
+// "C. Julio Caesare V, M. Antonio coss."
+```
+
+---
+
 ## See Also
 
 - **[Use Cases & Production Patterns](./use-cases-and-patterns.md)**: Applied historical, academic, and numismatic workflows.

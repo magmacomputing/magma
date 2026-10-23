@@ -4,15 +4,14 @@ import {
 	DAY_MAP,
 	MONTH_MAP,
 	getDaysInMonth,
-	getUtcParts,
 	fromUtcParts,
 	isValidDate,
-	addUtcDays,
 	withUtcParts,
 	civilToDays,
 	isoWeekdayFromDays,
 	epochMsFromParts,
 	partsFromEpochMs,
+	shiftDateByDays,
 	MS_PER_DAY,
 	type DayKey,
 	type MonthKey,
@@ -224,14 +223,14 @@ export function expandRRuleEpochs(
 
 		switch (rule.freq) {
 			case 'WEEKLY': {
-				const steppedDate = addUtcDays(anchorDate, step * rule.interval * DAYS_IN_WEEK);
+				const steppedDate = shiftDateByDays(anchorDate, step * rule.interval * DAYS_IN_WEEK);
 				if (rule.byDay && rule.byDay.length > 0) {
 					const steppedDays = Math.floor(steppedDate.getTime() / MS_PER_DAY);
 					const currentDow = isoWeekdayFromDays(steppedDays);
 					periodBases = rule.byDay.map(bd => {
 						const targetDay = bd.day in DAY_MAP ? DAY_MAP[bd.day as DayKey] : 1;
 						const diff = (targetDay - currentDow + DAYS_IN_WEEK) % DAYS_IN_WEEK;
-						return addUtcDays(steppedDate, diff);
+						return shiftDateByDays(steppedDate, diff);
 					});
 				} else {
 					periodBases = [steppedDate];
@@ -349,7 +348,7 @@ export function expandRRuleEpochs(
 			}
 
 			case 'DAILY': {
-				periodBases = [addUtcDays(anchorDate, step * rule.interval)];
+				periodBases = [shiftDateByDays(anchorDate, step * rule.interval)];
 				break;
 			}
 
@@ -362,7 +361,7 @@ export function expandRRuleEpochs(
 
 		const periodCandidates: Date[] = [];
 		for (const base of periodBases) {
-			const { hours: baseHours, minutes: baseMinutes } = getUtcParts(base);
+			const { hours: baseHours, minutes: baseMinutes } = partsFromEpochMs(base.getTime());
 			const hours = rule.byHour && rule.byHour.length > 0 ? rule.byHour : [baseHours];
 			const minutes = rule.byMinute && rule.byMinute.length > 0 ? rule.byMinute : [baseMinutes];
 

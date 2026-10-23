@@ -11,6 +11,15 @@ export const AUC_OFFSET = 753;
 export const MOMJ_MONTHS: ReadonlySet<number> = new Set([3, 5, 7, 10]);
 
 /**
+ * Latin anchor names in the Nominative case (used when date is subject or title).
+ */
+export const ANCHOR_NOMINATIVE: Readonly<Record<RomanAnchor, string>> = Object.freeze({
+	Kalends: 'Kalendae',
+	Nones: 'Nonae',
+	Ides: 'Idus',
+});
+
+/**
  * Latin anchor names in the Ablative case (used for dates on the anchor itself).
  */
 export const ANCHOR_ABLATIVE: Readonly<Record<RomanAnchor, string>> = Object.freeze({
@@ -36,6 +45,25 @@ export const ANCHOR_SHORT: Readonly<Record<RomanAnchor, string>> = Object.freeze
 	Nones: 'Non.',
 	Ides: 'Id.',
 });
+
+/**
+ * Latin month adjective names in the Nominative feminine plural (modifying Kalendae, Nonae, Idus).
+ */
+export const MONTH_NOMINATIVE: readonly string[] = Object.freeze([
+	'',
+	'Januariae',
+	'Februariae',
+	'Martiae',
+	'Apriles',
+	'Maiae',
+	'Juniae',
+	'Juliae',
+	'Augustae',
+	'Septembres',
+	'Octobres',
+	'Novembres',
+	'Decembres',
+]);
 
 /**
  * Latin month adjective names in the Accusative feminine plural (modifying Kalendas, Nonas, Idus).
@@ -92,4 +120,56 @@ export const MONTH_SHORT: readonly string[] = Object.freeze([
 	'Oct.',
 	'Nov.',
 	'Dec.',
+]);
+
+/**
+ * Latin ordinal numeral words in the Accusative singular masculine (modifying diem in "ante diem").
+ */
+export const COUNT_WORDS_ACCUSATIVE: readonly string[] = Object.freeze([
+	'',
+	'',
+	'pridie',
+	'tertium',
+	'quartum',
+	'quintum',
+	'sextum',
+	'septimum',
+	'octavum',
+	'nonum',
+	'decimum',
+	'undecimum',
+	'duodecimum',
+	'tertium decimum',
+	'quartum decimum',
+	'quintum decimum',
+	'sextum decimum',
+	'septimum decimum',
+	'duodevicesimum',
+	'undevicesimum',
+]);
+
+/**
+ * Latin ordinal numeral words in the Ablative singular masculine (modifying die in "die ... ante").
+ */
+export const COUNT_WORDS_ABLATIVE: readonly string[] = Object.freeze([
+	'',
+	'',
+	'pridie',
+	'tertio',
+	'quarto',
+	'quinto',
+	'sexto',
+	'septimo',
+	'octavo',
+	'nono',
+	'decimo',
+	'undecimo',
+	'duodecimo',
+	'tertio decimo',
+	'quarto decimo',
+	'quinto decimo',
+	'sexto decimo',
+	'septimo decimo',
+	'duodevicesimo',
+	'undevicesimo',
 ]);
