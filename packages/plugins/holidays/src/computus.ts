@@ -1,5 +1,5 @@
 import { WeakCache } from '@magmacomputing/tempo/library';
-import { getDaysInMonth as libGetDaysInMonth, civilToDays, isoWeekdayFromDays, epochMsFromParts, partsFromEpochMs } from '@magmacomputing/tempo/library';
+import { getDaysInMonth, civilToDays, isoWeekdayFromDays, epochMsFromParts, partsFromEpochMs } from '@magmacomputing/tempo/library';
 
 /**
  * Computes calendar dates, floating Easter offsets, and weekday shifts.
@@ -132,7 +132,7 @@ export function getCorpusChristi(year: number): string {
  * @returns ISO date string
  */
 export function getNthWeekdayOfMonth(year: number, month: number, weekday: number, n: number): string {
-	const daysInMonth = libGetDaysInMonth(year, month);
+	const daysInMonth = getDaysInMonth(year, month);
 	if (n === -1) {
 		// Find last occurrence from end of month
 		for (let d = daysInMonth; d >= 1; d--) {

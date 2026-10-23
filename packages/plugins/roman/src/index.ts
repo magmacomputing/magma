@@ -1,4 +1,5 @@
-import { definePlugin, deepFreeze, isFunction, isNumber, isLeapYear, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, isFunction, isNumber, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { isLeapYear } from '@magmacomputing/tempo/library';
 import type { Tempo } from '@magmacomputing/tempo';
 import type {
 	ClassicalRomanDate,
@@ -156,7 +157,7 @@ export const RomanPlugin: TempoPlugin = definePlugin({
 
 		// 1. Mount static Tempo.roman namespace
 		Object.defineProperty(TempoClass, 'roman', {
-			value: deepFreeze ? deepFreeze(romanNamespace) : Object.freeze(romanNamespace),
+			value: deepFreeze(romanNamespace),
 			writable: false,
 			configurable: true,
 			enumerable: false,
