@@ -98,4 +98,35 @@ describe('Classical Roman Consular Catalog (Phase 4)', () => {
 			expect(parsed.day).toBe(15);
 		});
 	});
+
+	describe('Subpath import and dynamic registration (@magmacomputing/tempo-plugin-roman/consuls)', () => {
+		test('defaults to landmark seed catalog before subpath import', () => {
+			// Year 100 CE is not in the landmark seed catalog
+			expect(getConsulsByYear(100)).toBeUndefined();
+			expect(formatConsuls(100)).toBeUndefined();
+		});
+
+		test('subpath import registers full Fasti consulares (509 BCE - 541 CE)', async () => {
+			const subpath = await import('../src/consuls.js');
+			expect(subpath.FASTI_CONSULARES).toBeDefined();
+			expect(Object.keys(subpath.FASTI_CONSULARES).length).toBeGreaterThan(950);
+
+			// Now year 100 CE Trajan is registered and available!
+			const c100 = getConsulsByYear(100);
+			expect(c100).toBeDefined();
+			expect(c100).toEqual([
+				'Imp. Caesar Nerva Trajanus Augustus III',
+				'Sex. Julius Frontinus III',
+			]);
+			expect(formatConsuls(100)).toBe(
+				'Imp. Caesare Nerva Trajano Augusto III, Sex. Julio Frontino III coss.',
+			);
+
+			// Tempo instance formatting now picks up non-landmark years
+			const tTrajan = new Tempo('0100-01-01');
+			expect(tTrajan.consuls).toBe(
+				'Imp. Caesare Nerva Trajano Augusto III, Sex. Julio Frontino III coss.',
+			);
+		});
+	});
 });

@@ -15,7 +15,7 @@ import {
 	MONTH_NOMINATIVE,
 	MONTH_SHORT,
 } from './constants.js';
-import { formatConsuls } from './consuls.js';
+import { formatConsuls } from './consul-engine.js';
 
 /**
  * Formats a classical Roman calendar date into a Latin phrase or abbreviation.

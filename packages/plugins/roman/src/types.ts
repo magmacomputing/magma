@@ -351,4 +351,11 @@ export interface RomanNamespace {
 	 * @returns List of matching years and consul pairs
 	 */
 	findConsuls(query: string): ConsularPair[];
+
+	/**
+	 * Registers an external consular catalog into the active catalog.
+	 *
+	 * @param catalog - Mapping of astronomical years to arrays of consul names
+	 */
+	registerConsuls(catalog: Record<number, readonly string[]>): void;
 }

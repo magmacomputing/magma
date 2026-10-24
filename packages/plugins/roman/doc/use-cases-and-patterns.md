@@ -171,7 +171,9 @@ Historical sources and decrees from the Roman Republic and early Empire were rar
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-roman/install';
+// Full 1,050-year Fasti consulares (also auto-installs RomanPlugin):
+import '@magmacomputing/tempo-plugin-roman/consuls';
+// (For lean core without full Fasti, use: import '@magmacomputing/tempo-plugin-roman/install')
 
 // 1. Resolve an astronomical date and format its presiding consuls
 const ides44BCE = new Tempo('-000043-03-15');

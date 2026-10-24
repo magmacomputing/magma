@@ -126,9 +126,13 @@ In everyday Roman civic and legal life, years were designated by naming the two 
 
 $$\text{\textit{Cicerone et Antonio consulibus}} \implies 63 \text{ BCE} \text{ (astronomical } -62)$$
 
-The plugin includes the definitive historical catalog of ordinary consuls spanning from the founding of the Roman Republic in 509 BCE (`-508`) through the final recorded consul in the West, Decius Theodorius Paulinus and Anicius Faustus Albinus Basilius in 541 CE (`541`).
+The plugin includes historical consular dating. By default, the core bundle provides a curated seed catalog of landmark years (e.g. 509 BCE founding, 63 BCE Cicero, 44 BCE Caesar, 541 CE Basilius).
+
+To access the complete historical catalog spanning all 1,050 years from the founding of the Roman Republic in 509 BCE (`-508`) through the final recorded consul in the West in 541 CE (`541`), import the `./consuls` subpath:
 
 ```typescript
+import '@magmacomputing/tempo-plugin-roman/consuls';
+
 const idesMarch44 = new Tempo('-000043-03-15');
 console.log(idesMarch44.consuls);
 // "C. Julio Caesare V, M. Antonio coss."

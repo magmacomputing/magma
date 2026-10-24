@@ -30,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Multi-era year support (AUC, BCE/CE, and astronomical integer years).
   - Bidirectional verification against calendar arithmetic to reject impossible Roman dates.
 - **Phase 4: Consular Fasti Catalog (509 BCE–541 CE)**:
-  - Built-in historical database of Roman eponymous consuls from the founding of the Roman Republic (509 BCE) through the final ordinary consul of the West (541 CE).
+  - Curated landmark seed catalog in core plugin bundle (~15 KB minified bundle, ~78% size reduction) providing out-of-the-box consular dating for major historical milestones.
+  - Dedicated subpath export `@magmacomputing/tempo-plugin-roman/consuls` for the complete 1,050-year Fasti consulares catalog (509 BCE–541 CE) via shared dynamic registry.
   - Added consular formatting engine with Latin ablative absolute (`coss.` / `cos.`) and nominative case styles (`formatConsuls(year, style?)`).
   - Added `Tempo.roman.getConsuls(year)` and fuzzy search utility `Tempo.roman.findConsuls(query)`.
   - Added `{roman:consul}` format token support and `tempo.consuls` instance getter.

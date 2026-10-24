@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "sideEffects": [
-    "./dist/install.js"
+    "./dist/install.js",
+    "./dist/consuls.js"
   ],
   "license": "MIT",
   "repository": {
@@ -63,6 +64,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./consuls": {
+      "types": "./dist/consuls.d.ts",
+      "import": "./dist/consuls.js",
+      "default": "./dist/consuls.js"
     },
     "./install": {
       "types": "./dist/install.d.ts",

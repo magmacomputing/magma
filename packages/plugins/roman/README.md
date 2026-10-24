@@ -29,43 +29,64 @@ npm install @magmacomputing/tempo-plugin-roman
 
 ---
 
+## 📦 Import Paths & Bundle Options
+
+Choose the import path that best fits your application's size and feature requirements:
+
+| Import Path | Minified Size | What's Included |
+| :--- | :--- | :--- |
+| `import '@magmacomputing/tempo-plugin-roman/install'` | **~15 KB** | Full Roman calendar arithmetic, Latin phrasing/parsing, AUC conversions, and ~20 landmark consul years (Cicero, Caesar, Brutus, Basilius). Auto-installs plugin. |
+| `import '@magmacomputing/tempo-plugin-roman/consuls'` | **~70 KB** | Batteries-included: full Roman calendar plugin + complete **1,050-year Fasti consulares** catalog (509 BCE–541 CE). Auto-installs plugin in one import. |
+| `import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman'` | **~15 KB** | Core plugin definition for explicit installation via `Tempo.use(RomanPlugin)`. |
+
+---
+
 ## 🚀 Quick Start
 
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman';
-
-// 1. Install the plugin
-Tempo.use(RomanPlugin);
-
-// 2. Compute classical Roman date and Latin phrasing
-const t = new Tempo('2026-10-16');
-const roman = t.toRomanClassical();
-
-console.log(roman.latin);      // "ante diem XVII Kalendas Novembres"
-console.log(roman.shortLatin); // "a.d. XVII Kal. Nov."
-console.log(roman.anchor);     // "Kalends"
-console.log(roman.count);      // 17
-console.log(roman.auc);        // 2779
-
-// 3. Ides of March (44 BCE = astronomical year -43)
-const idesOfMarch = new Tempo('-000043-03-15');
-console.log(idesOfMarch.toRomanClassical().latin); // "Idibus Martiis"
-console.log(idesOfMarch.toAUC());                  // 710 (AUC)
-
-// 4. Leap year bissextile day (February 24 in leap year)
-const leapDay = new Tempo('2024-02-24');
-console.log(leapDay.toRomanClassical().latin); // "ante diem bis sextum Kalendas Martias"
-console.log(leapDay.toRomanClassical().shortLatin); // "a.d. bis VI Kal. Mart."
-```
-
-Or use the zero-boilerplate side-effect import:
+### Option A: Lean Core Plugin (Zero-Boilerplate)
 
 ```typescript
 import '@magmacomputing/tempo-plugin-roman/install';
 import { Tempo } from '@magmacomputing/tempo';
 
-console.log(new Tempo('2026-03-15').toRomanClassical().latin); // "Idibus Martiis"
+// 1. Classical Roman calendar arithmetic & Latin phrasing
+const t = new Tempo('2026-10-16');
+const roman = t.toRomanClassical();
+console.log(roman.latin);      // "ante diem XVII Kalendas Novembres"
+console.log(roman.shortLatin); // "a.d. XVII Kal. Nov."
+console.log(roman.auc);        // 2779 (AUC)
+
+// 2. Ides of March (44 BCE = astronomical year -43)
+const idesOfMarch = new Tempo('-000043-03-15');
+console.log(idesOfMarch.toRomanClassical().latin); // "Idibus Martiis"
+console.log(idesOfMarch.consuls);                  // "C. Julio Caesare V, M. Antonio coss."
+
+// 3. Leap year bissextile day (February 24 in leap year)
+const leapDay = new Tempo('2024-02-24');
+console.log(leapDay.toRomanClassical().latin); // "ante diem bis sextum Kalendas Martias"
+```
+
+### Option B: Full Consular Catalog (Single Import)
+
+If you need the entire historical Fasti covering all 1,050 years from 509 BCE through 541 CE:
+
+```typescript
+import '@magmacomputing/tempo-plugin-roman/consuls';
+import { Tempo } from '@magmacomputing/tempo';
+
+// Resolves any year across the Republic and Empire
+const trajan = new Tempo('0100-01-01');
+console.log(trajan.consuls);
+// "Imp. Caesare Nerva Trajano Augusto III, Sex. Julio Frontino III coss."
+```
+
+### Option C: Explicit Installation
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman';
+
+Tempo.use(RomanPlugin);
 ```
 
 ---
@@ -86,6 +107,10 @@ Tempo.roman.aucToYear(710, 'historical'); // { year: 44, era: 'BCE' }
 // Round-trip Gregorian from Roman anchor
 const date = Tempo.roman.fromClassical('Kalends', 11, 2026, 'ante_diem', 17);
 console.log(date); // { year: 2026, month: 10, day: 16 }
+
+// Consular dating formula (landmark seed table available by default)
+const cicero = new Tempo('-000062-03-15');
+console.log(cicero.consuls); // "M. Tullio Cicerone, C. Antonio Hybrida coss."
 ```
 
 ---

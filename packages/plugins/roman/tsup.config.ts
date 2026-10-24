@@ -3,5 +3,5 @@ import { sharedConfig } from '../tsup.shared.ts';
 
 export default defineConfig({
 	...sharedConfig,
-	entry: ['src/index.ts', 'src/install.ts'],
+	entry: ['src/index.ts', 'src/install.ts', 'src/consuls.ts'],
 });

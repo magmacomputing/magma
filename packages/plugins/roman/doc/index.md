@@ -17,17 +17,25 @@ A lightweight, zero-dependency Community plugin for the [Tempo](https://github.c
 - **Bissextile Day**: Reproduces the classical leap-year doubling of the sixth day before the March Kalends (`a.d. bis VI Kal. Mart.`).
 - **AUC Year Reckoning**: Bidirectional *Ab Urbe Condita* conversion for CE, BCE, and astronomical years.
 - **Classical Latin Parser**: Robust parser recognizing arbitrary Latin expressions (e.g. `a.d. IV Id. Mart. 710 AUC`, `Idibus Martiis Cicerone coss.`) with calendar validation.
-- **Fasti Consulares (509 BCE–541 CE)**: Complete historical catalog of Roman Consuls with Latin ablative absolute (`coss.`) formatting and searching.
+- **Fasti Consulares (509 BCE–541 CE)**: Historical catalog of Roman Consuls with Latin ablative absolute (`coss.`) formatting and searching (full catalog via `./consuls`, with landmark years in core).
 - **Lossless Round-Trips**: `Tempo.roman.fromClassical()` maps any classical date back to its exact calendar day.
 - **Immutable Results**: Every structured result is frozen; zero runtime dependencies beyond Tempo.
 
 ---
 
-## Installation
+## Installation & Import Paths
 
 ```bash
 npm install @magmacomputing/tempo-plugin-roman
 ```
+
+### Choose Your Import Path
+
+| Import Path | Minified Size | What's Included |
+| :--- | :--- | :--- |
+| `import '@magmacomputing/tempo-plugin-roman/install'` | **~15 KB** | Full Roman calendar arithmetic, Latin phrasing/parsing, AUC conversions, and ~20 landmark consul years (Cicero, Caesar, Brutus, Basilius). Auto-installs plugin. |
+| `import '@magmacomputing/tempo-plugin-roman/consuls'` | **~70 KB** | Batteries-included: full Roman calendar plugin + complete **1,050-year Fasti consulares** catalog (509 BCE–541 CE). Auto-installs plugin in one import. |
+| `import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman'` | **~15 KB** | Core plugin definition for explicit installation via `Tempo.use(RomanPlugin)`. |
 
 ---
 
@@ -35,14 +43,13 @@ npm install @magmacomputing/tempo-plugin-roman
 
 <PluginRepl plugin="roman" />
 
+### Option A: Lean Core Plugin (Zero-Boilerplate)
+
 ```typescript
+import '@magmacomputing/tempo-plugin-roman/install';
 import { Tempo } from '@magmacomputing/tempo';
-import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman';
 
-// 1. Install the plugin
-Tempo.use(RomanPlugin);
-
-// 2. Compute classical Roman date and Latin phrasing
+// 1. Compute classical Roman date and Latin phrasing
 const today = new Tempo('2026-10-16');
 const classical = today.toRomanClassical();
 
@@ -51,33 +58,46 @@ console.log(`Abbreviated: ${classical.shortLatin}`);// "a.d. XVII Kal. Nov."
 console.log(`Anchor: ${classical.anchor}`);         // "Kalends"
 console.log(`Year AUC: ${today.auc} AUC`);          // 2779 AUC
 
-// 3. Ides of March (44 BCE = astronomical year -43)
+// 2. Ides of March (44 BCE = astronomical year -43)
 const idesOfMarch = new Tempo('-000043-03-15');
 console.log(idesOfMarch.toRomanClassical().latin);  // "Idibus Martiis"
 console.log(idesOfMarch.toAUC());                   // 710 (AUC)
+console.log(idesOfMarch.consuls);                  // "C. Julio Caesare V, M. Antonio coss."
 
-// 4. Leap year bissextile day (February 24 in a leap year)
+// 3. Leap year bissextile day (February 24 in a leap year)
 const leapDay = new Tempo('2024-02-24');
 console.log(leapDay.toRomanClassical().latin);      // "ante diem bis sextum Kalendas Martias"
 console.log(leapDay.toRomanClassical().shortLatin); // "a.d. bis VI Kal. Mart."
 
-// 5. Classical Latin Date Parsing (Phase 3)
+// 4. Classical Latin Date Parsing
 const parsed = Tempo.roman.parse('a.d. IV Id. Mart. 710 AUC');
 console.log(parsed.format('{yyyy}-{mm}-{dd}'));     // "-000043-03-12" (March 12, 44 BCE)
-
-// 6. Consular Dating & Fasti Catalog (Phase 4)
-const ciceroYear = new Tempo('-000062-03-15');
-console.log(ciceroYear.consuls);                    // "M. Tullio Cicerone, C. Antonio Hybrida coss."
-console.log(ciceroYear.format('{roman:consul}'));   // "M. Tullio Cicerone, C. Antonio Hybrida coss."
 ```
 
-### Auto-Installation (Side-Effect Import)
+### Option B: Full Consular Fasti (Single Import)
+
+To access the complete historical Fasti consulares spanning all 1,050 years from 509 BCE through 541 CE:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-roman/install';
+import '@magmacomputing/tempo-plugin-roman/consuls';
 import { Tempo } from '@magmacomputing/tempo';
 
-console.log(new Tempo('2026-03-15').toRomanClassical().latin); // "Idibus Martiis"
+// Auto-installs RomanPlugin AND populates all 1,050 consular years
+const trajanYear = new Tempo('0100-01-01');
+console.log(trajanYear.consuls);
+// "Imp. Caesare Nerva Trajano Augusto III, Sex. Julio Frontino III coss."
+
+console.log(trajanYear.format('{roman:consul}'));
+// "Imp. Caesare Nerva Trajano Augusto III, Sex. Julio Frontino III coss."
+```
+
+### Option C: Explicit Plugin Registration
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman';
+
+Tempo.use(RomanPlugin);
 ```
 
 ---

@@ -20,14 +20,20 @@ import {
 } from './math.js';
 import { createRomanTokenEvaluator, formatClassicalRomanDate } from './format.js';
 import { parseClassicalRomanDate } from './parser.js';
-import { findConsulYears, formatConsuls, getConsulsByYear } from './consuls.js';
+import {
+	findConsulYears,
+	formatConsuls,
+	getConsulsByYear,
+	registerConsuls,
+	LANDMARK_CONSULS,
+} from './consul-engine.js';
 
 export * from './types.js';
 export * from './constants.js';
 export * from './math.js';
 export * from './format.js';
 export * from './parser.js';
-export * from './consuls.js';
+export * from './consul-engine.js';
 
 declare module '@magmacomputing/tempo' {
 	/** Registers `{roman}` (and `{roman:...}` modifiers) for compile-time format validation. */
@@ -211,6 +217,10 @@ function createRomanNamespace(TempoClass: any): RomanNamespace {
 
 		findConsuls(query: string) {
 			return findConsulYears(query);
+		},
+
+		registerConsuls(catalog: Record<number, readonly string[]>): void {
+			registerConsuls(catalog);
 		},
 	};
 }

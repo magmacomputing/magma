@@ -8,7 +8,7 @@ import type {
 } from './types.js';
 import { calculateClassicalRomanDate, calculateGregorianFromRoman } from './math.js';
 import { COUNT_WORDS_ABLATIVE, COUNT_WORDS_ACCUSATIVE } from './constants.js';
-import { findConsulYears } from './consuls.js';
+import { findConsulYears } from './consul-engine.js';
 
 /** Latin spelling variants are folded together: `j` → `i` (Januarius / Ianuarius). */
 const fold = (s: string) => s.toLowerCase().replace(/j/g, 'i');
