@@ -20,3 +20,4 @@ reviews:
     - "!**/dist/**"               # Ignore all build artifacts
     - "!**/plan/**"               # Ignore internal planning and roadmap RFCs
     - "!**/vendor/**"             # Ignore third-party code
+    - "!**/*.md"                  # Temporarily ignore markdown documentation for v5 release
