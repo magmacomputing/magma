@@ -2,6 +2,7 @@ import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isDefined, isUndefined, isString, isCallable, isNumber } from '#library/assertion.library.js';
 import { BoundedCache } from '#library/cache.class.js';
+import { signify, type WritableSignal } from './signify.library.js';
 
 const context = getContext();
 
@@ -253,3 +254,80 @@ export const isTestEnvironment = (): boolean => {
 		getStorage<boolean>('CI', false)
 	);
 };
+
+/**
+ * Creates a reactive WritableSignal synchronized with persistent storage.
+ * - Call `sig()` to read the stored value (with automatic dependency tracking).
+ * - Call `sig(newValue)` or set `sig.value = newValue` to update the signal and persist to storage.
+ * - In browser environments, automatically listens to window 'storage' events for cross-tab synchronization.
+ * 
+ * @param key - The storage key to bind
+ * @param defaultValue - Optional fallback value if key does not exist
+ * @returns A WritableSignal bound to the persistent storage key
+ * @internal
+ */
+export function toSignal<T>(key: string, defaultValue?: T): WritableSignal<T> {
+	let initial = getStorage<T>(key);
+	if (isUndefined(initial) && isDefined(defaultValue)) {
+		setStorage(key, defaultValue);
+		initial = defaultValue;
+	}
+	const sig = signify<T>((initial ?? defaultValue) as T);
+
+	const accessor = function (this: any, ...args: [T?]): any {
+		if (args.length === 0)
+			return sig();
+
+		const val = args[0] as T;
+		setStorage(key, val);
+		return sig(val);
+	} as WritableSignal<T>;
+
+	Object.defineProperties(accessor, {
+		get: { value: () => sig.get(), writable: false, configurable: false },
+		set: {
+			value: (val: T) => {
+				setStorage(key, val);
+				sig.set(val);
+			},
+			writable: false,
+			configurable: false
+		},
+		value: {
+			get: () => sig.value,
+			set: (val: T) => {
+				setStorage(key, val);
+				sig.value = val;
+			},
+			configurable: false,
+			enumerable: true
+		},
+		epoch: {
+			get: () => sig.epoch,
+			configurable: false,
+			enumerable: true
+		},
+		addConsumer: { value: (c: any) => sig.addConsumer(c), writable: false, configurable: false },
+		removeConsumer: { value: (c: any) => sig.removeConsumer(c), writable: false, configurable: false },
+		poll: { value: () => sig.poll(), writable: false, configurable: false },
+		[Symbol.toStringTag]: { value: 'Signify', writable: false, configurable: false }
+	});
+
+	if (context.type === CONTEXT.Browser && isCallable(context.global?.addEventListener)) {
+		try {
+			context.global.addEventListener('storage', (event: any) => {
+				if (event.key === key) {
+					const updated = getStorage<T>(key, defaultValue);
+					sig.set(updated as T);
+				}
+			});
+		} catch {
+			// ignore in restricted environments
+		}
+	}
+
+	return Object.freeze(accessor);
+}
+
+// /** Alias for toSignal */
+// export const storageSignal = toSignal;

@@ -443,5 +443,30 @@ describe('common/runtime/reactive.class', () => {
 		expect(received).toEqual([1, 2]);
 		expect(stream.state.buffered).toBe(0);
 	});
+
+	it('supports .toSignal() and .signal getter reactivity', () => {
+		const stream = new Reactive<number>();
+		const sig = stream.toSignal(-1);
+
+		expect(sig()).toBe(-1);
+		stream.push(42);
+		expect(sig()).toBe(42);
+
+		// Test memoized .signal getter
+		const stream2 = new Reactive<string>();
+		expect(stream2.signal).toBe(stream2.signal);
+		expect(stream2.signal()).toBeUndefined();
+		stream2.push('hello signal');
+		expect(stream2.signal()).toBe('hello signal');
+	});
+
+	it('supports Reactive.from(signal) and Reactive.fromSignal(signal)', async () => {
+		const stream = Reactive.fromSignal(() => 100);
+		const emitted: number[] = [];
+		stream.on('data', (v) => emitted.push(v));
+
+		expect(emitted).toEqual([100]);
+		stream.complete();
+	});
 });
 

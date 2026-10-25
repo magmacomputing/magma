@@ -144,4 +144,30 @@ describe('Pledge', () => {
 		expect(p3.isRejected).toBe(true);
 		await expect(p3.promise).rejects.toThrow('Pledge disposed');
 	});
+
+	test('toSignal() and signal getter reactivity', async () => {
+		const p = new Pledge<string>();
+		const sig = p.toSignal('pending...');
+
+		// Initially pending, returns fallback
+		expect(sig()).toBe('pending...');
+		expect(p.isPending).toBe(true);
+
+		p.resolve('completed data');
+		// Reactively updates to settled value
+		expect(sig()).toBe('completed data');
+		expect(p.isResolved).toBe(true);
+
+		// signal getter
+		const p2 = new Pledge<number>();
+		expect(p2.signal()).toBeUndefined();
+		p2.resolve(42);
+		expect(p2.signal()).toBe(42);
+
+		// Rejection rethrows upon access
+		const p3 = new Pledge<string>({ catch: true, silent: true });
+		const sig3 = p3.toSignal();
+		p3.reject(new Error('async failed'));
+		expect(() => sig3()).toThrow('async failed');
+	});
 });

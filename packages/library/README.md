@@ -26,6 +26,7 @@ The library is organized into specialized modules, each designed for maximum eff
 | **Reflection** | Clean access to own-properties, values, and entries without prototype pollution. |
 | **Temporal** | Lightweight helpers and polyfill integration for the native `Temporal` API. |
 | **Recurrence** | Zero-dependency RFC 5545 recurrence rule parsing, expansion, and finiteness evaluation. |
+| **Signify** | Zero-dependency TC39-aligned reactive primitives (`signify`, `Signify.computed`, `Signify.effect`) with automatic GC safety and stream bridges. |
 
 ---
 

@@ -1,4 +1,4 @@
-import { getStorage, setStorage, clearStorage, nodeStorage, createMemoryStorage } from '#library/storage.library.js';
+import { getStorage, setStorage, clearStorage, nodeStorage, createMemoryStorage, toSignal } from '#library/storage.library.js';
 
 describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
   const envKey = 'TEST_ENV_FALLBACK_KEY';
@@ -165,6 +165,29 @@ describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
       expect(memStore.getItem('b')).toBeNull();
       expect(memStore.getItem('a')).toBe('valA');
       expect(memStore.getItem('c')).toBe('valC');
+    });
+  });
+
+  describe('toSignal reactive bridge', () => {
+    it('should synchronize reactive signals with storage', () => {
+      const theme = toSignal('user.pref.theme', 'dark');
+      expect(theme()).toBe('dark');
+      expect(getStorage('user.pref.theme')).toBe('dark');
+
+      theme('light');
+      expect(theme()).toBe('light');
+      expect(getStorage('user.pref.theme')).toBe('light');
+
+      theme.value = 'high-contrast';
+      expect(theme.value).toBe('high-contrast');
+      expect(getStorage('user.pref.theme')).toBe('high-contrast');
+
+
+      const font = toSignal('user.pref.font', 'monospace');
+      expect(font()).toBe('monospace');
+      font('sans-serif');
+      expect(font()).toBe('sans-serif');
+      expect(getStorage('user.pref.font')).toBe('sans-serif');
     });
   });
 });

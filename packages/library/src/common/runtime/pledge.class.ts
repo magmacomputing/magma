@@ -7,6 +7,7 @@ import { cleanify } from '#library/json.library.js';
 import { Immutable, StringTag } from '#library/decorator.library.js';
 import { isEmpty, isObject } from '#library/assertion.library.js';
 import { Finalizer } from './finalizer.class.js';
+import { signify, Signify, type WritableSignal, type ReadonlySignal } from './signify.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -39,6 +40,8 @@ const _STATE = secure({
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;
+	readonly #signal: WritableSignal<number>;
+	#cachedSignal: ReadonlySignal<T | undefined> | undefined = undefined;
 
 	static get STATE() { return _STATE; }
 
@@ -51,7 +54,7 @@ export class Pledge<T> {
 	static init(arg?: Pledge.Constructor | string) {
 		if (isObject(arg)) {
 			if (isEmpty(arg))
-				_static = {};																// reset static values
+				_static = {};																				// reset static values
 
 			markConfig(_static);
 			Object.assign(_static,
@@ -95,6 +98,7 @@ export class Pledge<T> {
 			this.#pledge = { promise, resolve: res, reject: rej };
 		}
 		this.#status = markConfig({ state: _STATE.Pending, ...config });
+		this.#signal = signify(0);
 
 		const onResolve = asArray(_static.onResolve).concat(asArray(opts.onResolve));
 		const onReject = asArray(_static.onReject).concat(asArray(opts.onReject));
@@ -111,11 +115,11 @@ export class Pledge<T> {
 		}
 
 		if (onResolve.length)
-			this.#pledge.promise.then(val => runSafely(onResolve, val)).catch(() => {});
+			this.#pledge.promise.then(val => runSafely(onResolve, val)).catch(() => { });
 		if (onReject.length)
 			this.#pledge.promise.catch(err => runSafely(onReject, err));
 		if (onSettle.length)
-			this.#pledge.promise.finally(() => runSafely(onSettle)).catch(() => {});
+			this.#pledge.promise.finally(() => runSafely(onSettle)).catch(() => { });
 
 		if (this.#status.catch)
 			this.#pledge.promise.catch(err => _dbg.warn(this.#status, err));
@@ -128,7 +132,7 @@ export class Pledge<T> {
 				status.error = new Error(`Pledge ${tag} collected while pending`);
 				status.state = _STATE.Rejected;
 				try {
-					pledge.promise.catch(() => {});
+					pledge.promise.catch(() => { });
 				} catch {
 					// best-effort
 				}
@@ -171,16 +175,49 @@ export class Pledge<T> {
 	}
 
 	get isPending() {
+		this.#signal();
 		return this.#status.state === _STATE.Pending;
 	}
 	get isResolved() {
+		this.#signal();
 		return this.#status.state === _STATE.Resolved;
 	}
 	get isRejected() {
+		this.#signal();
 		return this.#status.state === _STATE.Rejected;
 	}
 	get isSettled() {
+		this.#signal();
 		return this.#status.state !== _STATE.Pending;
+	}
+
+	/**
+	 * Bridges this Pledge into a synchronous Signify signal.
+	 * While pending, returns the optional defaultValue (default: undefined).
+	 * When resolved, reactively returns the resolved value.
+	 * If rejected, the signal rethrows the rejection error upon access.
+	 * 
+	 * @param defaultValue - Optional fallback value returned while pending.
+	 * @returns A ReadonlySignal bound to this pledge's resolution.
+	 */
+	toSignal<D = undefined>(defaultValue?: D): ReadonlySignal<T | D> {
+		return Signify.computed(() => {
+			this.#signal();
+			if (this.#status.state === _STATE.Resolved) {
+				return this.#status.settled as T;
+			}
+			if (this.#status.state === _STATE.Rejected) {
+				throw this.#status.error;
+			}
+			return defaultValue as D;
+		});
+	}
+
+	/**
+	 * Readonly signal accessor bound to this pledge with an initial value of undefined.
+	 */
+	get signal(): ReadonlySignal<T | undefined> {
+		return this.#cachedSignal ??= this.toSignal();
 	}
 
 	toString() {
@@ -203,6 +240,7 @@ export class Pledge<T> {
 			this.#status.state = _STATE.Resolved;
 			_dbg.debug(this.#status, 'Resolved');									// debug
 			this.#pledge.resolve(value);													// resolve
+			this.#signal(this.#signal() + 1);
 		}
 		// else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
 
@@ -221,6 +259,7 @@ export class Pledge<T> {
 			this.#status.state = _STATE.Rejected;
 			_dbg.debug(this.#status, 'Rejected', error);					// debug
 			this.#pledge.reject(error);														// reject
+			this.#signal(this.#signal() + 1);
 		}
 		// else _dbg.warn(this.#status, `Pledge was already ${this.state}`);
 

@@ -257,6 +257,10 @@
       "development": "./src/common/runtime/finalizer.class.ts",
       "default": "./dist/common/runtime/finalizer.class.js"
     },
+    "#library/signify.library.js": {
+      "development": "./src/common/runtime/signify.library.ts",
+      "default": "./dist/common/runtime/signify.library.js"
+    },
     "#library/*.js": {
       "development": "./src/common/*.ts",
       "default": "./dist/common/*.js"

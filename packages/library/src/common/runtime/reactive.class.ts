@@ -3,6 +3,7 @@ import { isCallable, isDefined, isFunction, isNumber, isObject, isPromise, isStr
 import { Pledge } from './pledge.class.js';
 import { Finalizer } from './finalizer.class.js';
 import { onAbort, NOOP } from './aborter.library.js';
+import { Signify, type ReadonlySignal } from './signify.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -171,6 +172,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	#stopCallback: () => void;
 	readonly #cleanupState: ReactiveCleanupState<T>;
 	#unregisterFinalizer?: (() => boolean) | undefined;
+	#cachedSignal: ReadonlySignal<T | undefined> | undefined = undefined;
 
 	constructor(arg?: Reactive.Options<T> | string) {
 		const opts: Reactive.Options<T> = isObject(arg) ? arg : isString(arg) ? { tag: arg } : {};
@@ -603,6 +605,66 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		return this;
 	}
 
+	// ── Signal Bridge ──────────────────────────────────────────────────────────
+
+	/**
+	 * Bridges this Reactive stream into a synchronous Signify signal.
+	 * Updates the signal value whenever the stream emits data.
+	 * 
+	 * @param initialValue - Optional fallback value before first emission (default: undefined).
+	 * @returns A ReadonlySignal bound to this stream.
+	 */
+	toSignal(): ReadonlySignal<T | undefined>;
+	toSignal<D>(initialValue: D): ReadonlySignal<T | D>;
+	toSignal<D = undefined>(initialValue?: D): ReadonlySignal<T | D> {
+		const state = new Signify.State<T | D>(initialValue as D);
+		const sub = this.on('data', (val: T) => {
+			state.set(val);
+		});
+
+		let isDisposed = false;
+		const dispose = () => {
+			if (isDisposed) return;
+			isDisposed = true;
+			sub.unsubscribe();
+		};
+
+		const accessor = function (this: any): T | D {
+			return state.get();
+		} as ReadonlySignal<T | D>;
+
+		Object.defineProperties(accessor, {
+			get: { value: () => state.get(), writable: false, configurable: false },
+			value: {
+				get: () => state.get(),
+				configurable: false,
+				enumerable: true
+			},
+			epoch: {
+				get: () => state.epoch,
+				configurable: false,
+				enumerable: true
+			},
+			addConsumer: { value: (c: any) => state.addConsumer(c), writable: false, configurable: false },
+			removeConsumer: { value: (c: any) => state.removeConsumer(c), writable: false, configurable: false },
+			poll: { value: () => state.poll(), writable: false, configurable: false },
+			dispose: { value: dispose, writable: false, configurable: false },
+			[Symbol.dispose]: { value: dispose, writable: false, configurable: false },
+			[Symbol.toStringTag]: { value: 'Signify.Computed', writable: false, configurable: false }
+		});
+
+		Finalizer.register(accessor, dispose);
+
+		return Object.freeze(accessor);
+	}
+
+	/**
+	 * Readonly signal accessor bound to this stream with an initial value of undefined.
+	 */
+	get signal(): ReadonlySignal<T | undefined> {
+		return this.#cachedSignal ??= this.toSignal();
+	}
+
 	// ── Resource Management ────────────────────────────────────────────────────
 
 	/** Synchronous disposal hook (`using stream = new Reactive()`) */
@@ -618,16 +680,52 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	// ── Static Factories ───────────────────────────────────────────────────────
 
 	/**
-	 * Creates a `Reactive` stream from an iterable, async iterable, or Promise.
+	 * Bridges a Signify or Signal node into a Reactive<T> async stream.
+	 * Automatically pushes updates to the stream whenever the signal changes.
 	 *
-	 * @param source - The source collection or promise
+	 * @param source - The signal or getter function to stream
+	 * @param options - Optional configuration options
+	 * @returns A Reactive stream instance
+	 */
+	static fromSignal<V>(
+		source: { get(): V } | (() => V),
+		options?: Reactive.Options<V>
+	): Reactive<V> {
+		const stream = new Reactive<V>(options);
+		const readFn = isCallable(source)
+			? (source as () => V)
+			: () => (source as { get(): V }).get();
+
+		const sub = Signify.effect(() => {
+			const value = readFn();
+			stream.push(value);
+		});
+
+		stream.on('stop', () => {
+			sub.dispose();
+		});
+
+		stream.on('end', () => {
+			sub.dispose();
+		});
+
+		return stream;
+	}
+
+	/**
+	 * Creates a `Reactive` stream from an iterable, async iterable, Promise, or Signal.
+	 *
+	 * @param source - The source collection, promise, or reactive signal
 	 * @param options - Optional configuration options
 	 * @returns A Reactive stream instance
 	 */
 	static from<V>(
-		source: Iterable<V> | AsyncIterable<V> | Promise<V>,
+		source: Iterable<V> | AsyncIterable<V> | Promise<V> | { get(): V } | (() => V),
 		options?: Reactive.Options<V>
 	): Reactive<V> {
+		if (isDefined(source) && (isCallable(source) || isFunction((source as any).get)))
+			return Reactive.fromSignal(source as any, options);
+
 		const stream = new Reactive<V>(options);
 
 		if (isDefined(source) && isFunction((source as any)[Symbol.asyncIterator])) {
