@@ -410,7 +410,7 @@ return t.iso;`,
 		label: 'Preset: Classical Roman Calendar & Fasti',
 		plugin: 'roman',
 		code: `// 🏛️ Classical Roman Calendar, Parsing & Consuls (@magmacomputing/tempo-plugin-roman)
-const { RomanPlugin } = await import('@magmacomputing/tempo-plugin-roman');
+const { RomanPlugin } = await import('@magmacomputing/tempo-plugin-roman/consuls');
 Tempo.use(RomanPlugin);
 
 // 1. Classical Date Formatting & Declensions

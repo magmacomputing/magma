@@ -187,6 +187,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	#value: T | undefined = undefined;
 	#error: unknown = undefined;
 	#hasError = false;
+	#hasValue = false;
 
 	#state: number = StateFlag.DIRTY;
 	#epoch = 0;
@@ -317,13 +318,14 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 			return;
 		}
 
-		const hasPrevious = !this.#hasError && isDefined(this.#value);
+		const hasPrevious = !this.#hasError && this.#hasValue;
 		const isChanged = !hasPrevious || (isFunction(this.#equals)
 			? !this.#equals(this.#value!, nextValue!)
 			: !Object.is(this.#value, nextValue));
 
 		this.#hasError = false;
 		this.#error = undefined;
+		this.#hasValue = true;
 
 		if (isChanged) {
 			this.#value = nextValue;

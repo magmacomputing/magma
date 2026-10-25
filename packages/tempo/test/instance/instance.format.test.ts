@@ -291,6 +291,8 @@ describe(`${label} format method`, () => {
     // Allows empty strings and plain literals without throwing
     expect(t.format('')).toBe('');
     expect(t.format('Plain text without tokens')).toBe('Plain text without tokens');
+    expect(t.format('50% completed')).toBe('50% completed');
+    expect(t.format('My MM report')).toBe('My MM report');
   });
 
 });

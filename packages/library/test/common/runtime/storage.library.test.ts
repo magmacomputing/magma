@@ -189,5 +189,35 @@ describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
       expect(font()).toBe('sans-serif');
       expect(getStorage('user.pref.font')).toBe('sans-serif');
     });
+
+    it('should notify other local signals bound to the same key and respect disposal', () => {
+      const sig1 = toSignal<string>('shared.config', 'v1');
+      const sig2 = toSignal<string>('shared.config', 'v1');
+
+      expect(sig1()).toBe('v1');
+      expect(sig2()).toBe('v1');
+
+      // Writing to sig1 updates sig2 immediately in same document
+      sig1.value = 'v2';
+      expect(sig1()).toBe('v2');
+      expect(sig2()).toBe('v2');
+
+      // Disposing sig2 unregisters it
+      (sig2 as any).dispose();
+      sig1.value = 'v3';
+      expect(sig1()).toBe('v3');
+      expect(sig2()).toBe('v2'); // Disposed signal no longer receives updates
+    });
+
+    it('should notify existing bound signals when a new binding initializes with default value', () => {
+      // First signal bound without default value when storage has nothing
+      const sigA = toSignal<string>('uninit.key');
+      expect(sigA()).toBeUndefined();
+
+      // Second signal binds with default value
+      const sigB = toSignal<string>('uninit.key', 'initialized_default');
+      expect(sigB()).toBe('initialized_default');
+      expect(sigA()).toBe('initialized_default'); // Existing binding received default
+    });
   });
 });

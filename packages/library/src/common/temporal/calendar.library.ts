@@ -253,7 +253,7 @@ export type UtcDateOptions = UtcPartsOptions;
 
 /**
  * Creates a UTC Date instance from structured 1-indexed calendar components and optional clock values.
- * Inverse of `getUtcParts`.
+ * Inverse of `partsFromEpochMs`.
  *
  * @param parts - Structured calendar components containing year, month, day, and optional clock components
  * @returns A new UTC Date instance

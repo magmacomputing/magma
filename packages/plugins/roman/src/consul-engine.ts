@@ -135,6 +135,12 @@ export function formatConsuls(year: number, style: ConsularFormatStyle = 'ablati
 const ABLATIVE_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({
 	Pulex: 'Pulice',
 	pulex: 'pulice',
+	Pulcher: 'Pulchro',
+	pulcher: 'pulchro',
+	Niger: 'Nigro',
+	niger: 'nigro',
+	Aper: 'Apro',
+	aper: 'apro',
 });
 
 /**
@@ -156,7 +162,6 @@ export function toAblativeConsulName(name: string): string {
 		if (token.endsWith('o')) return token + 'ne'; // Cicero -> Cicerone, Scipio -> Scipione, Cato -> Catone
 		if (token.endsWith('or')) return token + 'e'; // Censor -> Censore
 		if (token.endsWith('ar')) return token + 'e'; // Caesar -> Caesare
-		if (token.endsWith('er')) return token + 'o'; // Alexander -> Alexandro (if 2nd) or +e
 		if (token.endsWith('as')) return token.slice(0, -2) + 'a'; // Agrippa (already ablative/nom -a)
 		if (token.endsWith('es')) return token.slice(0, -2) + 'e';
 		if (token.endsWith('is')) return token.slice(0, -2) + 'e';
@@ -180,7 +185,10 @@ export function findConsulYears(nameQuery: string): ConsularPair[] {
 
 	// Normalise common ablative suffixes to match nominative catalog entries
 	// Cicerone -> Cicero, Antonio -> Antonius/Antonio, Caesare -> Caesar
-	const words = query.split(/\s+/).filter(w => !['et', 'ac', 'atque', 'coss', 'cos'].includes(w));
+	const words = query
+		.replace(/[.,;:!?]/g, ' ')
+		.split(/\s+/)
+		.filter(w => w && !['et', 'ac', 'atque', 'coss', 'cos', 'consulibus', 'consule'].includes(w));
 	if (words.length === 0) return [];
 
 	const results: ConsularPair[] = [];

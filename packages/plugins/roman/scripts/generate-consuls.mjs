@@ -71,6 +71,27 @@ function name(raw) {
 	t = t.replace(/^(?:East|West):\s*/i, '');
 	t = t.replace(/\s+/g, ' ').trim();
 
+	// Deduplicate repeated name phrases: "Strategius Apion Strategius Apion" -> "Strategius Apion"
+	t = t.replace(/^(.+?)\s+\1$/, '$1');
+
+	// Clean literal ellipses: "L. Valerius Maximus . . . Acilius Priscillianus"
+	t = t.replace(/\s*\.\s*\.\s*\.\s*/g, ' ');
+
+	// Normalize fragmented Fasti Capitolini inscription for 458 BC (-457)
+	if (/Carve/i.test(t)) {
+		t = 'L. Minucius Esquilinus Augurinus';
+	}
+
+	// Normalize late-antique concatenated names for 538 and 540
+	if (/^Marianus Michaelius Gabrielius Archangelus Ioannes$/i.test(t)) {
+		t = 'Ioannes';
+	}
+	if (/^Mar\. Petrus Theodorus Valentinus Rusticius Boraides Germanus Justinus$/i.test(t)) {
+		t = 'Justinus';
+	}
+
+	t = t.replace(/\s+/g, ' ').trim();
+
 	if (!t || /unidentified|unknown|^\?+$/i.test(t) || t.includes('?')) return '';
 	if (/tribune|decemvir|dictator|anarchy|interreg|no consuls|vacant|^none$|sine collega|without colleague|post consulatum/i.test(t)) return '';
 	return t;

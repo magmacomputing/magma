@@ -57,6 +57,11 @@ describe('Classical Roman Consular Catalog (Phase 4)', () => {
 			expect(ciceroMatches.length).toBeGreaterThan(0);
 			expect(ciceroMatches.some(m => m.year === -62)).toBe(true);
 
+			// Handles terminal punctuation and coss./cos. suffixes
+			const formulaMatches = findConsulYears('Cicerone coss.');
+			expect(formulaMatches.length).toBeGreaterThan(0);
+			expect(formulaMatches.some(m => m.year === -62)).toBe(true);
+
 			const caesarMatches = findConsulYears('Caesar');
 			expect(caesarMatches.length).toBeGreaterThan(3);
 		});
@@ -89,8 +94,12 @@ describe('Classical Roman Consular Catalog (Phase 4)', () => {
 			expect(Tempo.roman.findConsuls('Collatinus').length).toBe(1);
 		});
 
-		test('toAblativeConsulName applies irregular Pulex -> Pulice override', () => {
+		test('toAblativeConsulName applies irregular Pulex -> Pulice override and handles 2nd/3rd declension -er names', () => {
 			expect(toAblativeConsulName('Q. Terentius Pulex')).toBe('Q. Terentio Pulice');
+			expect(toAblativeConsulName('Q. Caecilius Metellus Celer')).toBe('Q. Caecilio Metello Celere');
+			expect(toAblativeConsulName('App. Claudius Pulcher')).toBe('App. Claudio Pulchro');
+			expect(toAblativeConsulName('P. Petronius Niger')).toBe('P. Petronio Nigro');
+			expect(toAblativeConsulName('L. Flavius Aper')).toBe('L. Flavio Apro');
 		});
 	});
 

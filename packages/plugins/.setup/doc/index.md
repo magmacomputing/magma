@@ -45,18 +45,30 @@ const t = new Tempo();
 console.log(Tempo.tickers);
 ```
 
-### Option B: Explicit Extension (`Tempo.extend`)
+### Option B: Explicit Extension (`Tempo.use`)
 
-Register plugins dynamically at runtime using `Tempo.extend()`:
+Register plugins dynamically at runtime using `Tempo.use()`:
 
 ```javascript
 import { Tempo } from '@magmacomputing/tempo';
 import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
-Tempo.extend(CelestialPlugin);
+Tempo.use(CelestialPlugin);
 
 const t = new Tempo('2026-03-20', { sphere: 'north' });
 console.log(t.term.astro); // Discovers equinoxes and astronomical seasons
+```
+
+### Option C: Zero-Boilerplate Side-Effect Import (`/install`)
+
+All official and community plugins provide an `/install` entry point that auto-registers the plugin onto `Tempo` upon import:
+
+```javascript
+import '@magmacomputing/tempo-plugin-celestial/install';
+import { Tempo } from '@magmacomputing/tempo';
+
+const t = new Tempo('2026-03-20', { sphere: 'north' });
+console.log(t.term.astro);
 ```
 
 ---
@@ -77,7 +89,7 @@ When using pre-bundled scripts directly in HTML via `<script>` tags, plugins att
   const { Tempo, plugins } = Magma;
 
   // Register the plugin
-  Tempo.extend(plugins.celestial);
+  Tempo.use(plugins.celestial);
 
   const t = new Tempo('next friday');
   console.log(t.toString());

@@ -1,4 +1,5 @@
 import { Reactive } from '#library/reactive.class.js';
+import { Signify } from '#library/signify.library.js';
 
 describe('common/runtime/reactive.class', () => {
 	it('identifies as a Reactive instance and has correct StringTag', () => {
@@ -499,6 +500,67 @@ describe('common/runtime/reactive.class', () => {
 
 		expect(emitted).toEqual([100]);
 		stream.complete();
+	});
+
+	it('initializes toSignal with last emitted value even when initialValue is supplied', () => {
+		const stream = new Reactive<number>();
+		stream.push(99);
+
+		// toSignal with fallback after an emission has occurred must yield the last emitted value
+		const sig = stream.toSignal(0);
+		expect(sig()).toBe(99);
+
+		// Disposing signal removes listener without throwing
+		expect(typeof (sig as any).dispose).toBe('function');
+		(sig as any).dispose();
+		stream.push(101);
+		expect(sig()).toBe(99);
+	});
+
+	it('dispatches to signal listeners even if a data listener terminates the stream', () => {
+		const stream = new Reactive<number>();
+		const sig = stream.toSignal();
+
+		stream.on('data', (val, stop) => {
+			if (val === 10) stop();
+		});
+
+		stream.push(5);
+		expect(sig()).toBe(5);
+
+		stream.push(10);
+		expect(sig()).toBe(10);
+		expect(stream.state.active).toBe(false);
+	});
+
+	it('propagates getter errors in Reactive.fromSignal to stream.error', async () => {
+		// 1. Initial getter error
+		const faultySignal = () => {
+			throw new Error('Initial evaluation exploded');
+		};
+		const stream = Reactive.fromSignal(faultySignal);
+		await expect(stream.pull()).rejects.toThrow('Initial evaluation exploded');
+
+		// 2. Dynamic getter error upon signal mutation
+		const num = new Signify.State(10);
+		const dynamicStream = Reactive.fromSignal(() => {
+			if (num.get() === 20) throw new Error('Dynamic evaluation exploded');
+			return num.get();
+		});
+
+		let dynamicError: Error | undefined;
+		dynamicStream.on('error', (err) => {
+			dynamicError = err;
+		});
+
+		// Pull initial value from buffer
+		expect(await dynamicStream.pull()).toBe(10);
+
+		// Mutate signal to trigger error in effect callback
+		num.set(20);
+		await new Promise<void>((r) => queueMicrotask(() => r()));
+		expect(dynamicError?.message).toBe('Dynamic evaluation exploded');
+		await expect(dynamicStream.pull()).rejects.toThrow('Dynamic evaluation exploded');
 	});
 });
 

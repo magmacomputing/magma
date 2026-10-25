@@ -745,6 +745,22 @@ describe('Signify Ergonomics & Bridges (Phase 2)', () => {
 				(Signal as any).State = null;
 			}).toThrow();
 		});
+
+		it('should properly track whether a computed has evaluated and not bump epoch when recomputing undefined', () => {
+			const trigger = new Signify.State(1);
+			const comp = new Signify.Computed(() => {
+				trigger.get();
+				return undefined;
+			});
+
+			expect(comp.get()).toBeUndefined();
+			const firstEpoch = comp.epoch;
+
+			// Trigger recompute with identical undefined result
+			trigger.set(2);
+			expect(comp.get()).toBeUndefined();
+			expect(comp.epoch).toBe(firstEpoch); // Epoch must not increment because undefined === undefined
+		});
 	});
 });
 
