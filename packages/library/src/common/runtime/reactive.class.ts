@@ -103,6 +103,7 @@ interface ReactiveCleanupState<T> {
 	readonly endListeners: Set<Reactive.EndListener>;
 	readonly dataListeners: Set<Reactive.Listener<T>>;
 	readonly errorListeners: Set<Reactive.ErrorListener>;
+	readonly signalListeners: Set<(val: T) => void>;
 }
 
 function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
@@ -131,6 +132,7 @@ function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
 	state.dataListeners.clear();
 	state.errorListeners.clear();
 	state.endListeners.clear();
+	state.signalListeners.clear();
 }
 
 /**
@@ -169,6 +171,9 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	#dataListeners = new Set<Reactive.Listener<T>>();
 	#errorListeners = new Set<Reactive.ErrorListener>();
 	#endListeners = new Set<Reactive.EndListener>();
+	#signalListeners = new Set<(val: T) => void>();
+	#lastValue?: T | undefined;
+	#hasValue = false;
 	#stopCallback: () => void;
 	readonly #cleanupState: ReactiveCleanupState<T>;
 	#unregisterFinalizer?: (() => boolean) | undefined;
@@ -187,6 +192,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			endListeners: this.#endListeners,
 			dataListeners: this.#dataListeners,
 			errorListeners: this.#errorListeners,
+			signalListeners: this.#signalListeners,
 		};
 		this.#cleanupState = cleanupState;
 
@@ -209,7 +215,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			active: this.#active,
 			completed: this.#completed,
 			emitted: this.#emitted,
-			subscribers: this.#dataListeners.size + this.#errorListeners.size + this.#endListeners.size,
+			subscribers: this.#dataListeners.size + this.#errorListeners.size + this.#endListeners.size + this.#signalListeners.size,
 			queued: this.#waiters.length,
 			buffered: this.#buffer.length,
 		};
@@ -233,6 +239,8 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		if (!this.#active || this.#completed) return false;
 
 		this.#emitted++;
+		this.#lastValue = arg as T;
+		this.#hasValue = true;
 
 		// 1. Dispatch to pending pull waiter if any
 		let dispatchedToWaiter = false;
@@ -261,6 +269,18 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			}
 		}
 
+		// 4. Dispatch to signal listeners (passive observers that do not consume or drain the buffer)
+		if (this.#signalListeners.size > 0) {
+			const signalListeners = [...this.#signalListeners];
+			for (const listener of signalListeners) {
+				try {
+					listener(arg as T);
+				} catch (err: any) {
+					this.error(err instanceof Error ? err : new Error(String(err)));
+				}
+			}
+		}
+
 		return true;
 	}
 
@@ -274,6 +294,8 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		if (!this.#active || this.#completed) return false;
 
 		this.#emitted++;
+		this.#lastValue = value;
+		this.#hasValue = true;
 
 		// 1. Dispatch to all pending pull waiters
 		if (this.#waiters.length > 0) {
@@ -290,6 +312,18 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			for (const listener of listeners) {
 				try {
 					listener(value, this.#stopCallback);
+				} catch (err: any) {
+					this.error(err instanceof Error ? err : new Error(String(err)));
+				}
+			}
+		}
+
+		// 3. Dispatch to signal listeners
+		if (this.#signalListeners.size > 0) {
+			const signalListeners = [...this.#signalListeners];
+			for (const listener of signalListeners) {
+				try {
+					listener(value);
 				} catch (err: any) {
 					this.error(err instanceof Error ? err : new Error(String(err)));
 				}
@@ -617,16 +651,18 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	toSignal(): ReadonlySignal<T | undefined>;
 	toSignal<D>(initialValue: D): ReadonlySignal<T | D>;
 	toSignal<D = undefined>(initialValue?: D): ReadonlySignal<T | D> {
-		const state = new Signify.State<T | D>(initialValue as D);
-		const sub = this.on('data', (val: T) => {
+		const startVal = (arguments.length > 0 ? initialValue : this.#lastValue) as T | D;
+		const state = new Signify.State<T | D>(startVal);
+		const listener = (val: T) => {
 			state.set(val);
-		});
+		};
+		this.#signalListeners.add(listener);
 
 		let isDisposed = false;
 		const dispose = () => {
 			if (isDisposed) return;
 			isDisposed = true;
-			sub.unsubscribe();
+			this.#signalListeners.delete(listener);
 		};
 
 		const accessor = function (this: any): T | D {
@@ -698,7 +734,9 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 
 		const sub = Signify.effect(() => {
 			const value = readFn();
-			stream.push(value);
+			Signify.subtle.untrack(() => {
+				stream.push(value);
+			});
 		});
 
 		stream.on('stop', () => {

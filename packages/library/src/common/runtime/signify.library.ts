@@ -93,7 +93,7 @@ export class State<T> implements SignifyNode {
 	#value: T;
 	#epoch = 0;
 	readonly #equals: ((this: any, a: T, b: T) => boolean) | undefined;
-	readonly #consumers = new Set<SignifyConsumerNode>();
+	readonly #consumers = new Set<WeakRef<SignifyConsumerNode>>();
 
 	constructor(initialValue: T, options?: SignifyOptions<T>) {
 		this.#value = initialValue;
@@ -134,17 +134,36 @@ export class State<T> implements SignifyNode {
 		if (this.#consumers.size > 0) {
 			// Clone to avoid concurrent mutation hazards during notifications
 			const consumers = [...this.#consumers];
-			for (const consumer of consumers)
-				consumer.notifyDirty(this);
+			for (const ref of consumers) {
+				const consumer = ref.deref();
+				if (consumer) {
+					consumer.notifyDirty(this);
+				} else {
+					this.#consumers.delete(ref);
+				}
+			}
 		}
 	}
 
 	addConsumer(consumer: SignifyConsumerNode): void {
-		this.#consumers.add(consumer);
+		for (const ref of this.#consumers) {
+			const c = ref.deref();
+			if (!c) {
+				this.#consumers.delete(ref);
+			} else if (c === consumer) {
+				return;
+			}
+		}
+		this.#consumers.add(new WeakRef(consumer));
 	}
 
 	removeConsumer(consumer: SignifyConsumerNode): void {
-		this.#consumers.delete(consumer);
+		for (const ref of this.#consumers) {
+			const c = ref.deref();
+			if (!c || c === consumer) {
+				this.#consumers.delete(ref);
+			}
+		}
 	}
 
 	poll(): boolean {
@@ -179,10 +198,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	/** Temporary tracking set during calculation */
 	#newSources: Map<SignifyNode, number> | null = null;
 	/** Consumers that depend on this computation */
-	readonly #consumers = new Set<SignifyConsumerNode>();
-
-	/** Teardown function for GC finalizer unregistration */
-	#cancelFinalizer: (() => boolean) | undefined = undefined;
+	readonly #consumers = new Set<WeakRef<SignifyConsumerNode>>();
 
 	constructor(computation: () => T, options?: SignifyOptions<T>) {
 		if (!isFunction(computation))
@@ -190,18 +206,6 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 
 		this.#computation = computation;
 		this.#equals = options?.equals;
-
-		// Wire GC finalizer safety: automatically unhook sources if this instance is reclaimed
-		const sources = this.#sources;
-		const consumerRef = new WeakRef(this);
-		this.#cancelFinalizer = Finalizer.register(this, () => {
-			const consumer = consumerRef.deref();
-			for (const [source] of sources) {
-				if (consumer)
-					source.removeConsumer(consumer);
-			}
-			sources.clear();
-		});
 		Object.freeze(this);
 	}
 
@@ -276,6 +280,8 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 		this.#isEvaluating = true;
 		this.#newSources = new Map<SignifyNode, number>();
 		pushConsumer(this);
+		const prevSuppressed = trackingSuppressed;
+		trackingSuppressed = false;
 
 		let nextValue: T | undefined = undefined;
 		let nextError: unknown = undefined;
@@ -287,6 +293,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 			nextError = err;
 			caught = true;
 		} finally {
+			trackingSuppressed = prevSuppressed;
 			popConsumer();
 			this.#isEvaluating = false;
 		}
@@ -343,8 +350,14 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	notifyCheckDirty(_source: SignifyNode): void {
 		if (this.#state === StateFlag.CLEAN) {
 			this.#state = StateFlag.CHECK_DIRTY;
-			for (const consumer of this.#consumers) {
-				consumer.notifyCheckDirty(this);
+			const consumers = [...this.#consumers];
+			for (const ref of consumers) {
+				const consumer = ref.deref();
+				if (consumer) {
+					consumer.notifyCheckDirty(this);
+				} else {
+					this.#consumers.delete(ref);
+				}
 			}
 		}
 	}
@@ -352,16 +365,35 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	#notifyConsumers(): void {
 		if (this.#consumers.size === 0) return;
 		const consumers = [...this.#consumers];
-		for (const consumer of consumers)
-			consumer.notifyDirty(this);
+		for (const ref of consumers) {
+			const consumer = ref.deref();
+			if (consumer) {
+				consumer.notifyDirty(this);
+			} else {
+				this.#consumers.delete(ref);
+			}
+		}
 	}
 
 	addConsumer(consumer: SignifyConsumerNode): void {
-		this.#consumers.add(consumer);
+		for (const ref of this.#consumers) {
+			const c = ref.deref();
+			if (!c) {
+				this.#consumers.delete(ref);
+			} else if (c === consumer) {
+				return;
+			}
+		}
+		this.#consumers.add(new WeakRef(consumer));
 	}
 
 	removeConsumer(consumer: SignifyConsumerNode): void {
-		this.#consumers.delete(consumer);
+		for (const ref of this.#consumers) {
+			const c = ref.deref();
+			if (!c || c === consumer) {
+				this.#consumers.delete(ref);
+			}
+		}
 	}
 
 	/**
@@ -370,11 +402,6 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	dispose(): void {
 		if (this.#disposed) return;
 		this.#disposed = true;
-
-		if (this.#cancelFinalizer) {
-			this.#cancelFinalizer();
-			this.#cancelFinalizer = undefined;
-		}
 
 		for (const [source] of this.#sources)
 			source.removeConsumer(this);

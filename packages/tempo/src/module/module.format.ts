@@ -43,6 +43,7 @@ const RE_H12_GLOBAL = /\{h12[^}]*\}/g;
 const RE_MI_GLOBAL = /\{mi[^}]*\}/g;
 const RE_SS_GLOBAL = /\{ss[^}]*\}/g;
 const RE_MS_GLOBAL = /\{ms[^}]*\}/g;
+const RE_DIALECT_MASK = /%[a-zA-Z]|(?:^|[^a-zA-Z])(?:YYYY|YY|MMMM|MMM|MM|DD|HH|hh|mm|ss)(?:[^a-zA-Z]|$)/;
 const RE_US_GLOBAL = /\{us[^}]*\}/g;
 const RE_NS_GLOBAL = /\{ns[^}]*\}/g;
 const RE_FF_GLOBAL = /\{ff[^}]*\}/g;
@@ -227,7 +228,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 	const isNamedFormat = isString(fmt) && hasOwn(formats, fmt);
 	const dialect = evaluate(options?.dialect ?? config?.dialect);
-	if (isString(fmt) && !isNamedFormat && !hasNativeFormatBraces(fmt, dialect)) {
+	const isDialectMask = isString(fmt) && fmt.length > 0 && (Boolean(dialect) || RE_DIALECT_MASK.test(fmt));
+	if (isDialectMask && !isNamedFormat && !hasNativeFormatBraces(fmt, dialect)) {
 		const TempoClass = getRuntime().modules['Tempo'] ?? (obj as any)?.constructor;
 		const dialectsRegistry = config?.registry?.dialects
 			?? (getRuntime() as any).dialects

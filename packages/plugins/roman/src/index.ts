@@ -186,6 +186,7 @@ function createRomanNamespace(TempoClass: any): RomanNamespace {
 			count: number = 1,
 			isBissextile: boolean = false,
 			isJulian: boolean = false,
+			bissextile: boolean = true,
 		): { year: number; month: number; day: number } {
 			return calculateGregorianFromRoman(
 				anchor,
@@ -195,6 +196,7 @@ function createRomanNamespace(TempoClass: any): RomanNamespace {
 				count,
 				isBissextile,
 				isJulian,
+				bissextile,
 			);
 		},
 

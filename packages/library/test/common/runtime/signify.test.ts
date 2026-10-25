@@ -314,6 +314,17 @@ describe('Signify (TC39 Signals Core Engine - Phase 1)', () => {
 			expect(computeCount).toBe(2);
 		});
 
+		it('should record dependencies when a computed is evaluated inside untrack()', () => {
+			const s = new Signify.State(1);
+			const c = new Signify.Computed(() => s.get() * 2);
+
+			const initial = Signify.subtle.untrack(() => c.get());
+			expect(initial).toBe(2);
+
+			s.set(5);
+			expect(c.get()).toBe(10);
+		});
+
 		it('should identify current active computed with currentComputed()', () => {
 			expect(Signify.subtle.currentComputed()).toBeUndefined();
 

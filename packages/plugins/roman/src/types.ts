@@ -325,6 +325,7 @@ export interface RomanNamespace {
 		count?: number,
 		isBissextile?: boolean,
 		isJulian?: boolean,
+		bissextile?: boolean,
 	): { year: number; month: number; day: number };
 
 	/**

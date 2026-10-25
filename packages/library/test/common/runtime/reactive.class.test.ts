@@ -468,6 +468,30 @@ describe('common/runtime/reactive.class', () => {
 		expect(stream2.signal()).toBe('hello signal');
 	});
 
+	it('maintains pull buffering when observed via .toSignal() or .signal', async () => {
+		const stream = new Reactive<number>();
+		stream.push(1);
+
+		// Accessing .signal must not drain the buffer
+		const sig = stream.signal;
+		expect(sig()).toBe(1);
+		expect(stream.state.buffered).toBe(1);
+
+		// Pushing another item while no waiter is pending must buffer it
+		stream.push(2);
+		expect(sig()).toBe(2);
+		expect(stream.state.buffered).toBe(2);
+
+		// Async iteration should receive all buffered items
+		stream.complete();
+		const collected: number[] = [];
+		for await (const val of stream) {
+			collected.push(val);
+		}
+		expect(collected).toEqual([1, 2]);
+		expect(stream.state.buffered).toBe(0);
+	});
+
 	it('supports Reactive.from(signal) and Reactive.fromSignal(signal)', async () => {
 		const stream = Reactive.fromSignal(() => 100);
 		const emitted: number[] = [];

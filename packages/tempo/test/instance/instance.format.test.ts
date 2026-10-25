@@ -287,6 +287,10 @@ describe(`${label} format method`, () => {
     const tCatch = new Tempo('2026-10-24T15:30:00', { catch: true, silent: true });
     expect(() => tCatch.format('YYYY-MM-DD')).not.toThrow();
     expect(tCatch.format('YYYY-MM-DD')).toBe('');
+
+    // Allows empty strings and plain literals without throwing
+    expect(t.format('')).toBe('');
+    expect(t.format('Plain text without tokens')).toBe('Plain text without tokens');
   });
 
 });

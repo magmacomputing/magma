@@ -3,7 +3,7 @@
  *
  * GENERATED FILE — do not edit by hand. Regenerate with `node scripts/generate-consuls.mjs`.
  *
- * NOTICE: Compiled from English Wikipedia, "List of Roman consuls" (revision local-file),
+ * NOTICE: Compiled from English Wikipedia, "List of Roman consuls" (revision 1379696791),
  * which follows T.R.S. Broughton, *Magistrates of the Roman Republic* (509–31 BCE) and the standard
  * imperial Fasti. The text of that page is available under CC BY-SA 4.0
  * (https://creativecommons.org/licenses/by-sa/4.0/); this file contains only the historical facts it records
@@ -14,7 +14,7 @@
  */
 
 /** Source revision this data was generated from. */
-export const CONSULS_SOURCE_REVISION = 'local-file';
+export const CONSULS_SOURCE_REVISION = '1379696791';
 
 /** Astronomical year → names of the eponymous consul(s), in the order they are cited. */
 export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freeze({
@@ -773,8 +773,8 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'306': ["M. Flavius Valerius Constantius Augustus VI","C. Galerius Valerius Maximianus Augustus VI"],
 	'307': ["Flavius Valerius Severus Augustus","Galerius Valerius Maximinus Caesar"],
 	'308': ["C. Aurelius Valerius Diocletianus X","C. Galerius Valerius Maximianus Augustus VII"],
-	'309': ["East: Valerius Licinianus Licinius Augustus","Flavius Valerius Constantinus Caesar"],
-	'310': ["East: Tatius Andronicus","Pompeius Probus"],
+	'309': ["Valerius Licinianus Licinius Augustus","Flavius Valerius Constantinus Caesar"],
+	'310': ["Tatius Andronicus","Pompeius Probus"],
 	'311': ["C. Galerius Valerius Maximianus Augustus VIII","Galerius Valerius Maximinus Augustus II"],
 	'312': ["Flavius Valerius Constantinus Augustus II","Valerius Licinianus Licinius Augustus II"],
 	'313': ["Flavius Valerius Constantinus Augustus III","Galerius Valerius Maximinus Augustus III"],
@@ -785,9 +785,9 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'318': ["Valerius Licinianus Licinius Augustus V","Flavius Julius Crispus Caesar"],
 	'319': ["Flavius Valerius Constantinus Augustus V","Valerius Licinianus Licinius Caesar"],
 	'320': ["Flavius Valerius Constantinus Augustus VI","Flavius Claudius Constantinus Caesar"],
-	'321': ["West: Flavius Julius Crispus Caesar II","Flavius Claudius Constantinus Caesar II"],
-	'322': ["West: Petronius Probianus","Amnius Anicius Julianus"],
-	'323': ["West: Acilius Severus","Vettius Rufinus"],
+	'321': ["Flavius Julius Crispus Caesar II","Flavius Claudius Constantinus Caesar II"],
+	'322': ["Petronius Probianus","Amnius Anicius Julianus"],
+	'323': ["Acilius Severus","Vettius Rufinus"],
 	'324': ["Flavius Julius Crispus Caesar III","Flavius Claudius Constantinus Caesar III"],
 	'325': ["Valerius Proculus","Sex. Anicius Paulinus"],
 	'326': ["Flavius Valerius Constantinus Augustus VII","Flavius Julius Constantius Caesar"],
@@ -815,8 +815,8 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'348': ["Philippus","Salia"],
 	'349': ["Ulpius Limenius","Aconius Catullinus"],
 	'350': ["Sergius","Nigrinianus"],
-	'351': ["West: Magnus Magnentius Augustus","Gaiso"],
-	'352': ["West: Magnus Decentius Caesar","Paulus"],
+	'351': ["Magnus Magnentius Augustus","Gaiso"],
+	'352': ["Magnus Decentius Caesar","Paulus"],
 	'353': ["Flavius Julius Constantius Augustus VI","Flavius Claudius Constantius Caesar II"],
 	'354': ["Flavius Julius Constantius Augustus VII","Flavius Claudius Constantius Caesar III"],
 	'355': ["Arbitio","Q. Flavius Maesius Egnatius Lollianus"],
@@ -855,8 +855,8 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'390': ["Valentinianus Augustus IV","Neoterius"],
 	'391': ["Eutolmius Tatianus","Q. Aurelius Symmachus"],
 	'392': ["Arcadius Augustus II","Rufinus"],
-	'393': ["Theodosius Augustus III","West: Eugenius Augustus"],
-	'394': ["West: Virius Nicomachus Flavianus"],
+	'393': ["Theodosius Augustus III","Eugenius Augustus"],
+	'394': ["Virius Nicomachus Flavianus"],
 	'395': ["Anicius Hermogenianus Olybrius","Anicius Probinus"],
 	'396': ["Arcadius Augustus IV","Honorius Augustus III"],
 	'397': ["Caesarius","Nonius Atticus"],
@@ -887,7 +887,7 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'422': ["Honorius Augustus XIII","Theodosius Augustus X"],
 	'423': ["Avitus Marinianus","Asclepiodotus"],
 	'424': ["Castinus","Victor"],
-	'425': ["West: Johannes Augustus"],
+	'425': ["Johannes Augustus"],
 	'426': ["Theodosius Augustus XII","Placidus Valentinianus Augustus II"],
 	'427': ["Hierius","Ardabur"],
 	'428': ["Felix","Taurus"],
@@ -918,7 +918,7 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'453': ["Opilio","Joannes Vincomalus"],
 	'454': ["Aetius","Studius"],
 	'455': ["Placidus Valentinianus Augustus VIII","Procopius Anthemius"],
-	'456': ["West: Eparchius Avitus Augustus"],
+	'456': ["Eparchius Avitus Augustus"],
 	'457': ["Constantinus","Rufus"],
 	'458': ["Leo Augustus","Julius Valerius Majorianus Augustus"],
 	'459': ["Ricimer","Patricius"],
@@ -949,7 +949,7 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'485': ["Q. Aurelius Memmius Symmachus"],
 	'486': ["Caecina Mavortius Basilius Decius","Longinus"],
 	'487': ["Nar. Manlius Boëthius"],
-	'488': ["Claudius Julius Ecclesius Dynamius","II post consulatum Longini"],
+	'488': ["Claudius Julius Ecclesius Dynamius"],
 	'489': ["Petronius Probinus","Eusebius"],
 	'490': ["Anicius Probus Faustus","Longinus II"],
 	'491': ["Olybrius"],
@@ -958,10 +958,10 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'494': ["Turcius Rufius Apronianus Asterius"],
 	'495': ["Viator"],
 	'496': ["Paulus"],
-	'497': ["II post consulatum Viatoris","Anastasius Augustus II"],
+	'497': ["Anastasius Augustus II"],
 	'498': ["Paulinus","Johannes Scytha"],
 	'499': ["Johannes qui est Gibbus"],
-	'500': ["II post consulatum Paulini","Patricius"],
+	'500': ["Patricius"],
 	'501': ["Avienus","Pompeius"],
 	'502': ["Rufius Magnus Faustus Avienus","Probus"],
 	'503': ["Volusianus","Dexicrates"],
@@ -992,10 +992,9 @@ export const CONSULS: Readonly<Record<number, readonly string[]>> = Object.freez
 	'528': ["Petrus Sabbatius Justinianus Augustus II"],
 	'529': ["Decius"],
 	'530': ["Rufius Gennadius Probus Orestes","Lampadius"],
-	'533': ["III post consulatum Lampadii et Orestis","Petrus Sabbatius Justinianus Augustus III"],
+	'533': ["Petrus Sabbatius Justinianus Augustus III"],
 	'534': ["Decius Paulinus","Petrus Sabbatius Justinianus Augustus IV"],
 	'535': ["Belisarius"],
-	'537': ["II post consulatum Belisarii"],
 	'538': ["Marianus Michaelius Gabrielius Archangelus Ioannes"],
 	'539': ["Strategius Apion Strategius Apion"],
 	'540': ["Mar. Petrus Theodorus Valentinus Rusticius Boraides Germanus Justinus"],

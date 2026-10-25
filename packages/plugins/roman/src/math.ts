@@ -174,6 +174,7 @@ export function calculateGregorianFromRoman(
 	count: number = 1,
 	isBissextile: boolean = false,
 	isJulian: boolean = false,
+	bissextile: boolean = true,
 ): { year: number; month: number; day: number } {
 	if (anchor === 'Kalends') {
 		if (relation === 'on') return Object.freeze({ year: anchorYear, month: anchorMonth, day: 1 });
@@ -181,7 +182,7 @@ export function calculateGregorianFromRoman(
 		const targetYear = anchorMonth === 1 ? anchorYear - 1 : anchorYear;
 		const leap = isLeapYear(targetYear, isJulian);
 		const effectiveCount = relation === 'pridie' ? 2 : count;
-		if (targetMonth === 2 && leap) {
+		if (targetMonth === 2 && leap && bissextile) {
 			if (isBissextile) return Object.freeze({ year: targetYear, month: 2, day: 24 });
 			if (effectiveCount === 6 && !isBissextile) return Object.freeze({ year: targetYear, month: 2, day: 25 });
 			if (effectiveCount < 6) return Object.freeze({ year: targetYear, month: 2, day: 29 - effectiveCount + 2 });

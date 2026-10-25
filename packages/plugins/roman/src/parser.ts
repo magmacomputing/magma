@@ -176,7 +176,7 @@ export function parseClassicalRomanDate(input: string, options?: RomanParseOptio
 	const anchorYear = anchor === 'Kalends' && anchorMonth === 1 && relation !== 'on' ? year + 1 : year;
 
 	const { month, day, year: resolvedYear } = calculateGregorianFromRoman(
-		anchor, anchorMonth, anchorYear, relation, count, isBissextile, options?.isJulian ?? false,
+		anchor, anchorMonth, anchorYear, relation, count, isBissextile, options?.isJulian ?? false, options?.bissextile ?? true,
 	);
 
 	// verify: the resolved date must read back as exactly what was parsed
