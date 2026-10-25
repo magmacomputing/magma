@@ -147,8 +147,13 @@ export function shiftDateByDays(date: Date, days: number): Date {
  * @returns Unix epoch days count
  */
 export function civilToDays(year: number, month: number, day: number): number {
+	if (month < 1 || month > 12) {
+		const m = month - 1;
+		year += Math.floor(m / 12);
+		month = ((m % 12) + 12) % 12 + 1;
+	}
 	const y = year - (month <= 2 ? 1 : 0);
-	const era = Math.floor((y >= 0 ? y : y - 399) / 400);
+	const era = Math.floor(y / 400);
 	const yoe = y - era * 400;
 	const doy = Math.floor((153 * (month > 2 ? month - 3 : month + 9) + 2) / 5) + day - 1;
 	const doe = yoe * 365 + Math.floor(yoe / 4) - Math.floor(yoe / 100) + doy;
@@ -164,7 +169,7 @@ export function civilToDays(year: number, month: number, day: number): number {
  */
 export function daysToCivil(days: number): { year: number; month: number; day: number } {
 	const z = days + 719468;
-	const era = Math.floor((z >= 0 ? z : z - 146096) / 146097);
+	const era = Math.floor(z / 146097);
 	const doe = z - era * 146097;
 	const yoe = Math.floor((doe - Math.floor(doe / 1460) + Math.floor(doe / 36524) - Math.floor(doe / 146096)) / 365);
 	const y = yoe + era * 400;

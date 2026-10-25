@@ -192,8 +192,15 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 		this.#equals = options?.equals;
 
 		// Wire GC finalizer safety: automatically unhook sources if this instance is reclaimed
+		const sources = this.#sources;
+		const consumerRef = new WeakRef(this);
 		this.#cancelFinalizer = Finalizer.register(this, () => {
-			this.dispose();
+			const consumer = consumerRef.deref();
+			for (const [source] of sources) {
+				if (consumer)
+					source.removeConsumer(consumer);
+			}
+			sources.clear();
 		});
 		Object.freeze(this);
 	}
@@ -300,7 +307,6 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 			this.#hasError = true;
 			this.#error = nextError;
 			this.#epoch++;
-			this.#notifyConsumers();
 			return;
 		}
 
@@ -315,7 +321,6 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 		if (isChanged) {
 			this.#value = nextValue;
 			this.#epoch++;
-			this.#notifyConsumers();
 		}
 	}
 

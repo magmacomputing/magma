@@ -362,5 +362,14 @@ describe('calendar.library', () => {
 			expect(partsHistorical.minutes).toBe(17);
 			expect(partsHistorical.seconds).toBe(40);
 		});
+
+		test('civilToDays normalizes out-of-range months matching Date.UTC behavior', () => {
+			// Month 13 of 2026 rolls over to Jan 2027
+			expect(civilToDays(2026, 13, 1)).toBe(civilToDays(2027, 1, 1));
+			// Month 0 of 2026 rolls back to Dec 2025
+			expect(civilToDays(2026, 0, 1)).toBe(civilToDays(2025, 12, 1));
+			// Month -1 of 2026 rolls back to Nov 2025
+			expect(civilToDays(2026, -1, 1)).toBe(civilToDays(2025, 11, 1));
+		});
 	});
 });

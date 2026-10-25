@@ -68,10 +68,11 @@ function name(raw) {
 	for (let prev = ''; prev !== t;) { prev = t; t = t.replace(NOTE, '').trim(); }
 
 	t = t.replace(/\((?!or\b)([A-Za-z][^()\d/]*)\)/g, '$1');	// unwrap cognomina: "(Africanus)" -> "Africanus"
+	t = t.replace(/^(?:East|West):\s*/i, '');
 	t = t.replace(/\s+/g, ' ').trim();
 
 	if (!t || /unidentified|unknown|^\?+$/i.test(t) || t.includes('?')) return '';
-	if (/tribune|decemvir|dictator|anarchy|interreg|no consuls|vacant|^none$|sine collega|without colleague|^post consulatum/i.test(t)) return '';
+	if (/tribune|decemvir|dictator|anarchy|interreg|no consuls|vacant|^none$|sine collega|without colleague|post consulatum/i.test(t)) return '';
 	return t;
 }
 

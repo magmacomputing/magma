@@ -2,6 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import {
 	RomanPlugin,
 	formatConsuls,
+	toAblativeConsulName,
 	getConsulsByYear,
 	findConsulYears,
 	parseClassicalRomanDate,
@@ -86,6 +87,10 @@ describe('Classical Roman Consular Catalog (Phase 4)', () => {
 			expect(Tempo.roman.getConsuls(-62)).toEqual(['M. Tullius Cicero', 'C. Antonius Hybrida']);
 			expect(Tempo.roman.formatConsuls(-62)).toBe('M. Tullio Cicerone, C. Antonio Hybrida coss.');
 			expect(Tempo.roman.findConsuls('Collatinus').length).toBe(1);
+		});
+
+		test('toAblativeConsulName applies irregular Pulex -> Pulice override', () => {
+			expect(toAblativeConsulName('Q. Terentius Pulex')).toBe('Q. Terentio Pulice');
 		});
 	});
 

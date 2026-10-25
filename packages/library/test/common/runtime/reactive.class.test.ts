@@ -179,7 +179,7 @@ describe('common/runtime/reactive.class', () => {
 	});
 
 	it('routes error to pending pull consumers without logging unhandled error', async () => {
-		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		try {
 			const stream = new Reactive<number>(); // catch is false
 			const pullPromise = stream.pull(); // pending waiter
@@ -196,7 +196,7 @@ describe('common/runtime/reactive.class', () => {
 	});
 
 	it('logs unhandled error when neither error listeners nor pull waiters exist', async () => {
-		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		try {
 			const stream = new Reactive<number>();
 			const testError = new Error('Unhandled stream error');
@@ -233,7 +233,15 @@ describe('common/runtime/reactive.class', () => {
 		for await (const n of fromGen) {
 			genCollected.push(n);
 		}
-		expect(genCollected).toEqual([1, 2, 3]);
+		// Map (iterable that also has a .get method)
+		const map = new Map([['x', 1], ['y', 2]]);
+		const fromMap = Reactive.from(map);
+		const mapCollected: [string, number][] = [];
+		for await (const entry of fromMap) {
+			if (entry) mapCollected.push(entry);
+		}
+
+		expect(mapCollected).toEqual([['x', 1], ['y', 2]]);
 	});
 
 	// ── M5: Lifecycle & Cancellation Tests ──────────────────────────────────────
@@ -264,7 +272,7 @@ describe('common/runtime/reactive.class', () => {
 
 	it('safely handles ReactiveSubscription with null-object defaults when cleanup/signal are omitted', () => {
 		const stream = new Reactive<number>();
-		const sample = stream.on('data', () => {});
+		const sample = stream.on('data', () => { });
 		const sub = new (sample.constructor as any)();
 		expect(sub.closed).toBe(false);
 		expect(() => sub.unsubscribe()).not.toThrow();

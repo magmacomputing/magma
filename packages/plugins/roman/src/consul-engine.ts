@@ -132,6 +132,11 @@ export function formatConsuls(year: number, style: ConsularFormatStyle = 'ablati
 	return `${ablativeNames.join(', ')} ${suffix}`;
 }
 
+const ABLATIVE_OVERRIDES: Readonly<Record<string, string>> = Object.freeze({
+	Pulex: 'Pulice',
+	pulex: 'pulice',
+});
+
 /**
  * Transforms standard Latin consul names (nominative) into their traditional ablative case for dating formulas.
  * Handles common Roman praenomina, gentilicia, cognomina, and numerals.
@@ -139,9 +144,10 @@ export function formatConsuls(year: number, style: ConsularFormatStyle = 'ablati
 export function toAblativeConsulName(name: string): string {
 	return name.split(' ').map(token => {
 		// Keep praenomen abbreviations (M., C., L., P., Sp., etc.) and Roman numerals (II, V, etc.)
-		if (/^[A-Z]['a-z]?\.$/.test(token) || /^[IVXLCDM]+$/.test(token)) {
+		if (/^[A-Z]['a-z]?\.$/.test(token) || /^[IVXLCDM]+$/.test(token))
 			return token;
-		}
+		if (ABLATIVE_OVERRIDES[token])
+			return ABLATIVE_OVERRIDES[token];
 
 		// Declension rules for Latin masculine 2nd & 3rd declension cognomina / gentilicia
 		// Cicero -> Cicerone, Antonius -> Antonio, Caesar -> Caesare

@@ -96,7 +96,7 @@ export const MONTH_ABLATIVE: readonly string[] = Object.freeze([
 	'Maiis',
 	'Juniis',
 	'Juliis',
-	'Augustiis',
+	'Augustis',
 	'Septembribus',
 	'Octobribus',
 	'Novembribus',

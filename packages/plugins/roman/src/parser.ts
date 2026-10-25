@@ -162,8 +162,7 @@ export function parseClassicalRomanDate(input: string, options?: RomanParseOptio
 			if (matches.length === 1) {
 				year = matches[0].year;
 			} else if (matches.length > 1) {
-				// Pick best match if one contains all names
-				year = matches[0].year;
+				return fail(`ambiguous consular dating "${restStr}": multiple years match (${matches.map(m => m.year).join(', ')})`);
 			} else {
 				return fail(`unexpected trailing text "${rest.join(' ')}"`);
 			}

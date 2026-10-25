@@ -1,5 +1,5 @@
 import { StringTag } from '#library/decorator.library.js';
-import { isCallable, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
+import { isCallable, isClass, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
 import { Pledge } from './pledge.class.js';
 import { Finalizer } from './finalizer.class.js';
 import { onAbort, NOOP } from './aborter.library.js';
@@ -723,12 +723,8 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		source: Iterable<V> | AsyncIterable<V> | Promise<V> | { get(): V } | (() => V),
 		options?: Reactive.Options<V>
 	): Reactive<V> {
-		if (isDefined(source) && (isCallable(source) || isFunction((source as any).get)))
-			return Reactive.fromSignal(source as any, options);
-
-		const stream = new Reactive<V>(options);
-
 		if (isDefined(source) && isFunction((source as any)[Symbol.asyncIterator])) {
+			const stream = new Reactive<V>(options);
 			(async () => {
 				try {
 					for await (const item of source as AsyncIterable<V>) {
@@ -741,7 +737,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 					stream.complete();
 				}
 			})();
-		} else if (isDefined(source) && isFunction((source as any)[Symbol.iterator])) {
+			return stream;
+		}
+
+		if (isDefined(source) && isFunction((source as any)[Symbol.iterator])) {
+			const stream = new Reactive<V>(options);
 			try {
 				for (const item of source as Iterable<V>) {
 					if (!stream.state.active) break;
@@ -752,7 +752,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 				stream.error(err instanceof Error ? err : new Error(String(err)));
 				stream.complete();
 			}
-		} else if (isPromise(source) || (isDefined(source) && isFunction((source as any).then))) {
+			return stream;
+		}
+
+		if (isPromise(source) || (isDefined(source) && isFunction((source as any).then))) {
+			const stream = new Reactive<V>(options);
 			(source as Promise<V>)
 				.then((val) => {
 					stream.push(val);
@@ -762,9 +766,18 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 					stream.error(err instanceof Error ? err : new Error(String(err)));
 					stream.complete();
 				});
+			return stream;
 		}
 
-		return stream;
+		const isSignalLike = isDefined(source) && (
+			(isObject(source) && isFunction((source as any).get) && (source as any).get.length === 0) ||
+			(isCallable(source) && !isClass(source))
+		);
+
+		if (isSignalLike)
+			return Reactive.fromSignal(source as any, options);
+
+		return new Reactive<V>(options);
 	}
 }
 

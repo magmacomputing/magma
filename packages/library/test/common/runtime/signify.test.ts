@@ -498,6 +498,35 @@ describe('Signify Ergonomics & Bridges (Phase 2)', () => {
 			sub.dispose();
 			expect(events).toEqual(['run(true)', 'cleanup(true)', 'run(false)', 'cleanup(false)']);
 		});
+
+		it('should run cleanup exactly once after a mutation when awaiting two microtasks', async () => {
+			const s = new Signify.State(1);
+			let cleanupCalls = 0;
+			let effectCalls = 0;
+
+			const sub = Signify.effect(() => {
+				effectCalls++;
+				s.get();
+				return () => {
+					cleanupCalls++;
+				};
+			});
+
+			expect(effectCalls).toBe(1);
+			expect(cleanupCalls).toBe(0);
+
+			s.set(2);
+
+			// Await two microtasks
+			await Promise.resolve();
+			await Promise.resolve();
+
+			expect(effectCalls).toBe(2);
+			expect(cleanupCalls).toBe(1);
+
+			sub.dispose();
+			expect(cleanupCalls).toBe(2);
+		});
 	});
 
 	describe('Signify.from() Reactive stream bridge', () => {

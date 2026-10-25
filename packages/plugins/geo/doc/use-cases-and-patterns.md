@@ -121,9 +121,8 @@ export async function resolveTenantLocation(
   const resolved = await Tempo.geo.forward(rawAddress);
 
   // 3. Store coordinates in tenant's isolated partition for 24 hours
-  Tempo.geo.set(resolved, {
-    partition: partitionKey,
-    ttl: 86_400_000 // 24 hours in ms
+  Tempo.geo.set(resolved, 86_400_000, {
+    partition: partitionKey
   });
 
   return resolved;
