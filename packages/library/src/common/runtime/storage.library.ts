@@ -2,6 +2,7 @@ import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isDefined, isUndefined, isString, isCallable, isNumber } from '#library/assertion.library.js';
 import { BoundedCache } from '#library/cache.class.js';
+import { Finalizer } from './finalizer.class.js';
 import { signify, type WritableSignal } from './signify.library.js';
 
 const context = getContext();
@@ -393,6 +394,7 @@ export function toSignal<T>(key: string, defaultValue?: T): WritableSignal<T> {
 		[Symbol.toStringTag]: { value: 'Signify', writable: false, configurable: false }
 	});
 
+	Finalizer.register(accessor, dispose);
 	return Object.freeze(accessor);
 }
 

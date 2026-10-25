@@ -729,6 +729,31 @@ describe('Signify Ergonomics & Bridges (Phase 2)', () => {
 			expect(sub.closed).toBe(true);
 		});
 
+		it('should keep effect active until dispose() even if subscription is not retained in scope', async () => {
+			const count = signify(0);
+			let evaluations = 0;
+
+			// Spawn effect without keeping strong local subscription variable in caller scope
+			const sub = (() => {
+				return Signify.effect(() => {
+					evaluations++;
+					count();
+				});
+			})();
+
+			expect(evaluations).toBe(1);
+
+			count.set(1);
+			await new Promise<void>((r) => queueMicrotask(() => r()));
+			expect(evaluations).toBe(2);
+
+			sub.dispose();
+
+			count.set(2);
+			await new Promise<void>((r) => queueMicrotask(() => r()));
+			expect(evaluations).toBe(2);
+		});
+
 		it('should freeze static namespaces (Signify, signify, Signal)', () => {
 			expect(Object.isFrozen(Signify)).toBe(true);
 			expect(Object.isFrozen(Signify.subtle)).toBe(true);

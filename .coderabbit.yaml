@@ -20,4 +20,12 @@ reviews:
     - "!**/dist/**"               # Ignore all build artifacts
     - "!**/plan/**"               # Ignore internal planning and roadmap RFCs
     - "!**/vendor/**"             # Ignore third-party code
-    - "!**/*.md"                  # Temporarily ignore markdown documentation for v5 release
+
+    # Temporary Phase 2 (Docs Review): Exclude code/config files to review markdown under the 100-file ceiling
+    - "!**/*.ts"                  # Exclude TypeScript code (already reviewed in Phase 1)
+    - "!**/*.js"                  # Exclude JavaScript scripts (already reviewed in Phase 1)
+    - "!**/*.mjs"                 # Exclude ES module scripts (already reviewed in Phase 1)
+    - "!**/*.json"                # Exclude package and tsconfig configs (already reviewed in Phase 1)
+    - "!**/*.html"                # Exclude HTML files
+    - "!**/*.yml"                 # Exclude workflow files
+    - "!**/*.yaml"                # Exclude YAML files

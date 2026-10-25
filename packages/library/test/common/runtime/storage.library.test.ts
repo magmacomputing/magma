@@ -219,5 +219,15 @@ describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
       expect(sigB()).toBe('initialized_default');
       expect(sigA()).toBe('initialized_default'); // Existing binding received default
     });
+
+    it('should support explicit Symbol.dispose on storage signals', () => {
+      const sig = toSignal<string>('disposable.key', 'initial');
+      expect(typeof (sig as any).dispose).toBe('function');
+      expect(typeof (sig as any)[Symbol.dispose]).toBe('function');
+
+      (sig as any)[Symbol.dispose]();
+      // Safe to call multiple times
+      expect(() => (sig as any).dispose()).not.toThrow();
+    });
   });
 });

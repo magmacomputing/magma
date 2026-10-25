@@ -81,6 +81,69 @@ export interface SignifyOptions<T> {
 export type SignalOptions<T> = SignifyOptions<T>;
 
 /**
+ * Abstract base class for reactive source/producer nodes (State, Computed).
+ * Encapsulates epoch tracking, O(1) consumer registration via WeakMap indexing,
+ * amortized periodic dead-reference cleanup, and consumer notification dispatch.
+ * @internal
+ */
+export abstract class ReactiveSource implements SignifyNode {
+	#epoch = 0;
+	readonly #consumers = new Set<WeakRef<SignifyConsumerNode>>();
+	readonly #consumerRefs = new WeakMap<SignifyConsumerNode, WeakRef<SignifyConsumerNode>>();
+	#addCount = 0;
+
+	get epoch(): number {
+		return this.#epoch;
+	}
+
+	protected bumpEpoch(): void {
+		this.#epoch++;
+	}
+
+	addConsumer(consumer: SignifyConsumerNode): void {
+		if (this.#consumerRefs.has(consumer)) return;
+		const ref = new WeakRef(consumer);
+		this.#consumerRefs.set(consumer, ref);
+		this.#consumers.add(ref);
+
+		if (++this.#addCount >= 64) {
+			this.#addCount = 0;
+			for (const r of this.#consumers) {
+				if (!r.deref()) this.#consumers.delete(r);
+			}
+		}
+	}
+
+	removeConsumer(consumer: SignifyConsumerNode): void {
+		const ref = this.#consumerRefs.get(consumer);
+		if (ref) {
+			this.#consumerRefs.delete(consumer);
+			this.#consumers.delete(ref);
+		}
+	}
+
+	protected notifyConsumers(dirty = true): void {
+		if (this.#consumers.size === 0) return;
+		const consumers = [...this.#consumers];
+		for (const ref of consumers) {
+			const consumer = ref.deref();
+			if (consumer) {
+				if (dirty) consumer.notifyDirty(this);
+				else consumer.notifyCheckDirty(this);
+			} else {
+				this.#consumers.delete(ref);
+			}
+		}
+	}
+
+	protected clearConsumers(): void {
+		this.#consumers.clear();
+	}
+
+	abstract poll(): boolean;
+}
+
+/**
  * ## Signify.State
  *
  * Primary reactive source representing a mutable, read-write state container.
@@ -89,20 +152,15 @@ export type SignalOptions<T> = SignifyOptions<T>;
  */
 @Immutable
 @StringTag('Signify.State')
-export class State<T> implements SignifyNode {
+export class State<T> extends ReactiveSource {
 	#value: T;
-	#epoch = 0;
 	readonly #equals: ((this: any, a: T, b: T) => boolean) | undefined;
-	readonly #consumers = new Set<WeakRef<SignifyConsumerNode>>();
 
 	constructor(initialValue: T, options?: SignifyOptions<T>) {
+		super();
 		this.#value = initialValue;
 		this.#equals = options?.equals;
 		Object.freeze(this);
-	}
-
-	get epoch(): number {
-		return this.#epoch;
 	}
 
 	/**
@@ -112,7 +170,7 @@ export class State<T> implements SignifyNode {
 		if (activeConsumer && !trackingSuppressed) {
 			this.addConsumer(activeConsumer);
 			if (activeConsumer instanceof Computed)
-				activeConsumer.recordSource(this, this.#epoch);
+				activeConsumer.recordSource(this, this.epoch);
 		}
 		return this.#value;
 	}
@@ -129,41 +187,8 @@ export class State<T> implements SignifyNode {
 		if (isEqual) return;
 
 		this.#value = newValue;
-		this.#epoch++;
-
-		if (this.#consumers.size > 0) {
-			// Clone to avoid concurrent mutation hazards during notifications
-			const consumers = [...this.#consumers];
-			for (const ref of consumers) {
-				const consumer = ref.deref();
-				if (consumer) {
-					consumer.notifyDirty(this);
-				} else {
-					this.#consumers.delete(ref);
-				}
-			}
-		}
-	}
-
-	addConsumer(consumer: SignifyConsumerNode): void {
-		for (const ref of this.#consumers) {
-			const c = ref.deref();
-			if (!c) {
-				this.#consumers.delete(ref);
-			} else if (c === consumer) {
-				return;
-			}
-		}
-		this.#consumers.add(new WeakRef(consumer));
-	}
-
-	removeConsumer(consumer: SignifyConsumerNode): void {
-		for (const ref of this.#consumers) {
-			const c = ref.deref();
-			if (!c || c === consumer) {
-				this.#consumers.delete(ref);
-			}
-		}
+		this.bumpEpoch();
+		this.notifyConsumers(true);
 	}
 
 	poll(): boolean {
@@ -180,7 +205,7 @@ export class State<T> implements SignifyNode {
  */
 @Immutable
 @StringTag('Signify.Computed')
-export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable {
+export class Computed<T> extends ReactiveSource implements SignifyConsumerNode, Disposable {
 	readonly #computation: () => T;
 	readonly #equals: ((this: any, a: T, b: T) => boolean) | undefined;
 
@@ -190,7 +215,6 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	#hasValue = false;
 
 	#state: number = StateFlag.DIRTY;
-	#epoch = 0;
 	#isEvaluating = false;
 	#disposed = false;
 
@@ -198,20 +222,15 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	#sources = new Map<SignifyNode, number>();
 	/** Temporary tracking set during calculation */
 	#newSources: Map<SignifyNode, number> | null = null;
-	/** Consumers that depend on this computation */
-	readonly #consumers = new Set<WeakRef<SignifyConsumerNode>>();
 
 	constructor(computation: () => T, options?: SignifyOptions<T>) {
+		super();
 		if (!isFunction(computation))
 			throw new TypeError('Signify.Computed requires a function calculation argument');
 
 		this.#computation = computation;
 		this.#equals = options?.equals;
 		Object.freeze(this);
-	}
-
-	get epoch(): number {
-		return this.#epoch;
 	}
 
 	/**
@@ -229,7 +248,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 		if (activeConsumer && !trackingSuppressed) {
 			this.addConsumer(activeConsumer);
 			if (activeConsumer instanceof Computed)
-				activeConsumer.recordSource(this, this.#epoch);
+				activeConsumer.recordSource(this, this.epoch);
 		}
 
 		// Recompute if dirty, or poll sources if check-dirty
@@ -254,9 +273,9 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 			this.#checkSources();
 
 		if (this.#state === StateFlag.DIRTY) {
-			const prevEpoch = this.#epoch;
+			const prevEpoch = this.epoch;
 			this.#recompute();
-			return this.#epoch !== prevEpoch;
+			return this.epoch !== prevEpoch;
 		}
 
 		return false;
@@ -314,7 +333,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 		if (caught) {
 			this.#hasError = true;
 			this.#error = nextError;
-			this.#epoch++;
+			this.bumpEpoch();
 			return;
 		}
 
@@ -329,7 +348,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 
 		if (isChanged) {
 			this.#value = nextValue;
-			this.#epoch++;
+			this.bumpEpoch();
 		}
 	}
 
@@ -345,56 +364,14 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 	notifyDirty(_source: SignifyNode): void {
 		if (this.#state !== StateFlag.DIRTY) {
 			this.#state = StateFlag.DIRTY;
-			this.#notifyConsumers();
+			this.notifyConsumers(true);
 		}
 	}
 
 	notifyCheckDirty(_source: SignifyNode): void {
 		if (this.#state === StateFlag.CLEAN) {
 			this.#state = StateFlag.CHECK_DIRTY;
-			const consumers = [...this.#consumers];
-			for (const ref of consumers) {
-				const consumer = ref.deref();
-				if (consumer) {
-					consumer.notifyCheckDirty(this);
-				} else {
-					this.#consumers.delete(ref);
-				}
-			}
-		}
-	}
-
-	#notifyConsumers(): void {
-		if (this.#consumers.size === 0) return;
-		const consumers = [...this.#consumers];
-		for (const ref of consumers) {
-			const consumer = ref.deref();
-			if (consumer) {
-				consumer.notifyDirty(this);
-			} else {
-				this.#consumers.delete(ref);
-			}
-		}
-	}
-
-	addConsumer(consumer: SignifyConsumerNode): void {
-		for (const ref of this.#consumers) {
-			const c = ref.deref();
-			if (!c) {
-				this.#consumers.delete(ref);
-			} else if (c === consumer) {
-				return;
-			}
-		}
-		this.#consumers.add(new WeakRef(consumer));
-	}
-
-	removeConsumer(consumer: SignifyConsumerNode): void {
-		for (const ref of this.#consumers) {
-			const c = ref.deref();
-			if (!c || c === consumer) {
-				this.#consumers.delete(ref);
-			}
+			this.notifyConsumers(false);
 		}
 	}
 
@@ -409,7 +386,7 @@ export class Computed<T> implements SignifyNode, SignifyConsumerNode, Disposable
 			source.removeConsumer(this);
 
 		this.#sources.clear();
-		this.#consumers.clear();
+		this.clearConsumers();
 	}
 
 	[Symbol.dispose](): void {
@@ -656,6 +633,8 @@ export function computed<T>(computation: () => T, options?: SignifyOptions<T>): 
 	return Object.freeze(accessor);
 }
 
+const activeEffectWatchers = new Set<Watcher>();
+
 /**
  * Runs a side-effect function immediately and re-runs it on a microtask whenever
  * any reactive signals read during its evaluation change.
@@ -707,6 +686,7 @@ export function effect(fn: () => void | (() => void)): EffectSubscription {
 	comp = new Computed(fn);
 	watcher = new Watcher(schedule);
 	watcher.watch(comp);
+	activeEffectWatchers.add(watcher);
 
 	// Evaluate immediately
 	run();
@@ -729,6 +709,7 @@ export function effect(fn: () => void | (() => void)): EffectSubscription {
 			}
 
 			if (watcher) {
+				activeEffectWatchers.delete(watcher);
 				watcher.dispose();
 				watcher = null;
 			}
