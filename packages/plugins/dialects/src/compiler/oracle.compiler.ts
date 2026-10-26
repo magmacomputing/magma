@@ -1,5 +1,5 @@
-import { pad, suffix, WeakCache, resolveDayOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import { pad, suffix, WeakCache, resolveDayOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveFractionalSeconds, Enum } from '@magmacomputing/tempo/library';
+import { enums } from '@magmacomputing/tempo/support';
 import {
 	type FormatterFn,
 	type DialectOptions,

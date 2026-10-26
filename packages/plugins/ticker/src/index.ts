@@ -5,6 +5,7 @@ import {
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
 	isUndefined, Finalizer, Reactive, cast, logError, hasKey,
+	type ReadonlySignal,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -28,6 +29,14 @@ declare module '@magmacomputing/tempo' {
 		function ticker(interval: Ticker.Interval, options: Ticker.Options): Ticker.Instance;
 		function ticker(options: Ticker.Options, callback: Ticker.Callback): Ticker.Instance;
 		function ticker(options: Ticker.Options, extraOptions: Ticker.Options): Ticker.Instance;
+
+		namespace ticker {
+			/**
+			 * Spawns an auto-ticking ReadonlySignal<Tempo> ticking at the specified interval.
+			 * Supports explicit disposal via `using clock = Tempo.ticker.signal(...)`.
+			 */
+			function signal(interval?: number | string | Ticker.Options): ReadonlySignal<Tempo> & Disposable;
+		}
 	}
 }
 
@@ -100,6 +109,9 @@ export namespace Ticker {
 		until(notifier: AbortSignal | Promise<any> | Reactive<any>): Reactive<Tempo>;
 		on(event: 'pulse' | 'catch' | 'stop', cb: (t: Tempo, stop: () => void) => void): this;
 		stop(terminalValue?: Tempo): void;
+		readonly signal: ReadonlySignal<Tempo>;
+		toSignal(): ReadonlySignal<Tempo>;
+		toSignal<D>(initialValue: D): ReadonlySignal<Tempo | D>;
 		readonly info: {
 			label: string | undefined;
 			next: Tempo;
@@ -153,6 +165,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#options: any;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
+	#cachedSignal: ReadonlySignal<Tempo> | undefined = undefined;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
@@ -481,6 +494,19 @@ class TickerInstance implements Ticker.Descriptor {
 		return stream;
 	}
 
+	toSignal(): ReadonlySignal<Tempo>;
+	toSignal<D>(initialValue: D): ReadonlySignal<Tempo | D>;
+	toSignal<D = undefined>(...args: [D?]): ReadonlySignal<Tempo | D> {
+		const initial = args.length > 0 ? args[0]! : (this.#next as any);
+		const sig = this.#reactive.toSignal(initial);
+		this.#runBootstrap();
+		return sig;
+	}
+
+	get signal(): ReadonlySignal<Tempo> {
+		return this.#cachedSignal ??= this.toSignal();
+	}
+
 	async next(): Promise<IteratorResult<Tempo, any>> {
 		if (this.#stopped || this.#isInstant) return { done: true, value: undefined };
 
@@ -554,6 +580,8 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 				};
 			}
 			if (prop === 'stop') return instance.stop.bind(instance);
+			if (prop === 'signal') return instance.signal;
+			if (prop === 'toSignal') return instance.toSignal.bind(instance);
 			if (prop === 'next') return instance.next.bind(instance);
 			if (prop === 'return') return instance.return.bind(instance);
 			if (prop === 'throw') return instance.throw.bind(instance);
@@ -606,6 +634,32 @@ export const TickerPlugin = definePlugin({
 					return createTicker(cls, { ...defaultOpts, ...arg1 }, arg2);
 			}
 			return createTicker(cls, arg1, arg2);
+		};
+
+		tickerFactory.signal = function (interval?: number | string | Ticker.Options): ReadonlySignal<Tempo> & Disposable {
+			const ticker = tickerFactory(interval);
+			const sig = ticker.signal;
+			const dispose = () => {
+				ticker.stop();
+				sig.dispose?.();
+			};
+			const accessor = function (this: any) {
+				return sig();
+			};
+			const proxy = new Proxy(accessor as any, {
+				get(_, prop) {
+					if (prop === 'dispose' || prop === Symbol.dispose) return dispose;
+					if (prop === 'get') return () => sig.get();
+					return (sig as any)[prop];
+				},
+				apply(_, thisArg, argArray) {
+					return (sig as any).apply(thisArg, argArray);
+				}
+			});
+			Finalizer.register(proxy, () => {
+				ticker.stop();
+			});
+			return proxy;
 		};
 
 		attachStatics(installedClass, {

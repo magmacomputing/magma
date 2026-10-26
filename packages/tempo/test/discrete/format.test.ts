@@ -33,7 +33,6 @@ describe('Tempo.format() refinements', () => {
     expect(t3.woy).toBe(1);
     expect(t3.format('{yw}{ww}')).toBe('202501');
     expect(t3.format('{yow}{woy}')).toBe('202501');
-    expect(t3.format('{yywoy}')).toBe('202501');
     expect(typeof t3.format('{yw}{ww}')).toBe('string');
   })
 

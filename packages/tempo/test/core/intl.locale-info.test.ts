@@ -481,7 +481,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(sunUS.format('{woy:locale:0}')).toBe('00');
 			expect(sunUS.format('{yow:locale}')).toBe('2026');
 			expect(sunUS.format('{yow:locale:short}')).toBe('26');
-			expect(sunUS.format('{yywoy:locale}')).toBe('202601');
+			expect(sunUS.format('{yow:locale}{woy:locale}')).toBe('202601');
 
 			// Under ISO rules (en-GB, minimalDays=4), 2025-12-28 is still Week 52 of 2025
 			expect(sunUS.format('{woy:locale}', { locale: 'en-GB' })).toBe('52');

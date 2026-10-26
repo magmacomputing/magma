@@ -1,4 +1,5 @@
 import type { Tempo } from '@magmacomputing/tempo';
+import type { ReadonlySignal } from '@magmacomputing/tempo/library';
 
 /**
  * Origin, URL prefix, regex, or predicate function used to filter passive fetch requests.
@@ -146,4 +147,30 @@ export interface NtpNamespace {
 	 * Explicit deterministic disposal (Dual-Layer Lifecycle Model).
 	 */
 	[Symbol.dispose](): void;
+
+	/**
+	 * Reactive signals namespace for clock drift offset, calibration status, and telemetry.
+	 */
+	readonly signals: NtpSignalsNamespace;
+
+	/**
+	 * Spawns an auto-ticking ReadonlySignal<Tempo> calibrated to network time.
+	 * Supports explicit disposal via `using clock = Tempo.ntp.signal(...)`.
+	 */
+	signal(options?: { interval?: number | string; timeZone?: string }): ReadonlySignal<Tempo> & Disposable;
+}
+
+/**
+ * ## NtpSignalsNamespace
+ * Fine-grained reactive TC39 signals namespace for NTP telemetry and calibrated offset.
+ */
+export interface NtpSignalsNamespace {
+	/** Reactive signal containing the current clock drift offset in milliseconds */
+	readonly offset: ReadonlySignal<number>;
+
+	/** Reactive signal indicating whether clock synchronization has completed at least one valid calibration */
+	readonly isCalibrated: ReadonlySignal<boolean>;
+
+	/** Reactive signal emitting the complete ClockDriftState snapshot (RTT, jitter, confidence) */
+	readonly drift: ReadonlySignal<ClockDriftState>;
 }

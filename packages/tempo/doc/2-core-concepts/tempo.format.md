@@ -162,7 +162,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:short` | Universal / String | Yields a short or abbreviated style (e.g. `{mon:short}` → `Oct`, `{yow:short}` → `26`, `{dmy:short}` → `241026`) | `{mon:short}` → `Oct`, `{yow:short}` → `26` |
 | `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
 | `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |
-| `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset. Supports granular sub-modifiers (`:hh`, `:mi`, `:ss`, `:z`) | `{tz:offset}` → `+10:00`, `{tz:offset:hh}` → `+10` |
+| `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset. Supports granular sub-modifiers (`:hh`, `:mi`, `:ss`) | `{tz:offset}` → `+10:00`, `{tz:offset:hh}` → `+10` |
 | `:zero` / `:0` | Number | Shifts 1-based counters to zero-indexed (`{doy:zero}` → `000`–`365`, `{dow:zero}` → `0`–`6` Sunday=0, `{dow:locale:0}` → `0`–`6` locale week start=0, `{mm:zero}` → `00`–`11`, `{woy:zero}` → `00`–`52`, `{wom:zero}` → `0`–`4`) | `{dow:0}` → `6`, `{dow:locale:0}` → `0`, `{mm:raw:0}` → `9` |
 | `:day` | Unit Scope | Expresses time units cumulatively over the day (`{ss:day}` → `0`–`86399`, `{mi:day}` → `0`–`1439`, `{ms:day}`, `{ns:day}`) | `{ss:day}` → `55845` |
 | `:week` | Unit Scope | Expresses time units cumulatively over the week (`{hh:week}` → `0`–`167`, `{mi:week}`, `{ss:week}`) or day within the week (`{dd:week}` → `1`–`7`) | `{hh:week}` → `135`, `{dd:week}` → `6` |
@@ -179,8 +179,8 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 >   * `{tz:offset:mi}` (and alias `:min`) → Minutes without sign (e.g. `00`, `30`).
 >   * `{tz:offset:ss}` (and alias `:sec`) → Offset including seconds (e.g. `+10:00:00`, compact `{tz:offset:compact:ss}` → `+100000`).
 >   * `{tz:offset:utc}` / `{tz:offset:compact:utc}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else ISO offset `+10:00` (or compact `+1000`).
-> * **Canonical Naming**: Sub-modifiers `:hh`, `:mi`, `:ss`, and `:utc` match Tempo's core time tokens. Modifiers `:hour`, `:min`, `:sec`, and `:z` are supported synonyms.
-> * **Shorthands & Aliases**: LDML aliases (`{tz:z}`, `{tz:zz}`, `{tz:zzz}`) are supported as drop-in shorthands.
+> * **Canonical Naming**: Sub-modifiers `:hh`, `:mi`, `:ss`, and `:utc` match Tempo's core time tokens. Modifiers `:hour`, `:min`, and `:sec` are supported synonyms.
+> * **Dialect Compatibility**: For LDML and Moment-style timezone masks (`z`, `zz`, `zzz`), use `@magmacomputing/tempo-plugin-dialects`.
 
 > [!TIP]
 > **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**  

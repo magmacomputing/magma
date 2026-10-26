@@ -1,10 +1,10 @@
-import { definePlugin, type TempoPlugin, deepFreeze, isString, isNumber, isObject, isFunction } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, type TempoPlugin, deepFreeze, isString, isNumber, isObject, isFunction, Finalizer, Signify, type ReadonlySignal } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 import { ClockDriftEngine } from './engine.js';
-import type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter } from './types.js';
+import type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter, NtpSignalsNamespace } from './types.js';
 
 export { ClockDriftEngine };
-export type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter };
+export type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter, NtpSignalsNamespace };
 
 declare module '@magmacomputing/tempo' {
 	namespace Tempo {
@@ -188,6 +188,47 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			},
 			get isCalibrated(): boolean {
 				return getEngine().isCalibrated;
+			},
+			get signals(): NtpSignalsNamespace {
+				return getEngine().signals;
+			},
+			signal(options?: { interval?: number | string; timeZone?: string }): ReadonlySignal<Tempo> & Disposable {
+				const interval = options?.interval ?? 1;
+				const timeZone = options?.timeZone;
+				if (isFunction((TempoClass as any).ticker?.signal)) {
+					return (TempoClass as any).ticker.signal({
+						interval,
+						ntp: true,
+						timeZone,
+					});
+				}
+				const intervalMs = parseIntervalMs(interval) || 1000;
+				const state = new Signify.State(new TempoClass(getEngine().nowMs(), timeZone ? { timeZone } : undefined));
+				const timer = setInterval(() => {
+					state.set(new TempoClass(getEngine().nowMs(), timeZone ? { timeZone } : undefined));
+				}, intervalMs);
+				const dispose = () => {
+					clearInterval(timer);
+				};
+				const accessor = function (this: any) {
+					return state.get();
+				};
+				const proxy = new Proxy(accessor as any, {
+					get(_, prop) {
+						if (prop === 'dispose' || prop === Symbol.dispose) return dispose;
+						if (prop === 'get') return () => state.get();
+						if (prop === 'value') return state.get();
+						if (prop === 'epoch') return state.epoch;
+						return (state as any)[prop];
+					},
+					apply(_, thisArg, argArray) {
+						return state.get();
+					}
+				});
+				Finalizer.register(proxy, () => {
+					clearInterval(timer);
+				});
+				return proxy;
 			},
 			reset(): void {
 				getEngine().reset();

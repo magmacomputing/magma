@@ -113,16 +113,6 @@ export class Tempo {
 	/** Quarterly Seasons */																	static get SEASON() { return enums.SEASON }
 	/** Compass cardinal points */														static get COMPASS() { return enums.COMPASS }
 
-	/** @deprecated Use Tempo.enums.ELEMENT */								static get ELEMENT() { return enums.ELEMENT }
-	/** @deprecated Use Tempo.enums.FORMAT */									static get FORMAT() { return enums.FORMAT }
-	/** @deprecated Use Tempo.enums.NUMBER */									static get NUMBER() { return enums.NUMBER }
-	/** @deprecated Use Tempo.enums.ORDINAL */								static get ORDINAL() { return enums.ORDINAL }
-	/** @deprecated Use Tempo.enums.TIMEZONE */								static get TIMEZONE() { return enums.TIMEZONE }
-	/** @deprecated Use Tempo.enums.MONTH_DAY */							static get MONTH_DAY() { return enums.MONTH_DAY }
-	/** @deprecated Use Tempo.enums.MODE */										static get MODE() { return enums.MODE }
-	/** @deprecated Use Tempo.enums.CACHE */                  static get CACHE() { return enums.CACHE }
-	/** @deprecated Use Tempo.enums.LIMIT */									static get LIMIT() { return enums.LIMIT }
-
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return _lifecycle.extendDepth > 0 }
 
@@ -921,29 +911,6 @@ export class Tempo {
 		}
 
 		return this;
-	}
-
-	/**
-	 * @deprecated Use Tempo.use(...) instead.
-	 */
-	static extend(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
-	/**
-	 * @deprecated Use Tempo.use(...) instead.
-	 */
-	static extend(plugin: TempoPlugin, options?: t.Options): typeof Tempo;
-	/**
-	 * @deprecated Use Tempo.use(...) instead.
-	 */
-	static extend(plugins: (TempoPlugin | TermPlugin | any)[], options?: t.Options): typeof Tempo;
-	/**
-	 * @deprecated Use Tempo.use(...) instead.
-	 */
-	static extend(...args: any[]): typeof Tempo;
-	/**
-	 * @deprecated Use Tempo.use(...) instead.
-	 */
-	static extend(...args: any[]): typeof Tempo {
-		return (this.use as any)(...args);
 	}
 
 	/**
@@ -1851,27 +1818,12 @@ export class Tempo {
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/**
-	 * Year within the era (positive integer).
-	 * @deprecated Use `eon` (Tempo canonical) or `zdt.eraYear` instead. To be removed in v5.0.0.
-	 */
-	get eraYear() { return this.toDateTime().eraYear; }
 	/** @internal 4-digit ISO week-numbering year */					get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/**
-	 * ISO week number of the year.
-	 * @deprecated Use `woy` (Tempo canonical) or `zdt.weekOfYear` instead. To be removed in v5.0.0.
-	 */
-	get ww() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
-	/**
-	 * Day of the month (1-31).
-	 * @deprecated Use `dd` (Tempo canonical) or `zdt.day` instead. To be removed in v5.0.0.
-	 */
-	get day() { return this.toDateTime().day as t.dd }
 	/** Internationalization namespace (info, locale, and cultural metadata) */
 	get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -2039,11 +1991,6 @@ export class Tempo {
 	/** @hidden */																						sub(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** @hidden */																						minus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
-	/**
-	 * Returns a clone of the current `Tempo` instance.
-	 * @deprecated Tempo instances are immutable. Use `Tempo.from(instance)` instead.
-	 */
-	clone(): Tempo { return this.#Tempo.from(this, this.config); }
 
 	/** returns the underlying Temporal.ZonedDateTime */			toDateTime() { return this.#resolve() as Temporal.ZonedDateTime; }
 	/** returns a Temporal.PlainDate representation */				toPlainDate() { return this.toDateTime().toPlainDate() }

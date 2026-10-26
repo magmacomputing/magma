@@ -584,9 +584,9 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, config?: any): Temporal.ZonedDateTime {
 	if (!isTemporal(dateTime)) return dateTime;
 
-	const tzd = (groups["tz"] ?? groups["tzd"])?.replace(Match.zed, 'UTC');
+	const tz = groups["tz"]?.replace(Match.zed, 'UTC');
 	const brk = groups["brk"]?.replace(Match.zed, 'UTC');
-	let zone: string | undefined = brk || tzd;
+	let zone: string | undefined = brk || tz;
 
 	if (zone) {
 		const match = zone.match(RE_ZONE_OFFSET);
@@ -597,7 +597,7 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	let cal = groups["cal"];
 	if (zone?.startsWith('u-ca=')) {
 		cal = zone;
-		zone = tzd;
+		zone = tz;
 	}
 
 	const zdt = dateTime as any;
@@ -618,7 +618,6 @@ export function parseZone(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 
 	delete groups["brk"];
 	delete groups["cal"];
-	delete groups["tzd"];
 	delete groups["tz"];
 
 	if (zone || cal)

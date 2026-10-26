@@ -41,16 +41,16 @@ describe('Localized Parsing', () => {
 	it('should parse French relative events (yesterday, today, tomorrow)', () => {
 		const t1 = new Tempo('hier', { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t1.isValid).toBe(true);
-		expect(t1.day).toBe(14);
+		expect(t1.dd).toBe(14);
 
 		const t2 = new Tempo("aujourd’hui", { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t2.isValid).toBe(true);
 		const currentDay = Temporal.Now.zonedDateTimeISO('UTC').day;
-		expect(t2.day).toBe(currentDay);
+		expect(t2.dd).toBe(currentDay);
 
 		const t3 = new Tempo('demain', { locale: 'fr-FR', anchor: '2024-01-15T12:00:00+00:00[UTC]' });
 		expect(t3.isValid).toBe(true);
-		expect(t3.day).toBe(16);
+		expect(t3.dd).toBe(16);
 	});
 
 	it('should preserve English dates even if localized parsing is active for French', () => {

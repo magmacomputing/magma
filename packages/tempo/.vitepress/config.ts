@@ -48,6 +48,14 @@ export default withMermaid(defineConfig({
             ]
           }
         ]
+      },
+      {
+        text: 'v5.0 (Latest)',
+        items: [
+          { text: 'v5.0 (Latest)', link: '/README' },
+          { text: 'v4.7.0 (GitHub ↗)', link: 'https://github.com/magmacomputing/magma/tree/v4.7.0/packages/tempo/doc' },
+          { text: 'Migration Guide (v4 → v5)', link: '/doc/8-project-and-support/migration-guide' }
+        ]
       }
     ],
     sidebar: {

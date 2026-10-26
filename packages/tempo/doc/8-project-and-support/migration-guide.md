@@ -1,3 +1,105 @@
+# 💥 Migrating to Tempo v5.x
+
+Tempo v5.x focuses on modern ECMAScript standards alignment, streamlined API ergonomics, removal of deprecated getters, static enums, legacy format tokens, and first-class integration with TC39 Signals across the reactive plugin ecosystem.
+
+---
+
+## 🛑 Deprecation Removals & Breaking Changes in v5.0.0
+
+### 1. Static Enum Accessors (`Tempo.enums.*`)
+The top-level static enum accessors on `Tempo` have been removed in favor of the unified `Tempo.enums` namespace.
+
+* **Removed:** `Tempo.ELEMENT`, `Tempo.FORMAT`, `Tempo.NUMBER`, `Tempo.ORDINAL`, `Tempo.TIMEZONE`, `Tempo.MONTH_DAY`, `Tempo.MODE`, `Tempo.CACHE`, `Tempo.LIMIT`
+* **Replacement:** Use `Tempo.enums.<NAME>` (for example, `Tempo.enums.FORMAT`, `Tempo.enums.MODE`, `Tempo.enums.TIMEZONE`, `Tempo.enums.ELEMENT`).
+
+```typescript
+// ❌ v4.x (Deprecated)
+const formatEnum = Tempo.FORMAT;
+
+// ✅ v5.0.0
+const formatEnum = Tempo.enums.FORMAT;
+```
+
+---
+
+### 2. Static Extension Method (`Tempo.use`)
+The legacy static `Tempo.extend(...)` method has been removed.
+
+* **Removed:** `Tempo.extend(...)`
+* **Replacement:** Use `Tempo.use(...)` (or `sandbox.use(...)`).
+
+```typescript
+// ❌ v4.x (Deprecated)
+Tempo.extend(MyPlugin);
+
+// ✅ v5.0.0
+Tempo.use(MyPlugin);
+```
+
+---
+
+### 3. Instance Properties and Getters
+Several legacy and ambiguous instance getters have been removed in favor of canonical ISO / temporal properties:
+
+| Removed Getter | Canonical Replacement | Description |
+| :--- | :--- | :--- |
+| `t.eraYear` | `t.eon` | Year within era (eon / astronomical era calendar alignment). |
+| `t.ww` | `t.woy` | Week of year (ISO 8601 week number `1`..`53`). |
+| `t.day` | `t.dd` / `t.d` | Day of month (`t.dd` string padded, `t.d` 1-indexed number). Use `t.dow` for day-of-week, or `t.doy` for day-of-year. |
+| `t.clone()` | `Tempo.from(t)` | Canonical instance instantiation and cloning constructor. |
+
+```typescript
+// ❌ v4.x (Deprecated)
+const week = t.ww;
+const eraY = t.eraYear;
+const dayVal = t.day;
+const copy = t.clone();
+
+// ✅ v5.0.0
+const week = t.woy;
+const eraY = t.eon;
+const dayVal = t.dd;
+const copy = Tempo.from(t);
+```
+
+---
+
+### 4. Format Tokens and Modifiers
+To reduce token ambiguity and eliminate redundant aliases, format tokens and modifier definitions have been rationalized:
+
+* **Timezone Token (`{tzd}` → `{tz}`):**
+  * The legacy `{tzd}` (timezone delimiter / descriptor) token has been removed.
+  * Use the canonical `{tz}` token instead.
+* **Composite Week-Year Tokens (`{yyww}`, `{yywy}`, `{yywoy}`):**
+  * Composite week-and-year tokens have been removed in favor of composable standard tokens.
+  * Replace `{yywoy}` or `{yyww}` with `{yow}{woy}` (or localized `{yow:locale}{woy:locale}`).
+* **Year Modifier Aliases (`:yy` and `:year`):**
+  * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
+  * Use the canonical `:short` modifier (e.g. `{year:short}`).
+* **Legacy Offset Modifiers on `{tz}`:**
+  * Legacy modifier cases (`offsetshort`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
+  * Use canonical `{tz:offset}`, `{tz:name}`, `{tz:abbr}` in core, or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+
+```typescript
+// ❌ v4.x (Deprecated)
+t.format('{tzd}');
+t.format('{yywoy}');
+t.format('{year:yy}');
+
+// ✅ v5.0.0
+t.format('{tz}');
+t.format('{yow}{woy}');
+t.format('{year:short}');
+```
+
+---
+
+### 5. Utility & Support Exports
+* **`Enum` export removed:** The legacy `Enum` class export from `@magmacomputing/tempo` has been removed. Use native TypeScript enums, `as const` object literals, or the `@magmacomputing/library` enumerator utilities (`enumify`).
+* **`hasOwn` helper removed:** The internal re-export `hasOwn` from support utils has been removed. Use standard ECMAScript `Object.hasOwn(target, property)`.
+
+---
+
 # ⚠️ Migrating to Tempo v4.x
 
 Tempo v4.x introduces a standardized plugin & registry architecture, strict configuration namespaces, cascading configuration inheritance, and deterministic resource disposal while excising legacy v3.x deprecated interfaces.
