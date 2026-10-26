@@ -14,18 +14,14 @@ reviews:
     - "!**/public/llms*.txt"      # Ignore LLM context bundles
     - "!**/llms*.txt"             # Ignore root or nested LLM context files
     - "!**/public/providers.v1.*" # Ignore static provider definitions (.json and .jsonc)
-    - "!**/doc/api/**"            # Ignore ONLY the generated TypeDoc API documentation
+    - "!**/doc/api/**"            # Ignore legacy TypeDoc API documentation
+    - "!**/public/api/**"         # Ignore generated TypeDoc API documentation
+    - "!**/coverage/**"           # Ignore test coverage reports and HTML fixtures
     - "!**/.vitepress/cache/**"   # Ignore VitePress cache
     - "!**/.vitepress/dist/**"    # Ignore VitePress build output
     - "!**/dist/**"               # Ignore all build artifacts
     - "!**/plan/**"               # Ignore internal planning and roadmap RFCs
     - "!**/vendor/**"             # Ignore third-party code
+    - "!**/*.md"                  # Temporarily ignore markdown documentation for v5 release
 
-    # Temporary Phase 2 (Docs Review): Exclude code/config files to review markdown under the 100-file ceiling
-    - "!**/*.ts"                  # Exclude TypeScript code (already reviewed in Phase 1)
-    - "!**/*.js"                  # Exclude JavaScript scripts (already reviewed in Phase 1)
-    - "!**/*.mjs"                 # Exclude ES module scripts (already reviewed in Phase 1)
-    - "!**/*.json"                # Exclude package and tsconfig configs (already reviewed in Phase 1)
-    - "!**/*.html"                # Exclude HTML files
-    - "!**/*.yml"                 # Exclude workflow files
-    - "!**/*.yaml"                # Exclude YAML files
+

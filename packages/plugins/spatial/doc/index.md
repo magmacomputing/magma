@@ -48,7 +48,7 @@ const distKm = Tempo.spatial.distance(sydney, london, 'km');
 console.log('Distance:', distKm.toFixed(1), 'km'); // ~16988.0 km
 
 const heading = Tempo.spatial.bearing(sydney, london);
-console.log('Compass Bearing:', heading.toFixed(1) + '°'); // ~302.2° (WNW)
+console.log('Compass Bearing:', heading.toFixed(1) + '°'); // ~319.2° (NW)
 
 const mid = Tempo.spatial.midpoint(sydney, london);
 console.log('Midpoint:', mid.latitude, mid.longitude);

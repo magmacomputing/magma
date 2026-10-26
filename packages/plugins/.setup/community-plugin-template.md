@@ -322,7 +322,7 @@ This is a **Community** plugin. It is completely free and open-source for person
 - **Installation**: Code block with `npm install @magmacomputing/tempo-plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
 - **Quickstart & Live Interactive REPL Placement Strategy**:
   - **In `doc/index.md` (VitePress Documentation)**: 
-    - Standardize under the **`## Quickstart`** (or **`## Quickstart Examples`**) heading.
+    - Standardize under the **`## Quickstart`** heading.
     - Insert the `<PluginRepl plugin="[name]" />` component directly below the `## Quickstart` heading, immediately preceding the first runnable TypeScript quickstart code block.
     - The `<PluginRepl />` component renders an interactive "Run Live Interactive Demo" toolbar directly over the quickstart code block that seamlessly mounts the in-browser sandbox on demand.
     > [!IMPORTANT]
