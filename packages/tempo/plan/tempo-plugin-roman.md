@@ -46,7 +46,7 @@ To preserve the lean footprint and deterministic $O(1)$ performance of Tempo cor
 - **Parsing Engine**:
   - Natural parsing of classical Latin expressions:
     ```ts
-    const t = Tempo.fromRoman('a.d. IV Id. Mart. 710 AUC');
+    const t = Tempo.roman.parse('a.d. IV Id. Mart. 710 AUC');
     // Resolves to March 12, 44 BCE
     ```
 
@@ -56,7 +56,7 @@ To preserve the lean footprint and deterministic $O(1)$ performance of Tempo cor
 
 Following the standard Tempo plugin architecture:
 - **Module Registration**: Installed via `Tempo.use(RomanPlugin)` or imported as tree-shakable utilities.
-- **Type Augmentation**: Extends `Tempo` method definitions (`.toRomanClassical()`, `.toAUC()`) and format tokens.
+- **Namespace Encapsulation**: All classical Roman calculations, parsing, formatting, and conversion functions are cleanly grouped under the static `Tempo.roman` namespace and the instance `tempo.roman` property.
 - **Zero Core Dependency Bloat**: All Latin vocabulary, grammar declension tables, and consular catalog remain entirely within the plugin package.
 
 ---
@@ -65,7 +65,7 @@ Following the standard Tempo plugin architecture:
 
 | Phase | Milestone | Deliverables |
 | :--- | :--- | :--- |
-| **Phase 1** | Mathematical Foundations | Kalends/Nones/Ides calculator, Leap year/bissextile handling, AUC year converter. |
-| **Phase 2** | Formatting Engine | Full Latin and abbreviated format tokens, grammatical case switches (nominative, accusative, ablative). |
-| **Phase 3** | Classical Parser | NLP pattern recognition for Latin date strings and consular abbreviations. |
-| **Phase 4** | Consular Catalog & Docs | Historical consular database (509 BCE–541 CE), documentation, REPL presets, and cookbook recipes. |
+| **Phase 1** | Mathematical Foundations | **Delivered (v1.0.0)**: Kalends/Nones/Ides calculator, Leap year/bissextile handling, AUC year converter. |
+| **Phase 2** | Formatting Engine | **Delivered (v1.1.0)**: Full Latin and abbreviated format tokens (`{roman:classical}`, `{roman:short}`, `{roman:auc}`, `{roman:nominative}`, `{roman:accusative}`, `{roman:ablative}`), grammatical case switches (nominative, accusative, ablative), `.formatRoman()` method, Latin ordinal words. |
+| **Phase 3** | Classical Parser | **Delivered (v1.2.0)**: NLP pattern recognition for Latin date strings (`Tempo.roman.parse()`, `parseClassicalRomanDate()`), Latin ordinal words, AUC/BCE/CE year resolution, bissextile validation. |
+| **Phase 4** | Consular Catalog & Docs | **Delivered (v1.2.0)**: Historical consular database (509 BCE–541 CE), `{roman:consul}` format token, `tempo.consuls` getter, Latin ablative/nominative dating formulas (`Tempo.roman.formatConsuls()`), Fasti search (`Tempo.roman.findConsuls()`), and consular year parsing. |

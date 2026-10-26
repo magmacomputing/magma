@@ -2,6 +2,8 @@ import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
 import { isDefined, isUndefined, isString, isCallable, isNumber } from '#library/assertion.library.js';
 import { BoundedCache } from '#library/cache.class.js';
+import { Finalizer } from './finalizer.class.js';
+import { signify, type WritableSignal } from './signify.library.js';
 
 const context = getContext();
 
@@ -253,3 +255,148 @@ export const isTestEnvironment = (): boolean => {
 		getStorage<boolean>('CI', false)
 	);
 };
+
+interface StorageSignalBinding {
+	update: (val: any) => void;
+	defaultValue: any;
+}
+
+const STORAGE_SUBSCRIBERS = new Map<string, Set<StorageSignalBinding>>();
+let storageListenerRegistered = false;
+
+function ensureStorageListener(): void {
+	if (storageListenerRegistered) return;
+	if (context.type === CONTEXT.Browser && isCallable(context.global?.addEventListener)) {
+		try {
+			context.global.addEventListener('storage', (event: any) => {
+				if (event.key === null) {
+					// localStorage.clear() occurred: reload all bound keys with defaults
+					for (const [key, bindings] of STORAGE_SUBSCRIBERS.entries()) {
+						for (const binding of bindings) {
+							const updated = getStorage(key, binding.defaultValue);
+							binding.update(updated);
+						}
+					}
+				} else if (STORAGE_SUBSCRIBERS.has(event.key)) {
+					const bindings = STORAGE_SUBSCRIBERS.get(event.key)!;
+					for (const binding of bindings) {
+						const updated = getStorage(event.key, binding.defaultValue);
+						binding.update(updated);
+					}
+				}
+			});
+			storageListenerRegistered = true;
+		} catch {
+			// ignore in restricted environments
+		}
+	}
+}
+
+function notifyStorageSubscribers(key: string, val: any, exclude?: StorageSignalBinding): void {
+	const bindings = STORAGE_SUBSCRIBERS.get(key);
+	if (bindings) {
+		for (const binding of bindings) {
+			if (binding !== exclude)
+				binding.update(val);
+		}
+	}
+}
+
+/**
+ * Creates a reactive WritableSignal synchronized with persistent storage.
+ * - Call `sig()` to read the stored value (with automatic dependency tracking).
+ * - Call `sig(newValue)` or set `sig.value = newValue` to update the signal and persist to storage.
+ * - In browser environments, automatically listens to window 'storage' events for cross-tab synchronization.
+ * 
+ * @param key - The storage key to bind
+ * @param defaultValue - Optional fallback value if key does not exist
+ * @returns A WritableSignal bound to the persistent storage key
+ * @internal
+ */
+export function toSignal<T>(key: string, defaultValue?: T): WritableSignal<T> {
+	ensureStorageListener();
+
+	let initial = getStorage<T>(key);
+	if (isUndefined(initial) && isDefined(defaultValue)) {
+		setStorage(key, defaultValue);
+		notifyStorageSubscribers(key, defaultValue);
+		initial = defaultValue;
+	}
+	const sig = signify<T>((initial ?? defaultValue) as T);
+
+	const binding: StorageSignalBinding = {
+		update: (val: any) => sig.set(val),
+		defaultValue,
+	};
+
+	let keyBindings = STORAGE_SUBSCRIBERS.get(key);
+	if (!keyBindings) {
+		keyBindings = new Set();
+		STORAGE_SUBSCRIBERS.set(key, keyBindings);
+	}
+	keyBindings.add(binding);
+
+	let isDisposed = false;
+	const dispose = () => {
+		if (isDisposed) return;
+		isDisposed = true;
+		const set = STORAGE_SUBSCRIBERS.get(key);
+		if (set) {
+			set.delete(binding);
+			if (set.size === 0) {
+				STORAGE_SUBSCRIBERS.delete(key);
+			}
+		}
+	};
+
+	const accessor = function (this: any, ...args: [T?]): any {
+		if (args.length === 0)
+			return sig();
+
+		const val = args[0] as T;
+		setStorage(key, val);
+		sig(val);
+		notifyStorageSubscribers(key, val, binding);
+		return val;
+	} as WritableSignal<T>;
+
+	Object.defineProperties(accessor, {
+		get: { value: () => sig.get(), writable: false, configurable: false },
+		set: {
+			value: (val: T) => {
+				setStorage(key, val);
+				sig.set(val);
+				notifyStorageSubscribers(key, val, binding);
+			},
+			writable: false,
+			configurable: false
+		},
+		value: {
+			get: () => sig.value,
+			set: (val: T) => {
+				setStorage(key, val);
+				sig.value = val;
+				notifyStorageSubscribers(key, val, binding);
+			},
+			configurable: false,
+			enumerable: true
+		},
+		epoch: {
+			get: () => sig.epoch,
+			configurable: false,
+			enumerable: true
+		},
+		addConsumer: { value: (c: any) => sig.addConsumer(c), writable: false, configurable: false },
+		removeConsumer: { value: (c: any) => sig.removeConsumer(c), writable: false, configurable: false },
+		poll: { value: () => sig.poll(), writable: false, configurable: false },
+		dispose: { value: dispose, writable: false, configurable: false },
+		[Symbol.dispose]: { value: dispose, writable: false, configurable: false },
+		[Symbol.toStringTag]: { value: 'Signify', writable: false, configurable: false }
+	});
+
+	Finalizer.register(accessor, dispose);
+	return Object.freeze(accessor);
+}
+
+// /** Alias for toSignal */
+// export const storageSignal = toSignal;

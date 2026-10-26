@@ -2,7 +2,7 @@
   {
     "id": "celestial",
     "name": "Celestial Plugin",
-    "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, and astronomical seasons / tidal mechanics",
+    "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, astronomical seasons and tidal mechanics",
     "packageName": "@magmacomputing/tempo-plugin-celestial",
     "plan": "community",
     "status": "active",
@@ -69,7 +69,7 @@
     "packageName": "@magmacomputing/tempo-plugin-geo",
     "plan": "community",
     "status": "active",
-    "version": "1.4.2"
+    "version": "2.0.0"
   },
   {
     "id": "_std",
@@ -95,7 +95,7 @@
     "name": "Holidays Plugin",
     "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
     "packageName": "@magmacomputing/tempo-plugin-holidays",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "plan": "community",
     "status": "active"
   },
@@ -113,6 +113,15 @@
     "name": "Ntp Plugin",
     "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
     "packageName": "@magmacomputing/tempo-plugin-ntp",
+    "version": "1.0.0",
+    "plan": "community",
+    "status": "active"
+  },
+  {
+    "id": "roman",
+    "name": "Roman Plugin",
+    "description": "Tempo community plugin for classical Roman calendar arithmetic (Kalends, Nones, Ides, Ante Diem), leap year bissextile handling, and AUC (Ab Urbe Condita) year conversions.",
+    "packageName": "@magmacomputing/tempo-plugin-roman",
     "version": "1.0.0",
     "plan": "community",
     "status": "active"

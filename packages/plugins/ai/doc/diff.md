@@ -43,7 +43,7 @@ console.log(diff.confidence);   // 0.96
 
 | Option | Type | Description |
 | :--- | :--- | :--- |
-| **`holidays`** | `string[]` | Explicit array of holiday dates (`'YYYY-MM-DD'`) to exclude from business days. |
+| **`holidays`** | `string[]` | Explicit array of holiday dates (`'year-month-day'`, ISO 8601) to exclude from business days. |
 | **`region`** | `string` | Regional context (e.g., `'AU-NSW'`, `'US'`) passed to LLM grounding. |
 | **`timeZone`** | `string` | Target IANA timezone for date boundaries and calculation. |
 | **`locale`** | `string \| string[]` | Locale for narrative language formatting. |
@@ -73,7 +73,7 @@ export interface TempoAiDiffResult {
   /** Total business working days (excluding weekends and matching holidays) */
   businessDays?: number | undefined;
   
-  /** List of holiday dates (YYYY-MM-DD) encountered within the interval */
+  /** List of holiday dates (year-month-day, ISO 8601) encountered within the interval */
   holidays?: string[] | undefined;
   
   /** Confidence rating from 0.0 (unparseable) to 1.0 (certain) */

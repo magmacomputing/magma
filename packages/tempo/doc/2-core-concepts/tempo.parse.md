@@ -216,7 +216,7 @@ const t = new Tempo('PST 8 Aug 10:30');
 console.log(t.tz); // 'America/Los_Angeles'
 ```
 
-### US-Style Dates (`MM/DD/YYYY`)
+### US-Style Dates (month/day/year)
 If you parse a numeric string like `04012026`, Tempo uses your `timeZone` to decide if it means **April 1st** (US) or **4th of January** (UK/AU).
 
 Tempo achieves this by dynamically checking if your current `timeZone` is associated with a locale that prefers Month-Day ordering (like `en-US`). It uses the `Intl.Locale.prototype.getTimeZones()` API where available, and maintains a robust **hardcoded fallback list** for environments (like Node.js CI or non-ICU environments) where the full Intl API is not present.

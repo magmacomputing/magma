@@ -16,11 +16,25 @@ High-frequency trading platforms, real-time multiplayer authoritative game serve
 
 ---
 
-## 🚀 Installation & Quickstart
+## Key Features
+
+- **Lock-Free Cross-Thread Clock**: A master `AtomicClock` writes time into a `SharedArrayBuffer` that workers read with `AtomicReader`.
+- **Constant-Time Reads**: `reader.now()` returns epoch milliseconds in $O(1)$ time with no inter-process messaging.
+- **Nanosecond Precision**: `reader.nowNano()` returns BigInt nanoseconds and `reader.getTempo()` hydrates an exact `Tempo`.
+- **Browser & Node.js Workers**: Works across Web Workers (with Cross-Origin Isolation) and Node.js `worker_threads`.
+- **Managed Timer Lifecycle**: Master clock timers support `unref()` and `using` for deterministic cleanup.
+
+---
+
+## Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-sync
 ```
+
+---
+
+## Quickstart
 
 ::: info Live Interactive Sandbox Note
 This plugin leverages `SharedArrayBuffer` and `Atomics` for hardware-level cross-thread synchronization. Modern browsers require **Cross-Origin Isolation** (`Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`) to enable `SharedArrayBuffer`. Because GitHub Pages static hosting cannot emit custom HTTP response headers, the live browser sandbox widget is disabled on this documentation page. To test the Sync plugin, run it in **Node.js** (supported natively) or in a local development environment with custom server headers configured.
@@ -71,7 +85,7 @@ console.log(t.iso);
 
 ---
 
-## 📚 API Surface Catalog
+## API Reference
 
 The Sync plugin exposes two primary abstractions: `AtomicClock` for the master thread, and `AtomicReader` for worker threads:
 
@@ -87,13 +101,13 @@ The Sync plugin exposes two primary abstractions: `AtomicClock` for the master t
 
 ---
 
-## 📖 Architecture & Specialized Guides
+## Topic Guides
 
 - **[Lock-Free Atomics & Memory Architecture](./atomic-architecture.md)**: Hardware-level memory layout (`SharedArrayBuffer(8)`), Atomics sequential consistency, browser COOP/COEP isolation rules, and dual-layer timer lifecycle management (`unref()`, `using`).
 - **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: High-frequency trading worker clusters, authoritative multiplayer game physics loops, and real-time audio DSP thread synchronization.
 
 ---
 
-## 📄 Licensing
+## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

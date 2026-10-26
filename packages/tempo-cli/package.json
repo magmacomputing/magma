@@ -9,6 +9,6 @@
     "tempo-dev": "./index.js"
   },
   "dependencies": {
-    "@magmacomputing/library": "^4.0.0"
+    "@magmacomputing/library": "^4.0.0 || ^5.0.0"
   }
 }

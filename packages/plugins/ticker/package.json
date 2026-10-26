@@ -43,10 +43,10 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.7.0"
+    "@magmacomputing/tempo": "^4.7.0 || ^5.0.0"
   },
   "devDependencies": {
-    "@magmacomputing/tempo": "^4.7.0",
+    "@magmacomputing/tempo": "^4.7.0 || ^5.0.0",
     "@magmacomputing/tempo-plugin-ntp": "^1.0.0"
   },
   "keywords": [

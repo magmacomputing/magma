@@ -1,4 +1,5 @@
 import { WeakCache } from '@magmacomputing/tempo/library';
+import { getDaysInMonth, civilToDays, isoWeekdayFromDays, epochMsFromParts, partsFromEpochMs } from '@magmacomputing/tempo/library';
 
 /**
  * Computes calendar dates, floating Easter offsets, and weekday shifts.
@@ -29,9 +30,8 @@ export function formatDate(year: number, month: number, day: number): string {
  * @returns ISO day of week (1 = Monday .. 7 = Sunday)
  */
 export function getIsoDayOfWeek(year: number, month: number, day: number): number {
-	const d = new Date(Date.UTC(year, month - 1, day));
-	const dayOfWeek = d.getUTCDay();
-	return dayOfWeek === 0 ? 7 : dayOfWeek;
+	const days = civilToDays(year, month, day);
+	return isoWeekdayFromDays(days);
 }
 
 /**
@@ -44,8 +44,10 @@ export function getIsoDayOfWeek(year: number, month: number, day: number): numbe
  * @returns The resulting ISO date string
  */
 export function offsetDate(year: number, month: number, day: number, daysOffset: number): string {
-	const d = new Date(Date.UTC(year, month - 1, day + daysOffset));
-	return formatDate(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+	const baseMs = epochMsFromParts(year, month, day);
+	const targetMs = baseMs + daysOffset * 86_400_000; // MS_PER_DAY
+	const { year: y, month: m, day: d } = partsFromEpochMs(targetMs);
+	return formatDate(y, m, d);
 }
 
 /**
@@ -130,11 +132,11 @@ export function getCorpusChristi(year: number): string {
  * @returns ISO date string
  */
 export function getNthWeekdayOfMonth(year: number, month: number, weekday: number, n: number): string {
+	const daysInMonth = getDaysInMonth(year, month);
 	if (n === -1) {
-		// Find last day of month
-		const lastDayOfMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-		for (let d = lastDayOfMonth; d >= 1; d--) {
-			if (getIsoDayOfWeek(year, month, d) === weekday) {
+		// Find last occurrence from end of month
+		for (let d = daysInMonth; d >= 1; d--) {
+			if (isoWeekdayFromDays(civilToDays(year, month, d)) === weekday) {
 				return formatDate(year, month, d);
 			}
 		}
@@ -142,14 +144,12 @@ export function getNthWeekdayOfMonth(year: number, month: number, weekday: numbe
 	}
 
 	let count = 0;
-	const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
 	for (let d = 1; d <= daysInMonth; d++) {
-		if (getIsoDayOfWeek(year, month, d) === weekday) {
+		if (isoWeekdayFromDays(civilToDays(year, month, d)) === weekday) {
 			count++;
-			if (count === n) {
-				return formatDate(year, month, d);
-			}
+			if (count === n) return formatDate(year, month, d);
 		}
 	}
+
 	throw new Error(`Unable to find ${n}th weekday ${weekday} in ${year}-${month}`);
 }

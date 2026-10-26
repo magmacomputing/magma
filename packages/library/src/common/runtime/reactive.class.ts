@@ -1,8 +1,9 @@
 import { StringTag } from '#library/decorator.library.js';
-import { isCallable, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
+import { isCallable, isClass, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
 import { Pledge } from './pledge.class.js';
 import { Finalizer } from './finalizer.class.js';
 import { onAbort, NOOP } from './aborter.library.js';
+import { Signify, type ReadonlySignal } from './signify.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
@@ -102,6 +103,7 @@ interface ReactiveCleanupState<T> {
 	readonly endListeners: Set<Reactive.EndListener>;
 	readonly dataListeners: Set<Reactive.Listener<T>>;
 	readonly errorListeners: Set<Reactive.ErrorListener>;
+	readonly signalListeners: Set<(val: T) => void>;
 }
 
 function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
@@ -130,6 +132,7 @@ function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
 	state.dataListeners.clear();
 	state.errorListeners.clear();
 	state.endListeners.clear();
+	state.signalListeners.clear();
 }
 
 /**
@@ -168,9 +171,13 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	#dataListeners = new Set<Reactive.Listener<T>>();
 	#errorListeners = new Set<Reactive.ErrorListener>();
 	#endListeners = new Set<Reactive.EndListener>();
+	#signalListeners = new Set<(val: T) => void>();
+	#lastValue?: T | undefined;
+	#hasValue = false;
 	#stopCallback: () => void;
 	readonly #cleanupState: ReactiveCleanupState<T>;
 	#unregisterFinalizer?: (() => boolean) | undefined;
+	#cachedSignal: ReadonlySignal<T | undefined> | undefined = undefined;
 
 	constructor(arg?: Reactive.Options<T> | string) {
 		const opts: Reactive.Options<T> = isObject(arg) ? arg : isString(arg) ? { tag: arg } : {};
@@ -185,6 +192,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			endListeners: this.#endListeners,
 			dataListeners: this.#dataListeners,
 			errorListeners: this.#errorListeners,
+			signalListeners: this.#signalListeners,
 		};
 		this.#cleanupState = cleanupState;
 
@@ -207,7 +215,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			active: this.#active,
 			completed: this.#completed,
 			emitted: this.#emitted,
-			subscribers: this.#dataListeners.size + this.#errorListeners.size + this.#endListeners.size,
+			subscribers: this.#dataListeners.size + this.#errorListeners.size + this.#endListeners.size + this.#signalListeners.size,
 			queued: this.#waiters.length,
 			buffered: this.#buffer.length,
 		};
@@ -231,8 +239,23 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		if (!this.#active || this.#completed) return false;
 
 		this.#emitted++;
+		this.#lastValue = arg as T;
+		this.#hasValue = true;
 
-		// 1. Dispatch to pending pull waiter if any
+		// 1. Dispatch to signal listeners (passive observers that do not consume or drain the buffer)
+		// Dispatched before data listeners so a data listener stopping or completing the stream does not drop signal updates
+		if (this.#signalListeners.size > 0) {
+			const signalListeners = [...this.#signalListeners];
+			for (const listener of signalListeners) {
+				try {
+					listener(arg as T);
+				} catch (err: any) {
+					this.error(err instanceof Error ? err : new Error(String(err)));
+				}
+			}
+		}
+
+		// 2. Dispatch to pending pull waiter if any
 		let dispatchedToWaiter = false;
 		while (this.#waiters.length > 0) {
 			const waiter = this.#waiters.shift()!;
@@ -243,11 +266,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			}
 		}
 
-		// 2. Buffer for future pull consumers if buffer space is available and not consumed by push listeners
+		// 3. Buffer for future pull consumers if buffer space is available and not consumed by push listeners
 		if (!dispatchedToWaiter && this.#dataListeners.size === 0 && this.#buffer.length < this.#bufferSize)
 			this.#buffer.push(arg as T);
 
-		// 3. Dispatch to all push listeners
+		// 4. Dispatch to all push listeners
 		if (this.#dataListeners.size > 0) {
 			const listeners = [...this.#dataListeners];
 			for (const listener of listeners) {
@@ -272,8 +295,22 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		if (!this.#active || this.#completed) return false;
 
 		this.#emitted++;
+		this.#lastValue = value;
+		this.#hasValue = true;
 
-		// 1. Dispatch to all pending pull waiters
+		// 1. Dispatch to signal listeners (passive observers)
+		if (this.#signalListeners.size > 0) {
+			const signalListeners = [...this.#signalListeners];
+			for (const listener of signalListeners) {
+				try {
+					listener(value);
+				} catch (err: any) {
+					this.error(err instanceof Error ? err : new Error(String(err)));
+				}
+			}
+		}
+
+		// 2. Dispatch to all pending pull waiters
 		if (this.#waiters.length > 0) {
 			const waiters = this.#waiters.splice(0);
 			for (const waiter of waiters) {
@@ -282,7 +319,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			}
 		}
 
-		// 2. Dispatch to all push listeners
+		// 3. Dispatch to all push listeners
 		if (this.#dataListeners.size > 0) {
 			const listeners = [...this.#dataListeners];
 			for (const listener of listeners) {
@@ -603,6 +640,69 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		return this;
 	}
 
+	// ── Signal Bridge ──────────────────────────────────────────────────────────
+
+	/**
+	 * Bridges this Reactive stream into a synchronous Signify signal.
+	 * Updates the signal value whenever the stream emits data.
+	 * 
+	 * @param initialValue - Optional fallback value before first emission (default: undefined).
+	 * @returns A ReadonlySignal bound to this stream.
+	 */
+	toSignal(): ReadonlySignal<T | undefined>;
+	toSignal<D>(initialValue: D): ReadonlySignal<T | D>;
+	toSignal<D = undefined>(initialValue?: D): ReadonlySignal<T | D> {
+		const startVal = (this.#hasValue ? this.#lastValue : initialValue) as T | D;
+		const state = new Signify.State<T | D>(startVal);
+		const listener = (val: T) => {
+			state.set(val);
+		};
+		const signalListeners = this.#signalListeners;
+		signalListeners.add(listener);
+
+		let isDisposed = false;
+		const dispose = () => {
+			if (isDisposed) return;
+			isDisposed = true;
+			signalListeners.delete(listener);
+		};
+
+		const accessor = function (this: any): T | D {
+			return state.get();
+		} as ReadonlySignal<T | D>;
+
+		Object.defineProperties(accessor, {
+			get: { value: () => state.get(), writable: false, configurable: false },
+			value: {
+				get: () => state.get(),
+				configurable: false,
+				enumerable: true
+			},
+			epoch: {
+				get: () => state.epoch,
+				configurable: false,
+				enumerable: true
+			},
+			addConsumer: { value: (c: any) => state.addConsumer(c), writable: false, configurable: false },
+			removeConsumer: { value: (c: any) => state.removeConsumer(c), writable: false, configurable: false },
+			poll: { value: () => state.poll(), writable: false, configurable: false },
+			dispose: { value: dispose, writable: false, configurable: false },
+			[Symbol.dispose]: { value: dispose, writable: false, configurable: false },
+			[Symbol.toStringTag]: { value: 'Signify.Computed', writable: false, configurable: false }
+		});
+
+		Finalizer.register(accessor, dispose);
+
+		return Object.freeze(accessor);
+	}
+
+	/**
+	 * Readonly signal accessor bound to this stream with an initial value of undefined.
+	 */
+	get signal(): ReadonlySignal<T | undefined> {
+		return this.#cachedSignal ??= this.toSignal();
+	}
+
 	// ── Resource Management ────────────────────────────────────────────────────
 
 	/** Synchronous disposal hook (`using stream = new Reactive()`) */
@@ -618,19 +718,59 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	// ── Static Factories ───────────────────────────────────────────────────────
 
 	/**
-	 * Creates a `Reactive` stream from an iterable, async iterable, or Promise.
+	 * Bridges a Signify or Signal node into a Reactive<T> async stream.
+	 * Automatically pushes updates to the stream whenever the signal changes.
 	 *
-	 * @param source - The source collection or promise
+	 * @param source - The signal or getter function to stream
+	 * @param options - Optional configuration options
+	 * @returns A Reactive stream instance
+	 */
+	static fromSignal<V>(
+		source: { get(): V } | (() => V),
+		options?: Reactive.Options<V>
+	): Reactive<V> {
+		const stream = new Reactive<V>(options);
+		const readFn = isCallable(source)
+			? (source as () => V)
+			: () => (source as { get(): V }).get();
+
+		const sub = Signify.effect(() => {
+			let value: V;
+			try {
+				value = readFn();
+			} catch (err: any) {
+				stream.error(err instanceof Error ? err : new Error(String(err)));
+				return;
+			}
+			Signify.subtle.untrack(() => {
+				stream.push(value);
+			});
+		});
+
+		stream.on('stop', () => {
+			sub.dispose();
+		});
+
+		stream.on('end', () => {
+			sub.dispose();
+		});
+
+		return stream;
+	}
+
+	/**
+	 * Creates a `Reactive` stream from an iterable, async iterable, Promise, or Signal.
+	 *
+	 * @param source - The source collection, promise, or reactive signal
 	 * @param options - Optional configuration options
 	 * @returns A Reactive stream instance
 	 */
 	static from<V>(
-		source: Iterable<V> | AsyncIterable<V> | Promise<V>,
+		source: Iterable<V> | AsyncIterable<V> | Promise<V> | { get(): V } | (() => V),
 		options?: Reactive.Options<V>
 	): Reactive<V> {
-		const stream = new Reactive<V>(options);
-
 		if (isDefined(source) && isFunction((source as any)[Symbol.asyncIterator])) {
+			const stream = new Reactive<V>(options);
 			(async () => {
 				try {
 					for await (const item of source as AsyncIterable<V>) {
@@ -643,7 +783,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 					stream.complete();
 				}
 			})();
-		} else if (isDefined(source) && isFunction((source as any)[Symbol.iterator])) {
+			return stream;
+		}
+
+		if (isDefined(source) && isFunction((source as any)[Symbol.iterator])) {
+			const stream = new Reactive<V>(options);
 			try {
 				for (const item of source as Iterable<V>) {
 					if (!stream.state.active) break;
@@ -654,7 +798,11 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 				stream.error(err instanceof Error ? err : new Error(String(err)));
 				stream.complete();
 			}
-		} else if (isPromise(source) || (isDefined(source) && isFunction((source as any).then))) {
+			return stream;
+		}
+
+		if (isPromise(source) || (isDefined(source) && isFunction((source as any).then))) {
+			const stream = new Reactive<V>(options);
 			(source as Promise<V>)
 				.then((val) => {
 					stream.push(val);
@@ -664,9 +812,18 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 					stream.error(err instanceof Error ? err : new Error(String(err)));
 					stream.complete();
 				});
+			return stream;
 		}
 
-		return stream;
+		const isSignalLike = isDefined(source) && (
+			(isObject(source) && isFunction((source as any).get) && (source as any).get.length === 0) ||
+			(isCallable(source) && !isClass(source))
+		);
+
+		if (isSignalLike)
+			return Reactive.fromSignal(source as any, options);
+
+		return new Reactive<V>(options);
 	}
 }
 

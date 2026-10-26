@@ -14,26 +14,30 @@ This plugin bridges the gap between deterministic date-math and unstructured NLP
 Raw LLM API keys must **never** be exposed in client-side browser bundles or stored in any client-side storage mechanisms (`localStorage`, `sessionStorage`, `IndexedDB`, OPFS / Origin Private File System, or browser cache). We recommend **zero browser storage** for API credentials; BYOK (Bring Your Own Key) is only secure on backend servers (Node, edge workers). For public frontend applications, route requests through a secure backend proxy service.
 :::
 
-## Installation & Quickstart
- 
+## Key Features
+
+- **Natural Language Parsing**: `parseAI` turns free-form expressions into `Tempo` instances (single or batch).
+- **Structured AI Results**: Narrative formatting (`formatAI`), event extraction (`extractAI`), time deltas with business days (`diffAI`), and regional context inference (`contextAI`).
+- **Recurrence & Scheduling**: Natural language to iterable series (`recurrenceAI`) and conflict-aware appointment slots (`scheduleAI`).
+- **Multi-Provider Execution Modes**: Hedged, RoundRobin, Adaptive, Race, Consensus, and Fallback strategies across providers such as Gemini, Groq, and OpenAI.
+- **Grounded & Validated**: Timezone and locale grounding, schema enforcement, and confidence thresholds with typed `TempoAiError` results.
+- **Privacy & Security Controls**: PII masking, plus documented BYOK (backend) and proxy (browser) provider patterns.
+- **Two Usage Patterns**: The cohesive `Tempo.ai.*` namespace or tree-shakeable standalone functions.
+
+---
+
+## Installation
+
 ```bash
 npm install @magmacomputing/tempo-plugin-ai
 ```
 
-<PluginRepl plugin="ai" />
-
-## Two Usage Patterns: Namespace vs Tree-Shakeable Functions
-
-The AI plugin provides two distinct integration approaches:
-
-| Approach | Import Syntax | Ideal For |
-| :--- | :--- | :--- |
-| **Cohesive Namespace** | `import { AiPlugin } from '@magmacomputing/tempo-plugin-ai'` | Full-featured apps, Node.js backends, REPLs, and IDE auto-complete via `Tempo.ai.*` |
-| **Tree-Shakeable Functions** | `import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai'` | Minimal client-side bundles and microservices importing only specific functions |
-
 ---
 
-### Pattern A: `Tempo.ai` Cohesive Namespace
+## Quickstart
+
+<PluginRepl plugin="ai" />
+
 Installing `AiPlugin` mounts the frozen **`Tempo.ai`** static action namespace onto `Tempo`:
 
 ```typescript
@@ -47,7 +51,7 @@ await Tempo.ai.init({ provider: 'tempo' });
 const event = await Tempo.ai.parse("next Tuesday around 2:30pm");
 ```
 
-#### Auto-Installation (Side-Effect Import)
+### Auto-Installation (Side-Effect Import)
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -58,7 +62,16 @@ const event = await Tempo.ai.parse("next Tuesday around 2:30pm");
 
 ---
 
-### Pattern B: Tree-Shakeable Standalone Functions
+## Two Usage Patterns: Namespace vs Tree-Shakeable Functions
+
+The AI plugin provides two distinct integration approaches:
+
+| Approach | Import Syntax | Ideal For |
+| :--- | :--- | :--- |
+| **Cohesive Namespace** | `import { AiPlugin } from '@magmacomputing/tempo-plugin-ai'` | Full-featured apps, Node.js backends, REPLs, and IDE auto-complete via `Tempo.ai.*` |
+| **Tree-Shakeable Functions** | `import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai'` | Minimal client-side bundles and microservices importing only specific functions |
+
+### Tree-Shakeable Standalone Functions
 For bundle-sensitive projects, import individual functions directly without attaching anything to `Tempo`:
 
 ```typescript
@@ -74,7 +87,7 @@ console.log(dt.format('{yyyy}-{mm}-{dd}')); // 2026-11-17
 
 ---
 
-## AI Function Catalog
+## API Reference
 All AI functions return a standard ES Promise and are accessible either as standalone tree-shakeable functions or via the cohesive `Tempo.ai.*` namespace.
 
 | Standalone Function / `Tempo.ai` Method | Input | Returns (`Promise<...>`) | Description | Doc |
@@ -98,7 +111,9 @@ To streamline error handling and data consumption, return shapes across the AI p
 | **Structured AI Objects** | `formatAI`<br/>`extractAI`<br/>`diffAI`<br/>`contextAI` | `TempoAiFormatResult`<br/>`TempoAiExtractResult`<br/>`TempoAiDiffResult`<br/>`TempoContext` | Throws `TempoAiError` (422 for low confidence, 429 for quota, 500 for network) | Returns typed `TempoAiError` object directly in array position |
 | **Intervals & Generators** | `scheduleAI`<br/>`recurrenceAI` | `TempoScheduleResult` (Proxied `Interval<Tempo>`)<br/>`TempoRecurrenceResult` (`.take(n)`) | Throws `TempoAiError` (Single item query only) | N/A (Single query operations) |
 
-## Architecture & Infrastructure Guides
+---
+
+## Topic Guides
 
 > [!IMPORTANT]
 > **Production Recommendation**: Due to the complexities of LLM APIs, including caching gotchas, context injection, rate limits, and calendar math hallucinations, we strongly recommend reading the dedicated guides below before deploying this plugin in a production environment. 
@@ -110,15 +125,15 @@ To streamline error handling and data consumption, return shapes across the AI p
 - [Grounding & Natural Language Parsing](./grounding.md) (How Timezone and Locale are injected)
 - [Rate Limits & Cache Management](./rate-limits.md) (Tracking API quotas, handling 429 errors, and custom Redis caches)
 
-## Community Feedback & Production Notice
+---
 
 > [!NOTE]
-> **Community Feedback & Prompt Engineering**
-> While `@magmacomputing/tempo-plugin-ai` utilizes deterministic grounding, schema enforcement, and confidence validation, LLM outputs can vary across models and prompt styles. We actively welcome community feedback and prompt optimizations—please report any edge cases or suggestions on the [Magma GitHub Issue Tracker](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml).
+> **Community Feedback & Prompt Engineering**: While `@magmacomputing/tempo-plugin-ai` utilizes deterministic grounding, schema enforcement, and confidence validation, LLM outputs can vary across models and prompt styles. We actively welcome community feedback and prompt optimizations—please report any edge cases or suggestions on the [Magma GitHub Issue Tracker](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml).
 >
 > **Production Notice & "As-Is" Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is" without warranty of any kind. Large Language Models operate probabilistically; developers and system architects are responsible for validating AI-generated temporal outputs before committing them to financial, legal, medical, or life-critical applications.
 
-## Licensing
+---
+
+## License
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
-

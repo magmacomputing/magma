@@ -6,6 +6,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - Unreleased
+
+### Added & Architecture
+- **TC39 Signals Core Reactive Engine Integration (`Signify`)**:
+  - Re-exported `Signify` from `#tempo/library` and root module, bringing native zero-dependency, memory-safe reactive signals directly into the Tempo core runtime.
+  - Exported `TempoFormatTokens` type for format mask token validation.
+  - Re-exported `getISOWeekOfYear` from `#library/international.library.js`.
+- **Dialect Mask Formatting Hardening (`module.format.ts`)**:
+  - Refined dialect and mask parsing with regex anchoring (`RE_DIALECT_MASK`) to prevent false-positive dialect triggers on unescaped plain-text strings.
+  - Added non-throwing fallback with informative error routing (`raise`) when an unbraced dialect format mask is supplied without `@magmacomputing/tempo-plugin-dialects`.
+- **Ecosystem & Plugin Alignment**:
+  - Synchronized monorepo package versions to `5.0.0`.
+  - Widened peer dependencies across all official community plugins to `^4.0.0 || ^5.0.0` for smooth cross-version compatibility.
+  - Added support and REPL showcases for companion `@magmacomputing/tempo-plugin-roman`.
+
 ## [4.7.0] - 2026-10-16
 
 ### Added & Architecture

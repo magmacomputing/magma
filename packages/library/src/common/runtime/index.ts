@@ -21,4 +21,5 @@ export * from './weakcache.class.js';
 export * from './finalizer.class.js';
 export * from './reactive.class.js';
 export * from './aborter.library.js';
+export * from './signify.library.js';
 

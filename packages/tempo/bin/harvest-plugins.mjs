@@ -52,6 +52,9 @@ const KNOWN_TITLES = {
   'spatial.transit-and-navigation': 'Transit, Velocity & Navigation',
   'spatial.geofencing': 'Spatial Geofencing & Bounding Boxes',
   'spatial.solar-offset': 'Natural Solar Time Offset',
+  'roman.index': 'Roman (Classical Calendar & AUC)',
+  'roman.calendar-mechanics': 'Classical Fasti & Lunar Anchors',
+  'roman.use-cases-and-patterns': 'Use Cases & Production Patterns',
 };
 
 function extractTitle(content, pluginId, basename) {
@@ -228,6 +231,11 @@ const PREFERRED_DOC_ORDER = {
     'index',
     'use-cases-and-patterns',
   ],
+  roman: [
+    'index',
+    'calendar-mechanics',
+    'use-cases-and-patterns',
+  ],
 };
 
 function getPluginGroupName(pluginId) {
@@ -236,6 +244,7 @@ function getPluginGroupName(pluginId) {
     geo: 'Geo Plugin',
     celestial: 'Celestial Plugin',
     ntp: 'NTP Plugin',
+    roman: 'Roman Plugin',
   };
   if (customNames[pluginId]) return customNames[pluginId];
   const capitalized = pluginId.charAt(0).toUpperCase() + pluginId.slice(1);

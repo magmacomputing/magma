@@ -65,4 +65,4 @@ console.log(start.holidays.workingHoursUntil(deadline)); // 4.0 hours (2h Fri + 
 
 ## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

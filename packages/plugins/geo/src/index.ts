@@ -96,20 +96,20 @@ export interface TempoGeoNamespace {
 	readonly resolve: typeof resolveGeoCoordinates;
 	/** Coerces coordinates and configurations into a canonical GeoConfig object */
 	readonly coerce: typeof coerceGeo;
-	/** Explicitly stashes coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
-	readonly stash: typeof stashGeo;
-	/** Clears stashed coordinates from storage */
-	readonly clear: typeof clearStashedGeo;
-	/** Retrieves stashed coordinates from storage */
+	/** Retrieves cached coordinates from storage */
 	readonly get: typeof getStashedGeo;
-	/** Sets the active custom geolocation provider gateway */
-	readonly setProvider: typeof setGeoProvider;
+	/** Explicitly sets coordinates into storage with optional TTL (default 24h) and multi-tenant partitioning */
+	readonly set: typeof stashGeo;
+	/** Clears cached coordinates from storage */
+	readonly clear: typeof clearStashedGeo;
 	/** Gets the currently registered custom geolocation provider */
 	readonly getProvider: typeof getGeoProvider;
-	/** Reverse geocodes coordinates to address or location metadata using the active provider */
-	readonly reverse: typeof reverseGeocode;
+	/** Sets the active custom geolocation provider gateway */
+	readonly setProvider: typeof setGeoProvider;
 	/** Forward geocodes an address or place query string into coordinates using the active provider */
 	readonly forward: typeof forwardGeocode;
+	/** Reverse geocodes coordinates to address or location metadata using the active provider */
+	readonly reverse: typeof reverseGeocode;
 	/** Low-level server-side IP geolocation handler */
 	readonly server: typeof serverGeoLocation;
 	/** Low-level browser geolocation API handler */
@@ -154,13 +154,13 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 				lookup: (opts?: Record<string, any>) => geoLookup(getEffectiveOptions(opts)),
 				resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),
 				coerce: coerceGeo,
-				stash: stashGeo,
-				clear: clearStashedGeo,
 				get: getStashedGeo,
-				setProvider: setGeoProvider,
+				set: stashGeo,
+				clear: clearStashedGeo,
 				getProvider: getGeoProvider,
-				reverse: (coords: CoordinateInput, opts?: Record<string, any>) => reverseGeocode(coords, getEffectiveOptions(opts)),
+				setProvider: setGeoProvider,
 				forward: (query: string, opts?: Record<string, any>) => forwardGeocode(query, getEffectiveOptions(opts)),
+				reverse: (coords: CoordinateInput, opts?: Record<string, any>) => reverseGeocode(coords, getEffectiveOptions(opts)),
 				server: serverGeoLocation,
 				browser: geoLocation,
 				get current(): GeoConfig | undefined {

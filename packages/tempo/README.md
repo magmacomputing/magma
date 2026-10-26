@@ -112,7 +112,7 @@ While the native Temporal API gives you perfect primitives (`ZonedDateTime`, `Pl
 *   **🗣️ Natural Language & Smart Parsing**: Parse natural language phrases (e.g. "next Friday 3pm", "two days ago") with zero-cost lazy evaluation and functional aliases.
 *   **🌍 Zero-Bundle Localization**: Multi-language date parsing and formatting powered natively by ECMAScript `Intl`—no heavy static locale dictionaries required.
 *   **🧩 Extensible & AI-Ready**: Modular plugin ecosystem for astronomical cycles (`astro`), financial quarters (`finance`), schedulers (`ticker`), and LLM-powered parsing (`ai`).
-*   **🏗️ Future-Proof & Ultra-Lightweight**: Built natively on the TC39 Stage 4 `Temporal` foundation with zero legacy runtime baggage and full tree-shaking support.
+*   **🏗️ Future-Proof & Ultra-Lightweight**: Built natively on the TC39 Stage 4 `Temporal` foundation with zero external dependencies and full tree-shaking support.
 
 ---
 

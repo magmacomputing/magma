@@ -14,11 +14,25 @@ Heavy data ETL pipelines, massive IoT telemetry ingestion, financial ledger back
 
 ---
 
-## 🚀 Installation & Quickstart
+## Key Features
+
+- **Worker-Thread Parallelism**: Splits massive epoch arrays across a background worker pool (`threads` defaults to the number of CPU cores).
+- **Lock-Free Shared Memory**: Built on `SharedArrayBuffer` for zero-copy transfer, with a `postMessage` structural-cloning fallback.
+- **Duration Shorthand Operations**: Mutate with `'+1w'`, `'+2 days'`, `'-15 mins'`, `'+1mo'`, or `'+1y'`.
+- **Peak-Throughput Output**: Returns raw numeric timestamps by default; set `rehydrate: true` to receive `Tempo[]`.
+- **Low-Level Access**: Exports `BatchOrchestrator` for direct `transform()` control.
+
+---
+
+## Installation
 
 ```bash
 npm install @magmacomputing/tempo-plugin-batch
 ```
+
+---
+
+## Quickstart
 
 <PluginRepl plugin="batch" />
 
@@ -50,7 +64,7 @@ const batchResult = await Tempo.batch(epochs, '+1w');
 
 ---
 
-## 📚 API Surface Catalog
+## API Reference
 
 The Batch plugin mounts the static `Tempo.batch()` method and exports the underlying `BatchOrchestrator`:
 
@@ -77,13 +91,13 @@ The `operation` parameter accepts either standard duration strings or shorthand 
 
 ---
 
-## 📖 Architecture & Specialized Guides
+## Topic Guides
 
 - **[Parallel Worker Pool & SharedArrayBuffer Architecture](./worker-architecture.md)**: Zero-copy `SharedArrayBuffer` vs `postMessage` structural cloning fallback, browser Cross-Origin Isolation (`COOP`/`COEP`), and worker isolate CLI flag allowlisting.
 - **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Industrial IoT telemetry clock skew correction, financial tick backtesting pipelines, and large-scale CSV payroll processing.
 
 ---
 
-## 📄 Licensing
+## License
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

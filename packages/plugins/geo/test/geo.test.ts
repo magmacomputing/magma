@@ -117,7 +117,7 @@ describe('Tempo Plugin: Geo', () => {
 			expect(typeof Tempo.geo.lookup).toBe('function');
 			expect(typeof Tempo.geo.resolve).toBe('function');
 			expect(typeof Tempo.geo.coerce).toBe('function');
-			expect(typeof Tempo.geo.stash).toBe('function');
+			expect(typeof Tempo.geo.set).toBe('function');
 			expect(typeof Tempo.geo.clear).toBe('function');
 			expect(typeof Tempo.geo.get).toBe('function');
 			expect(typeof Tempo.geo.reverse).toBe('function');
@@ -267,11 +267,11 @@ describe('Tempo Plugin: Geo', () => {
 	});
 
 	describe('Geo Stashing and Caching with BoundedCache', () => {
-		it('should provide stash, clear, get, and current on Tempo.geo', () => {
-			expect(typeof Tempo.geo.stash).toBe('function');
+		it('should provide set, clear, get, and current on Tempo.geo', () => {
+			expect(typeof Tempo.geo.set).toBe('function');
 			expect(typeof Tempo.geo.clear).toBe('function');
 			expect(typeof Tempo.geo.get).toBe('function');
-			Tempo.geo.stash({ latitude: -33.8688, longitude: 151.2093, city: 'Sydney' });
+			Tempo.geo.set({ latitude: -33.8688, longitude: 151.2093, city: 'Sydney' });
 			expect(Tempo.geo.current).toEqual({
 				latitude: -33.869,
 				longitude: 151.209,

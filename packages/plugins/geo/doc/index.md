@@ -12,6 +12,17 @@ For geometric GIS math, Great-Circle navigation, and impossible travel anomaly d
 
 ---
 
+## Key Features
+
+- **Universal Geolocation Lookup**: Hardware GPS (browser) or IP-based server lookup via `Tempo.geo.lookup()`, cached for 24h.
+- **Forward & Reverse Geocoding**: `Tempo.geo.forward(query)` converts place names to coordinates; `Tempo.geo.reverse(coords)` resolves locality metadata.
+- **Pluggable Provider Architecture**: Swap geocoding backends (`OpenStreetMapProvider`, `IpApiProvider`, `MockGeoProvider`) or supply a custom provider via `Tempo.geo.setProvider()`.
+- **Cultural Locale Synchronization**: `t.geoLocate({ setLocale: 'native' })` automatically infers BCP-47 locale from resolved country and territory.
+- **Multi-Tenant Bounded Caching**: Partitioned coordinate storage with 24h TTL and tenant-isolated keys via `Tempo.geo.set()` / `Tempo.geo.get()`.
+- **Immutable Namespace**: `Tempo.geo` is recursively frozen—tamper-proof and zero-mutation.
+
+---
+
 ## Installation
 
 ```bash
@@ -20,82 +31,9 @@ npm install @magmacomputing/tempo-plugin-geo
 
 ---
 
-## Architecture & Namespacing
-
-Installing `GeoPlugin` mounts an immutable, locked-down **`Tempo.geo`** static namespace onto the `Tempo` class.
-
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
-
-Tempo.use(GeoPlugin);
-```
-
-### Auto-Installation (Side-Effect Import)
-
-```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-geo/install';
-```
-
----
-
-## Documentation Guide
-
-Explore detailed guides on specific capabilities:
-
-- **[Provider Gateway & Geocoding](./provider-gateway.md)**: Forward geocoding, reverse geocoding, custom geocoding providers (`OpenStreetMapProvider`, `IpApiProvider`, `MockGeoProvider`), and call-site overrides.
-- **[Cultural Synchronization](./cultural-sync.md)**: Automatic cultural locale inference (`setLocale: true` / `'native'`), territorial language resolution, and internationalization synergy.
-- **[Storage & Multi-Tenant Caching](./storage-and-caching.md)**: Ambient coordinate caching, 24h TTL `BoundedCache`, tenant isolation, and server vs. client operational warnings.
-- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Multi-tenant SaaS localization, pluggable geocoding gateways, isolated tenant storage caching, and server edge middleware.
-
----
-
-## Which Method Should I Choose?
-
-| Goal | Method to Use | Input | Output |
-| :--- | :--- | :--- | :--- |
-| **"Where is this machine / user right now?"** | `await Tempo.geo.lookup({ refresh: true })` | None / `{ refresh: true }` | Fresh `{ latitude, longitude, city, ... }` |
-| **"Convert place name / address to coordinates"** | `await Tempo.geo.forward("Paris")` | Address query string | `{ latitude, longitude, ... }` |
-| **"Convert GPS coordinates to street / city / country"** | `await Tempo.geo.reverse({ lat, lng })` | Coordinate object | `{ city, country, ... }` |
-| **"Extract or safely normalize coordinates from any input"** | `await Tempo.geo.resolve(input)` | Instance, config, or object | Canonical `{ latitude, longitude, ... }` |
-| **"Localize a Tempo instance with timezone & cultural calendar"** | `await t.geoLocate()` | Existing `Tempo` instance | New enriched `Tempo` instance |
-
----
-
-## Comprehensive `Tempo.geo` API Surface
-
-| Method / Property | Category | Description |
-| :--- | :--- | :--- |
-| `Tempo.geo.lookup(opts?)` | Lookup | Universal geolocation lookup (browser hardware GPS or server IP lookup) cached for 24h. Supports `{ refresh: true }`. |
-| `Tempo.geo.reverse(coords, opts?)` | Geocoding | Reverse geocodes coordinates to locality/address metadata (`city`, `country`, `displayName`, etc.) using active provider. |
-| `Tempo.geo.forward(query, opts?)` | Geocoding | Forward geocodes place query string to coordinates using active provider. |
-| `Tempo.geo.setProvider(provider)` | Provider Gateway | Sets custom geolocation/geocoding provider gateway (e.g. OpenStreetMap, Mapbox, internal IP proxy). |
-| `Tempo.geo.getProvider()` | Provider Gateway | Retrieves the active custom geolocation provider. |
-| `Tempo.geo.resolve(input, opts?)` | Utility | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
-| `Tempo.geo.coerce(input)` | Geometry | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, tuples, etc.) into a canonical `GeoConfig`. |
-| `resolveCulturalLocale(locale?, country?, mode?)` | Cultural Sync | Standalone function resolving synchronized BCP 47 locale from current locale and ISO country code/name. |
-| `Tempo.geo.stash(coords, ttl?, keyOrOpts?)` | Storage | Stashes coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
-| `Tempo.geo.clear(keyOrOpts?)` | Storage | Purges stashed coordinates from storage. |
-| `Tempo.geo.get(keyOrOpts?)` | Storage | Reads stashed coordinates for the specified tenant/IP or ambient default. |
-| `Tempo.geo.current` | Storage | **Read-only getter** returning the active global/ambient coordinates snapshot (`getStashedGeo() ?? Tempo.config.geo`). |
-| `Tempo.geo.server(opts?)` | Low-Level | Low-level server-side IP geolocation handler. |
-| `Tempo.geo.browser(opts?)` | Low-Level | Low-level browser Geolocation API handler. |
-
-### Fluent Instance Methods
-
-| Instance Method | Description |
-| :--- | :--- |
-| `t.geoLocate(opts?)` | Asynchronously resolves physical location (with optional reverse geocoding `{ reverse: true }` and cultural locale synchronization `{ setLocale: true }`) and returns a new enriched `Tempo` instance. |
-| `t.geoLookup(opts?)` | Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup. |
-
----
-
-## Quickstart Examples
+## Quickstart
 
 <PluginRepl plugin="geo" />
-
-### 1. Fluent OOP with `Tempo.geo`
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -117,7 +55,14 @@ console.log(localTime.locale); // 'ar-EG'
 console.log(localTime.format({ dateStyle: 'full' })); // 'الأحد، ٢١ يونيو ٢٠٢٦' (Arabic Egyptian culture)
 ```
 
-### 2. Reverse Geocoding and Instance Enrichment
+### Auto-Installation (Side-Effect Import)
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import '@magmacomputing/tempo-plugin-geo/install';
+```
+
+### Reverse Geocoding and Instance Enrichment
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
@@ -137,7 +82,45 @@ console.log(enriched.geo?.city, enriched.geo?.country); // Sydney, AU
 
 ---
 
-## Security & Immutability
+## API Reference
+
+### Which Method Should I Choose?
+
+| Goal | Method to Use | Input | Output |
+| :--- | :--- | :--- | :--- |
+| **"Where is this machine / user right now?"** | `await Tempo.geo.lookup({ refresh: true })` | None / `{ refresh: true }` | Fresh `{ latitude, longitude, city, ... }` |
+| **"Convert place name / address to coordinates"** | `await Tempo.geo.forward("Paris")` | Address query string | `{ latitude, longitude, ... }` |
+| **"Convert GPS coordinates to street / city / country"** | `await Tempo.geo.reverse({ lat, lng })` | Coordinate object | `{ city, country, ... }` |
+| **"Extract or safely normalize coordinates from any input"** | `await Tempo.geo.resolve(input)` | Instance, config, or object | Canonical `{ latitude, longitude, ... }` |
+| **"Localize a Tempo instance with timezone & cultural calendar"** | `await t.geoLocate()` | Existing `Tempo` instance | New enriched `Tempo` instance |
+
+### Comprehensive `Tempo.geo` API Surface
+
+| Method / Property | Category | Description |
+| :--- | :--- | :--- |
+| `Tempo.geo.lookup(opts?)` | Lookup | Universal geolocation lookup (browser hardware GPS or server IP lookup) cached for 24h. Supports `{ refresh: true }`. |
+| `Tempo.geo.forward(query, opts?)` | Geocoding | Forward geocodes place query string to coordinates using active provider. |
+| `Tempo.geo.reverse(coords, opts?)` | Geocoding | Reverse geocodes coordinates to locality/address metadata (`city`, `country`, `displayName`, etc.) using active provider. |
+| `Tempo.geo.setProvider(provider)` | Provider Gateway | Sets custom geolocation/geocoding provider gateway (e.g. OpenStreetMap, Mapbox, internal IP proxy). |
+| `Tempo.geo.getProvider()` | Provider Gateway | Retrieves the active custom geolocation provider. |
+| `Tempo.geo.resolve(input, opts?)` | Utility | Asynchronously resolves coordinates from an instance, configuration, or ambient storage cache. |
+| `Tempo.geo.coerce(input)` | Geometry | Pure function normalizing various coordinate formats (`lat/lng`, `latitude/longitude`, tuples, etc.) into a canonical `GeoConfig`. |
+| `resolveCulturalLocale(locale?, country?, mode?)` | Cultural Sync | Standalone function resolving synchronized BCP 47 locale from current locale and ISO country code/name. |
+| `Tempo.geo.get(keyOrOpts?)` | Storage | Reads stored coordinates for the specified tenant/IP or ambient default. |
+| `Tempo.geo.set(coords, ttl?, keyOrOpts?)` | Storage | Sets coordinates in storage with an optional custom TTL (default: 24h) and multi-tenant partitioning. |
+| `Tempo.geo.clear(keyOrOpts?)` | Storage | Purges stored coordinates from storage. |
+| `Tempo.geo.current` | Storage | **Read-only getter** returning the active global/ambient coordinates snapshot (`getStashedGeo() ?? Tempo.config.geo`). |
+| `Tempo.geo.server(opts?)` | Low-Level | Low-level server-side IP geolocation handler. |
+| `Tempo.geo.browser(opts?)` | Low-Level | Low-level browser Geolocation API handler. |
+
+### Fluent Instance Methods
+
+| Instance Method | Description |
+| :--- | :--- |
+| `t.geoLocate(opts?)` | Asynchronously resolves physical location (with optional reverse geocoding `{ reverse: true }` and cultural locale synchronization `{ setLocale: true }`) and returns a new enriched `Tempo` instance. |
+| `t.geoLookup(opts?)` | Resolves coordinates for this instance via explicit coordinates or automatic IP/hardware lookup. |
+
+### Security & Immutability
 
 In keeping with Tempo's strict immutability principles, the `Tempo.geo` namespace is fully locked down:
 
@@ -147,6 +130,17 @@ In keeping with Tempo's strict immutability principles, the `Tempo.geo` namespac
 
 ---
 
-## Licensing
+## Topic Guides
+
+Explore detailed guides on specific capabilities:
+
+- **[Provider Gateway & Geocoding](./provider-gateway.md)**: Forward geocoding, reverse geocoding, custom geocoding providers (`OpenStreetMapProvider`, `IpApiProvider`, `MockGeoProvider`), and call-site overrides.
+- **[Cultural Synchronization](./cultural-sync.md)**: Automatic cultural locale inference (`setLocale: true` / `'native'`), territorial language resolution, and internationalization synergy.
+- **[Storage & Multi-Tenant Caching](./storage-and-caching.md)**: Ambient coordinate caching, 24h TTL `BoundedCache`, tenant isolation, and server vs. client operational warnings.
+- **[Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md)**: Multi-tenant SaaS localization, pluggable geocoding gateways, isolated tenant storage caching, and server edge middleware.
+
+---
+
+## License
 
 This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.

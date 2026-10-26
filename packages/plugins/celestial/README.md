@@ -203,7 +203,7 @@ For full documentation and live examples, visit the [Celestial Plugin Documentat
 
 ## Licensing
 
-This is a **Community** plugin. It is completely free and open-source for personal and commercial use. No license token is required.
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use.
 
 ## License
 

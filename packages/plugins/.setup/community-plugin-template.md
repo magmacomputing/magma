@@ -224,6 +224,83 @@ Whenever introducing a new multi-page plugin or adding sub-pages:
 2. **Ordering Convention**: Always list `'index'` first, followed by the logical progression of sub-topic concept pages (from fundamental concepts to advanced operational caveats), concluding with `'use-cases-and-patterns'`.
 3. If the plugin name requires custom title capitalization in the sidebar accordion, register it in `getPluginGroupName()` in `harvest-plugins.mjs`.
 
+### Standard `doc/index.md` Section Skeleton
+
+Every plugin's `doc/index.md` must present a **consistent face** so readers moving between plugins find the same sections in the same order. The canonical reference implementation is [`holidays/doc/index.md`](../holidays/doc/index.md). Use these H2 headings, in this order, separated by `---` horizontal rules:
+
+| # | Element | Heading | Required | Notes |
+| :-: | :--- | :--- | :-: | :--- |
+| 1 | Logo | *(none)* `![Tempo Plugin](/plugin-logo.svg)` | Yes | First line of the file. |
+| 2 | Title | `# @magmacomputing/tempo-plugin-[name]` | Yes | Single H1 per page. |
+| 3 | Badges | *(none)* centered `<p align="center">` row | Yes | 4 badges (see below). |
+| 4 | Overview | *(none)* 1–2 sentence paragraph | Yes | Opens with what the plugin provides, linking to Tempo. Optional second paragraph or `::: warning` notice for critical caveats (e.g. security). |
+| 5 | Key Features | `## Key Features` | Yes | Bulleted list of **bold-lead** features, one line each. |
+| 6 | Installation | `## Installation` | Yes | `bash` block with `npm install @magmacomputing/tempo-plugin-[name]`. |
+| 7 | Quickstart | `## Quickstart` | Yes | `<PluginRepl plugin="[name]" />` **immediately** under the heading, then a runnable, validated TypeScript block. |
+| 8 | Reference *(optional)* | `## API Reference` / `## Configuration Options` | No | Plugin-specific tables or API catalog. Place **after** Quickstart and **before** Topic Guides. |
+| 9 | Topic Guides | `## Topic Guides` | Yes | Bulleted links: `[Title](./file.md) - one-line description`. Always include `use-cases-and-patterns.md`. |
+| 10 | License | `## License` | Yes | Final section. Standard community wording (see below). |
+
+````markdown
+![Tempo Plugin](/plugin-logo.svg)
+
+# @magmacomputing/tempo-plugin-[name]
+
+<p align="center"> ...4 badges... </p>
+
+The **[Name] Plugin** provides ... for [Tempo](https://github.com/magmacomputing/magma/tree/main/packages/tempo).
+
+---
+
+## Key Features
+
+- **Feature One**: What it does and why it matters.
+- **Feature Two**: ...
+
+---
+
+## Installation
+
+```bash
+npm install @magmacomputing/tempo-plugin-[name]
+```
+
+---
+
+## Quickstart
+
+<PluginRepl plugin="[name]" />
+
+```typescript
+import '@magmacomputing/tempo-plugin-[name]/install';
+import { Tempo } from '@magmacomputing/tempo';
+
+// minimal, validated example with expected output in comments
+```
+
+---
+
+## Topic Guides
+
+- [Concept Guide](./concept.md) - One-line summary.
+- [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) - One-line summary.
+
+---
+
+## License
+
+This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license.
+````
+
+> [!IMPORTANT]
+> **Conventions that keep plugins familiar:**
+> - **Heading names are fixed**: use `## Key Features`, `## Installation`, `## Quickstart`, `## Topic Guides`, `## License`. Do **not** invent variants such as `## Documentation Guide`, `## Guides`, `## Installation & Quickstart`, `## Architecture & Registration`, `## Interactive REPL`, or `## Licensing`.
+> - **Installation and Quickstart are separate sections.** Never merge them into one heading.
+> - **`<PluginRepl />` lives in `## Quickstart` only**, directly beneath the heading.
+> - **Quickstart is the first code the reader sees.** Auto-install (`/install`) or `Tempo.use(...)` registration, plus a short working example, belong there. Secondary patterns (auto-install variants, config tables, API catalogs) follow in their own sections or are delegated to Topic Guides.
+> - **Reference material goes after Quickstart**, never between Installation and Quickstart.
+> - **Deviation is allowed only where the plugin genuinely differs** (e.g. an extra `::: warning` security notice for `ai`, or a plugin-specific `## Configuration Options` table). Add sections; do not rename or reorder the standard ones.
+
 ### Primary Landing Page Structure Details (`README.md` & `doc/index.md`)
 
 - **Logo**: `![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)` (for README) or `![Tempo Plugin](/plugin-logo.svg)` (for docs, styled with max-width: 90px).
@@ -243,10 +320,18 @@ Whenever introducing a new multi-page plugin or adding sub-pages:
     ```
 - **Description**: A short, concise summary.
 - **Installation**: Code block with `npm install @magmacomputing/tempo-plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
-- **Usage & Live Interactive REPL**:
-  - In `doc/index.md` (Web Documentation): Insert the `<PluginRepl plugin="[name]" />` component under `## Usage Examples`. This renders a zero-overhead static code preview with an on-demand "Run Live Interactive Demo" button that mounts the in-browser ESM sandbox.
-  - In `README.md` (GitHub / NPM): Insert an in-context callout link immediately below the primary usage code example:
-    `> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=[name])**`
+- **Quickstart & Live Interactive REPL Placement Strategy**:
+  - **In `doc/index.md` (VitePress Documentation)**: 
+    - Standardize under the **`## Quickstart`** heading.
+    - Insert the `<PluginRepl plugin="[name]" />` component directly below the `## Quickstart` heading, immediately preceding the first runnable TypeScript quickstart code block.
+    - The `<PluginRepl />` component renders an interactive "Run Live Interactive Demo" toolbar directly over the quickstart code block that seamlessly mounts the in-browser sandbox on demand.
+    > [!IMPORTANT]
+    > **Never create a detached or separate `## Interactive REPL` heading.**
+    > The quickstart section itself serves as the interactive sandbox experience. Creating a standalone `## Interactive REPL` heading causes confusing duplicate example blocks and breaks consistency with monorepo plugin standards (`holidays`, `celestial`, `geo`, `spatial`, `dialects`, `ai`, `ticker`).
+  - **In `README.md` (GitHub & npm)**: 
+    - Custom Vue components like `<PluginRepl />` cannot render in standard GitHub/npm markdown.
+    - Place the standardized interactive sandbox callout link immediately beneath the primary quickstart code block under `## 🚀 Quick Start`:
+      `> ⚡ **[Try this live in the interactive Tempo Sandbox ↗](https://magmacomputing.github.io/magma/repl/index.html?plugin=[name])**`
 - **Documentation Link** (README only): Link to full docs at `https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html`.
 - **Licensing**: Must state: "This is a **Community** plugin. It is completely free and open-source for personal and commercial use under the MIT license."
 
@@ -258,6 +343,24 @@ When writing user documentation (`README.md`, `doc/index.md`, concept pages, or 
 - **Never guess or hallucinate API signatures**: Concur with Tempo's actual methods and types (e.g. standard duration records like `t.add({ day: 1 })`, never invented chained string mutations like `.mutate.add('1 day')`). Always cross-reference the plugin's `src/index.ts` and `src/types.ts`.
 - **Verify exact numbers & calendar outputs**: Run code examples in Node.js against the compiled plugin/Tempo builds or write automated Vitest tests to confirm that printed dates, day counts, and returned values are 100% mathematically and chronologically accurate.
 - **Verify statutory vs. industry rules**: Confirm whether a calendar rule represents a national statutory holiday or an exchange-specific closure before documenting it as a built-in behavior.
+
+### Date & Time Token Dialect
+
+When referring to date or time formats in documentation prose, code comments, or table descriptions, **avoid LDML / Moment.js-style uppercase tokens** (e.g. `YYYY-MM-DD`, `DD/MM/YYYY`, `HH:MM`) unless the surrounding context explicitly references the **dialects plugin** (which bridges those token conventions). Outside of that context, these tokens belong to third-party libraries (Moment.js, Day.js, LDML) and will confuse readers about which library's format syntax applies.
+
+Use one of the following alternatives instead:
+
+| ❌ Avoid (outside dialects context) | ✅ Prefer |
+| :--- | :--- |
+| `YYYY-MM-DD` | `year-month-day` (ISO 8601) or Tempo's `{yyyy}-{mm}-{dd}` token |
+| `DD/MM/YYYY` | `day/month/year` |
+| `HH:MM` or `HH:MM:SS` | `hour:minute` or `hour:minute:second` |
+| `MM/DD/YYYY` | `month/day/year` |
+
+> [!NOTE]
+> Tempo's own format tokens use **lowercase letters inside curly braces** (e.g. `{yyyy}`, `{mm}`, `{dd}`, `{hh}`, `{mi}`, `{ss}`). When showing a concrete format string in code examples, always use Tempo's token syntax. In prose or comments that describe a *concept* (e.g. "the value must be an ISO 8601 date"), prefer plain English words over any token shorthand. LDML / Moment-style tokens are appropriate in the **dialects plugin** documentation, where explaining cross-library format compatibility is the explicit purpose.
+
+---
 
 ### Standard Icons & UI Actions
 
@@ -300,7 +403,9 @@ To maintain complete visual and design consistency across READMEs, documentation
 > [!IMPORTANT]
 > **Guideline for Future Agents & Developers: Base Class Lockdown & Immutability**
 >
-> 1. **Zero Flat Pollution on `Tempo`**: Never dump multiple loose methods or properties directly onto the `Tempo` root class. Group related static utilities under a dedicated, cohesive namespace (e.g., `Tempo.geo.*`, `Tempo.sync.*`).
+> 1. **Prefer a Namespace over Polluting the `Tempo` Class**: Never dump multiple loose methods or properties directly onto the `Tempo` root class. Group related static utilities under a single, cohesive namespace named after the plugin (e.g., `Tempo.geo.*`, `Tempo.sync.*`, `Tempo.roman.*`). This applies equally to formatting, parsing and conversion helpers: prefer `Tempo.roman.parse(...)` and `Tempo.roman.format(...)` over root-level `Tempo.fromRoman(...)` or `Tempo.formatRoman(...)`. Likewise, on instances, prefer a single namespaced property (e.g., `t.roman.*`) over several flat `t.toRoman…()` methods.
+>    - *Exceptions*: A root-level member is acceptable only when it is a deliberate, first-class extension of the core API surface that users would reasonably expect beside the built-in constructors/factories (e.g., `Tempo.fromFormats()` from `@magmacomputing/tempo-plugin-dialects`). Such exceptions should be rare, kept to a minimum, justified in the plugin's documentation, and must never collide with existing or planned core member names.
+>    - *Do not overload existing option keys*: Do not re-use an established `Tempo.Options` key (such as `dialect`) for an unrelated purpose. Expose plugin-specific behavior through the plugin's own namespace instead.
 > 2. **Static Namespace Immutability**: Any static object or namespace attached to the `Tempo` base class **must be strictly immutable/frozen**:
 >    - The namespace object itself (including any nested objects or child namespaces) must be recursively frozen using `deepFreeze()` (available directly from `@magmacomputing/tempo/plugin/sdk` or `#library/utility.library.js`).
 >    - The property must be mounted onto `TempoClass` using `Object.defineProperty` with `writable: false`, `configurable: false`, and `enumerable: false` (or via the SDK's `attachStatics` utility).

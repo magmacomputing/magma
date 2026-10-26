@@ -1,4 +1,5 @@
 import { Reactive } from '#library/reactive.class.js';
+import { Signify } from '#library/signify.library.js';
 
 describe('common/runtime/reactive.class', () => {
 	it('identifies as a Reactive instance and has correct StringTag', () => {
@@ -179,7 +180,7 @@ describe('common/runtime/reactive.class', () => {
 	});
 
 	it('routes error to pending pull consumers without logging unhandled error', async () => {
-		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		try {
 			const stream = new Reactive<number>(); // catch is false
 			const pullPromise = stream.pull(); // pending waiter
@@ -196,7 +197,7 @@ describe('common/runtime/reactive.class', () => {
 	});
 
 	it('logs unhandled error when neither error listeners nor pull waiters exist', async () => {
-		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 		try {
 			const stream = new Reactive<number>();
 			const testError = new Error('Unhandled stream error');
@@ -233,7 +234,15 @@ describe('common/runtime/reactive.class', () => {
 		for await (const n of fromGen) {
 			genCollected.push(n);
 		}
-		expect(genCollected).toEqual([1, 2, 3]);
+		// Map (iterable that also has a .get method)
+		const map = new Map([['x', 1], ['y', 2]]);
+		const fromMap = Reactive.from(map);
+		const mapCollected: [string, number][] = [];
+		for await (const entry of fromMap) {
+			if (entry) mapCollected.push(entry);
+		}
+
+		expect(mapCollected).toEqual([['x', 1], ['y', 2]]);
 	});
 
 	// ── M5: Lifecycle & Cancellation Tests ──────────────────────────────────────
@@ -264,7 +273,7 @@ describe('common/runtime/reactive.class', () => {
 
 	it('safely handles ReactiveSubscription with null-object defaults when cleanup/signal are omitted', () => {
 		const stream = new Reactive<number>();
-		const sample = stream.on('data', () => {});
+		const sample = stream.on('data', () => { });
 		const sub = new (sample.constructor as any)();
 		expect(sub.closed).toBe(false);
 		expect(() => sub.unsubscribe()).not.toThrow();
@@ -442,6 +451,116 @@ describe('common/runtime/reactive.class', () => {
 
 		expect(received).toEqual([1, 2]);
 		expect(stream.state.buffered).toBe(0);
+	});
+
+	it('supports .toSignal() and .signal getter reactivity', () => {
+		const stream = new Reactive<number>();
+		const sig = stream.toSignal(-1);
+
+		expect(sig()).toBe(-1);
+		stream.push(42);
+		expect(sig()).toBe(42);
+
+		// Test memoized .signal getter
+		const stream2 = new Reactive<string>();
+		expect(stream2.signal).toBe(stream2.signal);
+		expect(stream2.signal()).toBeUndefined();
+		stream2.push('hello signal');
+		expect(stream2.signal()).toBe('hello signal');
+	});
+
+	it('maintains pull buffering when observed via .toSignal() or .signal', async () => {
+		const stream = new Reactive<number>();
+		stream.push(1);
+
+		// Accessing .signal must not drain the buffer
+		const sig = stream.signal;
+		expect(sig()).toBe(1);
+		expect(stream.state.buffered).toBe(1);
+
+		// Pushing another item while no waiter is pending must buffer it
+		stream.push(2);
+		expect(sig()).toBe(2);
+		expect(stream.state.buffered).toBe(2);
+
+		// Async iteration should receive all buffered items
+		stream.complete();
+		const collected: number[] = [];
+		for await (const val of stream) {
+			collected.push(val);
+		}
+		expect(collected).toEqual([1, 2]);
+		expect(stream.state.buffered).toBe(0);
+	});
+
+	it('supports Reactive.from(signal) and Reactive.fromSignal(signal)', async () => {
+		const stream = Reactive.fromSignal(() => 100);
+		const emitted: number[] = [];
+		stream.on('data', (v) => emitted.push(v));
+
+		expect(emitted).toEqual([100]);
+		stream.complete();
+	});
+
+	it('initializes toSignal with last emitted value even when initialValue is supplied', () => {
+		const stream = new Reactive<number>();
+		stream.push(99);
+
+		// toSignal with fallback after an emission has occurred must yield the last emitted value
+		const sig = stream.toSignal(0);
+		expect(sig()).toBe(99);
+
+		// Disposing signal removes listener without throwing
+		expect(typeof (sig as any).dispose).toBe('function');
+		(sig as any).dispose();
+		stream.push(101);
+		expect(sig()).toBe(99);
+	});
+
+	it('dispatches to signal listeners even if a data listener terminates the stream', () => {
+		const stream = new Reactive<number>();
+		const sig = stream.toSignal();
+
+		stream.on('data', (val, stop) => {
+			if (val === 10) stop();
+		});
+
+		stream.push(5);
+		expect(sig()).toBe(5);
+
+		stream.push(10);
+		expect(sig()).toBe(10);
+		expect(stream.state.active).toBe(false);
+	});
+
+	it('propagates getter errors in Reactive.fromSignal to stream.error', async () => {
+		// 1. Initial getter error
+		const faultySignal = () => {
+			throw new Error('Initial evaluation exploded');
+		};
+		const stream = Reactive.fromSignal(faultySignal);
+		await expect(stream.pull()).rejects.toThrow('Initial evaluation exploded');
+
+		// 2. Dynamic getter error upon signal mutation
+		const num = new Signify.State(10);
+		const dynamicStream = Reactive.fromSignal(() => {
+			if (num.get() === 20) throw new Error('Dynamic evaluation exploded');
+			return num.get();
+		});
+
+		let dynamicError: Error | undefined;
+		dynamicStream.on('error', (err) => {
+			dynamicError = err;
+		});
+
+		// Pull initial value from buffer
+		expect(await dynamicStream.pull()).toBe(10);
+
+		// Mutate signal to trigger error in effect callback
+		num.set(20);
+		await new Promise<void>((r) => queueMicrotask(() => r()));
+		expect(dynamicError?.message).toBe('Dynamic evaluation exploded');
+		await expect(dynamicStream.pull()).rejects.toThrow('Dynamic evaluation exploded');
 	});
 });
 

@@ -1,4 +1,4 @@
-import { getStorage, setStorage, clearStorage, nodeStorage, createMemoryStorage } from '#library/storage.library.js';
+import { getStorage, setStorage, clearStorage, nodeStorage, createMemoryStorage, toSignal } from '#library/storage.library.js';
 
 describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
   const envKey = 'TEST_ENV_FALLBACK_KEY';
@@ -165,6 +165,69 @@ describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
       expect(memStore.getItem('b')).toBeNull();
       expect(memStore.getItem('a')).toBe('valA');
       expect(memStore.getItem('c')).toBe('valC');
+    });
+  });
+
+  describe('toSignal reactive bridge', () => {
+    it('should synchronize reactive signals with storage', () => {
+      const theme = toSignal('user.pref.theme', 'dark');
+      expect(theme()).toBe('dark');
+      expect(getStorage('user.pref.theme')).toBe('dark');
+
+      theme('light');
+      expect(theme()).toBe('light');
+      expect(getStorage('user.pref.theme')).toBe('light');
+
+      theme.value = 'high-contrast';
+      expect(theme.value).toBe('high-contrast');
+      expect(getStorage('user.pref.theme')).toBe('high-contrast');
+
+
+      const font = toSignal('user.pref.font', 'monospace');
+      expect(font()).toBe('monospace');
+      font('sans-serif');
+      expect(font()).toBe('sans-serif');
+      expect(getStorage('user.pref.font')).toBe('sans-serif');
+    });
+
+    it('should notify other local signals bound to the same key and respect disposal', () => {
+      const sig1 = toSignal<string>('shared.config', 'v1');
+      const sig2 = toSignal<string>('shared.config', 'v1');
+
+      expect(sig1()).toBe('v1');
+      expect(sig2()).toBe('v1');
+
+      // Writing to sig1 updates sig2 immediately in same document
+      sig1.value = 'v2';
+      expect(sig1()).toBe('v2');
+      expect(sig2()).toBe('v2');
+
+      // Disposing sig2 unregisters it
+      (sig2 as any).dispose();
+      sig1.value = 'v3';
+      expect(sig1()).toBe('v3');
+      expect(sig2()).toBe('v2'); // Disposed signal no longer receives updates
+    });
+
+    it('should notify existing bound signals when a new binding initializes with default value', () => {
+      // First signal bound without default value when storage has nothing
+      const sigA = toSignal<string>('uninit.key');
+      expect(sigA()).toBeUndefined();
+
+      // Second signal binds with default value
+      const sigB = toSignal<string>('uninit.key', 'initialized_default');
+      expect(sigB()).toBe('initialized_default');
+      expect(sigA()).toBe('initialized_default'); // Existing binding received default
+    });
+
+    it('should support explicit Symbol.dispose on storage signals', () => {
+      const sig = toSignal<string>('disposable.key', 'initial');
+      expect(typeof (sig as any).dispose).toBe('function');
+      expect(typeof (sig as any)[Symbol.dispose]).toBe('function');
+
+      (sig as any)[Symbol.dispose]();
+      // Safe to call multiple times
+      expect(() => (sig as any).dispose()).not.toThrow();
     });
   });
 });

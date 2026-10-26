@@ -1,0 +1,79 @@
+{
+  "name": "@magmacomputing/tempo-plugin-roman",
+  "version": "1.0.0",
+  "description": "Tempo community plugin for classical Roman calendar arithmetic (Kalends, Nones, Ides, Ante Diem), leap year bissextile handling, and AUC (Ab Urbe Condita) year conversions.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "./dist/install.js",
+    "./dist/consuls.js"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/roman"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^5.0.0"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-roman",
+    "plan": "community"
+  },
+  "devDependencies": {
+    "@magmacomputing/tempo": "^5.0.0"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "temporal",
+    "plugin",
+    "roman",
+    "roman-calendar",
+    "kalends",
+    "nones",
+    "ides",
+    "ante-diem",
+    "bissextile",
+    "auc",
+    "ab-urbe-condita",
+    "classical-antiquity",
+    "latin",
+    "typescript"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./consuls": {
+      "types": "./dist/consuls.d.ts",
+      "import": "./dist/consuls.js",
+      "default": "./dist/consuls.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js",
+      "default": "./dist/install.js"
+    }
+  }
+}

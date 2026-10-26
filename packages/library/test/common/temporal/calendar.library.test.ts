@@ -3,17 +3,21 @@ import {
 	DAY_MAP,
 	MONTH_MAP,
 	ISO_WEEKDAY_NAMES,
-	getUtcParts,
 	getDaysInMonth,
 	isLeapYear,
 	fromUtcParts,
 	isValidDate,
-	addUtcDays,
+	shiftDateByDays,
 	withUtcParts,
 	resolveDayOfYear,
 	getIsoWeek,
 	fromIsoWeek,
 	resolveIsoCalendarYear,
+	civilToDays,
+	daysToCivil,
+	isoWeekdayFromDays,
+	epochMsFromParts,
+	partsFromEpochMs,
 } from '#library/calendar.library.js';
 import type {
 	UtcPartsOptions,
@@ -88,10 +92,10 @@ describe('calendar.library', () => {
 		expect(sampleName).toBe('Sunday');
 	});
 
-	test('getUtcParts extracts all components with 1-indexed month and weekday', () => {
+	test('partsFromEpochMs extracts all components with 1-indexed month and weekday', () => {
 		// Sunday 2026-08-09T14:35:45.123Z
 		const date = new Date(Date.UTC(2026, 7, 9, 14, 35, 45, 123));
-		const parts = getUtcParts(date);
+		const parts = partsFromEpochMs(date.getTime());
 
 		expect(parts.year).toBe(2026);
 		expect(parts.month).toBe(8);
@@ -103,41 +107,26 @@ describe('calendar.library', () => {
 		expect(parts.milliseconds).toBe(123);
 	});
 
-	test('getUtcParts defaults to current date when no argument is provided', () => {
-		const now = new Date();
-		const parts = getUtcParts();
-
-		expect(parts.year).toBe(now.getUTCFullYear());
-		expect(parts.month).toBe(now.getUTCMonth() + 1);
-		expect(parts.day).toBe(now.getUTCDate());
-		expect(parts.weekday).toBeGreaterThanOrEqual(1);
-		expect(parts.weekday).toBeLessThanOrEqual(7);
-		expect(typeof parts.hours).toBe('number');
-		expect(typeof parts.minutes).toBe('number');
-		expect(typeof parts.seconds).toBe('number');
-		expect(typeof parts.milliseconds).toBe('number');
-	});
-
-	test('getUtcParts.weekday converts JS Date Sunday (0) to ISO Sunday (7)', () => {
+	test('partsFromEpochMs.weekday converts JS Date Sunday (0) to ISO Sunday (7)', () => {
 		// Sunday Aug 9, 2026
 		const sunday = new Date(Date.UTC(2026, 7, 9));
 		expect(sunday.getUTCDay()).toBe(0);
-		expect(getUtcParts(sunday).weekday).toBe(7);
+		expect(partsFromEpochMs(sunday.getTime()).weekday).toBe(7);
 
 		// Monday Aug 10, 2026
 		const monday = new Date(Date.UTC(2026, 7, 10));
 		expect(monday.getUTCDay()).toBe(1);
-		expect(getUtcParts(monday).weekday).toBe(1);
+		expect(partsFromEpochMs(monday.getTime()).weekday).toBe(1);
 
 		// Friday Aug 7, 2026
 		const friday = new Date(Date.UTC(2026, 7, 7));
 		expect(friday.getUTCDay()).toBe(5);
-		expect(getUtcParts(friday).weekday).toBe(5);
+		expect(partsFromEpochMs(friday.getTime()).weekday).toBe(5);
 
 		// Saturday Aug 8, 2026
 		const saturday = new Date(Date.UTC(2026, 7, 8));
 		expect(saturday.getUTCDay()).toBe(6);
-		expect(getUtcParts(saturday).weekday).toBe(6);
+		expect(partsFromEpochMs(saturday.getTime()).weekday).toBe(6);
 	});
 
 	test('getDaysInMonth returns correct days for each month including leap year February', () => {
@@ -184,9 +173,9 @@ describe('calendar.library', () => {
 		const date2 = fromUtcParts({ year: 2026, month: 1, day: 15 });
 		expect(date2.toISOString()).toBe('2026-01-15T00:00:00.000Z');
 
-		// Round-trip symmetry with getUtcParts
+		// Round-trip symmetry with partsFromEpochMs
 		const original = new Date('2026-11-25T17:45:30.250Z');
-		const parts = getUtcParts(original);
+		const parts = partsFromEpochMs(original.getTime());
 		const roundtrip = fromUtcParts(parts);
 		expect(roundtrip.getTime()).toBe(original.getTime());
 	});
@@ -203,13 +192,13 @@ describe('calendar.library', () => {
 		expect(isValidDate(2026, 5, 0)).toBe(false);  // Day < 1
 	});
 
-	test('addUtcDays adds or subtracts days without mutating original date', () => {
+	test('shiftDateByDays adds or subtracts days without mutating original date', () => {
 		const base = new Date('2026-02-28T12:00:00.000Z');
-		const next = addUtcDays(base, 1);
+		const next = shiftDateByDays(base, 1);
 		expect(next.toISOString()).toBe('2026-03-01T12:00:00.000Z');
 		expect(base.toISOString()).toBe('2026-02-28T12:00:00.000Z'); // Unmutated
 
-		const prev = addUtcDays(base, -7);
+		const prev = shiftDateByDays(base, -7);
 		expect(prev.toISOString()).toBe('2026-02-21T12:00:00.000Z');
 	});
 
@@ -294,5 +283,93 @@ describe('calendar.library', () => {
 
 		// Year 0 leap day handling (0000-02-29 is Tuesday, ISO week 9 of year 0)
 		expect(resolveIsoCalendarYear(0, 2, 29)).toBe(0);
+	});
+
+	describe('Pure Integer Euclidean Calendar Primitives', () => {
+		test('civilToDays and daysToCivil round-trip identically across historical and future epochs', () => {
+			// Unix Epoch anchor: 1970-01-01 -> Day 0
+			expect(civilToDays(1970, 1, 1)).toBe(0);
+			expect(daysToCivil(0)).toEqual({ year: 1970, month: 1, day: 1 });
+
+			// Historical leap year: 2000-02-29
+			const leap2000Days = civilToDays(2000, 2, 29);
+			expect(daysToCivil(leap2000Days)).toEqual({ year: 2000, month: 2, day: 29 });
+
+			// Century non-leap year: 1900-02-28
+			const days1900 = civilToDays(1900, 2, 28);
+			expect(daysToCivil(days1900)).toEqual({ year: 1900, month: 2, day: 28 });
+
+			// Future leap year: 2024-02-29
+			const leap2024Days = civilToDays(2024, 2, 29);
+			expect(daysToCivil(leap2024Days)).toEqual({ year: 2024, month: 2, day: 29 });
+
+			// Year 2026: 2026-10-23
+			const days2026 = civilToDays(2026, 10, 23);
+			expect(daysToCivil(days2026)).toEqual({ year: 2026, month: 10, day: 23 });
+
+			// Matches Date.UTC epoch days count exactly
+			const expectedDays2026 = Math.floor(Date.UTC(2026, 9, 23) / 86400000);
+			expect(days2026).toBe(expectedDays2026);
+		});
+
+		test('isoWeekdayFromDays returns 1..7 (Monday..Sunday) matching Date.getUTCDay', () => {
+			// 1970-01-01 was Thursday (4)
+			expect(isoWeekdayFromDays(0)).toBe(4);
+			// 1970-01-02 was Friday (5)
+			expect(isoWeekdayFromDays(1)).toBe(5);
+			// 1970-01-03 was Saturday (6)
+			expect(isoWeekdayFromDays(2)).toBe(6);
+			// 1970-01-04 was Sunday (7)
+			expect(isoWeekdayFromDays(3)).toBe(7);
+			// 1970-01-05 was Monday (1)
+			expect(isoWeekdayFromDays(4)).toBe(1);
+
+			// Test negative days (prior to 1970)
+			// 1969-12-31 was Wednesday (3) -> Day -1
+			expect(isoWeekdayFromDays(-1)).toBe(3);
+			// 1969-12-30 was Tuesday (2) -> Day -2
+			expect(isoWeekdayFromDays(-2)).toBe(2);
+			// 1969-12-29 was Monday (1) -> Day -3
+			expect(isoWeekdayFromDays(-3)).toBe(1);
+			// 1969-12-28 was Sunday (7) -> Day -4
+			expect(isoWeekdayFromDays(-4)).toBe(7);
+		});
+
+		test('epochMsFromParts and partsFromEpochMs provide exact bidirectional roundtrips', () => {
+			const ms = epochMsFromParts(2026, 8, 9, 10, 30, 45, 500);
+			expect(ms).toBe(Date.UTC(2026, 7, 9, 10, 30, 45, 500));
+
+			const parts = partsFromEpochMs(ms);
+			expect(parts).toEqual({
+				year: 2026,
+				month: 8,
+				day: 9,
+				weekday: 7, // Sunday
+				hours: 10,
+				minutes: 30,
+				seconds: 45,
+				milliseconds: 500,
+			});
+
+			// Negative timestamp roundtrip
+			const msHistorical = epochMsFromParts(1969, 7, 20, 20, 17, 40, 0); // Apollo 11 moon landing
+			expect(msHistorical).toBe(Date.UTC(1969, 6, 20, 20, 17, 40, 0));
+			const partsHistorical = partsFromEpochMs(msHistorical);
+			expect(partsHistorical.year).toBe(1969);
+			expect(partsHistorical.month).toBe(7);
+			expect(partsHistorical.day).toBe(20);
+			expect(partsHistorical.hours).toBe(20);
+			expect(partsHistorical.minutes).toBe(17);
+			expect(partsHistorical.seconds).toBe(40);
+		});
+
+		test('civilToDays normalizes out-of-range months matching Date.UTC behavior', () => {
+			// Month 13 of 2026 rolls over to Jan 2027
+			expect(civilToDays(2026, 13, 1)).toBe(civilToDays(2027, 1, 1));
+			// Month 0 of 2026 rolls back to Dec 2025
+			expect(civilToDays(2026, 0, 1)).toBe(civilToDays(2025, 12, 1));
+			// Month -1 of 2026 rolls back to Nov 2025
+			expect(civilToDays(2026, -1, 1)).toBe(civilToDays(2025, 11, 1));
+		});
 	});
 });

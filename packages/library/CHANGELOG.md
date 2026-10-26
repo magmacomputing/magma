@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - Unreleased
+
+### Added & Architecture
+- **TC39 Signals Core Reactive Engine (`Signify`)**:
+  - Implemented zero-dependency, memory-safe reactive primitives conforming to the TC39 Signals proposal in `#library/signify.library.js`.
+  - Added `Signify.state(initialValue, options?)` (`Signify.State`) supporting custom `equals` comparators, `.get()`, `.set()`, `.value`, and epoch tracking.
+  - Added `Signify.computed(computation, options?)` (`Signify.Computed`) with fine-grained dependency tracking, topological memoization, and lazy recomputation.
+  - Added `Signify.watcher(callback)` (`Signify.Watcher`) with batch notification, `.watch()`, `.unwatch()`, and `.getPending()` tracking.
+  - Added `Signify.effect(callback)` for standalone reactive side-effects with automatic lifecycle registration.
+  - Added `Signify.untrack(fn)` and `Signify.batch(fn)` to isolate computations and batch signal graph notifications.
+  - Extracted `ReactiveSource` abstract base class with O(1) consumer tracking via `WeakMap`, periodic dead-reference cleanup sweeps, and `WeakRef` + `Finalizer` leak prevention.
+  - Added forward-compatible runtime detection delegating to native `globalThis.Signal` when present.
+- **Reactive Stream & Async Reactive Bridges (`reactive.class.ts`, `pledge.class.ts`, `storage.library.ts`)**:
+  - Added `Reactive.prototype.toSignal(options?)` converting push-based asynchronous event streams into synchronous pull-based `ReadonlySignal<T>` instances with microtask queue deduplication and automatic `Finalizer` cleanup.
+  - Added `Reactive.fromSignal(signal)` converting TC39 signals into observable `Reactive<T>` streams with error containment and teardown.
+  - Added `Pledge.prototype.toSignal()` bridging promise resolution and rejection state (`pending`, `fulfilled`, `rejected`) and resolved values into reactive signals.
+  - Added `Storage.prototype.toSignal(key, options?)` creating synchronized reactive Web Storage signals across tabs with duplicate listener isolation and `Finalizer` unregistration.
+
+### Changed & Hardened
+- **Pure Integer Calendar Arithmetic (`calendar.library`, `rrule.library`)**:
+  - Eliminated legacy `Date` object instantiations across calendar calculation algorithms, migrating fully to pure integer arithmetic for leap year, day-of-year, and ISO week date resolution.
+  - Hardened pre-1970 calculations and negative astronomical years across RRULE recurrence expansions and calendar operations.
+
 ## [4.7.0] - 2026-10-16
 
 ### Added & Hardened

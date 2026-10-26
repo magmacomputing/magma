@@ -153,5 +153,5 @@ console.log('Reverse Geocoded:', details?.city, details?.country); // 'Paris', '
 
 ## 4. Built-in Caching & Automatic Failover
 
-- **24-Hour Bounded Cache**: Successful coordinate resolutions through custom providers are automatically stashed in the 24-hour cache layer with multi-tenant partitioning (`Tempo.geo.lookup()`).
+- **24-Hour Bounded Cache**: Successful coordinate resolutions through custom providers are automatically cached in the 24-hour cache layer with multi-tenant partitioning (`Tempo.geo.lookup()`).
 - **Graceful Failover**: If a custom provider encounters a network error or rate limit, `geoLookup` automatically falls back to the default environment lookup unless `{ fallback: false }` is specified.
