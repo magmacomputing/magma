@@ -33,7 +33,7 @@ When evaluating a holiday or business day, Tempo resolves the effective country 
 
 1. **Explicit Option**: `t.holidays.isHoliday({ country: 'GB', region: 'SCT' })`
 2. **Instance Geolocation**: `t.geo.country` (and `t.geo.region` / `t.geo.state`)
-3. **Instance Internationalization**: `tempo.intl.region`
+3. **Instance Internationalization**: `tempo.intl.info.region`
 4. **Instance Locale**: BCP-47 tag (e.g. `en-AU` → `'AU'`, `fr-CA` → `'CA'`, `ja-JP` → `'JP'`)
 5. **Default Fallback**: `'US'`
 

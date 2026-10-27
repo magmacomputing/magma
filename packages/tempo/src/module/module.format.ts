@@ -4,7 +4,7 @@ import { deepMerge } from '#library/object.library.js';
 import { suffix, toRoman } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
@@ -524,7 +524,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						: (termObj ?? `{${token}}`);
 				} else if (token.includes('.')) {
 					if (token.startsWith('intl.')) {
-						res = resolveNamespaceToken({ intl: { ...li, info: li, locale: li.locale } }, token);
+						res = resolveNamespaceToken({ intl: { ...li, info: li, locale: getLC(canonicalLocales(config?.locale)[0]) } }, token);
 					} else if (isTempo(obj)) {
 						res = resolveNamespaceToken(obj, token);
 					} else {

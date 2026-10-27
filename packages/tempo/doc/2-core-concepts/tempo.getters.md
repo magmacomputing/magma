@@ -6,88 +6,77 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 > **Zero-Cost Lazy Evaluation**  
 > Tempo uses a sophisticated proxy-based lazy-evaluation pattern. Accessing a getter (like `t.yy`) resolves the property on demand, and then overwrites the getter with a static literal. This means the first access is $O(1)$ and every subsequent access is raw property access ($O(0)$ cost).
 
-## ⚡ Native Temporal Gateway
+## ⚡ Native Temporal Gateway (`.zdt`)
+
+The **`.zdt`** getter provides direct, zero-overhead access to the underlying native `Temporal.ZonedDateTime` instance. All tables below cross-reference Tempo's ergonomic shorthand getters with their underlying native `zdt.*` properties or namespace sources:
 
 | Getter | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.zdt` | `Temporal.ZonedDateTime` | Direct zero-overhead access to the underlying native Temporal instance | `t.zdt.daysInMonth` |
-
-The `.zdt` getter provides direct, zero-overhead access to the underlying `Temporal.ZonedDateTime` instance, enabling native Temporal inspections and properties without method call ceremony:
-
-```typescript
-const t = new Tempo('2026-10-24T15:30:00[Australia/Sydney]');
-
-console.log(t.zdt.daysInMonth);  // 31
-console.log(t.zdt.inLeapYear);   // false
-console.log(t.zdt.offset);       // '+11:00'
-console.log(t.zdt.hoursInDay);   // 24
-console.log(t.zdt.monthCode);    // 'M10'
-```
+| **`.zdt`** | `Temporal.ZonedDateTime` | Direct zero-overhead access to the underlying native Temporal instance | `t.zdt.inLeapYear` |
 
 ## 📅 Date Properties
 
-| Getter | Type | Description | Example |
+| Getter / Temporal | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.yy` | `number` | 4-digit Year | `2026` |
-| `.mm` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
-| `.dd` | `number` | Day of the month (1-31) | `24` |
-| `.dim` | `number` | Total days in the month (28-31; convenience alias for `.zdt.daysInMonth`) | `31` |
-| `.jj` | `number` | Astronomical Julian Day number since 4713 BC | `2461331` |
-| `.era` | `string` | Localized era string | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
-| `.eon` | `number` | Positive integer year within the current `.era` | `2026`, `4` |
+| **`.yy`**<br>`zdt.year` | `number` | 4-digit Year | `2026` |
+| **`.mm`**<br>`zdt.month` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
+| **`.dd`**<br>`zdt.day` | `number` | Day of the month (1–31) | `24` |
+| **`.dim`**<br>`zdt.daysInMonth` | `number` | Total days in the month (28–31) | `31` |
+| **`.era`**<br>`zdt.era` | `string` | Localized era string | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
+| **`.eon`**<br>`zdt.eraYear` | `number` | Positive integer year within the current `.era` <sup>[[1]](#fn-eon)</sup> | `2026`, `4` |
+| **`.jj`** | `number` | Astronomical Julian Day number since 4713 BC <sup>[[2]](#fn-jj)</sup> | `2461331` |
 
-> [!NOTE]
-> **Days in Month (`.dim`) vs. Native `.zdt.daysInMonth`**  
-> While `.dim` is provided as a zero-cost convenience property returning the number of days in the current month (`28`–`31`, matching format token `{dim}` and PHP `t`), `t.zdt.daysInMonth` is the native standard property directly available on the underlying `Temporal.ZonedDateTime` instance.
+<small>
 
-> [!NOTE]
-> **Astronomical Julian Day (`.jj`) vs. Day of Year (`.doy`)**  
-> `.jj` provides the true astronomical Julian Day Number (an integer day count elapsed since noon UT on January 1, 4713 BC in the proleptic Julian calendar, e.g. `2461331` for 2026-10-17), matching Oracle `J` and token `{jj}`. If you need the calendar day within the current year (`1`–`366`), use `.doy` (or format token `{doy}` / `{dd:year}`).
+1. <span id="fn-eon">**Era Year (`.eon`) vs. Calendar Year (`.yy`)**: While `.yy` returns the signed astronomical year (e.g. `2026` or `-3`), `.eon` returns the positive integer year within the active `.era` (e.g. `2026` in CE, `4` in 4 BCE, or `4` in Reiwa 4 when using the Japanese calendar).</span>
+2. <span id="fn-jj">**Astronomical Julian Day (`.jj`) vs. Day of Year (`.doy`)**: `.jj` provides the true astronomical Julian Day Number (an integer day count elapsed since noon UT on January 1, 4713 BC in the proleptic Julian calendar, e.g. `2461331` for 2026-10-17). If you need the calendar day within the current year (`1`–`366`), use `.doy`.</span>
+
+</small>
 
 ## ⏱️ Time Properties
 
-| Getter | Type | Description | Example |
+| Getter / Temporal | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.hh` | `number` | Hour of the day (0-23) | `15` |
-| `.mi` | `number` | Minutes of the hour (0-59) | `30` |
-| `.ss` | `number` | Seconds of the minute (0-59) | `45` |
-| `.ms` | `number` | Milliseconds of the second (0-999) | `123` |
-| `.us` | `number` | Microseconds of the millisecond (0-999) | `456` |
-| `.ns` | `number` | Nanoseconds of the microsecond (0-999) | `789` |
-| `.ff` | `number` | Fractional seconds representation | `0.123456789` |
+| **`.hh`**<br>`zdt.hour` | `number` | Hour of the day (0–23) | `15` |
+| **`.mi`**<br>`zdt.minute` | `number` | Minutes of the hour (0–59) | `30` |
+| **`.ss`**<br>`zdt.second` | `number` | Seconds of the minute (0–59) | `45` |
+| **`.ms`**<br>`zdt.millisecond` | `number` | Milliseconds of the second (0–999) | `123` |
+| **`.us`**<br>`zdt.microsecond` | `number` | Microseconds of the millisecond (0–999) | `456` |
+| **`.ns`**<br>`zdt.nanosecond` | `number` | Nanoseconds of the microsecond (0–999) | `789` |
+| **`.ff`** | `number` | Fractional seconds representation | `0.123456789` |
 
 ## 🗓️ ISO Week & Day Alignments
 
-| Getter | Type | Description | Example |
+| Getter / Temporal | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.yow` | `number` | 4-digit ISO week-numbering year | `2026` |
-| `.woy` | `number` | ISO week number of the year (1-53; canonical, supersedes legacy `.ww`) | `43` |
-| `.dow` | `number` | ISO weekday number (1 = Mon, 7 = Sun) | `6` |
-| `.doy` | `number` | Day of the year (1-366) | `297` |
+| **`.yow`**<br>`zdt.yearOfWeek` | `number` | 4-digit ISO week-numbering year | `2026` |
+| **`.woy`**<br>`zdt.weekOfYear` | `number` | ISO week number of the year (1–53; canonical, supersedes legacy `.ww`) | `43` |
+| **`.dow`**<br>`zdt.dayOfWeek` | `number` | ISO weekday number (1 = Mon, 7 = Sun) | `6` |
+| **`.doy`**<br>`zdt.dayOfYear` | `number` | Day of the year (1–366) | `297` |
 
 ## 🔤 Named String Representations
 
-| Getter | Type | Description | Example |
+| Getter / Temporal | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.mon` | `string` | Full English month name | `'October'` |
-| `.mmm` | `string` | Short English month name | `'Oct'` |
-| `.wkd` | `string` | Full English weekday name | `'Saturday'` |
-| `.www` | `string` | Short English weekday name | `'Sat'` |
+| **`.mon`**<br>`zdt.toLocaleString('en', { month: 'long' })` | `string` | Full English month name | `'October'` |
+| **`.mmm`**<br>`zdt.toLocaleString('en', { month: 'short' })` | `string` | Short English month name | `'Oct'` |
+| **`.wkd`**<br>`zdt.toLocaleString('en', { weekday: 'long' })` | `string` | Full English weekday name | `'Saturday'` |
+| **`.www`**<br>`zdt.toLocaleString('en', { weekday: 'short' })` | `string` | Short English weekday name | `'Sat'` |
 
 ## 🌍 Regional, Timezone & System Properties
 
-| Getter | Type | Description | Example |
+| Getter / Path | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| `.tz` | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
-| `.cal` | `string` | Temporal Calendar ID | `'iso8601'` |
-| `.locale` | `string \| string[]` | Resolved BCP 47 locale | `'en-AU'`, `['en-US', 'fr-FR']` |
-| `.intl` | `TempoIntlNamespace` | Structured internationalization namespace (`.info` for cultural metadata, `.locale` for native `Intl.Locale`) | `t.intl.info.firstDay`, `t.intl.locale` |
-| `.geo` | `object \| undefined` | Resolved geographic coordinates (`latitude`, `longitude`, `elevation`, `sphere`) | `{ latitude: -33.8688, longitude: 151.2093 }` |
-| `.sphere` | `'north' \| 'south' \| undefined` | Resolved hemisphere configuration | `'south'` |
-| `.ts` | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
-| `.nano` | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |
-| `.iso` | `string` | Standard ISO 8601 string (RFC 3339) in UTC | `'2026-10-24T04:30:00Z'` |
-| `.isValid`| `boolean`| `true` if the underlying date-time is valid | `true` |
+| **`.tz`**<br><small>`zdt.timeZoneId`</small> | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
+| **`.cal`**<br><small>`zdt.calendarId`<br>`intl.info.calendar`</small> | `string` | Calendar identifier | `'iso8601'`, `'gregory'` |
+| **`.locale`**<br><small>`intl.info.baseName`</small> | `string` | Resolved canonical BCP 47 language tag | `'en-AU'`, `'en-US'` |
+| **`.intl`** | `TempoIntlNamespace` | Structured internationalization namespace (`.info` for cultural metadata, `.locale` for native `Intl.Locale`) | `t.intl.info.firstDay`<br>`t.intl.locale` |
+| **`.geo`** | `object \| undefined` | Resolved geographic coordinates (`latitude`, `longitude`, `elevation`, `sphere`) | `{ latitude: -33.87,`<br>`longitude: 151.21 }` |
+| **`.sphere`**<br><small>`geo?.sphere`</small> | `'north' \| 'south' \|`<br>`undefined` | Resolved terrestrial hemisphere (geographic or timezone-inferred) | `'south'` |
+| **`.ts`**<br><small>`zdt.epochMilliseconds`</small> | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
+| **`.nano`**<br><small>`zdt.epochNanoseconds`</small> | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |
+| **`.iso`**<br><small>`zdt.toInstant()`<br>⤷ `.toString()`</small> | `string` | Standard ISO 8601 string (RFC 3339) in UTC | <small>`'2026-10-24T04:30:45`<br>`.123456789Z'`</small> |
+| **`.isValid`** | `boolean` | `true` if the underlying date-time is valid | `true` |
 
 ---
 
@@ -97,7 +86,7 @@ Beyond date-time properties, the `Tempo` class also provides read-only getters i
 
 | Getter | Type | Description |
 | :--- | :--- | :--- |
-| `.config` | `object` | Returns a proxy to the active configuration, including all resolved inheritance and local overrides. |
-| `.terms` | `object` | Returns a dictionary of all registered `TermPlugins` and their available `ranges`. |
-| `.ranges` | `object` | Returns a dictionary of the *currently active* range key for every registered term (e.g., `{ 'season': 'summer' }`). |
-| `.parse` | `object` | Returns a shadowed view of the internal parsing state (including `anchor`, `mode`, and the AST-like `match` output). |
+| **`.config`** | `object` | Returns a proxy to the active configuration, including all resolved inheritance and local overrides. |
+| **`.terms`** | `object` | Returns a dictionary of all registered `TermPlugins` and their available `ranges`. |
+| **`.ranges`** | `object` | Returns a dictionary of the *currently active* range key for every registered term (e.g., `{ 'season': 'summer' }`). |
+| **`.parse`** | `object` | Returns a shadowed view of the internal parsing state (including `anchor`, `mode`, and the AST-like `match` output). |

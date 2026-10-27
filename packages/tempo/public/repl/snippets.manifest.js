@@ -41,14 +41,14 @@ console.log('ISO Day of Week (1..7):', today.dow);
 const isIsoWeekend = today.dow >= 6;
 console.log('Is ISO Weekend?', isIsoWeekend);
 
-// 2. Locale-Aware check using t.intl.weekend
+// 2. Locale-Aware check using t.intl.info.weekend
 const us = new Tempo({ locale: 'en-US' });
 const sa = new Tempo({ locale: 'ar-SA' });
 
-console.log('en-US Weekend Days:', JSON.stringify(us.intl.weekend)); // [6, 7] (Saturday, Sunday)
-console.log('ar-SA Weekend Days:', JSON.stringify(sa.intl.weekend)); // [5, 6] (Friday, Saturday)
+console.log('en-US Weekend Days:', JSON.stringify(us.intl.info.weekend)); // [6, 7] (Saturday, Sunday)
+console.log('ar-SA Weekend Days:', JSON.stringify(sa.intl.info.weekend)); // [5, 6] (Friday, Saturday)
 
-return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.weekend.includes(today.dow)}\`;`,
+return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.info.weekend.includes(today.dow)}\`;`,
 	},
 
 	quarters: {

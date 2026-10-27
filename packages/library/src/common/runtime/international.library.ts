@@ -106,12 +106,10 @@ export interface LocaleWeekInfo {
 }
 
 export interface ResolvedLocaleInfo {
-	readonly locale?: Intl.Locale | undefined;
 	readonly baseName: string;
 	readonly language?: string | undefined;
 	readonly region?: string | undefined;
 	readonly script?: string | undefined;
-	readonly weekInfo: LocaleWeekInfo;
 	readonly firstDay: number;
 	readonly minimalDays: number;
 	readonly weekend: readonly number[];
@@ -121,11 +119,13 @@ export interface ResolvedLocaleInfo {
 	readonly numberingSystem: string;
 	readonly numberingSystems: readonly string[];
 	readonly timeZones: readonly string[];
+	readonly calendar: string;
+	readonly calendars: readonly string[];
 }
 
 export interface TempoIntlNamespace {
 	/**
-	 * Resolved cultural and regional calendar metadata (firstDay, weekend, direction, hourCycle, etc.)
+	 * Resolved cultural and regional calendar metadata (firstDay, weekend, direction, hourCycle, calendars, etc.)
 	 * via the host engine's CLDR / Intl.Locale Info database.
 	 */
 	readonly info: ResolvedLocaleInfo;
@@ -178,52 +178,6 @@ export interface TempoIntlNamespace {
 	 * Returns a globally memoized native Intl.NumberFormat instance pre-bound to the active locale.
 	 */
 	nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat;
-
-	// =========================================================================
-	// Backward Compatibility Fallbacks (@deprecated for v4.x, removed in v5.0.0)
-	// =========================================================================
-
-	/** @deprecated Use `intl.info.firstDay` instead. To be removed in v5.0.0. */
-	readonly firstDay: number;
-
-	/** Minimum days required in the first week of the year */
-	readonly minimalDays: number;
-
-	/** @deprecated Use `intl.info.weekend` instead. To be removed in v5.0.0. */
-	readonly weekend: readonly number[];
-
-	/** @deprecated Use `intl.info.direction` instead. To be removed in v5.0.0. */
-	readonly direction: 'ltr' | 'rtl';
-
-	/** @deprecated Use `intl.info.hourCycle` instead. To be removed in v5.0.0. */
-	readonly hourCycle: string;
-
-	/** @deprecated Use `intl.info.hourCycles` instead. To be removed in v5.0.0. */
-	readonly hourCycles: readonly string[];
-
-	/** @deprecated Use `intl.info.numberingSystem` instead. To be removed in v5.0.0. */
-	readonly numberingSystem: string;
-
-	/** @deprecated Use `intl.info.numberingSystems` instead. To be removed in v5.0.0. */
-	readonly numberingSystems: readonly string[];
-
-	/** @deprecated Use `intl.info.region` instead. To be removed in v5.0.0. */
-	readonly region?: string | undefined;
-
-	/** @deprecated Use `intl.info.script` instead. To be removed in v5.0.0. */
-	readonly script?: string | undefined;
-
-	/** @deprecated Use `intl.info.language` instead. To be removed in v5.0.0. */
-	readonly language?: string | undefined;
-
-	/** @deprecated Use `intl.info.timeZones` instead. To be removed in v5.0.0. */
-	readonly timeZones: readonly string[];
-
-	/** @deprecated Use `intl.info.baseName` instead. To be removed in v5.0.0. */
-	readonly baseName: string;
-
-	/** @deprecated Use `intl.info.weekInfo` instead. To be removed in v5.0.0. */
-	readonly weekInfo: LocaleWeekInfo;
 }
 
 /**
@@ -362,24 +316,29 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 		? Object.freeze([...rawTimeZones])
 		: Object.freeze([]);
 
-	const weekInfo: LocaleWeekInfo = Object.freeze({ firstDay, minimalDays, weekend });
+	// 6. Calendars (getCalendars() or .calendars or legacy .calendar)
+	const rawCalendars = getPropOrCall(loc, 'getCalendars', 'calendars') ?? loc?.calendar;
+	const calendars = Array.isArray(rawCalendars) && rawCalendars.length > 0
+		? Object.freeze([...rawCalendars])
+		: (isString(rawCalendars) ? Object.freeze([rawCalendars]) : Object.freeze(['gregory']));
+	const calendar = calendars[0] ?? 'gregory';
 
 	return Object.freeze({
-		locale: loc,
 		baseName,
 		language,
 		region,
 		script,
-		weekInfo,
 		firstDay,
 		minimalDays,
 		weekend,
-		hourCycle: hourCycles[0],
+		hourCycle: hourCycles[0] ?? 'h23',
 		hourCycles,
 		direction,
-		numberingSystem: numberingSystems[0],
+		numberingSystem: numberingSystems[0] ?? 'latn',
 		numberingSystems,
 		timeZones,
+		calendar,
+		calendars,
 	});
 });
 
@@ -421,20 +380,6 @@ export const getIntlNamespace = memoizeFunction((localeTag?: LocaleInput, timeZo
 		nf(options?: Intl.NumberFormatOptions): Intl.NumberFormat {
 			return getNF(targetLocale, options);
 		},
-		firstDay: info.firstDay,
-		minimalDays: info.minimalDays,
-		weekend: info.weekend,
-		direction: info.direction,
-		hourCycle: info.hourCycle,
-		hourCycles: info.hourCycles,
-		numberingSystem: info.numberingSystem,
-		numberingSystems: info.numberingSystems,
-		region: info.region,
-		script: info.script,
-		language: info.language,
-		timeZones: info.timeZones,
-		baseName: info.baseName,
-		weekInfo: info.weekInfo,
 	});
 });
 

@@ -269,18 +269,15 @@ export class Tempo {
 			logWarn(`Invalid locale encountered in #isMonthDay: ${locale}. Falling back to en-US.`, shape.config);
 		}
 
-		const li = getLI(rawLocale);
-		const baseName = li.baseName;
-		const language = li.language ?? li.locale?.language;
-
 		const tz = String(timeZone);
+		const { baseName, language, timeZones } = getLI(rawLocale);
 		const activeLocaleData = mdy.resolvedLocales?.find(l => l.locale === baseName || (language && l.locale === language));
 
 		return Boolean(
 			(activeLocaleData?.timeZones?.includes(tz)) ||
 			(globalMdy.timezones?.[baseName]?.includes(tz)) ||
 			(language && globalMdy.timezones?.[language]?.includes(tz)) ||
-			((asArray(globalMdy.locales).includes(baseName) || (language && asArray(globalMdy.locales).includes(language))) && li.timeZones.includes(tz))
+			((asArray(globalMdy.locales).includes(baseName) || (language && asArray(globalMdy.locales).includes(language))) && timeZones.includes(tz))
 		);
 	}
 
@@ -1820,8 +1817,8 @@ export class Tempo {
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
 	/** @internal 4-digit ISO week-numbering year */					get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
-	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
-	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.wy; }
+	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.woy; }
+	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.woy; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/** Internationalization namespace (info, locale, and cultural metadata) */
@@ -2272,10 +2269,6 @@ export namespace Tempo {
 	export type us = t.us;
 	/** Nanosecond numeric value */
 	export type ns = t.ns;
-	/** ISO week-year numeric value */
-	export type wy = t.wy;
-	/** @hidden prefer `wy` */
-	export type ww = t.wy;
 
 	/** Timestamp precision unit (ss, ms, us, ns) */
 	export type TimeStamp = t.Internal.TimeStamp;

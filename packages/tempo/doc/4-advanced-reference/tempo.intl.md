@@ -110,6 +110,8 @@ console.log(t.intl.info.script);          // 'Latn'
 console.log(t.intl.info.direction);       // 'ltr'
 console.log(t.intl.info.hourCycle);       // 'h12'
 console.log(t.intl.info.numberingSystem); // 'latn'
+console.log(t.intl.info.calendar);        // 'gregory'
+console.log(t.intl.info.calendars);       // ['gregory']
 console.log(t.intl.info.baseName);        // 'en-US'
 
 // Native Intl.Locale instance via t.intl.locale (use optional chaining):
@@ -119,9 +121,6 @@ console.log(t.intl.locale?.maximize().baseName);  // 'en-Latn-US'
 
 > [!NOTE]
 > **Type Safety & Environment Portability**: While `t.intl.info.*` properties are guaranteed non-nullish across all platforms, `t.intl.locale` directly exposes the host engine's native `Intl.Locale`. TypeScript strict checking encourages optional chaining (`t.intl.locale?....`) when directly interacting with the native instance prototype.
-
-> [!TIP]
-> **Backward Compatibility**: Direct access via `t.intl.firstDay`, `t.intl.weekend`, etc., remains supported as a deprecated fallback during v4.x, but new code should target `t.intl.info.*`.
 
 ### Opt-in Regional Calendar Math (`localeInfo: true`)
 
