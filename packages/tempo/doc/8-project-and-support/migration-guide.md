@@ -75,10 +75,10 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
   * Replace `{yywoy}` or `{yyww}` with `{yow}{woy}` (or localized `{yow:locale}{woy:locale}`).
 * **Year Modifier Aliases (`:yy` and `:year`):**
   * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
-  * Use the canonical `:short` modifier (e.g. `{year:short}`).
+  * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).
 * **Legacy Offset Modifiers on `{tz}`:**
   * Legacy modifier cases (`offsetshort`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
-  * Use canonical `{tz:offset}`, `{tz:name}`, `{tz:abbr}` in core, or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+  * Use canonical `{tz:offset}`, `{tz:short}`, `{tz:long}` in core, or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
 
 ```typescript
 // ❌ v4.x (Deprecated)
@@ -89,7 +89,7 @@ t.format('{year:yy}');
 // ✅ v5.0.0
 t.format('{tz}');
 t.format('{yow}{woy}');
-t.format('{year:short}');
+t.format('{yy}');
 ```
 
 ---

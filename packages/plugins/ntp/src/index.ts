@@ -195,20 +195,46 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			signal(options?: { interval?: number | string; timeZone?: string }): ReadonlySignal<Tempo> & Disposable {
 				const interval = options?.interval ?? 1;
 				const timeZone = options?.timeZone;
+				const tzOpt = isString(timeZone) ? { timeZone } : timeZone;
+				const getCurrent = () => new TempoClass(getEngine().nowMs(), tzOpt);
+				const state = new Signify.State(getCurrent());
+
+				let disposeCadence: () => void;
 				if (isFunction((TempoClass as any).ticker?.signal)) {
-					return (TempoClass as any).ticker.signal({
-						interval,
+					const tickerInterval = isString(interval) ? (parseIntervalMs(interval) / 1000 || 1) : interval;
+					const tickerSig = (TempoClass as any).ticker.signal({
+						interval: tickerInterval,
 						ntp: true,
 						timeZone,
 					});
+					const subEffect = Signify.effect(() => {
+						tickerSig();
+						state.set(getCurrent());
+					});
+					disposeCadence = () => {
+						subEffect.dispose();
+						tickerSig.dispose?.();
+					};
+				} else {
+					const intervalMs = isNumber(interval) ? interval * 1000 : (parseIntervalMs(interval) || 1000);
+					const timer = setInterval(() => {
+						state.set(getCurrent());
+					}, intervalMs);
+					disposeCadence = () => {
+						clearInterval(timer);
+					};
 				}
-				const intervalMs = parseIntervalMs(interval) || 1000;
-				const state = new Signify.State(new TempoClass(getEngine().nowMs(), timeZone ? { timeZone } : undefined));
-				const timer = setInterval(() => {
-					state.set(new TempoClass(getEngine().nowMs(), timeZone ? { timeZone } : undefined));
-				}, intervalMs);
+
+				// Rebase signal immediately whenever NTP calibration or offset updates
+				const calibrationWatch = Signify.effect(() => {
+					getEngine().signals.offset();
+					getEngine().signals.isCalibrated();
+					state.set(getCurrent());
+				});
+
 				const dispose = () => {
-					clearInterval(timer);
+					calibrationWatch.dispose();
+					disposeCadence();
 				};
 				const accessor = function (this: any) {
 					return state.get();
@@ -219,6 +245,9 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 						if (prop === 'get') return () => state.get();
 						if (prop === 'value') return state.get();
 						if (prop === 'epoch') return state.epoch;
+						if (prop === 'addConsumer') return (c: any) => state.addConsumer(c);
+						if (prop === 'removeConsumer') return (c: any) => state.removeConsumer(c);
+						if (prop === 'poll') return () => state.poll();
 						return (state as any)[prop];
 					},
 					apply(_, thisArg, argArray) {
@@ -226,7 +255,7 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 					}
 				});
 				Finalizer.register(proxy, () => {
-					clearInterval(timer);
+					dispose();
 				});
 				return proxy;
 			},

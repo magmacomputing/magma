@@ -102,6 +102,32 @@ describe('NTP Plugin Signify Reactivity', () => {
 		expect(ntpClock.value.epoch.ms).toBe(stoppedMs);
 	});
 
+	test('Tempo.ntp.signal() rebases timestamp immediately when calibration changes mid-flight', async () => {
+		const clock = Tempo.ntp.signal({ interval: 10 });
+		const beforeSyncMs = clock.value.epoch.ms;
+
+		const mockServerMs = Date.now() + 50000;
+		globalThis.fetch = vi.fn().mockImplementation(async () => {
+			return {
+				status: 200,
+				headers: new Headers({
+					'Server-Timing': `clock=${mockServerMs}`,
+				}),
+			} as any;
+		});
+
+		await Tempo.ntp.sync('/api/mock-time');
+		expect(Tempo.ntp.isCalibrated).toBe(true);
+
+		// Allow microtask to process reactive effect
+		await new Promise<void>(r => queueMicrotask(() => r()));
+
+		// Clock signal must immediately reflect calibrated offset (~50s ahead) without waiting for 10s tick
+		expect(clock.value.epoch.ms).toBeGreaterThanOrEqual(beforeSyncMs + 45000);
+
+		clock[Symbol.dispose]();
+	});
+
 	test('cross-plugin synergy: Tempo.ticker({ ntp: true }).signal reflects NTP calibrated state', () => {
 		const ticker = Tempo.ticker({ seconds: 1, ntp: true });
 		const sig = ticker.signal;
