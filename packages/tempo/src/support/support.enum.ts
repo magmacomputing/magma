@@ -308,7 +308,7 @@ export const REGISTRIES: Record<string, any> = {
 }
 
 /** public-reachable enums */
-export default {
+export const enums = {
 	SEASON,
 	COMPASS,
 	WEEKDAY,
@@ -332,4 +332,6 @@ export default {
 	MONTH_DAY,
 	LOCALE,
 	Enum,
-}
+};
+
+export default enums;

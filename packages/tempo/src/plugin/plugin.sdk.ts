@@ -19,3 +19,4 @@ export * from './term/term.index.js';
 export { defineTerm, defineRange, getTermRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat } from './term/term.index.js';
 export { TermHook } from '../support/support.symbol.js';
 export { logError, logWarn, logDebug } from '../support/support.util.js';
+export { getRuntime } from '../support/support.runtime.js';

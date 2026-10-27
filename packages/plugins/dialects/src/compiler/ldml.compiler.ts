@@ -1,5 +1,4 @@
-import { pad, suffix, WeakCache, Enum, resolveTwoDigitYear, resolveDayOfYear, resolveFractionalSeconds, getIsoWeek, fromIsoWeek, ValueOf } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { pad, suffix, WeakCache, Enum, enums, resolveTwoDigitYear, resolveDayOfYear, resolveFractionalSeconds, getIsoWeek, fromIsoWeek, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,
@@ -26,7 +25,7 @@ export const LDML_TOKENS = [
 	'a', 'c', 'e', 'E', 'w', 'W', 'Q', 'q', 'Z', 'z', 'I',
 ] as const;
 
-export type LdmlToken = ValueOf<typeof LDML_TOKENS>;
+export type LdmlToken = ValueOf<typeof LDML_TOKENS>
 
 const LDML_TOKEN_REGEX = new RegExp(`'(''|[^'])*'|(${LDML_TOKENS.join('|')})`, 'g');
 

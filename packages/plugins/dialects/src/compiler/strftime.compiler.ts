@@ -1,5 +1,4 @@
-import { pad, WeakCache, Enum, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, getIsoWeek, fromIsoWeek } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { pad, WeakCache, Enum, enums, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, getIsoWeek, fromIsoWeek, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,
@@ -30,7 +29,7 @@ export const STRFTIME_SPECIFIERS = [
 	'F', 'T', 'R', 's',
 ] as const;
 
-export type StrftimeSpecifier = (typeof STRFTIME_SPECIFIERS)[number];
+export type StrftimeSpecifier = ValueOf<typeof STRFTIME_SPECIFIERS>
 
 const STRFTIME_SPECIFIER_REGEX = /%(-)?(\d+)?([a-zA-Z%])/g;
 

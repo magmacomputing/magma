@@ -65,13 +65,6 @@ console.log(t.zdt.monthCode);    // 'M10'
 | `.dow` | `number` | ISO weekday number (1 = Mon, 7 = Sun) | `6` |
 | `.doy` | `number` | Day of the year (1-366) | `297` |
 
-> [!NOTE]
-> **Canonical Getters in v5.0.0**  
-> To establish a clean, predictable, and collision-free API surface across getters and format tokens:
-> * **`.woy`** is canonical for ISO week of the year (legacy `.ww` removed in v5.0.0).
-> * **`.eon`** is canonical for the positive integer year within the era (legacy `.eraYear` removed in v5.0.0).
-> * **`.dd`** is canonical for the padded day of the month and **`.d`** for numeric day (legacy `.day` removed in v5.0.0).
-
 ## 🔤 Named String Representations
 
 | Getter | Type | Description | Example |

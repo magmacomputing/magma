@@ -1,0 +1,138 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Library API</title><meta name="description" content="Documentation for Library API"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script><script async src="assets/hierarchy.js" id="tsd-hierarchy-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">Library API</a>
+<div id="tsd-toolbar-links"><a href="/magma/">⬅ Back to Guides</a></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h1>Library API</h1></div>
+<div class="tsd-panel tsd-typography"><h1 id="magma-library-internal-reference" class="tsd-anchor-link"><img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/library-logo.svg" width="48" height="48" style="vertical-align:middle; display:inline-block; margin-right:8px;" alt="Tempo Library Logo" /> Magma Library (Internal Reference)<a href="#magma-library-internal-reference" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<div class="tsd-alert tsd-alert-note"><div class="tsd-alert-title"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><use href="assets/icons.svg#icon-alertNote"></use></svg><span>Note</span></div><p>
+<strong>Internal Reference Package</strong>: <code>packages/library</code> is an internal monorepo utility suite used across Tempo packages. It is <strong>not</strong> published as a standalone package on npm, and is provided in the documentation as a reference guide for internal architectural utilities and shared routines.</p>
+</div>
+<p><strong>Magma Library</strong> provides platform-agnostic utilities for type-safe development, data manipulation, and asynchronous operations across Browser and Node.js environments.</p>
+<p><a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+<a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript" alt="TypeScript Ready"></a>
+<a href="https://nodejs.org/api/esm.html"><img src="https://img.shields.io/badge/Native-ESM-green" alt="Native ESM"></a></p>
+<hr>
+<h2 id="🚀-key-modules" class="tsd-anchor-link">🚀 Key Modules<a href="#🚀-key-modules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>The library is organized into specialized modules, each designed for maximum efficiency and tree-shakability.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">Module</th>
+<th style="text-align:left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><strong>Type System</strong></td>
+<td style="text-align:left">Advanced runtime type detection (<code>getType</code>), strict type-guards, and complex TS utility types.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Array</strong></td>
+<td style="text-align:left">Sorted insertion, multi-key sorting, grouping (<code>byKey</code>), and cartesian products.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>String</strong></td>
+<td style="text-align:left">Proper-casing, pluralization helpers, sprintf-style formatting, and template evaluation.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Serialization</strong></td>
+<td style="text-align:left">JSON-compatible stabilization with deep support for <strong>Temporal</strong>, <strong>BigInt</strong>, and custom Classes.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Cipher</strong></td>
+<td style="text-align:left">Simple, secure class-based encryption and decryption wrappers.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Pledge</strong></td>
+<td style="text-align:left">A robust wrapper for native Promises with settled-state tracking and timeout support.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Reflection</strong></td>
+<td style="text-align:left">Clean access to own-properties, values, and entries without prototype pollution.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Temporal</strong></td>
+<td style="text-align:left">Lightweight helpers and polyfill integration for the native <code>Temporal</code> API.</td>
+</tr>
+<tr>
+<td style="text-align:left"><strong>Recurrence</strong></td>
+<td style="text-align:left">Zero-dependency RFC 5545 recurrence rule parsing, expansion, and finiteness evaluation.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="✨-quick-start" class="tsd-anchor-link">✨ Quick Start<a href="#✨-quick-start" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<h3 id="runtime-type-detection" class="tsd-anchor-link">Runtime Type Detection<a href="#runtime-type-detection" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>The <code>getType</code> utility provides human-readable, proper-cased type names, even for custom classes that have been registered.</p>
+<pre><code class="typescript"><span class="hl-0">import</span><span class="hl-1"> { </span><span class="hl-2">getType</span><span class="hl-1">, </span><span class="hl-2">isType</span><span class="hl-1"> } </span><span class="hl-0">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@magmacomputing/tempo/library&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-4">getType</span><span class="hl-1">([]);            </span><span class="hl-5">// &quot;Array&quot;</span><br/><span class="hl-4">getType</span><span class="hl-1">(</span><span class="hl-6">new</span><span class="hl-1"> </span><span class="hl-4">Map</span><span class="hl-1">());     </span><span class="hl-5">// &quot;Map&quot;</span><br/><span class="hl-4">getType</span><span class="hl-1">(</span><span class="hl-7">42</span><span class="hl-6">n</span><span class="hl-1">);           </span><span class="hl-5">// &quot;BigInt&quot;</span><br/><br/><span class="hl-0">if</span><span class="hl-1"> (</span><span class="hl-4">isType</span><span class="hl-1">(</span><span class="hl-2">val</span><span class="hl-1">, </span><span class="hl-3">&#39;String&#39;</span><span class="hl-1">, </span><span class="hl-3">&#39;Number&#39;</span><span class="hl-1">)) {</span><br/><span class="hl-1">  </span><span class="hl-5">// val is now narrowed to string | number</span><br/><span class="hl-1">}</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="advanced-array-sorting" class="tsd-anchor-link">Advanced Array Sorting<a href="#advanced-array-sorting" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Sort complex collections of objects by multiple fields with ease.</p>
+<pre><code class="typescript"><span class="hl-0">import</span><span class="hl-1"> { </span><span class="hl-2">sortKey</span><span class="hl-1"> } </span><span class="hl-0">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@magmacomputing/tempo/library&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-8">users</span><span class="hl-1"> = [</span><br/><span class="hl-1">  { </span><span class="hl-2">name:</span><span class="hl-1"> </span><span class="hl-3">&#39;Alice&#39;</span><span class="hl-1">, </span><span class="hl-2">age:</span><span class="hl-1"> </span><span class="hl-7">30</span><span class="hl-1"> },</span><br/><span class="hl-1">  { </span><span class="hl-2">name:</span><span class="hl-1"> </span><span class="hl-3">&#39;Bob&#39;</span><span class="hl-1">, </span><span class="hl-2">age:</span><span class="hl-1"> </span><span class="hl-7">25</span><span class="hl-1"> },</span><br/><span class="hl-1">  { </span><span class="hl-2">name:</span><span class="hl-1"> </span><span class="hl-3">&#39;Alice&#39;</span><span class="hl-1">, </span><span class="hl-2">age:</span><span class="hl-1"> </span><span class="hl-7">22</span><span class="hl-1"> }</span><br/><span class="hl-1">];</span><br/><br/><span class="hl-5">// Sort by name (ASC) then age (DESC)</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-8">sorted</span><span class="hl-1"> = </span><span class="hl-4">sortKey</span><span class="hl-1">(</span><span class="hl-2">users</span><span class="hl-1">, </span><span class="hl-3">&#39;name&#39;</span><span class="hl-1">, { </span><span class="hl-2">field:</span><span class="hl-1"> </span><span class="hl-3">&#39;age&#39;</span><span class="hl-1">, </span><span class="hl-2">dir:</span><span class="hl-1"> </span><span class="hl-3">&#39;desc&#39;</span><span class="hl-1"> });</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="secure-serialization" class="tsd-anchor-link">Secure Serialization<a href="#secure-serialization" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Unlike standard <code>JSON.stringify</code>, Magma's serialization handles complex types like <code>Temporal</code> and <code>BigInt</code> out of the box.</p>
+<pre><code class="typescript"><span class="hl-0">import</span><span class="hl-1"> { </span><span class="hl-2">stringify</span><span class="hl-1">, </span><span class="hl-2">objectify</span><span class="hl-1"> } </span><span class="hl-0">from</span><span class="hl-1"> </span><span class="hl-3">&#39;@magmacomputing/tempo/library&#39;</span><span class="hl-1">;</span><br/><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-8">data</span><span class="hl-1"> = {</span><br/><span class="hl-1">  </span><span class="hl-2">at:</span><span class="hl-1"> </span><span class="hl-2">Temporal</span><span class="hl-1">.</span><span class="hl-2">Now</span><span class="hl-1">.</span><span class="hl-4">instant</span><span class="hl-1">(),</span><br/><span class="hl-1">  </span><span class="hl-2">count:</span><span class="hl-1"> </span><span class="hl-7">100</span><span class="hl-6">n</span><span class="hl-1">,</span><br/><span class="hl-1">  </span><span class="hl-2">pattern:</span><span class="hl-9"> /abc/</span><span class="hl-6">gi</span><br/><span class="hl-1">};</span><br/><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-8">json</span><span class="hl-1"> = </span><span class="hl-4">stringify</span><span class="hl-1">(</span><span class="hl-2">data</span><span class="hl-1">);</span><br/><span class="hl-6">const</span><span class="hl-1"> </span><span class="hl-8">restored</span><span class="hl-1"> = </span><span class="hl-4">objectify</span><span class="hl-1">(</span><span class="hl-2">json</span><span class="hl-1">); </span><span class="hl-5">// Fully restored types!</span>
+</code><button type="button">Copy</button></pre>
+
+<hr>
+<h2 id="📚-documentation" class="tsd-anchor-link">📚 Documentation<a href="#📚-documentation" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>For deep dives into specific APIs, explore the generated module reference or the user guides:</p>
+<ul>
+<li><strong>Common Utilities</strong>: <a href="https://magmacomputing.github.io/magma/api/library/modules/common.index.html">Common API Reference</a> · <a href="https://magmacomputing.github.io/magma/doc/6-utility-library/tempo.library.html">User Guide</a> · <a href="https://github.com/magmacomputing/magma/tree/main/packages/library/doc/common/">GitHub Source</a></li>
+<li><strong>Browser-Specific</strong>: <a href="https://magmacomputing.github.io/magma/api/library/modules/browser.index.html">Browser API Reference</a> · <a href="https://github.com/magmacomputing/magma/tree/main/packages/library/doc/browser/">GitHub Source</a></li>
+<li><strong>Server/Node.js</strong>: <a href="https://magmacomputing.github.io/magma/api/library/modules/server.index.html">Server API Reference</a> · <a href="https://github.com/magmacomputing/magma/tree/main/packages/library/doc/server/">GitHub Source</a></li>
+</ul>
+<hr>
+<h2 id="💬-contact-support" class="tsd-anchor-link">💬 Contact &amp; Support<a href="#💬-contact-support" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>If you have questions, need architectural consulting, or want to report a bug, please reach out to us:</p>
+<ul>
+<li><strong>Email</strong>: <a href="mailto:hello@magmacomputing.com.au">hello@magmacomputing.com.au</a></li>
+<li><strong>Issues</strong>: <a href="https://github.com/magmacomputing/magma/issues">GitHub Issues</a></li>
+<li><strong>Discussions</strong>: <a href="https://github.com/magmacomputing/magma/discussions">GitHub Discussions</a></li>
+</ul>
+<hr>
+<h2 id="⚖️-license" class="tsd-anchor-link">⚖️ License<a href="#⚖️-license" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Distributed under the MIT License. See <code>LICENSE</code> for more information.</p>
+<p>© 2026 Magma Computing.</p>
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#magma-library-internal-reference"><span> <wbr/>Magma <wbr/>Library (<wbr/>Internal <wbr/>Reference)</span></a>
+<ul>
+<li><a href="#🚀-key-modules"><span>🚀 <wbr/>Key <wbr/>Modules</span></a></li>
+<li><a href="#✨-quick-start"><span>✨ <wbr/>Quick <wbr/>Start</span></a></li>
+<li>
+<ul>
+<li><a href="#runtime-type-detection"><span>Runtime <wbr/>Type <wbr/>Detection</span></a></li>
+<li><a href="#advanced-array-sorting"><span>Advanced <wbr/>Array <wbr/>Sorting</span></a></li>
+<li><a href="#secure-serialization"><span>Secure <wbr/>Serialization</span></a></li></ul></li>
+<li><a href="#📚-documentation"><span>📚 <wbr/>Documentation</span></a></li>
+<li><a href="#💬-contact-support"><span>💬 <wbr/>Contact &amp; <wbr/>Support</span></a></li>
+<li><a href="#⚖️-license"><span>⚖️ <wbr/>License</span></a></li></ul></div></details></div>
+<div class="site-menu">
+<nav id="tsd-sidebar-links" class="tsd-navigation"><a href="/magma/" class="tsd-nav-link">⬅ Back to Guides</a></nav>
+<nav class="tsd-navigation"><a href="modules.html">Library API</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

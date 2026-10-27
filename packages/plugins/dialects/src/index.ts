@@ -1,6 +1,4 @@
-import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
-import { getRuntime } from '@magmacomputing/tempo/support';
-import { isNull, isFunction, isObject } from '@magmacomputing/tempo/library';
+import { definePlugin, deepFreeze, hasOwn, getRuntime, isFunction, isObject, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo/core';
 
 import { DIALECT, DIALECT_ALIAS, normalizeDialect, type Dialect, type DialectAlias } from './constants.js';

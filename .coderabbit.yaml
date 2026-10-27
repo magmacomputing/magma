@@ -16,6 +16,7 @@ reviews:
     - "!**/public/providers.v1.*" # Ignore static provider definitions (.json and .jsonc)
     - "!**/doc/api/**"            # Ignore legacy TypeDoc API documentation
     - "!**/public/api/**"         # Ignore generated TypeDoc API documentation
+    - "!**/public/v4/**"          # Ignore frozen v4 documentation site
     - "!**/coverage/**"           # Ignore test coverage reports and HTML fixtures
     - "!**/.vitepress/cache/**"   # Ignore VitePress cache
     - "!**/.vitepress/dist/**"    # Ignore VitePress build output

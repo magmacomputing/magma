@@ -1,5 +1,4 @@
-import { pad, suffix, WeakCache, Enum, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, getIsoWeek, fromIsoWeek } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { pad, suffix, WeakCache, Enum, enums, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, getIsoWeek, fromIsoWeek, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,
@@ -27,7 +26,7 @@ export const MYSQL_SPECIFIERS = [
 	'V', 'X',
 ] as const;
 
-export type MysqlSpecifier = (typeof MYSQL_SPECIFIERS)[number];
+export type MysqlSpecifier = ValueOf<typeof MYSQL_SPECIFIERS>
 
 export const MYSQL_SPECIFIER_REGEX = new RegExp(`%([${MYSQL_SPECIFIERS.join('')}])`, 'g');
 

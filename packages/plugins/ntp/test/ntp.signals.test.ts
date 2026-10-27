@@ -58,7 +58,7 @@ describe('NTP Plugin Signify Reactivity', () => {
 		expect(signals.drift.value.sampleCount).toBe(1);
 
 		// Allow effect microtask to flush
-		await new Promise(r => queueMicrotask(r));
+		await new Promise<void>(r => queueMicrotask(() => r()));
 
 		// Signify effect re-evaluated
 		expect(observedOffsets).toContain(500);

@@ -8,7 +8,7 @@
  */
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject, ValueOf } from '#library/type.library.js';
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
 import type { WeakCache } from '#library/weakcache.class.js';
@@ -167,7 +167,7 @@ export type SetFields = {
 } & {
 	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'yow' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
-export type SlickKey = SLICK_KEYS[number];
+export type SlickKey = ValueOf<SLICK_KEYS>;
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
