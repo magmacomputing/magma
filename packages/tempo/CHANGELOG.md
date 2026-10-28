@@ -23,11 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed & Deprecated (Breaking Changes)
 - **Removed Deprecated Top-Level Intl Getters**:
-  - Fully removed deprecated legacy properties `t.firstDay`, `t.minimalDays`, `t.weekend`, and `t.locale` from `Tempo` instances.
-  - Callers must use structured internationalization accessors via `t.intl.info.firstDay`, `t.intl.info.minimalDays`, `t.intl.info.weekend`, and `t.intl.locale` (or canonical `t.locale`).
+  - Fully removed deprecated legacy properties `t.firstDay`, `t.minimalDays`, and `t.weekend` from `Tempo` instances.
+  - Callers must use structured internationalization accessors via `t.intl.info.firstDay`, `t.intl.info.minimalDays`, and `t.intl.info.weekend` (and `t.intl.locale` or canonical `t.locale`).
 - **Standardized Composable Offset Tokens**:
   - Removed uncomposed `offsetcompact` and `{tz:offsetcompact}` modifiers.
-  - Standardized on composable `{tz:offset:compact}` and `{offset:compact}` tokens across formatters and lexers.
+  - Standardized on the composable `{tz:offset:compact}` token across formatters and lexers.
 - **Reclaimed `.ww` Alias**:
   - Removed `.ww` as a legacy alias for ISO week of year (`.woy`), freeing it for calendar week of year in the v5 roadmap.
 

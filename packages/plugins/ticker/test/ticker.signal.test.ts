@@ -127,4 +127,20 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		// Reading terminal value remains safe and unchanged
 		expect(sig.value).toBe(lastValue);
 	});
+
+	test('ticker remains active and updates when temporary ticker proxy is dropped and only signal is retained', async () => {
+		const signal = Tempo.ticker({ seconds: 0.05 }).signal;
+		const computed = Signify.computed(() => signal.value.epoch.ms);
+
+		const initialMs = computed.value;
+		expect(initialMs).toBeGreaterThan(0);
+
+		// Wait for pulses while only retaining signal and computed
+		await new Promise(r => setTimeout(r, 120));
+
+		expect(computed.value).toBeGreaterThan(initialMs);
+
+		// Cleanup via signal disposal
+		signal.dispose?.();
+	});
 });

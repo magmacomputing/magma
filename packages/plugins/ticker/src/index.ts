@@ -50,6 +50,8 @@ interface ActiveTickerEntry {
  * Internal weak registry for all active tickers.
  */
 const ACTIVE_TICKERS = new Set<ActiveTickerEntry>();
+const PROXY_SIGNAL = Symbol.for('Tempo.ticker.cachedSignal');
+const INSTANCE_KEY = Symbol.for('Tempo.ticker.instance');
 
 /**
  * ## Ticker
@@ -454,6 +456,11 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#schedId = undefined;
 		}
 
+		const proxy = this.#selfRef?.deref();
+		if (proxy && (proxy as any)[PROXY_SIGNAL]) {
+			(proxy as any)[PROXY_SIGNAL].dispose?.();
+			delete (proxy as any)[PROXY_SIGNAL];
+		}
 		if (this.#cachedSignal) {
 			this.#cachedSignal.dispose?.();
 			this.#cachedSignal = undefined;
@@ -506,18 +513,24 @@ class TickerInstance implements Ticker.Descriptor {
 		const sig = this.#reactive.toSignal(initial);
 		this.#runBootstrap();
 
-		const selfRef = this.#selfRef;
+		let activeProxy: any = this.#selfRef?.deref();
 		const wrapper = new Proxy(sig as any, {
 			get(target, prop, receiver) {
-				if (prop === Symbol.for('Tempo.ticker.instance')) return selfRef?.deref();
+				if (prop === INSTANCE_KEY) return activeProxy;
 				return Reflect.get(target, prop, receiver);
 			}
+		});
+
+		Finalizer.register(wrapper, () => {
+			activeProxy = null;
 		});
 
 		return wrapper;
 	}
 
 	get signal(): ReadonlySignal<Tempo> {
+		const proxy = this.#selfRef?.deref();
+		if (proxy) return (proxy as any).signal;
 		return (this.#cachedSignal ??= this.toSignal());
 	}
 
@@ -583,7 +596,7 @@ class TickerInstance implements Ticker.Descriptor {
 function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
 	const instance = new TickerInstance(TempoClass, arg1, arg2);
 	const proxy = new Proxy((() => instance.stop()) as any, {
-		get: (_, prop) => {
+		get: (target, prop) => {
 			if (prop === 'pulse') return instance.pulse.bind(instance);
 			if (prop === 'pull') return instance.pull.bind(instance);
 			if (prop === 'until') return instance.until.bind(instance);
@@ -594,7 +607,15 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 				};
 			}
 			if (prop === 'stop') return instance.stop.bind(instance);
-			if (prop === 'signal') return instance.signal;
+			if (prop === 'signal') {
+				let sig = (target as any)[PROXY_SIGNAL];
+				if (!sig) {
+					sig = instance.toSignal();
+					(target as any)[PROXY_SIGNAL] = sig;
+				}
+				return sig;
+			}
+			if (prop === PROXY_SIGNAL) return (target as any)[PROXY_SIGNAL];
 			if (prop === 'toSignal') return instance.toSignal.bind(instance);
 			if (prop === 'next') return instance.next.bind(instance);
 			if (prop === 'return') return instance.return.bind(instance);

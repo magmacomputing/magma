@@ -11,10 +11,9 @@ All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be
   - Added auto-disposable static constructor `Tempo.ticker.signal(interval)` returning a `ReadonlySignal<Tempo> & Disposable` that stops and tears down the underlying ticker when disposed or garbage collected.
 
 ### Fixed & Memory Safety
-- **Signal Lifecycle & Retention Cycle Elimination**:
-  - Refactored `TickerInstance.#cachedSignal` lifecycle to strongly retain the signal wrapper while the ticker is active, preventing premature GC collection and preserving subscriptions for reactive consumers (e.g. `Signify.computed(() => ticker.signal.value)`).
-  - Explicitly disposed and cleared `#cachedSignal` on `ticker.stop()`.
-  - Removed closure capture of the ticker proxy in `toSignal()` by resolving `Symbol.for('Tempo.ticker.instance')` dynamically via `this.#selfRef?.deref()`, eliminating circular retention paths between the ticker proxy and signal wrapper.
+- **Signal Lifecycle & Retained Ticker Ownership**:
+  - Managed mutual lifetime ownership between ticker proxies and derived signal wrappers (`ticker.signal`, `ticker.toSignal()`) ensuring the underlying ticker remains active and updates reactive consumers (e.g. `Signify.computed`) even when the temporary ticker proxy is dropped and only the signal wrapper is retained.
+  - Preserved automatic teardown upon signal disposal (`signal.dispose()`, `signal[Symbol.dispose]()`), and ensured both proxy and signal wrapper are collected cleanly without circular leaks when dropped by consumer code.
 
 ## [2.6.1] - 2026-10-06
 
