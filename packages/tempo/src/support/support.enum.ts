@@ -119,7 +119,7 @@ export const DEFAULTS = {
 		/** display with Time */																dayTime: '{dd}-{mmm}-{yyyy} {hh}:{mi}:{ss}',
 		/** useful for stamping logs */													logStamp: '{ymd}T{hms}.{ff}',
 		/** useful for sorting display-strings */								sortTime: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}',
-		/** useful for sorting week order */										yearWeek: '{yw}{wy}',
+		/** useful for sorting week order */										yearWeek: '{yow}{woy}',
 		/** useful for sorting month order */										yearMonth: '{yyyy}{mm}',
 		/** useful for sorting date order */										yearMonthDay: '{ymd}',
 		/** just Date portion */																date: '{yyyy}-{mm}-{dd}',

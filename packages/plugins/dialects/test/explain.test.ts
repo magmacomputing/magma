@@ -153,15 +153,15 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(daySpace?.tempo).toBe('{dd:space}');
 
 		const z0700 = tokens.find(t => t.source === 'Z0700');
-		expect(z0700?.tempo).toBe('{tz:offsetcompact:utc}');
+		expect(z0700?.tempo).toBe('{tz:offset:compact:utc}');
 		expect(z0700?.desc).toContain('UTC Z or basic numeric offset');
 
 		const z070000 = tokens.find(t => t.source === 'Z070000');
-		expect(z070000?.tempo).toBe('{tz:offsetcompact:ss:utc}');
+		expect(z070000?.tempo).toBe('{tz:offset:compact:ss:utc}');
 		expect(z070000?.desc).toContain('offset with seconds');
 
 		const m070000 = tokens.find(t => t.source === '-070000');
-		expect(m070000?.tempo).toBe('{tz:offsetcompact:ss}');
+		expect(m070000?.tempo).toBe('{tz:offset:compact:ss}');
 		expect(m070000?.desc).toContain('offset with seconds');
 
 		const m07 = tokens.find(t => t.source === '-07');

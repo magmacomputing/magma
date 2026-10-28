@@ -245,8 +245,6 @@ export type FormatRegistry = enums.FormatEnum;
 export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
 	yyyy: true; yy: true; yow: true;
-	/** @internal */
-	yw: true;
 	// ── week-of-year ─────────────────────────────────
 	woy: true;
 	// ── era / eon ─────────────────────────────────────

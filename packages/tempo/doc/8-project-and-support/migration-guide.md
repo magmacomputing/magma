@@ -45,8 +45,8 @@ Several legacy and ambiguous instance getters have been removed in favor of cano
 | :--- | :--- | :--- |
 | `t.eraYear` | `t.eon` | Year within era (eon / astronomical era calendar alignment). |
 | `t.ww` | `t.woy` | Week of year (ISO 8601 week number `1`..`53`). |
-| `t.day` | `t.dd` / `t.d` | Day of month (`t.dd` string padded, `t.d` 1-indexed number). Use `t.dow` for day-of-week, or `t.doy` for day-of-year. |
-| `t.clone()` | `Tempo.from(t)` | Canonical instance instantiation and cloning constructor. |
+| `t.day` | `t.dd` | Day of the month (`1`–`31` number). Use `t.format('{dd}')` when zero-padded text is needed. For day-of-week use `t.dow`, and for day-of-year use `t.doy`. |
+| `t.clone()` | `Tempo.from(t, t.config)` | Canonical instance cloning constructor (preserves instance-local configuration). |
 
 ```typescript
 // ❌ v4.x (Deprecated)
@@ -59,7 +59,7 @@ const copy = t.clone();
 const week = t.woy;
 const eraY = t.eon;
 const dayVal = t.dd;
-const copy = Tempo.from(t);
+const copy = Tempo.from(t, t.config);
 ```
 
 ---
@@ -77,8 +77,8 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
   * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
   * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).
 * **Legacy Offset Modifiers on `{tz}`:**
-  * Legacy modifier cases (`offsetshort`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
-  * Use canonical `{tz:offset}`, `{tz:short}`, `{tz:long}` in core, or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+  * Legacy modifier cases (`offsetshort`, `offsetcompact`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
+  * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
 
 ```typescript
 // ❌ v4.x (Deprecated)

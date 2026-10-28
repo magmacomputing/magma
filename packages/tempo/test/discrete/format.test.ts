@@ -355,57 +355,57 @@ describe('Tempo.format() refinements', () => {
       expect(dtUtc.format('{tz:offset:sec}')).toBe('+00:00:00');
       expect(dtPos.format('{tz:offset:ss}')).toBe('+08:00:00');
       expect(dtPos.format('{tz:offset:sec}')).toBe('+08:00:00');
-      expect(dtPos.format('{tz:offsetcompact:ss}')).toBe('+080000');
       expect(dtPos.format('{tz:offset:compact:ss}')).toBe('+080000');
-      expect(dtPos.format('{tz:offsetcompact:sec}')).toBe('+080000');
       expect(dtPos.format('{tz:offset:compact:sec}')).toBe('+080000');
+      expect(dtPos.format('{tz:offset:ss:compact}')).toBe('+080000');
       expect(dtHalf.format('{tz:offset:ss}')).toBe('+05:30:00');
-      expect(dtHalf.format('{tz:offsetcompact:ss}')).toBe('+053000');
+      expect(dtHalf.format('{tz:offset:compact:ss}')).toBe('+053000');
+      expect(dtPos.format('{tz:offset:compact}')).toBe('+0800');
+      expect(dtHalf.format('{tz:offset:compact}')).toBe('+0530');
+      expect(dtPos.format('{time:compact}')).toBe('090703');
     })
 
     it('formats UTC Z indicator via canonical :utc and internal alias :z', () => {
       // Canonical :utc
       expect(dtUtc.format('{tz:offset:utc}')).toBe('Z');
-      expect(dtUtc.format('{tz:offsetcompact:utc}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:compact:utc}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:short:utc}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:ss:utc}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:sec:utc}')).toBe('Z');
-      expect(dtUtc.format('{tz:offsetcompact:ss:utc}')).toBe('Z');
-      expect(dtUtc.format('{tz:offsetcompact:sec:utc}')).toBe('Z');
+      expect(dtUtc.format('{tz:offset:compact:ss:utc}')).toBe('Z');
+      expect(dtUtc.format('{tz:offset:compact:sec:utc}')).toBe('Z');
 
       expect(dtPos.format('{tz:offset:utc}')).toBe('+08:00');
-      expect(dtPos.format('{tz:offsetcompact:utc}')).toBe('+0800');
+      expect(dtPos.format('{tz:offset:compact:utc}')).toBe('+0800');
       expect(dtPos.format('{tz:offset:short:utc}')).toBe('+08');
       expect(dtPos.format('{tz:offset:ss:utc}')).toBe('+08:00:00');
       expect(dtPos.format('{tz:offset:sec:utc}')).toBe('+08:00:00');
-      expect(dtPos.format('{tz:offsetcompact:ss:utc}')).toBe('+080000');
-      expect(dtPos.format('{tz:offsetcompact:sec:utc}')).toBe('+080000');
+      expect(dtPos.format('{tz:offset:compact:ss:utc}')).toBe('+080000');
+      expect(dtPos.format('{tz:offset:compact:sec:utc}')).toBe('+080000');
 
       expect(dtHalf.format('{tz:offset:utc}')).toBe('+05:30');
-      expect(dtHalf.format('{tz:offsetcompact:utc}')).toBe('+0530');
+      expect(dtHalf.format('{tz:offset:compact:utc}')).toBe('+0530');
       expect(dtHalf.format('{tz:offset:short:utc}')).toBe('+05:30');
 
       // Internal alias :z
       expect(dtUtc.format('{tz:offset:z}')).toBe('Z');
-      expect(dtUtc.format('{tz:offsetcompact:z}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:compact:z}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:short:z}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:ss:z}')).toBe('Z');
       expect(dtUtc.format('{tz:offset:sec:z}')).toBe('Z');
-      expect(dtUtc.format('{tz:offsetcompact:ss:z}')).toBe('Z');
-      expect(dtUtc.format('{tz:offsetcompact:sec:z}')).toBe('Z');
+      expect(dtUtc.format('{tz:offset:compact:ss:z}')).toBe('Z');
+      expect(dtUtc.format('{tz:offset:compact:sec:z}')).toBe('Z');
 
       expect(dtPos.format('{tz:offset:z}')).toBe('+08:00');
-      expect(dtPos.format('{tz:offsetcompact:z}')).toBe('+0800');
+      expect(dtPos.format('{tz:offset:compact:z}')).toBe('+0800');
       expect(dtPos.format('{tz:offset:short:z}')).toBe('+08');
       expect(dtPos.format('{tz:offset:ss:z}')).toBe('+08:00:00');
       expect(dtPos.format('{tz:offset:sec:z}')).toBe('+08:00:00');
-      expect(dtPos.format('{tz:offsetcompact:ss:z}')).toBe('+080000');
-      expect(dtPos.format('{tz:offsetcompact:sec:z}')).toBe('+080000');
+      expect(dtPos.format('{tz:offset:compact:ss:z}')).toBe('+080000');
+      expect(dtPos.format('{tz:offset:compact:sec:z}')).toBe('+080000');
 
       expect(dtHalf.format('{tz:offset:z}')).toBe('+05:30');
-      expect(dtHalf.format('{tz:offsetcompact:z}')).toBe('+0530');
+      expect(dtHalf.format('{tz:offset:compact:z}')).toBe('+0530');
       expect(dtHalf.format('{tz:offset:short:z}')).toBe('+05:30');
     })
   })

@@ -204,7 +204,6 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 					const tickerInterval = isString(interval) ? (parseIntervalMs(interval) / 1000 || 1) : interval;
 					const tickerSig = (TempoClass as any).ticker.signal({
 						interval: tickerInterval,
-						ntp: true,
 						timeZone,
 					});
 					const subEffect = Signify.effect(() => {

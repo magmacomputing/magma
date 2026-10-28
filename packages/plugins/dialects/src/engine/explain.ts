@@ -86,9 +86,9 @@ const LDML_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readon
 	z: { tempo: '{tz:short}', desc: 'Short localized time zone name (e.g. PST)' },
 	ZZZZZ: { tempo: '{tz:offset}', desc: 'Extended ISO-8601 offset (e.g. -08:00)' },
 	ZZZZ: { tempo: '{tz:longoffset}', desc: 'Localized time zone offset (e.g. GMT-08:00)' },
-	ZZZ: { tempo: '{tz:offsetcompact}', desc: 'Compact ISO-8601 offset (e.g. -0800)' },
-	ZZ: { tempo: '{tz:offsetcompact}', desc: 'Compact ISO-8601 offset (e.g. -0800)' },
-	Z: { tempo: '{tz:offsetcompact}', desc: 'Compact ISO-8601 offset (e.g. -0800)' },
+	ZZZ: { tempo: '{tz:offset:compact}', desc: 'Compact ISO-8601 offset (e.g. -0800)' },
+	ZZ: { tempo: '{tz:offset:compact}', desc: 'Compact ISO-8601 offset (e.g. -0800)' },
+	Z: { tempo: '{tz:offset:compact}', desc: 'Compact ISO-8601 offset (e.g. -0800)' },
 };
 
 const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
@@ -121,7 +121,7 @@ const STRFTIME_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; re
 	U: { tempo: '', desc: 'Week number of year with Sunday as first day of week (00-53)' },
 	G: { tempo: '{yow}', desc: '4-digit ISO week-numbering year' },
 	g: { tempo: '{yow:-2}', desc: '2-digit ISO week-numbering year' },
-	z: { tempo: '{tz:offsetcompact}', desc: 'Numeric time zone offset (e.g. -0800)' },
+	z: { tempo: '{tz:offset:compact}', desc: 'Numeric time zone offset (e.g. -0800)' },
 	Z: { tempo: '{tz}', desc: 'Time zone name (e.g. Europe/Paris)' },
 	F: { tempo: '{yyyy}-{mm}-{dd}', desc: 'ISO 8601 date' },
 	T: { tempo: '{hh}:{mi}:{ss}', desc: 'ISO 8601 time' },
@@ -199,7 +199,7 @@ const MOMENT_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	x: { tempo: '', desc: 'Unix timestamp in milliseconds (unsupported in Tempo default seconds-based {ts})' },
 	zz: { tempo: '{tz:short}', desc: 'Time zone abbreviation' },
 	z: { tempo: '{tz:short}', desc: 'Time zone abbreviation' },
-	ZZ: { tempo: '{tz:offsetcompact}', desc: 'Compact time zone offset (e.g. -0800)' },
+	ZZ: { tempo: '{tz:offset:compact}', desc: 'Compact time zone offset (e.g. -0800)' },
 	Z: { tempo: '{tz:offset}', desc: 'ISO-8601 time zone offset (e.g. -08:00)' },
 };
 
@@ -308,13 +308,13 @@ const PHP_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonl
 	u: { tempo: '{ff:6}', desc: 'Microseconds (6 digits)' },
 	a: { tempo: '{mer}', desc: 'AM/PM marker (lowercase)' },
 	A: { tempo: '{mer:upper}', desc: 'AM/PM marker (uppercase)' },
-	O: { tempo: '{tz:offsetcompact}', desc: 'Difference to GMT without colon (+0200)' },
+	O: { tempo: '{tz:offset:compact}', desc: 'Difference to GMT without colon (+0200)' },
 	P: { tempo: '{tz:offset}', desc: 'Difference to GMT with colon (+02:00)' },
 	T: { tempo: '{tz:short}', desc: 'Timezone abbreviation (e.g. UTC, EST)' },
 	e: { tempo: '{tz}', desc: 'Timezone identifier (e.g. UTC, Europe/London)' },
 	U: { tempo: '{ts}', desc: 'Seconds since the Unix Epoch' },
 	c: { tempo: '{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}{tz:offset}', desc: 'ISO 8601 date' },
-	r: { tempo: '{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss} {tz:offsetcompact}', desc: 'RFC 2822 formatted date' },
+	r: { tempo: '{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss} {tz:offset:compact}', desc: 'RFC 2822 formatted date' },
 };
 
 const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly desc: string }>> = {
@@ -348,12 +348,12 @@ const GO_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; readonly
 	'.999999999': { tempo: '', desc: 'Trailing nanosecond with dot omitted if zero (unsupported in Tempo tokens)' },
 	'Z07:00': { tempo: '{tz:offset:utc}', desc: 'UTC Z or ISO-8601 offset' },
 	'Z07:00:00': { tempo: '{tz:offset:ss:utc}', desc: 'UTC Z or ISO-8601 offset with seconds' },
-	Z0700: { tempo: '{tz:offsetcompact:utc}', desc: 'UTC Z or basic numeric offset' },
-	Z070000: { tempo: '{tz:offsetcompact:ss:utc}', desc: 'UTC Z or basic numeric offset with seconds' },
+	Z0700: { tempo: '{tz:offset:compact:utc}', desc: 'UTC Z or basic numeric offset' },
+	Z070000: { tempo: '{tz:offset:compact:ss:utc}', desc: 'UTC Z or basic numeric offset with seconds' },
 	'-07:00': { tempo: '{tz:offset}', desc: 'ISO-8601 numeric offset' },
 	'-07:00:00': { tempo: '{tz:offset:ss}', desc: 'ISO-8601 numeric offset with seconds' },
-	'-0700': { tempo: '{tz:offsetcompact}', desc: 'Basic numeric offset' },
-	'-070000': { tempo: '{tz:offsetcompact:ss}', desc: 'Basic numeric offset with seconds' },
+	'-0700': { tempo: '{tz:offset:compact}', desc: 'Basic numeric offset' },
+	'-070000': { tempo: '{tz:offset:compact:ss}', desc: 'Basic numeric offset with seconds' },
 	'-07': { tempo: '{tz:offset:hh}', desc: 'Hour-only numeric offset with sign' },
 	Z07: { tempo: '{tz:offset:short:utc}', desc: 'UTC Z or hour-only numeric offset' },
 	MST: { tempo: '{tz:short}', desc: 'Short localized time zone abbreviation' },

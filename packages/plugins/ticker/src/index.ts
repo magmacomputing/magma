@@ -500,7 +500,35 @@ class TickerInstance implements Ticker.Descriptor {
 		const initial = args.length > 0 ? args[0]! : (this.#next as any);
 		const sig = this.#reactive.toSignal(initial);
 		this.#runBootstrap();
-		return sig;
+
+		const tickerProxy = this.#selfRef?.deref();
+		const dispose = () => {
+			this.stop();
+			sig.dispose?.();
+		};
+
+		const accessor = function (this: any) {
+			return sig();
+		};
+
+		const wrapper = new Proxy(accessor as any, {
+			get(_, prop) {
+				if (prop === 'dispose' || prop === Symbol.dispose) return dispose;
+				if (prop === 'get') return () => sig.get();
+				if (prop === Symbol.for('Tempo.ticker.instance')) return tickerProxy;
+				return (sig as any)[prop];
+			},
+			apply(_, thisArg, argArray) {
+				if (tickerProxy) { /* retain reference in closure */ }
+				return (sig as any).apply(thisArg, argArray);
+			}
+		});
+
+		Finalizer.register(wrapper, () => {
+			this.stop();
+		});
+
+		return wrapper;
 	}
 
 	get signal(): ReadonlySignal<Tempo> {

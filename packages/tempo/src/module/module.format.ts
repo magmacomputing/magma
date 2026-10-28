@@ -648,8 +648,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'longgeneric': {
 					const modKey = mod.toLowerCase();
 					if (token === 'tz') {
-						if (normMods.includes('offset') || normMods.includes('offsetcompact')) {
-							// Handled by case 'offset' / 'offsetcompact'
+						if (normMods.includes('offset')) {
+							// Handled by case 'offset'
 						} else {
 							const styleMap: Record<string, any> = { short: 'short', long: 'long', shortoffset: 'shortOffset', longoffset: 'longOffset', shortgeneric: 'shortGeneric', longgeneric: 'longGeneric' };
 							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: styleMap[modKey] }).formatToParts(zdt.epochMilliseconds);
@@ -667,10 +667,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				}
-				case 'offset':
-				case 'offsetcompact': {
+				case 'offset': {
 					if (token === 'tz') {
-						const sep = (mod.toLowerCase() === 'offsetcompact' || normMods.includes('compact')) ? '' : ':';
+						const sep = normMods.includes('compact') ? '' : ':';
 						const isUtc = zdt.offset === '+00:00' || zdt.offset === '-00:00' || zdt.offset === 'Z' || zdt.offsetNanoseconds === 0;
 						const sign = zdt.offset.startsWith('-') ? '-' : '+';
 						const cleanOffset = (zdt.offset.startsWith('+') || zdt.offset.startsWith('-'))
@@ -699,7 +698,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'compact':
-					if (token !== 'tz' || (!normMods.includes('offset') && !normMods.includes('offsetcompact')))
+					if (token !== 'tz' || !normMods.includes('offset'))
 						res = String(res).replace(RE_COLON, '');
 					break;
 				case 'space': {
