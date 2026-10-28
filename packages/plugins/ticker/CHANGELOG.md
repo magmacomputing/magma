@@ -2,6 +2,20 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
+## [2.7.0] - 2026-10-29
+
+### Added
+- **TC39 Signal Reactivity (`ticker.signal`, `ticker.toSignal()`)**:
+  - Added `ticker.signal` getter returning a `ReadonlySignal<Tempo>` bound to the ticker cadence.
+  - Added `ticker.toSignal(fallback?)` method returning an explicit reactive signal initialized to seed or custom fallback value.
+  - Added auto-disposable static constructor `Tempo.ticker.signal(interval)` returning a `ReadonlySignal<Tempo> & Disposable` that stops and tears down the underlying ticker when disposed or garbage collected.
+
+### Fixed & Memory Safety
+- **Signal Lifecycle & Retention Cycle Elimination**:
+  - Refactored `TickerInstance.#cachedSignal` lifecycle to strongly retain the signal wrapper while the ticker is active, preventing premature GC collection and preserving subscriptions for reactive consumers (e.g. `Signify.computed(() => ticker.signal.value)`).
+  - Explicitly disposed and cleared `#cachedSignal` on `ticker.stop()`.
+  - Removed closure capture of the ticker proxy in `toSignal()` by resolving `Symbol.for('Tempo.ticker.instance')` dynamically via `this.#selfRef?.deref()`, eliminating circular retention paths between the ticker proxy and signal wrapper.
+
 ## [2.6.1] - 2026-10-06
 
 ### Fixed

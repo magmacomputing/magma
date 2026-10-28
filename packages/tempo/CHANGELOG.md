@@ -21,6 +21,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Widened peer dependencies across all official community plugins to `^4.0.0 || ^5.0.0` for smooth cross-version compatibility.
   - Added support and REPL showcases for companion `@magmacomputing/tempo-plugin-roman`.
 
+### Removed & Deprecated (Breaking Changes)
+- **Removed Deprecated Top-Level Intl Getters**:
+  - Fully removed deprecated legacy properties `t.firstDay`, `t.minimalDays`, `t.weekend`, and `t.locale` from `Tempo` instances.
+  - Callers must use structured internationalization accessors via `t.intl.info.firstDay`, `t.intl.info.minimalDays`, `t.intl.info.weekend`, and `t.intl.locale` (or canonical `t.locale`).
+- **Standardized Composable Offset Tokens**:
+  - Removed uncomposed `offsetcompact` and `{tz:offsetcompact}` modifiers.
+  - Standardized on composable `{tz:offset:compact}` and `{offset:compact}` tokens across formatters and lexers.
+- **Reclaimed `.ww` Alias**:
+  - Removed `.ww` as a legacy alias for ISO week of year (`.woy`), freeing it for calendar week of year in the v5 roadmap.
+
+### Changed & Hardened
+- **Core Getter & Model Modernization**:
+  - Updated `t.sphere` return type to `Tempo.COMPASS | undefined`, encompassing all compass orientations (`'north'`, `'south'`, `'equator'`, `'east'`, `'west'`).
+  - Updated `t.ts` to reflect dynamic evaluation via the configured `timeStamp` epoch unit (`t.epoch[config.timeStamp ?? 'ms']`).
+  - Documented exact Gregorian and weekday registry lookup expressions for `.mon`, `.mmm`, `.wkd`, and `.www`.
+  - Simplified timezone offset token extraction in `engine.lexer.ts`.
+
 ## [4.7.0] - 2026-10-16
 
 ### Added & Architecture

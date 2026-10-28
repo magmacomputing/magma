@@ -36,8 +36,8 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"ticker": {
 		name: "@magmacomputing/tempo-plugin-ticker",
-		version: "2.6.1",
-		loader: () => import("@magmacomputing/tempo-plugin-ticker").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ticker" + "@2.6.1"))
+		version: "2.7.0",
+		loader: () => import("@magmacomputing/tempo-plugin-ticker").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ticker" + "@2.7.0"))
 	},
 	"geo": {
 		name: "@magmacomputing/tempo-plugin-geo",
@@ -61,8 +61,8 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"ntp": {
 		name: "@magmacomputing/tempo-plugin-ntp",
-		version: "1.0.0",
-		loader: () => import("@magmacomputing/tempo-plugin-ntp").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ntp" + "@1.0.0"))
+		version: "1.1.0",
+		loader: () => import("@magmacomputing/tempo-plugin-ntp").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ntp" + "@1.1.0"))
 	},
 	"roman": {
 		name: "@magmacomputing/tempo-plugin-roman",

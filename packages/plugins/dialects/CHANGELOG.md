@@ -51,6 +51,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Modifiers & Literals**: `FM` (Fill Mode unpadded suppression), `FX` (format exact), and `"..."` double-quoted literal text preservation.
   - Enhanced `explain(mask, dialect)` with Oracle format translation to native Tempo `{token}` masks.
 
+### Changed
+- **Standardized Composable Offset Tokens**:
+  - Updated all dialect compilers (Go, MySQL, Oracle, PHP, LDML, .NET, sheet, strftime), `explain`, and `export` to output composable `{tz:offset:compact}` / `{offset:compact}` tokens, eliminating obsolete `offsetcompact` modifiers.
+
 ## [1.0.3] - 2026-10-03
 
 ### Changed

@@ -53,6 +53,20 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		ticker.stop();
 	});
 
+	test('Signify.computed tracks ticker.signal directly without wrapper retention leaks', () => {
+		const ticker = Tempo.ticker({ seconds: 60 });
+		const computed = Signify.computed(() => ticker.signal.value.epoch.ms);
+
+		const firstMs = computed.value;
+		expect(firstMs).toBeGreaterThan(0);
+
+		const pulsed = ticker.pulse();
+		expect(computed.value).toBe(pulsed.epoch.ms);
+		expect(computed.value).toBeGreaterThan(firstMs);
+
+		ticker.stop();
+	});
+
 	test('Signify.effect tracks pulses from ticker.signal', async () => {
 		const ticker = Tempo.ticker({ seconds: 0.05, limit: 3 });
 		const sig = ticker.signal;

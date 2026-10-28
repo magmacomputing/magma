@@ -165,7 +165,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#options: any;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
-	#cachedSignal: WeakRef<ReadonlySignal<Tempo>> | undefined = undefined;
+	#cachedSignal: ReadonlySignal<Tempo> | undefined = undefined;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
@@ -454,6 +454,11 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#schedId = undefined;
 		}
 
+		if (this.#cachedSignal) {
+			this.#cachedSignal.dispose?.();
+			this.#cachedSignal = undefined;
+		}
+
 		const stopListeners = [...this.#stopListeners];
 		this.#stopListeners.clear();
 		this.#catchListeners.clear();
@@ -501,41 +506,19 @@ class TickerInstance implements Ticker.Descriptor {
 		const sig = this.#reactive.toSignal(initial);
 		this.#runBootstrap();
 
-		const tickerProxy = this.#selfRef?.deref();
-		const dispose = () => {
-			sig.dispose?.();
-		};
-
-		const accessor = function (this: any) {
-			return sig();
-		};
-
-		const wrapper = new Proxy(accessor as any, {
-			get(_, prop) {
-				if (prop === 'dispose' || prop === Symbol.dispose) return dispose;
-				if (prop === 'get') return () => sig.get();
-				if (prop === Symbol.for('Tempo.ticker.instance')) return tickerProxy;
-				return (sig as any)[prop];
-			},
-			apply(_, thisArg, argArray) {
-				if (tickerProxy) { /* retain reference in closure */ }
-				return (sig as any).apply(thisArg, argArray);
+		const selfRef = this.#selfRef;
+		const wrapper = new Proxy(sig as any, {
+			get(target, prop, receiver) {
+				if (prop === Symbol.for('Tempo.ticker.instance')) return selfRef?.deref();
+				return Reflect.get(target, prop, receiver);
 			}
-		});
-
-		Finalizer.register(wrapper, () => {
-			sig.dispose?.();
 		});
 
 		return wrapper;
 	}
 
 	get signal(): ReadonlySignal<Tempo> {
-		const cached = this.#cachedSignal?.deref();
-		if (cached) return cached;
-		const sig = this.toSignal();
-		this.#cachedSignal = new WeakRef(sig);
-		return sig;
+		return (this.#cachedSignal ??= this.toSignal());
 	}
 
 	async next(): Promise<IteratorResult<Tempo, any>> {

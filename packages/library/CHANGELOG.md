@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `Reactive.fromSignal(signal)` converting TC39 signals into observable `Reactive<T>` streams with error containment and teardown.
   - Added `Pledge.prototype.toSignal()` bridging promise resolution and rejection state (`pending`, `fulfilled`, `rejected`) and resolved values into reactive signals.
   - Added `Storage.prototype.toSignal(key, options?)` creating synchronized reactive Web Storage signals across tabs with duplicate listener isolation and `Finalizer` unregistration.
+- **Locale Calendar Preference Metadata (`international.library`)**:
+  - Added `calendar: string` property to the `ResolvedLocaleInfo` interface.
+  - Implemented cultural default calendar resolution via `Intl.Locale.prototype.getCalendars()` (with fallback to `locale.calendar`), allowing runtime inspection of a locale's cultural default calendar (e.g. `'gregory'`, `'buddhist'`, `'hebrew'`) via `resolveLocaleInfo(locale).calendar`.
 
 ### Changed & Hardened
 - **Pure Integer Calendar Arithmetic (`calendar.library`, `rrule.library`)**:
