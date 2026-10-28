@@ -76,13 +76,16 @@ Following the industry precedent established by Vite (`@vitejs/*`), Svelte (`@sv
 ### Phase 3: Plugin Ecosystem Modularization & Greenfield Optimization
 *Status: Planned*
 
-To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shims, ecosystem plugins are modularized while preserving core signature superpowers:
+To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shims or non-essential domain data, ecosystem plugins are modularized while preserving core signature superpowers:
 
+- [ ] **Civic vs. Cultural Terms Split (Option B)**:
+  - **Civic Terms in Core**: Retain `QuarterTerm` (`#quarter`, `#qtr`) and `SeasonTerm` (`#season`) directly in Core Tempo (~2.7 KB minified, ~0.8 KB gzipped). These represent universal, uncontroversial business and calendar concepts used across reporting, fiscal cycles, and scheduling.
+  - **Cultural & Domain Terms Opt-In (`@tempo-js/std`)**: Decouple `ZodiacTerm` (Western astrology), `EasternTerm` (Chinese zodiac / lunar signs), and `TimelineTerm` (geological/cosmic epochs) from Core's automatic startup loader into `@tempo-js/std` (or `@tempo-js/core/std`).
+    - *Impact*: Saves **~7.4 KB minified (~2.4 KB gzipped)** from every Core Tempo bundle and completely eliminates enterprise/business skepticism around astrological horoscopes in a core date library.
+    - *Consumption*: Available on-demand via `import { ZodiacTerm } from '@tempo-js/std'; Tempo.use(ZodiacTerm);` or zero-config `import '@tempo-js/std';`. Serves in documentation as the flagship showcase of Tempo's custom terminology extensibility.
 - [ ] **Retain Slick Shorthand Syntax as Core Superpower**:
-  - Keep intuitive term navigation (`t.set('#qtr.>q1')`, `t.add('#timeOfDay.>afternoon')`), directional operators (`>`, `<`, `+`, `-`), and shorthand shifters (`t.set({ mm: '>2', wkd: '>Fri' })`) natively built into Core.
+  - Keep intuitive term navigation (`t.set('#qtr.>q1')`, `t.add('#season.>summer')`), directional operators (`>`, `<`, `+`, `-`), and shorthand shifters (`t.set({ mm: '>2', wkd: '>Fri' })`) natively built into Core.
   - Evaluation confirmed that saving ~3–4 KB gzipped does not justify fracturing Tempo's signature ergonomics or requiring extra plugin boilerplate for fundamental shorthand.
-- [ ] **Retain Standard Plugins (`@tempo-js/std`)**:
-  - Retain the lightweight Standard Plugins (`packages/plugins/.std/`: Zodiac, Eastern, Quarter, Season, Timeline) as-is. They serve as the canonical showcase of Tempo's terminology and plugin extensibility without imposing bloat on the core bundle.
 - [ ] **Standalone Dialects Architecture (`@tempo-js/plugin-dialects`)**:
   - Keep legacy format compilers (Moment, Day.js, Luxon, POSIX `strftime`, Go, PHP, Oracle SQL) out of Core Tempo.
   - Provide 4-tier consumption:
