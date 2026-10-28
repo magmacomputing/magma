@@ -22,14 +22,14 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 | **`.mm`**<br>`zdt.month` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
 | **`.dd`**<br>`zdt.day` | `number` | Day of the month (1–31) | `24` |
 | **`.dim`**<br>`zdt.daysInMonth` | `number` | Total days in the month (28–31) | `31` |
-| **`.era`**<br>`zdt.era` | `string` | Localized era string | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
-| **`.eon`**<br>`zdt.eraYear` | `number` | Positive integer year within the current `.era` <sup>[[1]](#fn-eon)</sup> | `2026`, `4` |
-| **`.jj`** | `number` | Astronomical Julian Day number since 4713 BC <sup>[[2]](#fn-jj)</sup> | `2461331` |
+| **`.era`**<br>`zdt.era` | `string \| undefined` | Calendar era identifier | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
+| **`.eon`**<br>`zdt.eraYear` | `number \| undefined` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> | `2026`, `4` |
+| **`.jj`** | `number` | Integer Julian Day number for the local ISO date (ignoring time of day) <sup>[[2]](#fn-jj)</sup> | `2461331` |
 
 <small>
 
 1. <span id="fn-eon">**Era Year (`.eon`) vs. Calendar Year (`.yy`)**: While `.yy` returns the signed astronomical year (e.g. `2026` or `-3`), `.eon` returns the positive integer year within the active `.era` (e.g. `2026` in CE, `4` in 4 BCE, or `4` in Reiwa 4 when using the Japanese calendar).</span>
-2. <span id="fn-jj">**Astronomical Julian Day (`.jj`) vs. Day of Year (`.doy`)**: `.jj` provides the true astronomical Julian Day Number (an integer day count elapsed since noon UT on January 1, 4713 BC in the proleptic Julian calendar, e.g. `2461331` for 2026-10-17). If you need the calendar day within the current year (`1`–`366`), use `.doy`.</span>
+2. <span id="fn-jj">**Astronomical Julian Day (`.jj`) vs. Day of Year (`.doy`)**: `.jj` provides the integer Julian Day Number for the instance's local ISO date (an integer day count elapsed since noon UT on January 1, 4713 BC, in the proleptic Julian calendar, ignoring time of day, e.g. `2461331` for 2026-10-17). If you need the calendar day within the current year (`1`–`366`), use `.doy`.</span>
 
 </small>
 
@@ -56,19 +56,19 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 
 ## 🔤 Named String Representations
 
-| Getter / Temporal | Type | Description | Example |
+| Getter / Temporal Equivalent | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| **`.mon`**<br>`zdt.toLocaleString('en', { month: 'long' })` | `string` | Full English month name | `'October'` |
-| **`.mmm`**<br>`zdt.toLocaleString('en', { month: 'short' })` | `string` | Short English month name | `'Oct'` |
-| **`.wkd`**<br>`zdt.toLocaleString('en', { weekday: 'long' })` | `string` | Full English weekday name | `'Saturday'` |
-| **`.www`**<br>`zdt.toLocaleString('en', { weekday: 'short' })` | `string` | Short English weekday name | `'Sat'` |
+| **`.mon`**<br><small>`zdt.toLocaleString('en', { month: 'long' })`</small> | `string` | Full English month name | `'October'` |
+| **`.mmm`**<br><small>`zdt.toLocaleString('en', { month: 'short' })`</small> | `string` | Short English month name | `'Oct'` |
+| **`.wkd`**<br><small>`zdt.toLocaleString('en', { weekday: 'long' })`</small> | `string` | Full English weekday name | `'Saturday'` |
+| **`.www`**<br><small>`zdt.toLocaleString('en', { weekday: 'short' })`</small> | `string` | Short English weekday name | `'Sat'` |
 
 ## 🌍 Regional, Timezone & System Properties
 
 | Getter / Path | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
 | **`.tz`**<br><small>`zdt.timeZoneId`</small> | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
-| **`.cal`**<br><small>`zdt.calendarId`<br>`intl.info.calendar`</small> | `string` | Calendar identifier | `'iso8601'`, `'gregory'` |
+| **`.cal`**<br><small>`zdt.calendarId`</small> | `string` | Calendar identifier <sup>[[3]](#fn-cal)</sup> | `'iso8601'`, `'gregory'` |
 | **`.locale`**<br><small>`intl.info.baseName`</small> | `string` | Resolved canonical BCP 47 language tag | `'en-AU'`, `'en-US'` |
 | **`.intl`** | `TempoIntlNamespace` | Structured internationalization namespace (`.info` for cultural metadata, `.locale` for native `Intl.Locale`) | `t.intl.info.firstDay`<br>`t.intl.locale` |
 | **`.geo`** | `object \| undefined` | Resolved geographic coordinates (`latitude`, `longitude`, `elevation`, `sphere`) | `{ latitude: -33.87,`<br>`longitude: 151.21 }` |
@@ -77,6 +77,12 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 | **`.nano`**<br><small>`zdt.epochNanoseconds`</small> | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |
 | **`.iso`**<br><small>`zdt.toInstant()`<br>⤷ `.toString()`</small> | `string` | Standard ISO 8601 string (RFC 3339) in UTC | <small>`'2026-10-24T04:30:45`<br>`.123456789Z'`</small> |
 | **`.isValid`** | `boolean` | `true` if the underlying date-time is valid | `true` |
+
+<small>
+
+3. <span id="fn-cal">**Active Calendar (`.cal`) vs. Locale Calendar Preference (`.intl.info.calendar`)**: `.cal` returns the instance's active calendar identifier (`zdt.calendarId`), which controls arithmetic and date representation. To inspect the cultural default calendar associated with the resolved locale (e.g. `'gregory'` for `en-US`, or `'buddhist'` for `th-TH`), use `t.intl.info.calendar`.</span>
+
+</small>
 
 ---
 

@@ -503,7 +503,6 @@ class TickerInstance implements Ticker.Descriptor {
 
 		const tickerProxy = this.#selfRef?.deref();
 		const dispose = () => {
-			this.stop();
 			sig.dispose?.();
 		};
 
@@ -525,7 +524,7 @@ class TickerInstance implements Ticker.Descriptor {
 		});
 
 		Finalizer.register(wrapper, () => {
-			this.stop();
+			sig.dispose?.();
 		});
 
 		return wrapper;
@@ -622,8 +621,9 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 		apply: (target) => target(),
 	});
 
+	const instanceRef = new WeakRef(instance);
 	Finalizer.register(proxy, () => {
-		instance.stop();
+		instanceRef.deref()?.stop();
 	});
 
 	return instance.bootstrap(cast<Ticker.Instance>(proxy));
@@ -684,8 +684,9 @@ export const TickerPlugin = definePlugin({
 					return (sig as any).apply(thisArg, argArray);
 				}
 			});
+			const tickerRef = new WeakRef(ticker);
 			Finalizer.register(proxy, () => {
-				ticker.stop();
+				tickerRef.deref()?.stop();
 			});
 			return proxy;
 		};

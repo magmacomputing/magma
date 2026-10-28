@@ -318,9 +318,14 @@ export const getLI = memoizeFunction((localeTag?: LocaleInput): ResolvedLocaleIn
 
 	// 6. Calendars (getCalendars() or .calendars or legacy .calendar)
 	const rawCalendars = getPropOrCall(loc, 'getCalendars', 'calendars') ?? loc?.calendar;
+	const resolvedCalendar = hasIntl('DateTimeFormat')
+		? getDTF(loc ?? baseName).resolvedOptions().calendar
+		: undefined;
 	const calendars = Array.isArray(rawCalendars) && rawCalendars.length > 0
 		? Object.freeze([...rawCalendars])
-		: (isString(rawCalendars) ? Object.freeze([rawCalendars]) : Object.freeze(['gregory']));
+		: (isString(rawCalendars)
+			? Object.freeze([rawCalendars])
+			: (isString(resolvedCalendar) ? Object.freeze([resolvedCalendar]) : Object.freeze(['gregory'])));
 	const calendar = calendars[0] ?? 'gregory';
 
 	return Object.freeze({
