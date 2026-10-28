@@ -5,7 +5,20 @@ All notable changes to `@magmacomputing/tempo-plugin-dialects` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 2026-10-14
+## [1.1.1] - 2026-10-29
+
+### Changed
+- **Standardized Composable Offset Tokens (`{tz:offset:compact}`, `{offset:compact}`)**:
+  - Updated all dialect compilers (Go, MySQL, Oracle, PHP, Unicode LDML, .NET, spreadsheet, POSIX `strftime`), `explain()`, and `exportDialect()` to output standardized composable `{tz:offset:compact}` and `{offset:compact}` tokens, eliminating obsolete uncomposed `offsetcompact` modifiers.
+- **Explain Engine Parity (`explain.ts`)**:
+  - Updated explain dictionaries for Go, PHP, LDML, Oracle, and strftime to map compact timezone offset specifiers (e.g. PHP `O`, Go `-0700`, `Z0700`, `-070000`, `Z070000`, and RFC 2822 `r`) directly to `{tz:offset:compact}`, `{tz:offset:compact:utc}`, and `{tz:offset:compact:ss}`.
+- **Export Engine Backward Compatibility & Aliases (`export.ts`)**:
+  - Added canonical export mappings for `{tz:offset:compact}`, `{tz:offset:compact:ss}`, `{tz:offset:compact:utc}`, and `{tz:offset:compact:z}`.
+  - Added alias normalization in `V4_EXPORT_ALIASES` to ensure existing masks using legacy `{tz:offsetcompact}`, `{tz:offset:basic}`, `{tz:offsetcompact:ss}`, `{tz:offsetcompact:utc}`, and related permutations continue to export seamlessly.
+- **Modular Plugin SDK Imports (`src/index.ts`)**:
+  - Decoupled internal `#library` imports (`isNull`), standardizing strictly on modular guards (`isFunction`, `isObject`) from `@magmacomputing/tempo/plugin/sdk`.
+
+## [1.1.0] - 2026-10-21
 
 ### Added
 - **Direct Dialect-to-Dialect Conversion (`convertDialect`)**:
@@ -50,10 +63,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Timezone**: `TZH:TZM`, `TZH`, `TZM`, `TZR`, `TZD`, `OF`.
     - **Modifiers & Literals**: `FM` (Fill Mode unpadded suppression), `FX` (format exact), and `"..."` double-quoted literal text preservation.
   - Enhanced `explain(mask, dialect)` with Oracle format translation to native Tempo `{token}` masks.
-
-### Changed
-- **Standardized Composable Offset Tokens**:
-  - Updated all dialect compilers (Go, MySQL, Oracle, PHP, LDML, .NET, sheet, strftime), `explain`, and `export` to output composable `{tz:offset:compact}` / `{offset:compact}` tokens, eliminating obsolete `offsetcompact` modifiers.
 
 ## [1.0.3] - 2026-10-03
 

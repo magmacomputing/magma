@@ -46,8 +46,8 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"dialects": {
 		name: "@magmacomputing/tempo-plugin-dialects",
-		version: "1.1.0",
-		loader: () => import("@magmacomputing/tempo-plugin-dialects").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-dialects" + "@1.1.0"))
+		version: "1.1.1",
+		loader: () => import("@magmacomputing/tempo-plugin-dialects").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-dialects" + "@1.1.1"))
 	},
 	"holidays": {
 		name: "@magmacomputing/tempo-plugin-holidays",
