@@ -56,12 +56,12 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 
 ## 🔤 Named String Representations
 
-| Getter / Temporal Equivalent | Type | Description | Example |
+| Getter / Path | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| **`.mon`**<br><small>`zdt.toLocaleString('en', { month: 'long' })`</small> | `string` | Full English month name | `'October'` |
-| **`.mmm`**<br><small>`zdt.toLocaleString('en', { month: 'short' })`</small> | `string` | Short English month name | `'Oct'` |
-| **`.wkd`**<br><small>`zdt.toLocaleString('en', { weekday: 'long' })`</small> | `string` | Full English weekday name | `'Saturday'` |
-| **`.www`**<br><small>`zdt.toLocaleString('en', { weekday: 'short' })`</small> | `string` | Short English weekday name | `'Sat'` |
+| **`.mon`**<br><small>`Tempo.MONTHS.keyOf(zdt.month)`</small> | `string` | Full English month name (Gregorian registry label) | `'October'` |
+| **`.mmm`**<br><small>`Tempo.MONTH.keyOf(zdt.month)`</small> | `string` | Short English month name (Gregorian registry label) | `'Oct'` |
+| **`.wkd`**<br><small>`Tempo.WEEKDAYS.keyOf(zdt.dayOfWeek)`</small> | `string` | Full English weekday name | `'Saturday'` |
+| **`.www`**<br><small>`Tempo.WEEKDAY.keyOf(zdt.dayOfWeek)`</small> | `string` | Short English weekday name | `'Sat'` |
 
 ## 🌍 Regional, Timezone & System Properties
 
@@ -69,11 +69,11 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 | :--- | :--- | :--- | :--- |
 | **`.tz`**<br><small>`zdt.timeZoneId`</small> | `string` | IANA Time Zone ID | `'Australia/Sydney'` |
 | **`.cal`**<br><small>`zdt.calendarId`</small> | `string` | Calendar identifier <sup>[[3]](#fn-cal)</sup> | `'iso8601'`, `'gregory'` |
-| **`.locale`**<br><small>`intl.info.baseName`</small> | `string` | Resolved canonical BCP 47 language tag | `'en-AU'`, `'en-US'` |
+| **`.locale`**<br><small>`intl.locale?.toString()`</small> | `string` | Resolved canonical BCP 47 language tag | `'en-AU'`, `'en-US'` |
 | **`.intl`** | `TempoIntlNamespace` | Structured internationalization namespace (`.info` for cultural metadata, `.locale` for native `Intl.Locale`) | `t.intl.info.firstDay`<br>`t.intl.locale` |
 | **`.geo`** | `object \| undefined` | Resolved geographic coordinates (`latitude`, `longitude`, `elevation`, `sphere`) | `{ latitude: -33.87,`<br>`longitude: 151.21 }` |
-| **`.sphere`**<br><small>`geo?.sphere`</small> | `'north' \| 'south' \|`<br>`undefined` | Resolved terrestrial hemisphere (geographic or timezone-inferred) | `'south'` |
-| **`.ts`**<br><small>`zdt.epochMilliseconds`</small> | `number \| bigint` | Unix timestamp (`number` for `ss`/`ms`/`us`, `bigint` for `ns`) | `1792843200000` |
+| **`.sphere`**<br><small>`geo?.sphere`</small> | `Tempo.COMPASS \|`<br>`undefined` | Resolved terrestrial hemisphere or compass orientation (`'north'`, `'south'`, `'equator'`, `'east'`, `'west'`) | `'south'` |
+| **`.ts`**<br><small>`t.epoch[timeStamp ?? 'ms']`</small> | `number \| bigint` | Unix timestamp using configured epoch unit (defaults to `'ms'`; `number` for `ss`/`ms`/`us`, `bigint` for `ns`) <sup>[[4]](#fn-ts)</sup> | `1792843200000` |
 | **`.nano`**<br><small>`zdt.epochNanoseconds`</small> | `bigint` | Nanoseconds since Unix epoch | `1792843200000000000n` |
 | **`.iso`**<br><small>`zdt.toInstant()`<br>⤷ `.toString()`</small> | `string` | Standard ISO 8601 string (RFC 3339) in UTC | <small>`'2026-10-24T04:30:45`<br>`.123456789Z'`</small> |
 | **`.isValid`** | `boolean` | `true` if the underlying date-time is valid | `true` |
@@ -81,6 +81,7 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 <small>
 
 3. <span id="fn-cal">**Active Calendar (`.cal`) vs. Locale Calendar Preference (`.intl.info.calendar`)**: `.cal` returns the instance's active calendar identifier (`zdt.calendarId`), which controls arithmetic and date representation. To inspect the cultural default calendar associated with the resolved locale (e.g. `'gregory'` for `en-US`, or `'buddhist'` for `th-TH`), use `t.intl.info.calendar`.</span>
+4. <span id="fn-ts">**Configured Epoch Timestamp (`.ts`)**: `.ts` resolves its value using the configured `timeStamp` unit (defaults to `'ms'`). Only `'ms'` maps directly to native `zdt.epochMilliseconds`. When configured to `'ss'`, `'us'`, or `'ns'`, `.ts` maps to their respective epoch values (`'ss'` seconds, `'us'` microseconds, or `'ns'` `zdt.epochNanoseconds`). For an unconditional nanosecond timestamp regardless of instance configuration, use `.nano`.</span>
 
 </small>
 

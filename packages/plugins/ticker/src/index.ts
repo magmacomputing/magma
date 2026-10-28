@@ -165,7 +165,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#options: any;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
-	#cachedSignal: ReadonlySignal<Tempo> | undefined = undefined;
+	#cachedSignal: WeakRef<ReadonlySignal<Tempo>> | undefined = undefined;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
@@ -531,7 +531,11 @@ class TickerInstance implements Ticker.Descriptor {
 	}
 
 	get signal(): ReadonlySignal<Tempo> {
-		return this.#cachedSignal ??= this.toSignal();
+		const cached = this.#cachedSignal?.deref();
+		if (cached) return cached;
+		const sig = this.toSignal();
+		this.#cachedSignal = new WeakRef(sig);
+		return sig;
 	}
 
 	async next(): Promise<IteratorResult<Tempo, any>> {
