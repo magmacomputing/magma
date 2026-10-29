@@ -1,3 +1,105 @@
+# 💥 Migrating to Tempo v5.x
+
+Tempo v5.x focuses on modern ECMAScript standards alignment, streamlined API ergonomics, removal of deprecated getters, static enums, legacy format tokens, and first-class integration with TC39 Signals across the reactive plugin ecosystem.
+
+---
+
+## 🛑 Deprecation Removals & Breaking Changes in v5.0.0
+
+### 1. Static Enum Accessors (`Tempo.enums.*`)
+The top-level static enum accessors on `Tempo` have been removed in favor of the unified `Tempo.enums` namespace.
+
+* **Removed:** `Tempo.ELEMENT`, `Tempo.FORMAT`, `Tempo.NUMBER`, `Tempo.ORDINAL`, `Tempo.TIMEZONE`, `Tempo.MONTH_DAY`, `Tempo.MODE`, `Tempo.CACHE`, `Tempo.LIMIT`
+* **Replacement:** Use `Tempo.enums.<NAME>` (for example, `Tempo.enums.FORMAT`, `Tempo.enums.MODE`, `Tempo.enums.TIMEZONE`, `Tempo.enums.ELEMENT`).
+
+```typescript
+// ❌ v4.x (Deprecated)
+const formatEnum = Tempo.FORMAT;
+
+// ✅ v5.0.0
+const formatEnum = Tempo.enums.FORMAT;
+```
+
+---
+
+### 2. Static Extension Method (`Tempo.use`)
+The legacy static `Tempo.extend(...)` method has been removed.
+
+* **Removed:** `Tempo.extend(...)`
+* **Replacement:** Use `Tempo.use(...)` (or `sandbox.use(...)`).
+
+```typescript
+// ❌ v4.x (Deprecated)
+Tempo.extend(MyPlugin);
+
+// ✅ v5.0.0
+Tempo.use(MyPlugin);
+```
+
+---
+
+### 3. Instance Properties and Getters
+Several legacy and ambiguous instance getters have been removed in favor of canonical ISO / temporal properties:
+
+| Removed Getter | Canonical Replacement | Description |
+| :--- | :--- | :--- |
+| `t.eraYear` | `t.eon` | Year within era (eon / astronomical era calendar alignment). |
+| `t.ww` | `t.woy` | Week of year (ISO 8601 week number `1`..`53`). |
+| `t.day` | `t.dd` | Day of the month (`1`–`31` number). Use `t.format('{dd}')` when zero-padded text is needed. For day-of-week use `t.dow`, and for day-of-year use `t.doy`. |
+| `t.clone()` | `Tempo.from(t, t.config)` | Canonical instance cloning constructor (preserves instance-local configuration). |
+
+```typescript
+// ❌ v4.x (Deprecated)
+const week = t.ww;
+const eraY = t.eraYear;
+const dayVal = t.day;
+const copy = t.clone();
+
+// ✅ v5.0.0
+const week = t.woy;
+const eraY = t.eon;
+const dayVal = t.dd;
+const copy = Tempo.from(t, t.config);
+```
+
+---
+
+### 4. Format Tokens and Modifiers
+To reduce token ambiguity and eliminate redundant aliases, format tokens and modifier definitions have been rationalized:
+
+* **Timezone Token (`{tzd}` → `{tz}`):**
+  * The legacy `{tzd}` (timezone delimiter / descriptor) token has been removed.
+  * Use the canonical `{tz}` token instead.
+* **Composite Week-Year Tokens (`{yyww}`, `{yywy}`, `{yywoy}`):**
+  * Composite week-and-year tokens have been removed in favor of composable standard tokens.
+  * Replace `{yywoy}` or `{yyww}` with `{yow}{woy}` (or localized `{yow:locale}{woy:locale}`).
+* **Year Modifier Aliases (`:yy` and `:year`):**
+  * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
+  * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).
+* **Legacy Offset Modifiers on `{tz}`:**
+  * Legacy modifier cases (`offsetshort`, `offsetcompact`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
+  * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+
+```typescript
+// ❌ v4.x (Deprecated)
+t.format('{tzd}');
+t.format('{yywoy}');
+t.format('{year:yy}');
+
+// ✅ v5.0.0
+t.format('{tz}');
+t.format('{yow}{woy}');
+t.format('{yy}');
+```
+
+---
+
+### 5. Utility & Support Exports
+* **`Enum` export removed:** The legacy `Enum` class export from `@magmacomputing/tempo` has been removed. Use native TypeScript enums, `as const` object literals, or the `@magmacomputing/tempo/library` enumerator utilities (`enumify`).
+* **`hasOwn` helper removed:** The internal re-export `hasOwn` from support utils has been removed. Use standard ECMAScript `Object.hasOwn(target, property)`.
+
+---
+
 # ⚠️ Migrating to Tempo v4.x
 
 Tempo v4.x introduces a standardized plugin & registry architecture, strict configuration namespaces, cascading configuration inheritance, and deterministic resource disposal while excising legacy v3.x deprecated interfaces.

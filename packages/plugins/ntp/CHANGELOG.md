@@ -2,6 +2,17 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ntp` project will be documented in this file.
 
+## [1.1.0] - 2026-10-29
+
+### Added
+- **TC39 Signal Reactivity (`Tempo.ntp.signal`, `Tempo.ntp.toSignal()`)**:
+  - Added reactive signals (`Tempo.ntp.signal` and `Tempo.ntp.toSignal()`) tracking NTP-synchronized timestamps.
+  - Enhanced NTP clock signals to rebase immediately upon remote calibration updates and drift adjustments.
+
+### Fixed
+- **Proxy Method Delegation**:
+  - Added missing proxy method forwarding across the `Tempo.ntp` static namespace.
+
 ## [1.0.0] - 2026-10-02
 
 ### Added

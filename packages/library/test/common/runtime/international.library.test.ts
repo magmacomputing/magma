@@ -73,9 +73,9 @@ describe('International Library', () => {
 			expect(info.direction).toBe('ltr');
 			expect(info.numberingSystem).toBe('latn');
 			expect(info.firstDay).toBe(7); // Sunday
-			expect(info.weekInfo.firstDay).toBe(7);
 			expect(info.weekend).toEqual([6, 7]);
-			expect(info.weekInfo.weekend).toEqual([6, 7]);
+			expect(info.calendar).toBe('gregory');
+			expect(info.calendars).toContain('gregory');
 		});
 
 		it('should resolve en-GB with Monday firstDay', () => {
@@ -94,7 +94,6 @@ describe('International Library', () => {
 			const info = getLI('invalid!locale#tag');
 			expect(info.baseName).toBe('en-US');
 			expect(info.firstDay).toBe(7);
-			expect(info.locale?.baseName).toBe('en-US');
 		});
 
 		it('should memoize results returning identical references', () => {
@@ -106,11 +105,11 @@ describe('International Library', () => {
 		it('should return frozen immutable objects', () => {
 			const info = getLI('en-US');
 			expect(Object.isFrozen(info)).toBe(true);
-			expect(Object.isFrozen(info.weekInfo)).toBe(true);
 			expect(Object.isFrozen(info.weekend)).toBe(true);
 			expect(Object.isFrozen(info.hourCycles)).toBe(true);
 			expect(Object.isFrozen(info.numberingSystems)).toBe(true);
 			expect(Object.isFrozen(info.timeZones)).toBe(true);
+			expect(Object.isFrozen(info.calendars)).toBe(true);
 		});
 
 		it('should expose language on ResolvedLocaleInfo', () => {
@@ -123,11 +122,12 @@ describe('International Library', () => {
 			const withScript = getLI('zh-Hans-CN');
 			expect(withScript.baseName).toBe('zh-Hans-CN');
 			expect(withScript.language).toBe('zh');
-			expect(withScript.locale?.region).toBe('CN');
+			expect(withScript.region).toBe('CN');
 
 			const noRegion = getLI('zh-Hans');
 			expect(noRegion.baseName).toBe('zh-Hans');
-			expect(noRegion.locale?.region).toBeUndefined();
+			expect(noRegion.language).toBe('zh');
+			expect(noRegion.script).toBe('Hans');
 		});
 
 		it('should not derive region from extension subtags', () => {

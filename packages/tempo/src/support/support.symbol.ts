@@ -103,11 +103,6 @@ export const Token = looseIndex<string, symbol>()({
 	/** Tempo event */																				evt: Symbol('evt'),
 	/** Tempo period */																				per: Symbol('per'),
 	/** time zone offset or identifier */											tz: Symbol('tz'),
-	/**
-	 * time zone offset
-	 * @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `Token.tz` instead.
-	 */
-	tzd: Symbol('tzd'),
 	/** historical era */																			era: Symbol('era'),
 	/** ordinal index (1st, 2nd, 3rd, last, etc) */						nth: Symbol('nth'),
 	/** Roman month (I-XII) */																Rm: Symbol('romanMonth'),

@@ -38,7 +38,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		const sandboxPlugin = (T: any) => { (T as any).sandboxOnly = true; };
 
 		const X = Tempo.create({});
-		X.extend([sandboxPlugin]);
+		X.use([sandboxPlugin]);
 
 		// Global rt.installed should be unaffected
 		expect(getRuntime().installed.has(sandboxPlugin)).toBe(false);
@@ -51,7 +51,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		const plugin = (_T: any) => { calls++; };
 
 		const X = Tempo.create({});
-		X.extend([plugin]);
+		X.use([plugin]);
 		expect(calls).toBe(1);			// sandbox installed it
 
 		Tempo.use([plugin]);
@@ -66,7 +66,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect(calls).toBe(1);			// global installed it
 
 		const X = Tempo.create({});
-		X.extend([plugin]);
+		X.use([plugin]);
 		expect(calls).toBe(1);			// ScopedSet.has() found it in parent → skipped ✓
 	});
 
@@ -88,11 +88,11 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		const A = Tempo.create({});
 		const B = Tempo.create({});
 
-		A.extend([pluginA]);
+		A.use([pluginA]);
 		expect(callsA).toBe(1);
 		expect(callsB).toBe(0);
 
-		B.extend([pluginB]);
+		B.use([pluginB]);
 		expect(callsA).toBe(1);
 		expect(callsB).toBe(1);
 

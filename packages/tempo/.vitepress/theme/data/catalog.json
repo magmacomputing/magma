@@ -60,7 +60,7 @@
     "packageName": "@magmacomputing/tempo-plugin-ticker",
     "plan": "community",
     "status": "active",
-    "version": "2.6.1"
+    "version": "2.7.0"
   },
   {
     "id": "geo",
@@ -86,7 +86,7 @@
     "name": "Dialects Plugin",
     "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, POSIX strftime, and Oracle/SQL TO_CHAR",
     "packageName": "@magmacomputing/tempo-plugin-dialects",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "plan": "community",
     "status": "active"
   },
@@ -113,7 +113,7 @@
     "name": "Ntp Plugin",
     "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
     "packageName": "@magmacomputing/tempo-plugin-ntp",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "plan": "community",
     "status": "active"
   },

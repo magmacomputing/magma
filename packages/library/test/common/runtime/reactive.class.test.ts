@@ -534,33 +534,39 @@ describe('common/runtime/reactive.class', () => {
 	});
 
 	it('propagates getter errors in Reactive.fromSignal to stream.error', async () => {
-		// 1. Initial getter error
-		const faultySignal = () => {
-			throw new Error('Initial evaluation exploded');
-		};
-		const stream = Reactive.fromSignal(faultySignal);
-		await expect(stream.pull()).rejects.toThrow('Initial evaluation exploded');
+		const errSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+		try {
+			// 1. Initial getter error
+			const faultySignal = () => {
+				throw new Error('Initial evaluation exploded');
+			};
+			const stream = Reactive.fromSignal(faultySignal);
+			await expect(stream.pull()).rejects.toThrow('Initial evaluation exploded');
+			expect(errSpy).toHaveBeenCalledWith('Unhandled Reactive error:', expect.any(Error));
 
-		// 2. Dynamic getter error upon signal mutation
-		const num = new Signify.State(10);
-		const dynamicStream = Reactive.fromSignal(() => {
-			if (num.get() === 20) throw new Error('Dynamic evaluation exploded');
-			return num.get();
-		});
+			// 2. Dynamic getter error upon signal mutation
+			const num = new Signify.State(10);
+			const dynamicStream = Reactive.fromSignal(() => {
+				if (num.get() === 20) throw new Error('Dynamic evaluation exploded');
+				return num.get();
+			});
 
-		let dynamicError: Error | undefined;
-		dynamicStream.on('error', (err) => {
-			dynamicError = err;
-		});
+			let dynamicError: Error | undefined;
+			dynamicStream.on('error', (err) => {
+				dynamicError = err;
+			});
 
-		// Pull initial value from buffer
-		expect(await dynamicStream.pull()).toBe(10);
+			// Pull initial value from buffer
+			expect(await dynamicStream.pull()).toBe(10);
 
-		// Mutate signal to trigger error in effect callback
-		num.set(20);
-		await new Promise<void>((r) => queueMicrotask(() => r()));
-		expect(dynamicError?.message).toBe('Dynamic evaluation exploded');
-		await expect(dynamicStream.pull()).rejects.toThrow('Dynamic evaluation exploded');
+			// Mutate signal to trigger error in effect callback
+			num.set(20);
+			await new Promise<void>((r) => queueMicrotask(() => r()));
+			expect(dynamicError?.message).toBe('Dynamic evaluation exploded');
+			await expect(dynamicStream.pull()).rejects.toThrow('Dynamic evaluation exploded');
+		} finally {
+			errSpy.mockRestore();
+		}
 	});
 });
 

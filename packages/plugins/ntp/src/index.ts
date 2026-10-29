@@ -1,10 +1,10 @@
-import { definePlugin, type TempoPlugin, deepFreeze, isString, isNumber, isObject, isFunction } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, type TempoPlugin, deepFreeze, isString, isNumber, isObject, isFunction, Finalizer, Signify, type ReadonlySignal } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 import { ClockDriftEngine } from './engine.js';
-import type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter } from './types.js';
+import type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter, NtpSignalsNamespace } from './types.js';
 
 export { ClockDriftEngine };
-export type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter };
+export type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter, NtpSignalsNamespace };
 
 declare module '@magmacomputing/tempo' {
 	namespace Tempo {
@@ -188,6 +188,75 @@ export const NtpPlugin: TempoPlugin = definePlugin({
 			},
 			get isCalibrated(): boolean {
 				return getEngine().isCalibrated;
+			},
+			get signals(): NtpSignalsNamespace {
+				return getEngine().signals;
+			},
+			signal(options?: { interval?: number | string; timeZone?: string }): ReadonlySignal<Tempo> & Disposable {
+				const interval = options?.interval ?? 1;
+				const timeZone = options?.timeZone;
+				const tzOpt = isString(timeZone) ? { timeZone } : timeZone;
+				const getCurrent = () => new TempoClass(getEngine().nowMs(), tzOpt);
+				const state = new Signify.State(getCurrent());
+
+				let disposeCadence: () => void;
+				if (isFunction((TempoClass as any).ticker?.signal)) {
+					const tickerInterval = isString(interval) ? (parseIntervalMs(interval) / 1000 || 1) : interval;
+					const tickerSig = (TempoClass as any).ticker.signal({
+						interval: tickerInterval,
+						timeZone,
+					});
+					const subEffect = Signify.effect(() => {
+						tickerSig();
+						state.set(getCurrent());
+					});
+					disposeCadence = () => {
+						subEffect.dispose();
+						tickerSig.dispose?.();
+					};
+				} else {
+					const intervalMs = isNumber(interval) ? interval * 1000 : (parseIntervalMs(interval) || 1000);
+					const timer = setInterval(() => {
+						state.set(getCurrent());
+					}, intervalMs);
+					disposeCadence = () => {
+						clearInterval(timer);
+					};
+				}
+
+				// Rebase signal immediately whenever NTP calibration or offset updates
+				const calibrationWatch = Signify.effect(() => {
+					getEngine().signals.offset();
+					getEngine().signals.isCalibrated();
+					state.set(getCurrent());
+				});
+
+				const dispose = () => {
+					calibrationWatch.dispose();
+					disposeCadence();
+				};
+				const accessor = function (this: any) {
+					return state.get();
+				};
+				const proxy = new Proxy(accessor as any, {
+					get(_, prop) {
+						if (prop === 'dispose' || prop === Symbol.dispose) return dispose;
+						if (prop === 'get') return () => state.get();
+						if (prop === 'value') return state.get();
+						if (prop === 'epoch') return state.epoch;
+						if (prop === 'addConsumer') return (c: any) => state.addConsumer(c);
+						if (prop === 'removeConsumer') return (c: any) => state.removeConsumer(c);
+						if (prop === 'poll') return () => state.poll();
+						return (state as any)[prop];
+					},
+					apply(_, thisArg, argArray) {
+						return state.get();
+					}
+				});
+				Finalizer.register(proxy, () => {
+					dispose();
+				});
+				return proxy;
 			},
 			reset(): void {
 				getEngine().reset();

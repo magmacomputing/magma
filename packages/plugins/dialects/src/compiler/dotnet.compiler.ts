@@ -1,5 +1,4 @@
-import { pad, WeakCache, Enum, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { pad, WeakCache, Enum, enums, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 import type { FormatterFn, DialectOptions } from './shared.compiler.js';
 import {
 	escapeRegex,
@@ -29,8 +28,7 @@ export const DOTNET_TOKENS = [
 	'K', 'gg', 'g',
 ] as const;
 
-export type DotNetSpecifier = (typeof DOTNET_TOKENS)[number];
-
+export type DotNetSpecifier = ValueOf<typeof DOTNET_TOKENS>
 /**
  * Unescapes backslash-escaped characters within .NET quoted string literals.
  */

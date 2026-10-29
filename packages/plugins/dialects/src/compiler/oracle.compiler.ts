@@ -1,5 +1,7 @@
-import { pad, suffix, WeakCache, resolveDayOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
-import { enums, Enum } from '@magmacomputing/tempo/support';
+import {
+	pad, suffix, WeakCache, resolveDayOfYear, getIsoWeek, fromIsoWeek,
+	resolveIsoCalendarYear, resolveFractionalSeconds, Enum, enums, type ValueOf
+} from '@magmacomputing/tempo/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,
@@ -24,7 +26,7 @@ export const ORACLE_TOKENS = [
 	'D', 'W', 'Q', 'Y', 'I', 'J',
 ] as const;
 
-export type OracleToken = (typeof ORACLE_TOKENS)[number];
+export type OracleToken = ValueOf<typeof ORACLE_TOKENS>
 
 const oracleEscaped = ORACLE_TOKENS.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
 const dddIdx = oracleEscaped.indexOf('DDD');

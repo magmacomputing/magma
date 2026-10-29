@@ -119,7 +119,7 @@ export const DEFAULTS = {
 		/** display with Time */																dayTime: '{dd}-{mmm}-{yyyy} {hh}:{mi}:{ss}',
 		/** useful for stamping logs */													logStamp: '{ymd}T{hms}.{ff}',
 		/** useful for sorting display-strings */								sortTime: '{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}',
-		/** useful for sorting week order */										yearWeek: '{yw}{wy}',
+		/** useful for sorting week order */										yearWeek: '{yow}{woy}',
 		/** useful for sorting month order */										yearMonth: '{yyyy}{mm}',
 		/** useful for sorting date order */										yearMonthDay: '{ymd}',
 		/** just Date portion */																date: '{yyyy}-{mm}-{dd}',
@@ -308,7 +308,7 @@ export const REGISTRIES: Record<string, any> = {
 }
 
 /** public-reachable enums */
-export default {
+export const enums = {
 	SEASON,
 	COMPASS,
 	WEEKDAY,
@@ -332,9 +332,7 @@ export default {
 	MONTH_DAY,
 	LOCALE,
 	Enum,
-}
+};
 
-/**
- * @deprecated Deprecated in v4.7.0; to be removed in v5.0.0. Import from `@magmacomputing/tempo/library`.
- */
-export { Enum } from '#library/enumerate.library.js';
+export { Enum };
+export default enums;

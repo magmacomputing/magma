@@ -1,7 +1,7 @@
 import { toZonedDateTime, toInstant, getTemporalIds } from '#library/temporal.library.js';
 import { isDefined, isString, isZonedDateTime, isNumeric, isFunction } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
-import type { LooseUnion } from '#library/type.library.js';
+import type { LooseUnion, ValueOf } from '#library/type.library.js';
 
 import { sym, TermError, getLargestUnit, SCHEMA, Match, isTempo } from '#tempo/support';
 import { getRange, getTermRange, resolveTermShift, findTermPlugin } from '../plugin/term/term.util.js';
@@ -362,10 +362,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
 			}
 
-			const toZdt = (item: typeof rawList[number]): Temporal.ZonedDateTime =>
+			const toZdt = (item: ValueOf<typeof rawList>): Temporal.ZonedDateTime =>
 				toZdtItem(item, jump.year, tz, cal);
 
-			const toEpochNs = (item: typeof rawList[number]): bigint =>
+			const toEpochNs = (item: ValueOf<typeof rawList>): bigint =>
 				toZdt(item).epochNanoseconds as bigint;
 
 			const chronological = [...rawList].sort((a, b) => {

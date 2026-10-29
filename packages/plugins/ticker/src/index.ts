@@ -5,6 +5,7 @@ import {
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
 	isUndefined, Finalizer, Reactive, cast, logError, hasKey,
+	type ReadonlySignal,
 } from '@magmacomputing/tempo/plugin/sdk';
 
 export { isCronString };
@@ -28,6 +29,14 @@ declare module '@magmacomputing/tempo' {
 		function ticker(interval: Ticker.Interval, options: Ticker.Options): Ticker.Instance;
 		function ticker(options: Ticker.Options, callback: Ticker.Callback): Ticker.Instance;
 		function ticker(options: Ticker.Options, extraOptions: Ticker.Options): Ticker.Instance;
+
+		namespace ticker {
+			/**
+			 * Spawns an auto-ticking ReadonlySignal<Tempo> ticking at the specified interval.
+			 * Supports explicit disposal via `using clock = Tempo.ticker.signal(...)`.
+			 */
+			function signal(interval?: number | string | Ticker.Options): ReadonlySignal<Tempo> & Disposable;
+		}
 	}
 }
 
@@ -41,6 +50,8 @@ interface ActiveTickerEntry {
  * Internal weak registry for all active tickers.
  */
 const ACTIVE_TICKERS = new Set<ActiveTickerEntry>();
+const PROXY_SIGNAL = Symbol.for('Tempo.ticker.cachedSignal');
+const INSTANCE_KEY = Symbol.for('Tempo.ticker.instance');
 
 /**
  * ## Ticker
@@ -100,6 +111,9 @@ export namespace Ticker {
 		until(notifier: AbortSignal | Promise<any> | Reactive<any>): Reactive<Tempo>;
 		on(event: 'pulse' | 'catch' | 'stop', cb: (t: Tempo, stop: () => void) => void): this;
 		stop(terminalValue?: Tempo): void;
+		readonly signal: ReadonlySignal<Tempo>;
+		toSignal(): ReadonlySignal<Tempo>;
+		toSignal<D>(initialValue: D): ReadonlySignal<Tempo | D>;
 		readonly info: {
 			label: string | undefined;
 			next: Tempo;
@@ -153,6 +167,7 @@ class TickerInstance implements Ticker.Descriptor {
 	#options: any;
 	#selfRef!: WeakRef<Ticker.Instance>;
 	#activeEntry: ActiveTickerEntry | undefined = undefined;
+	#cachedSignal: ReadonlySignal<Tempo> | undefined = undefined;
 
 	constructor(TempoClass: typeof Tempo, arg1: any, arg2?: any) {
 		this.#TempoClass = TempoClass;
@@ -441,15 +456,27 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#schedId = undefined;
 		}
 
+		if (terminalValue !== undefined)
+			this.#next = terminalValue;
+
+		this.#reactive.complete(terminalValue);
+
+		const proxy = this.#selfRef?.deref();
+		if (proxy && (proxy as any)[PROXY_SIGNAL]) {
+			(proxy as any)[PROXY_SIGNAL].dispose?.();
+			delete (proxy as any)[PROXY_SIGNAL];
+		}
+		if (this.#cachedSignal) {
+			this.#cachedSignal.dispose?.();
+			this.#cachedSignal = undefined;
+		}
+
 		const stopListeners = [...this.#stopListeners];
 		this.#stopListeners.clear();
 		this.#catchListeners.clear();
 
-		this.#reactive.complete(terminalValue);
-
-		for (const l of stopListeners) {
+		for (const l of stopListeners)
 			l(this.#next, () => undefined);
-		}
 	}
 
 	get [Symbol.toStringTag](): string {
@@ -479,6 +506,58 @@ class TickerInstance implements Ticker.Descriptor {
 		const stream = this.#reactive.until(notifier);
 		this.#runBootstrap();
 		return stream;
+	}
+
+	toSignal(): ReadonlySignal<Tempo>;
+	toSignal<D>(initialValue: D): ReadonlySignal<Tempo | D>;
+	toSignal<D = undefined>(...args: [D?]): ReadonlySignal<Tempo | D> {
+		const self = this;
+		const initial = args.length > 0 ? args[0]! : (this.#next as any);
+		const sig = this.#reactive.toSignal(initial);
+		this.#runBootstrap();
+
+		let isDisposed = false;
+		let activeProxy: any = this.#selfRef?.deref();
+
+		const accessor = function (this: any) {
+			return (sig as any).apply(this, arguments);
+		};
+
+		const wrapper = new Proxy(accessor as any, {
+			get(_, prop) {
+				if (prop === INSTANCE_KEY) return activeProxy;
+				if (prop === 'disposed') return isDisposed;
+				if (prop === 'dispose' || prop === Symbol.dispose) {
+					return () => {
+						if (isDisposed) return;
+						isDisposed = true;
+						if (activeProxy && (activeProxy as any)[PROXY_SIGNAL] === wrapper)
+							delete (activeProxy as any)[PROXY_SIGNAL];
+
+						activeProxy = undefined;
+
+						if (self.#cachedSignal === wrapper)
+							self.#cachedSignal = undefined;
+						sig.dispose?.();
+					};
+				}
+				if (prop === 'get') return () => (sig as any).get();
+				return (sig as any)[prop];
+			},
+			apply(_, thisArg, argArray) {
+				return (sig as any).apply(thisArg, argArray);
+			}
+		});
+
+		return wrapper;
+	}
+
+	get signal(): ReadonlySignal<Tempo> {
+		const proxy = this.#selfRef?.deref();
+		if (proxy) return (proxy as any).signal;
+		if (!this.#cachedSignal || (this.#cachedSignal as any).disposed)
+			this.#cachedSignal = this.toSignal();
+		return this.#cachedSignal;
 	}
 
 	async next(): Promise<IteratorResult<Tempo, any>> {
@@ -543,7 +622,7 @@ class TickerInstance implements Ticker.Descriptor {
 function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.Instance {
 	const instance = new TickerInstance(TempoClass, arg1, arg2);
 	const proxy = new Proxy((() => instance.stop()) as any, {
-		get: (_, prop) => {
+		get: (target, prop) => {
 			if (prop === 'pulse') return instance.pulse.bind(instance);
 			if (prop === 'pull') return instance.pull.bind(instance);
 			if (prop === 'until') return instance.until.bind(instance);
@@ -554,6 +633,16 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 				};
 			}
 			if (prop === 'stop') return instance.stop.bind(instance);
+			if (prop === 'signal') {
+				let sig = (target as any)[PROXY_SIGNAL];
+				if (!sig || (sig as any).disposed) {
+					sig = instance.toSignal();
+					(target as any)[PROXY_SIGNAL] = sig;
+				}
+				return sig;
+			}
+			if (prop === PROXY_SIGNAL) return (target as any)[PROXY_SIGNAL];
+			if (prop === 'toSignal') return instance.toSignal.bind(instance);
 			if (prop === 'next') return instance.next.bind(instance);
 			if (prop === 'return') return instance.return.bind(instance);
 			if (prop === 'throw') return instance.throw.bind(instance);
@@ -563,11 +652,19 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 			if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
 			return (instance as any)[prop];
 		},
+		deleteProperty: (target, prop) => {
+			if (prop === PROXY_SIGNAL) {
+				delete (target as any)[PROXY_SIGNAL];
+				return true;
+			}
+			return Reflect.deleteProperty(target, prop);
+		},
 		apply: (target) => target(),
 	});
 
+	const instanceRef = new WeakRef(instance);
 	Finalizer.register(proxy, () => {
-		instance.stop();
+		instanceRef.deref()?.stop();
 	});
 
 	return instance.bootstrap(cast<Ticker.Instance>(proxy));
@@ -606,6 +703,33 @@ export const TickerPlugin = definePlugin({
 					return createTicker(cls, { ...defaultOpts, ...arg1 }, arg2);
 			}
 			return createTicker(cls, arg1, arg2);
+		};
+
+		tickerFactory.signal = function (interval?: number | string | Ticker.Options): ReadonlySignal<Tempo> & Disposable {
+			const ticker = tickerFactory(interval);
+			const sig = ticker.signal;
+			const dispose = () => {
+				ticker.stop();
+				sig.dispose?.();
+			};
+			const accessor = function (this: any) {
+				return sig();
+			};
+			const proxy = new Proxy(accessor as any, {
+				get(_, prop) {
+					if (prop === 'dispose' || prop === Symbol.dispose) return dispose;
+					if (prop === 'get') return () => sig.get();
+					return (sig as any)[prop];
+				},
+				apply(_, thisArg, argArray) {
+					return (sig as any).apply(thisArg, argArray);
+				}
+			});
+			const tickerRef = new WeakRef(ticker);
+			Finalizer.register(proxy, () => {
+				tickerRef.deref()?.stop();
+			});
+			return proxy;
 		};
 
 		attachStatics(installedClass, {

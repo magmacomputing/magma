@@ -12,12 +12,6 @@ import { getDTF, getLC } from '#library/international.library.js';
 import { getRuntime } from './support.runtime.js';
 import type * as t from '../tempo.type.js';
 
-/**
- * @internal check if an object has an own property (respects Proxy/Shadowing)
- * @deprecated Deprecated in v4.7.0; to be removed in v5.0.0. Import from `#library` or `@magmacomputing/tempo/plugin/sdk`.
- */
-export { hasOwn } from '#library/primitive.library.js';
-
 /** @internal normalize layout-order options into a clean string array */
 export function normalizeLayoutOrder(value: unknown): string[] {
 	return asArray(value)

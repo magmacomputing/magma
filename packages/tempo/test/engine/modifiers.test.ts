@@ -40,19 +40,19 @@ describe('Localized Modifiers', () => {
 		const now = new Tempo('2026-06-20T12:00:00+10:00', config);
 
 		const nextMay = new Tempo('1 May prochain', { ...config, anchor: now });
-		if (nextMay.yy !== 2027) throw new Error("nextMay.yy is " + nextMay.yy + " month: " + nextMay.mm + " day: " + nextMay.day);
+		if (nextMay.yy !== 2027) throw new Error("nextMay.yy is " + nextMay.yy + " month: " + nextMay.mm + " day: " + nextMay.dd);
 		expect(nextMay.mm).toBe(5);
-		expect(nextMay.day).toBe(1);
+		expect(nextMay.dd).toBe(1);
 		expect(nextMay.yy).toBeGreaterThan(2026);
 
 		const pastMay = new Tempo('1 May dernier', { ...config, anchor: now });
 		expect(pastMay.mm).toBe(5);
-		expect(pastMay.day).toBe(1);
+		expect(pastMay.dd).toBe(1);
 		expect(pastMay.yy).toBe(2026);
 
 		const pastAugust = new Tempo('1 August dernier', { ...config, anchor: now });
 		expect(pastAugust.mm).toBe(8);
-		expect(pastAugust.day).toBe(1);
+		expect(pastAugust.dd).toBe(1);
 		expect(pastAugust.yy).toBe(2025);
 	});
 
@@ -71,7 +71,7 @@ describe('Localized Modifiers', () => {
 
 		const futureDate = new Tempo('1 May dans la', { ...config, anchor: now });
 		expect(futureDate.mm).toBe(5);
-		expect(futureDate.day).toBe(1);
+		expect(futureDate.dd).toBe(1);
 		expect(futureDate.yy).toBeGreaterThan(2026);
 	});
 

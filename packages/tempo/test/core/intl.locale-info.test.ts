@@ -481,7 +481,7 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(sunUS.format('{woy:locale:0}')).toBe('00');
 			expect(sunUS.format('{yow:locale}')).toBe('2026');
 			expect(sunUS.format('{yow:locale:short}')).toBe('26');
-			expect(sunUS.format('{yywoy:locale}')).toBe('202601');
+			expect(sunUS.format('{yow:locale}{woy:locale}')).toBe('202601');
 
 			// Under ISO rules (en-GB, minimalDays=4), 2025-12-28 is still Week 52 of 2025
 			expect(sunUS.format('{woy:locale}', { locale: 'en-GB' })).toBe('52');
@@ -544,21 +544,24 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 		});
 	});
 
-	describe('9. Structured t.intl Namespace (info, locale, and backward compatibility)', () => {
+	describe('9. Structured t.intl Namespace (info and locale)', () => {
 		it('exposes t.intl.info cultural metadata', () => {
 			const t = new Tempo('2026-09-16', { locale: 'en-US' });
 			expect(t.intl.info.firstDay).toBe(7);
 			expect(t.intl.info.minimalDays).toBe(1);
-			expect(t.intl.minimalDays).toBe(1);
 			expect(t.intl.info.weekend).toEqual([6, 7]);
 			expect(t.intl.info.direction).toBe('ltr');
 			expect(t.intl.info.region).toBe('US');
 			expect(t.intl.info.baseName).toBe('en-US');
+			expect(t.intl.info.calendar).toBe('gregory');
+			expect(t.intl.info.calendars).toContain('gregory');
+			expect(Object.isFrozen(t.intl.info.calendars)).toBe(true);
 
 			const tGB = new Tempo('2026-09-16', { locale: 'en-GB' });
 			expect(tGB.intl.info.firstDay).toBe(1);
 			expect(tGB.intl.info.minimalDays).toBe(4);
-			expect(tGB.intl.minimalDays).toBe(4);
+			expect(tGB.intl.info.calendar).toBe('gregory');
+			expect(tGB.intl.info.calendars).toContain('gregory');
 		});
 
 		it('exposes t.intl.locale native Intl.Locale instance', () => {
@@ -573,6 +576,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 				Tempo.init({ locale: 'fr-FR' });
 				expect(Tempo.intl.info.firstDay).toBe(1);
 				expect(Tempo.intl.info.direction).toBe('ltr');
+				expect(Tempo.intl.info.calendar).toBe('gregory');
+				expect(Tempo.intl.info.calendars).toContain('gregory');
 				expect(Tempo.intl.locale?.baseName).toBe('fr-FR');
 			} finally {
 				Tempo.init();

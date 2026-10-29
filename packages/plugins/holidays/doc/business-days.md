@@ -13,7 +13,7 @@ The **Regional Holidays Plugin** extends Tempo with robust business day operatio
 ## Determining Working Business Days
 
 A date is considered a **business day** if:
-1. It does not fall on a weekend day (according to the cultural locale weekend definition in `tempo.intl.weekend`, defaulting to Saturday/Sunday).
+1. It does not fall on a weekend day (according to the cultural locale weekend definition in `tempo.intl.info.weekend`, defaulting to Saturday/Sunday).
 2. It does not fall on a recognized public holiday in the active country/region.
 3. It does not match any date in `options.customHolidays`.
 
@@ -136,7 +136,7 @@ const hours = opened.holidays.workingHoursUntil(resolved, {
 
 Different countries have different working weeks. For example, in Saudi Arabia (`ar-SA`) and other Middle Eastern jurisdictions, the weekend is Friday and Saturday, and Sunday is a working business day.
 
-Tempo automatically respects the active locale's weekend definition via `tempo.intl.weekend`:
+Tempo automatically respects the active locale's weekend definition via `tempo.intl.info.weekend`:
 
 ```typescript
 // Saudi Arabia (ar-SA)

@@ -6,14 +6,14 @@ describe('Tempo: Month-Day Parsing (Ambiguity Support)', () => {
 		const t = new Tempo('04/01/2023', { locale: 'en-US', timeZone: 'America/New_York' });
 		expect(t.parse.monthDay.active, 'MDY should be active for America/New_York').toBe(true);
 		expect(t.mm, 'Month should be April (4)').toBe(4);
-		expect(t.day, 'Day should be 1st').toBe(1);
+		expect(t.dd, 'Day should be 1st').toBe(1);
 	});
 
 	it('should auto-detect DMY order for en-GB locale', () => {
 		const t = new Tempo('04/01/2023', { locale: 'en-GB', timeZone: 'Europe/London' });
 		expect(t.parse.monthDay.active, 'MDY should NOT be active for Europe/London').toBe(false);
 		expect(t.mm, 'Month should be January (1)').toBe(1);
-		expect(t.day, 'Day should be 4th').toBe(4);
+		expect(t.dd, 'Day should be 4th').toBe(4);
 	});
 
 	it('should allow manual override to force MDY parsing (active: true)', () => {

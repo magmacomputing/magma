@@ -271,7 +271,7 @@ describe('@magmacomputing/tempo-plugin-holidays', () => {
 			expect(regularDay.holidays.isHoliday({ customHolidays: ['2026-05-13'] })).toBe(true);
 		});
 
-		it('respects cultural locale weekend days via tempo.intl.weekend', () => {
+		it('respects cultural locale weekend days via tempo.intl.info.weekend', () => {
 			// In Saudi Arabia (ar-SA), weekend is Friday (5) and Saturday (6); Sunday (7) is a business day
 			// 2026-05-15 is Friday (dow = 5)
 			// 2026-05-17 is Sunday (dow = 7)

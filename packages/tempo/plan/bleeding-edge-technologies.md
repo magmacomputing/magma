@@ -96,20 +96,20 @@ Tempo already leverages several cutting-edge platform primitives:
 
 ---
 
-### E. TC39 Signals Integration (`Tempo.signal()`)
-**Target**: *Dedicated Plugin (`@magmacomputing/tempo-plugin-signals`)*
+### E. TC39 Signals Integration (`Tempo.ticker.signal()`, `ticker.signal`, `Tempo.ntp.signals`)
+**Target**: *Native Core Utility (`#library/signify.library.js`), `@magmacomputing/tempo-plugin-ticker`, `@magmacomputing/tempo-plugin-ntp`*  
+**Status**: **Delivered (v5.0.0 via Signify)**
 
-* **The Problem**: Modern UI frameworks (Preact, Solid, Vue, Angular, Svelte) are converging on TC39 Signals for fine-grained reactivity.
+* **The Problem**: Modern UI frameworks (Preact, Solid, Vue, Angular, Svelte runes) are converging on TC39 Signals for fine-grained synchronous reactivity, but developers previously had to wire external signal libraries to async streams manually.
 * **The Solution**:
-  - Provide reactive time signals backed by `WeakCache`:
-    ```typescript
-    const currentSecond = Tempo.signal({ interval: 1 });
-    // Components reading currentSecond.value automatically re-render on pulse
-    ```
+  - Implemented memory-safe, zero-dependency, frozen TC39 Signals proposal in `#library/signify.library.ts` (`Signify.State`, `Signify.computed`, `Signify.effect`, `Watcher`).
+  - Integrated native signals directly into `Reactive<T>` via `.signal` and `.toSignal()`.
+  - Exposed `ticker.signal`, `ticker.toSignal()`, and `Tempo.ticker.signal()` in `@magmacomputing/tempo-plugin-ticker`.
+  - Exposed `Tempo.ntp.signals` and `Tempo.ntp.signal()` in `@magmacomputing/tempo-plugin-ntp`.
 * **Cross-Platform Caveats & Ethos Alignment**:
-  - **Early TC39 Stage 1**: Specification is evolving with no native engine implementation in V8, SpiderMonkey, or JSC. Polyfills add non-trivial bundle weight.
-  - **Framework Fragmentation**: Frameworks use incompatible reactive graph schedulers.
-  - **Architectural Fit**: **Hold off**. Tempo delivers universal, zero-dependency async reactivity across all runtimes via `Reactive<T>` (`Symbol.asyncIterator`, `Symbol.dispose`, `.on()`, `.pull()`, `.cast()`, and `.until()`) in `#library` and the Plugin SDK. Re-evaluate TC39 Signals when the specification reaches Stage 3.
+  - Adheres 100% to the TC39 Signals contract while eliminating external polyfill bundle bloat.
+  - Zero-cost lazy evaluation ensures unused signal accessors incur zero allocations.
+  - Automatic memory cleanup via `WeakRef` and `Finalizer` prevents listener leaks across component unmounts.
 
 ---
 

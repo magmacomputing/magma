@@ -59,7 +59,7 @@ For a high-level overview across the most common date-formatting paradigms, the 
 | **Microseconds** | 6-digit fractional seconds (`123456`) | `SSSSSS` | `SSSSSS`* | `%f`* | `ffffff` | `{ff:6}` |
 | **Timezone Offset** | Fixed offset with colon (`+08:00`) | `ZZZZZ` / `XXX` | `Z` | N/A | `zzz` | `{tz:offset}` |
 | **Timezone (Kind-based)** | Dynamic offset or Z based on `DateTime.Kind` | N/A | N/A | N/A | `K`* | `{tz:offset:utc}` |
-| **Compact Offset** | Portable offset without colon (`+0800`) | `ZZ` | `ZZ` | `%z` | N/A | `{tz:offsetcompact}` |
+| **Compact Offset** | Portable offset without colon (`+0800`) | `ZZ` | `ZZ` | `%z` | N/A | `{tz:offset:compact}` |
 | **Timezone Abbreviation** | Localized abbreviation (`CET`) | `z` | `z` | `%Z` | N/A | `{tz:short}` |
 | **Unix Epoch** | Seconds since Unix epoch | N/A | `X` | `%s`* | N/A | `{ts}` |
 

@@ -4,7 +4,7 @@ import { deepMerge } from '#library/object.library.js';
 import { suffix, toRoman } from '#library/number.library.js';
 import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
-import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
+import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
@@ -296,7 +296,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	const result = template.replace(RE_FORMAT_BRACES, (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
 		const normMods = modifiers.map(m => m.toLowerCase());
-		if (token === 'tzd') token = 'tz';											// @deprecated, will remove in v5.0.0
 		let res: any;
 
 		switch (token) {
@@ -328,13 +327,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'wom': {
 				const w = Math.ceil(zdt.day / 7);
 				res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
-				break;
-			}
-			case 'yyww': case 'yywy': case 'yywoy': {
-				const { weekOfYear, yearOfWeek } = normMods.includes('locale')
-					? getLocaleWeekOfYear(zdt, li)
-					: getISOWeekOfYear(zdt);
-				res = pad(yearOfWeek, 4) + pad(weekOfYear);
 				break;
 			}
 			case 'era': {
@@ -465,7 +457,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dmy':
 			case 'mdy':
 			case 'ymd': {
-				const isShort = normMods.includes('short') || normMods.includes('yy') || normMods.includes('year'); // :yy & :year @deprecated, will remove in v5.0.0
+				const isShort = normMods.includes('short');
 				const y = pad(isShort ? zdt.year % 100 : zdt.year, isShort ? 2 : 4);
 				const m = pad(zdt.month);
 				const d = pad(zdt.day);
@@ -532,7 +524,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						: (termObj ?? `{${token}}`);
 				} else if (token.includes('.')) {
 					if (token.startsWith('intl.')) {
-						res = resolveNamespaceToken({ intl: { ...li, info: li, locale: li.locale } }, token);
+						res = resolveNamespaceToken({ intl: { ...li, info: li, locale: getLC(canonicalLocales(config?.locale)[0]) } }, token);
 					} else if (isTempo(obj)) {
 						res = resolveNamespaceToken(obj, token);
 					} else {
@@ -656,8 +648,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'longgeneric': {
 					const modKey = mod.toLowerCase();
 					if (token === 'tz') {
-						if (normMods.includes('offset') || normMods.includes('offsetcompact')) {
-							// Handled by case 'offset' / 'offsetcompact'
+						if (normMods.includes('offset')) {
+							// Handled by case 'offset'
 						} else {
 							const styleMap: Record<string, any> = { short: 'short', long: 'long', shortoffset: 'shortOffset', longoffset: 'longOffset', shortgeneric: 'shortGeneric', longgeneric: 'longGeneric' };
 							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: styleMap[modKey] }).formatToParts(zdt.epochMilliseconds);
@@ -675,10 +667,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					}
 					break;
 				}
-				case 'offset':
-				case 'offsetcompact': {
+				case 'offset': {
 					if (token === 'tz') {
-						const sep = (mod.toLowerCase() === 'offsetcompact' || normMods.includes('compact')) ? '' : ':';
+						const sep = normMods.includes('compact') ? '' : ':';
 						const isUtc = zdt.offset === '+00:00' || zdt.offset === '-00:00' || zdt.offset === 'Z' || zdt.offsetNanoseconds === 0;
 						const sign = zdt.offset.startsWith('-') ? '-' : '+';
 						const cleanOffset = (zdt.offset.startsWith('+') || zdt.offset.startsWith('-'))
@@ -707,35 +698,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					break;
 				}
 				case 'compact':
-					if (token !== 'tz' || (!normMods.includes('offset') && !normMods.includes('offsetcompact')))
+					if (token !== 'tz' || !normMods.includes('offset'))
 						res = String(res).replace(RE_COLON, '');
-					break;
-				case 'offsetshort': // @deprecated, will remove in v5.0.0
-					if (token === 'tz') res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
-					break;
-				case 'z': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:short}, {tz:offset}, etc.
-					if (token === 'tz') {
-						if (!normMods.includes('offset') && !normMods.includes('offsetcompact'))
-							res = zdt.offset.endsWith(':00') ? zdt.offset.slice(0, -3) : zdt.offset;
-					}
-					break;
-				case 'zz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:offset}
-					if (token === 'tz') res = zdt.offset;
-					break;
-				case 'zzz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:offsetcompact}
-					if (token === 'tz') res = zdt.offset.replace(':', '');
-					break;
-				case 'zzzz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:short}
-					if (token === 'tz') {
-						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'short' }).formatToParts(zdt.epochMilliseconds);
-						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
-					}
-					break;
-				case 'zzzzz': // @deprecated, will remove in v5.0.0; use Tempo Dialects (LDML / Moment / Strftime) or canonical {tz:long}
-					if (token === 'tz') {
-						const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, timeZoneName: 'long' }).formatToParts(zdt.epochMilliseconds);
-						res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
-					}
 					break;
 				case 'space': {
 					if (!normMods.some(m => RE_INTEGER.test(m) && m !== '0')) {

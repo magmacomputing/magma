@@ -89,26 +89,24 @@ When building multi-timezone clocks or financial dashboards, **never instantiate
 
 Instead, use a single **Master Ticker** to drive all derivative clocks.
 
-### A. Reactive UI Signals (Preact, Solid, Vue)
+### A. Reactive TC39 Signals (Signify, Vue, Solid, Preact, Svelte 5)
+
+With Tempo v5 and `Signify`, tickers natively expose fine-grained TC39 `ReadonlySignal<Tempo>` without requiring third-party signal libraries:
 
 ```typescript
-import { signal, computed } from '@preact/signals-core';
 import { Tempo } from '@magmacomputing/tempo';
+import { Signify } from '@magmacomputing/tempo/library';
 import '@magmacomputing/tempo-plugin-ticker/install';
 
-// 1. Single Master Source of Truth
-const masterTime = signal(new Tempo());
+// 1. Single Master Source of Truth (via native ticker.signal or Tempo.ticker.signal)
+using masterTicker = Tempo.ticker({ seconds: 1 });
+const masterClock = masterTicker.signal;
 
-// 2. Drive the master clock from a master ticker instance (persisted in app scope)
-const masterTicker = Tempo.ticker(1, (t) => {
-  masterTime.value = t;
-});
-
-// 3. Derived multi-timezone views update simultaneously with zero drift
-const sydneyTime = computed(() => masterTime.value.set({ timeZone: 'Australia/Sydney' }));
-const londonTime = computed(() => masterTime.value.set({ timeZone: 'Europe/London' }));
-const nyTime     = computed(() => masterTime.value.set({ timeZone: 'America/New_York' }));
-const tokyoTime  = computed(() => masterTime.value.set({ timeZone: 'Asia/Tokyo' }));
+// 2. Derived multi-timezone views update simultaneously with zero drift
+const sydneyTime = Signify.computed(() => masterClock.value.set({ timeZone: 'Australia/Sydney' }));
+const londonTime = Signify.computed(() => masterClock.value.set({ timeZone: 'Europe/London' }));
+const nyTime     = Signify.computed(() => masterClock.value.set({ timeZone: 'America/New_York' }));
+const tokyoTime  = Signify.computed(() => masterClock.value.set({ timeZone: 'Asia/Tokyo' }));
 
 // Sydney, London, New York, and Tokyo will tick on the exact same millisecond
 ```

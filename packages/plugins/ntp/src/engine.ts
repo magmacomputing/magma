@@ -1,5 +1,5 @@
-import { isFunction, Finalizer } from '@magmacomputing/tempo/plugin/sdk';
-import type { ClockDriftState, NtpSyncOptions } from './types.js';
+import { isFunction, Finalizer, Signify } from '@magmacomputing/tempo/plugin/sdk';
+import type { ClockDriftState, NtpSyncOptions, NtpSignalsNamespace } from './types.js';
 
 const RE_SERVER_TIMING = /(?:clock|server_time|epoch)=(\d+(?:\.\d+)?)/i;
 
@@ -23,6 +23,15 @@ export class ClockDriftEngine {
 	#isSyncing = false;
 	#baselineNtpMs = 0;
 	#baselinePerfNow = 0;
+	#offsetSignal: Signify.State<number> = new Signify.State(0);
+	#isCalibratedSignal: Signify.State<boolean> = new Signify.State(false);
+	#driftSignal: Signify.State<ClockDriftState> = new Signify.State({
+		offsetMs: 0,
+		uncertaintyMs: 0,
+		lastSyncedAt: 0,
+		sampleCount: 0,
+	});
+	#cachedSignalsNamespace?: NtpSignalsNamespace;
 
 	constructor(options: NtpSyncOptions = {}) {
 		this.#options = {
@@ -61,6 +70,17 @@ export class ClockDriftEngine {
 	}
 
 	/**
+	 * Returns the reactive signals namespace for drift, offset, and calibration state.
+	 */
+	get signals(): NtpSignalsNamespace {
+		return this.#cachedSignalsNamespace ??= Object.freeze({
+			offset: Signify.computed(() => this.#offsetSignal.get()),
+			isCalibrated: Signify.computed(() => this.#isCalibratedSignal.get()),
+			drift: Signify.computed(() => this.#driftSignal.get()),
+		});
+	}
+
+	/**
 	 * Calculates the current calibrated epoch time in milliseconds.
 	 */
 	nowMs(): number {
@@ -81,6 +101,9 @@ export class ClockDriftEngine {
 			lastSyncedAt: 0,
 			sampleCount: 0,
 		};
+		this.#offsetSignal.set(0);
+		this.#isCalibratedSignal.set(false);
+		this.#driftSignal.set(this.drift);
 	}
 
 	/**
@@ -189,6 +212,9 @@ export class ClockDriftEngine {
 
 		this.#baselineNtpMs = (localBefore + rttMs) + finalOffset;
 		this.#baselinePerfNow = isFunction(globalThis.performance?.now) ? performance.now() : 0;
+		this.#offsetSignal.set(this.#state.offsetMs);
+		this.#isCalibratedSignal.set(true);
+		this.#driftSignal.set(this.drift);
 	}
 
 	/**

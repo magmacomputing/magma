@@ -5,8 +5,7 @@
  * These exports are primarily consumed by core modules or advanced Plugin API integrations.
  */
 export {
-	default as enums,
-	Enum,
+	enums,
 	STATE,
 	DEFAULTS,
 	REGISTRIES,
@@ -41,7 +40,7 @@ export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, 
 export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
 export { getRuntime, resetRuntime, TempoRuntime } from './support.runtime.js';
 export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './support.default.js';
-export { SCHEMA, getLargestUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo, hasOwn, hasNativeFormatBraces, MOMENT_DIALECTS, LDML_DIALECTS, raise } from './support.util.js';
+export { SCHEMA, getLargestUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo, hasNativeFormatBraces, MOMENT_DIALECTS, LDML_DIALECTS, raise } from './support.util.js';
 export { setPatterns } from '../engine/engine.pattern.js';
 export { init, extendState } from './support.init.js';
 export { TempoError } from './support.error.js';

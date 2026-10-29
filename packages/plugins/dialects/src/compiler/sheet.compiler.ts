@@ -1,5 +1,4 @@
-import { pad, WeakCache, Enum, resolveTwoDigitYear, resolveFractionalSeconds } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { pad, WeakCache, Enum, enums, resolveTwoDigitYear, resolveFractionalSeconds, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 import type { FormatterFn, DialectOptions } from './shared.compiler.js';
 import {
 	escapeRegex,
@@ -26,7 +25,7 @@ export const SHEET_TOKENS = [
 	'[h]', '[m]', '[s]',
 ] as const;
 
-export type SheetSpecifier = (typeof SHEET_TOKENS)[number];
+export type SheetSpecifier = ValueOf<typeof SHEET_TOKENS>
 
 const RE_SHEET_TOKEN = /"([^"]*)"|\\(.)|_[^\s]|[*][^\s]|\[(?:red|green|blue|yellow|magenta|cyan|white|black)\]|(\[(?:h+|m+|s+)\]|\.000|\.00|\.0|am\/pm|a\/p|yyyy|yy|mmmmm|mmmm|mmm|mm|m|dddd|ddd|dd|d|hh|h|ss|s)/gi;
 

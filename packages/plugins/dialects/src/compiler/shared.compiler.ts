@@ -1,9 +1,9 @@
 import {
 	Enum,
+	enums,
 	isNumber,
 	getIsoWeek,
-} from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+} from '@magmacomputing/tempo/plugin/sdk';
 
 export type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 

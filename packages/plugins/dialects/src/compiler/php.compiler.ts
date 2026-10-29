@@ -1,5 +1,4 @@
-import { WeakCache, suffix, Enum, getISOWeekOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveTwoDigitYear, resolveDayOfYear } from '@magmacomputing/tempo/library';
-import { enums } from '@magmacomputing/tempo/support';
+import { WeakCache, suffix, Enum, enums, getISOWeekOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveTwoDigitYear, resolveDayOfYear, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,
@@ -27,7 +26,7 @@ export const PHP_TOKENS = [
 	'c', 'r',
 ] as const;
 
-export type PhpToken = (typeof PHP_TOKENS)[number];
+export type PhpToken = ValueOf<typeof PHP_TOKENS>
 
 /**
  * Compiles a PHP date format mask into a high-performance formatter function.

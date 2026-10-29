@@ -1,3 +1,4 @@
+import { ValueOf } from '@magmacomputing/tempo/plugin/plugin.sdk';
 import {
 	SolarOptions,
 	SolarTwilightWindow,
@@ -20,6 +21,7 @@ export const SOLAR_PHASE_STATES = Object.freeze([
 	'civil-twilight',
 	'daylight'
 ] as const);
+type SOLAR_PHASE_STATES = ValueOf<typeof SOLAR_PHASE_STATES>
 
 export type SolarPhaseName =
 	| 'Daylight'
@@ -29,7 +31,7 @@ export type SolarPhaseName =
 	| 'Astronomical Twilight';
 
 /** Maps solar phase state keys to their human-readable display names */
-export const SOLAR_PHASE_NAMES: Record<typeof SOLAR_PHASE_STATES[number], SolarPhaseName> = Object.freeze({
+export const SOLAR_PHASE_NAMES: Record<SOLAR_PHASE_STATES, SolarPhaseName> = Object.freeze({
 	'daylight': 'Daylight',
 	'night': 'Night',
 	'civil-twilight': 'Civil Twilight',

@@ -8,7 +8,7 @@
  */
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject, ValueOf } from '#library/type.library.js';
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
 import type { WeakCache } from '#library/weakcache.class.js';
@@ -167,7 +167,7 @@ export type SetFields = {
 } & {
 	[K in 'year' | 'month' | 'week' | 'isoWeek' | 'isoweek' | 'isoYear' | 'isoyear' | 'yw' | 'yow' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond']?: number | Mutate | (string & {});
 }
-export type SlickKey = SLICK_KEYS[number];
+export type SlickKey = ValueOf<SLICK_KEYS>;
 export type SlickOffset = { [K in SlickKey]?: string };
 
 export type MutateShorthand = {
@@ -181,8 +181,6 @@ export type MutateShorthand = {
 	/** @internal */
 	wy?: LooseUnion<wy | Mutate>;
 	woy?: LooseUnion<woy | Mutate>;
-	/** @deprecated Use `woy` instead. */
-	ww?: LooseUnion<wy | Mutate>;
 	isoWeek?: LooseUnion<number | Mutate>;
 	isoweek?: LooseUnion<number | Mutate>;
 	dd?: LooseUnion<dd | Mutate>;
@@ -217,8 +215,6 @@ export type ns = IntRange<0, 999>
 export type woy = IntRange<1, 53>
 /** @internal alias for `woy` */
 export type wy = woy;
-/** @deprecated Use `woy` instead. */
-export type ww = woy;
 export type wkd = IntRange<1, 7>
 
 export type Duration = NonOptional<Temporal.DurationLikeObject> & Record<"iso", string> & Record<"sign", number> & Record<"blank", boolean> & Record<"unit", string | undefined> & {
@@ -249,20 +245,8 @@ export type FormatRegistry = enums.FormatEnum;
 export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
 	yyyy: true; yy: true; yow: true;
-	/** @internal */
-	yw: true;
 	// ── week-of-year ─────────────────────────────────
 	woy: true;
-	/** @deprecated Easily composed via `{yow}{woy}`. To be removed in v5.0.0. */
-	yywoy: true;
-	/** @internal */
-	wy: true;
-	/** @internal */
-	yywy: true;
-	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `woy` instead. */
-	ww: true;
-	/** @deprecated Deprecated in v4.3.0; to be removed in v5.0.0. Use `{yow}{woy}` instead. */
-	yyww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
 	// ── month ─────────────────────────────────────────
@@ -280,8 +264,6 @@ export interface TempoFormatTokens {
 	ts: true; nano: true; tz: true; cal: true;
 	// ── specialized tokens & counters ─────────────────
 	cen: true; century: true; dim: true; jj: true; julian: true; wom: true;
-	/** @deprecated Deprecated in v4.2.0; to be removed in v5.0.0. Use `tz` instead. */
-	tzd: true;
 }
 
 /** All statically-known base token names (derived from TempoFormatTokens). */

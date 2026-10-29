@@ -202,8 +202,8 @@ describe('Dialect Export', () => {
 		expect(resPhpUnpaddedIso.unsupported).toContain('{woy:raw}');
 
 		// .NET unsupported compact offset
-		const resDotNetOffsetCompact = Tempo.dialects.export('{tz:offsetcompact}', 'dotnet');
-		expect(resDotNetOffsetCompact.unsupported).toContain('{tz:offsetcompact}');
+		const resDotNetOffsetCompact = Tempo.dialects.export('{tz:offset:compact}', 'dotnet');
+		expect(resDotNetOffsetCompact.unsupported).toContain('{tz:offset:compact}');
 	});
 
 	it('works seamlessly from instance namespace t.dialects.export', () => {
@@ -226,17 +226,17 @@ describe('Dialect Export', () => {
 		// Also verify alias tz:offset:min
 		expect(Tempo.dialects.export('{tz:offset:min}', 'oracle').pattern).toBe('TZM');
 
-		const resGo = Tempo.dialects.export('{tz:offset:utc} {tz:offsetcompact:utc} {tz:offset:ss:utc} {tz:offsetcompact:ss:utc} {tz:offset:ss} {tz:offsetcompact:ss} {tz:offset:hh}', 'go');
+		const resGo = Tempo.dialects.export('{tz:offset:utc} {tz:offset:compact:utc} {tz:offset:ss:utc} {tz:offset:compact:ss:utc} {tz:offset:ss} {tz:offset:compact:ss} {tz:offset:hh}', 'go');
 		expect(resGo.pattern).toBe('Z07:00 Z0700 Z07:00:00 Z070000 -07:00:00 -070000 -07');
 		expect(resGo.unsupported).toHaveLength(0);
 
 		// Also verify alias :z
-		const resGoAlias = Tempo.dialects.export('{tz:offset:z} {tz:offsetcompact:z} {tz:offset:ss:z} {tz:offsetcompact:ss:z}', 'go');
+		const resGoAlias = Tempo.dialects.export('{tz:offset:z} {tz:offset:compact:z} {tz:offset:ss:z} {tz:offset:compact:ss:z}', 'go');
 		expect(resGoAlias.pattern).toBe('Z07:00 Z0700 Z07:00:00 Z070000');
 		expect(resGoAlias.unsupported).toHaveLength(0);
 
 		// Also verify aliases :sec
-		expect(Tempo.dialects.export('{tz:offset:sec:utc} {tz:offset:sec:z} {tz:offsetcompact:sec}', 'go').pattern).toBe('Z07:00:00 Z07:00:00 -070000');
+		expect(Tempo.dialects.export('{tz:offset:sec:utc} {tz:offset:sec:z} {tz:offset:compact:sec}', 'go').pattern).toBe('Z07:00:00 Z07:00:00 -070000');
 	});
 
 	it('exports Phase 4 specialized and scoped tokens to target dialects', () => {

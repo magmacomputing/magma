@@ -1,0 +1,103 @@
+# Tempo: Immutable Date-Time Engine & AI Syntax Rules (v4.7.0)
+
+> Tempo (v4.7.0) is an immutable TypeScript date-time engine built around the ECMAScript Temporal API. It provides type-safe parsing, formatting, relative time arithmetic, and extensible layout matching across Browser and Node.js environments.
+
+## Core Architectural Rules & Philosophy
+- **Temporal Engine**: Tempo uses native `Temporal` in modern runtimes or `@js-temporal/polyfill`. Never instantiate legacy JavaScript `Date`.
+- **Strict Immutability**: `Tempo` instances are completely frozen (`Object.freeze`). All mutating operations (`add`, `subtract`, `set`) return a new `Tempo` instance.
+- **Constructor & Static Factory**: Instantiation and string parsing use `new Tempo(...)` or static `Tempo.from(...)`.
+- **Live Getters**: Core property accessors use short layout tokens: `.yy` (year), `.mm` (month), `.dd` or `.day` (day of month), `.hh` (hour), `.mi` (minute), `.ss` (second), `.ms` (millisecond), `.us` (microsecond), `.ns` (nanosecond), `.dow` (day of week 1-7), `.doy` (day of year 1-366), `.wy` (week of year), `.tz` (timeZone ID), `.cal` (calendar ID), `.ts` (timestamp ms), `.iso` (ISO 8601 UTC string), `.isValid`. *(Note: Long getters like `.year`, `.month`, `.hour`, `.minute`, `.second` do not exist directly on Tempo instances).*
+- **Configuration & Plugins**: System options and plugin registration are configured via `Tempo.init({ timeZone: 'UTC', monthDay: true, plugins: [Plugin], registry: { layouts: { ... }, formats: { ... }, numbers: { ... } } })`. Cascading configuration is inherited via `extends: 'https://...'`. Core functionality can also be extended dynamically via `Tempo.use(Plugin)`.
+
+## Formatting & Parsing Tokens
+| Token | Description | Sample Output |
+| :--- | :--- | :--- |
+| `{yyyy}` | 4-digit Year | `2026` |
+| `{yy}` | 2-digit Year | `26` |
+| `{mon}` | Full Month Name | `August` |
+| `{mmm}` | Short / Abbreviated Month Name | `Aug` |
+| `{mm}` | Zero-padded Month number (01-12) | `08` |
+| `{dd}` | Zero-padded Day of month (01-31) | `04` |
+| `{wkd}` | Full Weekday Name | `Tuesday` |
+| `{www}` | Short / Abbreviated Weekday Name | `Tue` |
+| `{dow}` | ISO Day of Week (1=Monday .. 7=Sunday) | `2` |
+| `{doy}` | Day of year (1-366) | `216` |
+| `{hh}` | Hour (00-24) | `15` |
+| `{mi}` | Minute (00-59) | `30` |
+| `{ss}` | Second (00-59) | `00` |
+| `{tz}` | Time zone offset / identifier | `Z`, `+10:00`, `Australia/Sydney` |
+| `{yw}` | ISO Week-Year number | `2026` |
+| `{wy}` | Zero-padded ISO Week of Year (01-53) | `32` |
+| `{unt}` | Time unit keyword | `day`, `month`, `year` |
+| `{*}` | Wildcard placeholder in format masks | Matches any arbitrary substring |
+
+## Key Module Links
+- [Full Documentation Concatenation](/llms-full.txt): Complete raw markdown documentation for RAG ingestion.
+- [AI Plugin Capabilities](https://github.com/magmacomputing/magma/tree/main/packages/plugins/ai): Natural language parsing (`parseAI`), slot scheduling (`scheduleAI`), and recurrence rule resolution (`recurrenceAI`).
+- [Dialects Plugin](https://github.com/magmacomputing/magma/tree/main/packages/plugins/dialects): Interoperability with Unicode LDML / Luxon, POSIX strftime, and Moment.js format masks, plus migration helper via `Tempo.dialects.explain()`.
+- [Layout Patterns & Regex Snippets](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.layout.md): Guide to writing regex layouts and snippets.
+- [Plugin Development](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/3-extending-tempo/tempo.plugin.md): Rules for extending Tempo via plugins.
+- [Utility Library](https://github.com/magmacomputing/magma/tree/main/packages/tempo/doc/6-utility-library/tempo.library.md): Type detection, serialization (`stringify`/`objectify`), reactive streams (`Reactive`), and deferred promises (`Pledge`).
+
+## Common Code Snippets & Patterns
+
+### 1. Basic Instantiation & Formatting
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// Create from current instant or ISO 8601 string
+const t = new Tempo('2026-08-04T15:30:00Z');
+
+// Format using layout tokens
+t.format('{mon} {dd}, {yyyy}'); // "August 04, 2026"
+
+// Immutably manipulate date
+const nextWeek = t.add({ days: 7 });
+```
+
+### 2. Relative Shorthand & Arithmetic
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// Instantiation with relative expressions or durations
+const t1 = new Tempo('next Friday');
+const t2 = new Tempo('in 3 days');
+
+// Immutable boundary & arithmetic helpers via .set()
+const startOfMonth = new Tempo().set({ month: 'start' });
+const endOfYear = new Tempo().set({ year: 'end' });
+const inTwoHours = new Tempo().add({ hours: 2 });
+```
+
+### 3. Instance Options (Timezone & Locale)
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// ISO 8601 strings parse directly via constructor
+const tIso = new Tempo('2026-08-04T15:30:00+10:00');
+
+// Pass instance options as the second parameter
+const tSydney = new Tempo('2026-08-04T15:30:00', { timeZone: 'Australia/Sydney' });
+```
+
+### 4. System Initialization & Month-Day / Custom Layout Configuration
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
+// 1. Configure US Month-First Parsing for ambiguous slash dates ('08/04/2026' -> August 4th)
+Tempo.init({
+  timeZone: 'UTC',
+  monthDay: true // or locale: 'en-US'
+});
+const usDate = new Tempo('08/04/2026'); // Month: 8 (August), Day: 4
+
+// 2. Register custom layout patterns for non-standard formats via registry (escape regex meta-characters as needed, e.g. '\\*')
+Tempo.init({
+  registry: {
+    layouts: {
+      star_date: '{mm}\\*{dd}\\*{yy}'
+    }
+  }
+});
+const customDate = new Tempo('08*04*2026'); // Automatically matched against star_date layout
+```

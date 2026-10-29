@@ -1,6 +1,6 @@
 {
   "name": "@magmacomputing/tempo-plugin-ntp",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,14 +29,14 @@
     "prepublishOnly": "tempo-cli prepublish"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.5.0 || ^5.0.0"
+    "@magmacomputing/tempo": "^5.0.0"
   },
   "tempo": {
     "vendorVariantId": "tempo-plugin-ntp",
     "plan": "community"
   },
   "devDependencies": {
-    "@magmacomputing/tempo": "^4.5.0 || ^5.0.0"
+    "@magmacomputing/tempo": "^5.0.0"
   },
   "keywords": [
     "tempo",
