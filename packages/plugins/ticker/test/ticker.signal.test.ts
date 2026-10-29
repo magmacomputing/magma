@@ -128,19 +128,49 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		expect(sig.value).toBe(lastValue);
 	});
 
-	test('ticker remains active and updates when temporary ticker proxy is dropped and only signal is retained', async () => {
-		const signal = Tempo.ticker({ seconds: 0.05 }).signal;
-		const computed = Signify.computed(() => signal.value.epoch.ms);
+	test('ticker.stop(terminalValue) delivers terminal value to ticker.signal before disposal', () => {
+		const ticker = Tempo.ticker({ seconds: 1 });
+		const sig = ticker.signal;
+		const initialMs = sig.value.epoch.ms;
 
+		const terminal = new Tempo().add({ days: 10 });
+		ticker.stop(terminal);
+
+		// Signal value reflects the terminal value passed to stop()
+		expect(sig.value.epoch.ms).toBe(terminal.epoch.ms);
+		expect(sig.value.epoch.ms).toBeGreaterThan(initialMs);
+	});
+
+	test('ticker remains active and updates when temporary ticker proxy is dropped and only signal is retained', async () => {
+		let proxyRef: WeakRef<any> | undefined;
+		let signal: any;
+
+		(() => {
+			const ticker = Tempo.ticker({ seconds: 0.05 });
+			proxyRef = new WeakRef(ticker);
+			signal = ticker.signal;
+		})();
+
+		const computed = Signify.computed(() => signal.value.epoch.ms);
 		const initialMs = computed.value;
 		expect(initialMs).toBeGreaterThan(0);
+
+		// Force garbage collection if enabled (--expose-gc)
+		if (typeof (globalThis as any).gc === 'function')
+			(globalThis as any).gc();
+
+		// Verify the temporary ticker proxy is strongly retained by the signal wrapper
+		expect(proxyRef?.deref()).toBeDefined();
 
 		// Wait for pulses while only retaining signal and computed
 		await new Promise(r => setTimeout(r, 120));
 
+		if (typeof (globalThis as any).gc === 'function')
+			(globalThis as any).gc();
+
 		expect(computed.value).toBeGreaterThan(initialMs);
 
-		// Cleanup via signal disposal
+		// Cleanup via signal disposal, which severs activeProxy
 		signal.dispose?.();
 	});
 
@@ -162,14 +192,11 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		expect(sig2).not.toBe(sig1);
 		expect((sig2 as any).disposed).toBe(false);
 
-		// Fresh signal receives new pulses
-		const initialMs = sig2.value.epoch.ms;
+		// Fresh signal receives new pulses while disposed signal remains frozen
+		const sig1Snapshot = sig1.value.epoch.ms;
 		const pulsed = ticker.pulse();
 		expect(sig2.value.epoch.ms).toBe(pulsed.epoch.ms);
-		expect(sig2.value.epoch.ms).toBeGreaterThan(initialMs);
-
-		// Old disposed signal does not update
-		expect(sig1.value.epoch.ms).toBe(initialMs);
+		expect(sig1.value.epoch.ms).toBe(sig1Snapshot);
 
 		ticker.stop();
 	});

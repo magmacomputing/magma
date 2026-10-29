@@ -456,6 +456,11 @@ class TickerInstance implements Ticker.Descriptor {
 			this.#schedId = undefined;
 		}
 
+		if (terminalValue !== undefined)
+			this.#next = terminalValue;
+
+		this.#reactive.complete(terminalValue);
+
 		const proxy = this.#selfRef?.deref();
 		if (proxy && (proxy as any)[PROXY_SIGNAL]) {
 			(proxy as any)[PROXY_SIGNAL].dispose?.();
@@ -470,11 +475,8 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#stopListeners.clear();
 		this.#catchListeners.clear();
 
-		this.#reactive.complete(terminalValue);
-
-		for (const l of stopListeners) {
+		for (const l of stopListeners)
 			l(this.#next, () => undefined);
-		}
 	}
 
 	get [Symbol.toStringTag](): string {
@@ -515,10 +517,7 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#runBootstrap();
 
 		let isDisposed = false;
-		const activeProxyRef = (() => {
-			const proxy = this.#selfRef?.deref();
-			return proxy ? new WeakRef(proxy) : undefined;
-		})();
+		let activeProxy: any = this.#selfRef?.deref();
 
 		const accessor = function (this: any) {
 			return (sig as any).apply(this, arguments);
@@ -526,15 +525,16 @@ class TickerInstance implements Ticker.Descriptor {
 
 		const wrapper = new Proxy(accessor as any, {
 			get(_, prop) {
-				if (prop === INSTANCE_KEY) return activeProxyRef?.deref();
+				if (prop === INSTANCE_KEY) return activeProxy;
 				if (prop === 'disposed') return isDisposed;
 				if (prop === 'dispose' || prop === Symbol.dispose) {
 					return () => {
 						if (isDisposed) return;
 						isDisposed = true;
-						const p = activeProxyRef?.deref();
-						if (p && (p as any)[PROXY_SIGNAL] === wrapper)
-							delete (p as any)[PROXY_SIGNAL];
+						if (activeProxy && (activeProxy as any)[PROXY_SIGNAL] === wrapper)
+							delete (activeProxy as any)[PROXY_SIGNAL];
+
+						activeProxy = undefined;
 
 						if (self.#cachedSignal === wrapper)
 							self.#cachedSignal = undefined;

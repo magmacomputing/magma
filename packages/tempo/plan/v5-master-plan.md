@@ -141,6 +141,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 - [ ] **Update Core Documentation**:
   - Update all code snippets in `packages/tempo/doc/` to use `@tempo-js/core`.
   - Provide comprehensive **v4 $\rightarrow$ v5 Migration Guide**.
+  - **Interactive Documentation Glossary & Canonical Lexicon**: Implement data-driven VitePress glossary ([`documentation-glossary-architecture.md`](file:///home/michael/Project/magma/packages/tempo/plan/documentation-glossary-architecture.md)) defining core temporal concepts, library idioms, and standards, and pipe definitions directly into `llms.txt`.
 
 ---
 
