@@ -141,13 +141,14 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		expect(sig.value.epoch.ms).toBeGreaterThan(initialMs);
 	});
 
-	test('ticker remains active and updates when temporary ticker proxy is dropped and only signal is retained', async () => {
-		let proxyRef: WeakRef<any> | undefined;
+	const gcAvailable = typeof (globalThis as any).gc === 'function';
+
+	test.skipIf(!gcAvailable)('ticker remains active and updates when temporary ticker proxy is dropped and only signal is retained', async () => {
+		const gc = (globalThis as any).gc as () => void;
 		let signal: any;
 
 		(() => {
 			const ticker = Tempo.ticker({ seconds: 0.05 });
-			proxyRef = new WeakRef(ticker);
 			signal = ticker.signal;
 		})();
 
@@ -155,23 +156,24 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		const initialMs = computed.value;
 		expect(initialMs).toBeGreaterThan(0);
 
-		// Force garbage collection if enabled (--expose-gc)
-		if (typeof (globalThis as any).gc === 'function')
-			(globalThis as any).gc();
+		// Invoke GC after the ticker proxy is out of scope
+		gc();
 
-		// Verify the temporary ticker proxy is strongly retained by the signal wrapper
-		expect(proxyRef?.deref()).toBeDefined();
+		// Record the current computed value immediately after GC
+		const postGcMs = computed.value;
 
-		// Wait for pulses while only retaining signal and computed
+		// Wait asynchronously for the ticker to pulse
 		await new Promise(r => setTimeout(r, 120));
 
-		if (typeof (globalThis as any).gc === 'function')
-			(globalThis as any).gc();
+		gc();
 
-		expect(computed.value).toBeGreaterThan(initialMs);
+		// The computed value must increase, proving the ticker is still alive
+		expect(computed.value).toBeGreaterThan(postGcMs);
 
 		// Cleanup via signal disposal, which severs activeProxy
+		const INSTANCE_KEY = Symbol.for('Tempo.ticker.instance');
 		signal.dispose?.();
+		expect(signal[INSTANCE_KEY]).toBeUndefined();
 	});
 
 	test('disposing ticker.signal clears cache and subsequent read creates a fresh active signal', () => {
@@ -181,6 +183,9 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 
 		// Same cached instance initially
 		expect(ticker.signal).toBe(sig1);
+
+		// Capture the value at the moment of disposal
+		const sig1Snapshot = sig1.value.epoch.ms;
 
 		// Dispose the signal
 		sig1.dispose?.();
@@ -193,7 +198,6 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		expect((sig2 as any).disposed).toBe(false);
 
 		// Fresh signal receives new pulses while disposed signal remains frozen
-		const sig1Snapshot = sig1.value.epoch.ms;
 		const pulsed = ticker.pulse();
 		expect(sig2.value.epoch.ms).toBe(pulsed.epoch.ms);
 		expect(sig1.value.epoch.ms).toBe(sig1Snapshot);

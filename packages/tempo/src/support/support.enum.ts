@@ -334,4 +334,5 @@ export const enums = {
 	Enum,
 };
 
+export { Enum };
 export default enums;
