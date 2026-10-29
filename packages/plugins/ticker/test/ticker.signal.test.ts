@@ -143,4 +143,34 @@ describe('Ticker Signal & TC39 Signify Reactivity', () => {
 		// Cleanup via signal disposal
 		signal.dispose?.();
 	});
+
+	test('disposing ticker.signal clears cache and subsequent read creates a fresh active signal', () => {
+		const ticker = Tempo.ticker({ seconds: 1 });
+		const sig1 = ticker.signal;
+		expect(sig1).toBeDefined();
+
+		// Same cached instance initially
+		expect(ticker.signal).toBe(sig1);
+
+		// Dispose the signal
+		sig1.dispose?.();
+		expect((sig1 as any).disposed).toBe(true);
+
+		// Subsequent read should create a fresh active signal
+		const sig2 = ticker.signal;
+		expect(sig2).toBeDefined();
+		expect(sig2).not.toBe(sig1);
+		expect((sig2 as any).disposed).toBe(false);
+
+		// Fresh signal receives new pulses
+		const initialMs = sig2.value.epoch.ms;
+		const pulsed = ticker.pulse();
+		expect(sig2.value.epoch.ms).toBe(pulsed.epoch.ms);
+		expect(sig2.value.epoch.ms).toBeGreaterThan(initialMs);
+
+		// Old disposed signal does not update
+		expect(sig1.value.epoch.ms).toBe(initialMs);
+
+		ticker.stop();
+	});
 });

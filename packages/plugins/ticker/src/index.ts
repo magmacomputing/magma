@@ -509,20 +509,44 @@ class TickerInstance implements Ticker.Descriptor {
 	toSignal(): ReadonlySignal<Tempo>;
 	toSignal<D>(initialValue: D): ReadonlySignal<Tempo | D>;
 	toSignal<D = undefined>(...args: [D?]): ReadonlySignal<Tempo | D> {
+		const self = this;
 		const initial = args.length > 0 ? args[0]! : (this.#next as any);
 		const sig = this.#reactive.toSignal(initial);
 		this.#runBootstrap();
 
-		let activeProxy: any = this.#selfRef?.deref();
-		const wrapper = new Proxy(sig as any, {
-			get(target, prop, receiver) {
-				if (prop === INSTANCE_KEY) return activeProxy;
-				return Reflect.get(target, prop, receiver);
-			}
-		});
+		let isDisposed = false;
+		const activeProxyRef = (() => {
+			const proxy = this.#selfRef?.deref();
+			return proxy ? new WeakRef(proxy) : undefined;
+		})();
 
-		Finalizer.register(wrapper, () => {
-			activeProxy = null;
+		const accessor = function (this: any) {
+			return (sig as any).apply(this, arguments);
+		};
+
+		const wrapper = new Proxy(accessor as any, {
+			get(_, prop) {
+				if (prop === INSTANCE_KEY) return activeProxyRef?.deref();
+				if (prop === 'disposed') return isDisposed;
+				if (prop === 'dispose' || prop === Symbol.dispose) {
+					return () => {
+						if (isDisposed) return;
+						isDisposed = true;
+						const p = activeProxyRef?.deref();
+						if (p && (p as any)[PROXY_SIGNAL] === wrapper)
+							delete (p as any)[PROXY_SIGNAL];
+
+						if (self.#cachedSignal === wrapper)
+							self.#cachedSignal = undefined;
+						sig.dispose?.();
+					};
+				}
+				if (prop === 'get') return () => (sig as any).get();
+				return (sig as any)[prop];
+			},
+			apply(_, thisArg, argArray) {
+				return (sig as any).apply(thisArg, argArray);
+			}
 		});
 
 		return wrapper;
@@ -531,7 +555,9 @@ class TickerInstance implements Ticker.Descriptor {
 	get signal(): ReadonlySignal<Tempo> {
 		const proxy = this.#selfRef?.deref();
 		if (proxy) return (proxy as any).signal;
-		return (this.#cachedSignal ??= this.toSignal());
+		if (!this.#cachedSignal || (this.#cachedSignal as any).disposed)
+			this.#cachedSignal = this.toSignal();
+		return this.#cachedSignal;
 	}
 
 	async next(): Promise<IteratorResult<Tempo, any>> {
@@ -609,7 +635,7 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 			if (prop === 'stop') return instance.stop.bind(instance);
 			if (prop === 'signal') {
 				let sig = (target as any)[PROXY_SIGNAL];
-				if (!sig) {
+				if (!sig || (sig as any).disposed) {
 					sig = instance.toSignal();
 					(target as any)[PROXY_SIGNAL] = sig;
 				}
@@ -625,6 +651,13 @@ function createTicker(TempoClass: typeof Tempo, arg1: any, arg2?: any): Ticker.I
 			if (prop === Symbol.asyncDispose) return instance[Symbol.asyncDispose].bind(instance);
 			if (prop === Symbol.dispose) return instance[Symbol.dispose].bind(instance);
 			return (instance as any)[prop];
+		},
+		deleteProperty: (target, prop) => {
+			if (prop === PROXY_SIGNAL) {
+				delete (target as any)[PROXY_SIGNAL];
+				return true;
+			}
+			return Reflect.deleteProperty(target, prop);
 		},
 		apply: (target) => target(),
 	});

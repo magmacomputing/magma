@@ -95,7 +95,7 @@ t.format('{yy}');
 ---
 
 ### 5. Utility & Support Exports
-* **`Enum` export removed:** The legacy `Enum` class export from `@magmacomputing/tempo` has been removed. Use native TypeScript enums, `as const` object literals, or the `@magmacomputing/library` enumerator utilities (`enumify`).
+* **`Enum` export removed:** The legacy `Enum` class export from `@magmacomputing/tempo` has been removed. Use native TypeScript enums, `as const` object literals, or the `@magmacomputing/tempo/library` enumerator utilities (`enumify`).
 * **`hasOwn` helper removed:** The internal re-export `hasOwn` from support utils has been removed. Use standard ECMAScript `Object.hasOwn(target, property)`.
 
 ---
