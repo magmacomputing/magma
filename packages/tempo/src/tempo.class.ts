@@ -1264,7 +1264,7 @@ export class Tempo {
 		const one = host.isTempo(tempo1) ? tempo1 : new host(tempo1 as t.DateTime),
 			two = host.isTempo(tempo2) ? tempo2 : new host(tempo2 as t.DateTime);
 
-		return Number((one.nano > two.nano) || -(one.nano < two.nano)) + 0;
+		return Number((one.epoch.ns > two.epoch.ns) || -(one.epoch.ns < two.epoch.ns)) + 0;
 	}
 
 	/** global Tempo configuration */
@@ -1316,26 +1316,11 @@ export class Tempo {
 	static from(tempo?: t.DateTime | t.Options, options?: t.Options) { return new this(tempo as NonNullable<t.DateTime>, options); }
 
 	/**
-	 * Gets the current timestamp in the specified unit.
-	 * @param unit - The time unit ('ss', 'ms', 'us').
-	 * @returns The current timestamp as a number (for 'ss', 'ms', 'us')
+	 * Creates a new `Tempo` instance representing the current date and time.
+	 * @param options - Configuration options for this specific instance.
 	 */
-	static now(unit: Exclude<Tempo.TimeStamp, 'ns'>): number;
-	/**
-	 * Gets the current timestamp in the specified unit.
-	 * @param unit - The time unit ('ss', 'ms', 'us', 'ns'). Defaults to 'ns' (nanoseconds).
-	 * @returns The current timestamp as a number (for 'ss', 'ms', 'us') or bigint (for 'ns')
-	 */
-	static now(unit?: Extract<Tempo.TimeStamp, 'ns'>): bigint;
-	static now(unit?: Tempo.TimeStamp): number | bigint {
-		const inst = instant();
-		switch (unit) {
-			case 'ss': return Math.trunc(inst.epochMilliseconds / 1_000);
-			case 'ms': return inst.epochMilliseconds;
-			case 'us': return Number(inst.epochNanoseconds / 1_000n);
-			case 'ns':
-			default: return inst.epochNanoseconds;
-		}
+	static now(options?: t.Options): Tempo {
+		return new this(options);
 	}
 
 	static #getEpoch(inst: { epochMilliseconds: number, epochNanoseconds: bigint }): Readonly<{ ss: number; ms: number; us: number; ns: bigint }> {
@@ -1353,7 +1338,7 @@ export class Tempo {
 	}
 
 	/** get the current system Instant */
-	static get instant() { return Temporal.Instant.fromEpochNanoseconds(Tempo.now()) }
+	static get instant() { return instant(); }
 
 	/** static Tempo.terms (registry) */
 	static get terms(): Secure<Omit<TermPlugin, 'define' | 'resolve'>[]> & Readonly<Record<string, Omit<TermPlugin, 'define' | 'resolve'>>> {
@@ -1546,7 +1531,7 @@ export class Tempo {
 		switch (hint) {
 			case 'string': return this.toString();								// iso 8601 string
 			case 'number': return this.epoch.ms;									// Unix epoch (milliseconds)
-			default: return this.nano;														// Unix epoch (nanoseconds)
+			default: return this.epoch.ns;												// Unix epoch (nanoseconds)
 		}
 	}
 
@@ -1815,9 +1800,7 @@ export class Tempo {
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** @internal 4-digit ISO week-numbering year */					get yw() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
 	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
-	/** @internal ISO week number of the year */							get wy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.woy; }
 	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.woy; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
@@ -1833,20 +1816,29 @@ export class Tempo {
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
-	/** Resolved geographic coordinates object ({ latitude, longitude, ... }) */ get geo(): Readonly<t.GeoConfig> | undefined {
-		if (hasOwn(this.#memo, 'geo')) return this.#memo.geo;
-		const res = this.#local.config.geo
+	#getRawGeo(): t.GeoConfig | undefined {
+		return this.#local.config.geo
 			?? (this as any)[$Internal]().config.geo
 			?? getStashedGeo();
-		return (this.#memo.geo = res ? Object.freeze({ ...res }) : undefined);
+	}
+
+	/** Resolved geographic coordinates object ({ latitude, longitude, elevation, sphere, ... }) */
+	get geo(): Readonly<t.GeoConfig> {
+		if (hasOwn(this.#memo, 'geo') && this.#memo.geo) return this.#memo.geo;
+		const rawGeo = this.#getRawGeo();
+		return (this.#memo.geo = Object.freeze({
+			...rawGeo,
+			sphere: this.sphere
+		}));
 	}
 	/** Resolved hemisphere ('north' | 'south' | undefined) */get sphere(): t.COMPASS | undefined {
 		if (hasOwn(this.#memo, 'sphere')) return this.#memo.sphere;
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
 		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
-		const lat = this.geo?.latitude;
-		const geoSphere = this.geo?.sphere;
+		const rawGeo = this.#getRawGeo();
+		const lat = rawGeo?.latitude;
+		const geoSphere = rawGeo?.sphere;
 
 		const res = evaluate(
 			hasOwn(this.#local.options, 'sphere') ? this.#local.options?.sphere : undefined,
@@ -1873,7 +1865,6 @@ export class Tempo {
 		const pd = this.toDateTime().toPlainDate().withCalendar('iso8601');
 		return 2440588 + Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
 	}
-	/** Nanoseconds since Unix epoch (BigInt) */							get nano() { return this.toDateTime().epochNanoseconds }
 	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDateTime().toInstant().toString() }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 

@@ -44,27 +44,62 @@ Several legacy and ambiguous instance getters have been removed in favor of cano
 | Removed Getter | Canonical Replacement | Description |
 | :--- | :--- | :--- |
 | `t.eraYear` | `t.eon` | Year within era (eon / astronomical era calendar alignment). |
-| `t.ww` | `t.woy` | Week of year (ISO 8601 week number `1`..`53`). |
+| `t.ww`, `t.wy` | `t.woy` | Week of year (ISO 8601 week number `1`..`53`). |
+| `t.yw` | `t.yow` | 4-digit ISO week-numbering year. |
 | `t.day` | `t.dd` | Day of the month (`1`–`31` number). Use `t.format('{dd}')` when zero-padded text is needed. For day-of-week use `t.dow`, and for day-of-year use `t.doy`. |
+| `t.nano` | `t.epoch.ns` | High-precision nanoseconds since Unix epoch (`bigint`). |
 | `t.clone()` | `Tempo.from(t, t.config)` | Canonical instance cloning constructor (preserves instance-local configuration). |
 
 ```typescript
 // ❌ v4.x (Deprecated)
-const week = t.ww;
+const week = t.ww; // or t.wy
+const weekYear = t.yw;
 const eraY = t.eraYear;
 const dayVal = t.day;
+const nanoVal = t.nano;
 const copy = t.clone();
 
 // ✅ v5.0.0
 const week = t.woy;
+const weekYear = t.yow;
 const eraY = t.eon;
 const dayVal = t.dd;
+const nanoVal = t.epoch.ns;
 const copy = Tempo.from(t, t.config);
 ```
 
 ---
 
-### 4. Format Tokens and Modifiers
+### 4. Static `Tempo.now()` Transition to Instance Factory
+In v4.x, `Tempo.now()` returned a primitive timestamp (`bigint` nanoseconds by default, or `number` when passed a unit string). In v5.0.0, `Tempo.now()` is a full **instance factory** (matching modern standards like Luxon `DateTime.now()` and TC39 Temporal):
+
+* **`Tempo.now(options?)`** returns an immutable `Tempo` instance representing the current moment, supporting instance options like `{ timeZone, locale }`.
+* **Primitive timestamps** are now cleanly accessed via the static **`Tempo.epoch`** namespace:
+  * `Tempo.epoch.ns` (`bigint`) — nanoseconds since Unix epoch
+  * `Tempo.epoch.ms` (`number`) — milliseconds since Unix epoch
+  * `Tempo.epoch.us` (`number`) — microseconds since Unix epoch
+  * `Tempo.epoch.ss` (`number`) — seconds since Unix epoch
+* **Native Temporal Instant** is accessible via **`Tempo.instant`** (`Temporal.Instant`).
+
+```typescript
+// ❌ v4.x
+const nowNs: bigint = Tempo.now();
+const nowMs: number = Tempo.now('ms');
+
+// ✅ v5.0.0 — Instance creation & fluent chaining
+const now: Tempo = Tempo.now();
+const today = Tempo.now().format('{yyyy}-{mm}-{dd}');
+const tokyo = Tempo.now({ timeZone: 'Asia/Tokyo' });
+
+// ✅ v5.0.0 — Primitive timestamps via Tempo.epoch
+const nowNs: bigint = Tempo.epoch.ns;
+const nowMs: number = Tempo.epoch.ms;
+const inst: Temporal.Instant = Tempo.instant;
+```
+
+---
+
+### 5. Format Tokens and Modifiers
 To reduce token ambiguity and eliminate redundant aliases, format tokens and modifier definitions have been rationalized:
 
 * **Timezone Token (`{tzd}` → `{tz}`):**
@@ -94,7 +129,7 @@ t.format('{yy}');
 
 ---
 
-### 5. Utility & Support Exports
+### 6. Utility & Support Exports
 * **`Enum` export removed:** The legacy `Enum` class export from `@magmacomputing/tempo` has been removed. Use native TypeScript enums, `as const` object literals, or the `@magmacomputing/tempo/library` enumerator utilities (`enumify`).
 * **`hasOwn` helper removed:** The internal re-export `hasOwn` from support utils has been removed. Use standard ECMAScript `Object.hasOwn(target, property)`.
 

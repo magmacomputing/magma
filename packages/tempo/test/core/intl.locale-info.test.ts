@@ -76,8 +76,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(tBaseline.dow).toBe(7);
 			expect(tCultural.dow).toBe(7);
 
-			// wy is ALWAYS ISO week number
-			expect(tBaseline.wy).toBe(tCultural.wy);
+			// woy is ALWAYS ISO week number
+			expect(tBaseline.woy).toBe(tCultural.woy);
 			expect(tBaseline.iso).toBe(tCultural.iso);
 		});
 
@@ -107,127 +107,113 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 		it('t.set({ isoWeek: number }) and t.set({ wy: number }) assign numeric ISO weeks across year boundaries', () => {
 			const t = new Tempo('2026-05-20T12:00:00Z'); // Wednesday of week 21, 2026
-			expect(t.wy).toBe(21);
+			expect(t.woy).toBe(21);
 			expect(t.dow).toBe(3);
 
 			const tSetIso = t.set({ isoWeek: 10 });
-			expect(tSetIso.wy).toBe(10);
+			expect(tSetIso.woy).toBe(10);
 			expect(tSetIso.dow).toBe(3); // Preserves weekday
-			expect(tSetIso.yw).toBe(2026);
+			expect(tSetIso.yow).toBe(2026);
 
 			const tSetWy = t.set({ wy: 35 });
-			expect(tSetWy.wy).toBe(35);
 			expect(tSetWy.woy).toBe(35);
 			expect(tSetWy.dow).toBe(3);
-			expect(tSetWy.yw).toBe(2026);
 			expect(tSetWy.yow).toBe(2026);
 
 			const tSetWoy = t.set({ woy: 35 });
-			expect(tSetWoy.wy).toBe(35);
 			expect(tSetWoy.woy).toBe(35);
 			expect(tSetWoy.dow).toBe(3);
-			expect(tSetWoy.yw).toBe(2026);
 			expect(tSetWoy.yow).toBe(2026);
 
 			const tSetLowercase = t.set({ isoweek: 5 });
-			expect(tSetLowercase.wy).toBe(5);
+			expect(tSetLowercase.woy).toBe(5);
 			expect(tSetLowercase.dow).toBe(3);
-			expect(tSetLowercase.yw).toBe(2026);
+			expect(tSetLowercase.yow).toBe(2026);
 
 			// Across year boundary: 2025-12-30 is Tuesday of week 1 of 2026
 			const tBoundary = new Tempo('2025-12-30T10:00:00Z');
-			expect(tBoundary.yw).toBe(2026);
 			expect(tBoundary.yow).toBe(2026);
-			expect(tBoundary.wy).toBe(1);
 			expect(tBoundary.woy).toBe(1);
 			const tTarget = tBoundary.set({ isoWeek: 25 });
-			expect(tTarget.yw).toBe(2026);
 			expect(tTarget.yow).toBe(2026);
-			expect(tTarget.wy).toBe(25);
 			expect(tTarget.woy).toBe(25);
 			expect(tTarget.dow).toBe(2);
 
 			// Clamping to maxWeeks within the ISO year (2024 has 52 ISO weeks)
 			const t2024 = new Tempo('2024-06-12T12:00:00Z');
 			const tClamped = t2024.set({ isoWeek: 53 });
-			expect(tClamped.yw).toBe(2024);
-			expect(tClamped.wy).toBe(52);
+			expect(tClamped.yow).toBe(2024);
+			expect(tClamped.woy).toBe(52);
 
 			// Preserves add:isoweek and subtract:isoweek as week-unit addition
 			const tAdd = t.add({ isoweek: 2 });
-			expect(tAdd.wy).toBe(23);
+			expect(tAdd.woy).toBe(23);
 			const tSub = t.subtract({ isoweek: 3 });
-			expect(tSub.wy).toBe(18);
+			expect(tSub.woy).toBe(18);
 		});
 
 		it('t.set({ yw: number }), t.set({ isoYear: number }) assign ISO week-numbering year preserving wy, dow and time', () => {
 			// 2026-05-20T14:30:15Z is Wednesday (dow: 3) of week 21, ISO year 2026
 			const t = new Tempo('2026-05-20T14:30:15Z');
-			expect(t.yw).toBe(2026);
 			expect(t.yow).toBe(2026);
-			expect(t.wy).toBe(21);
 			expect(t.woy).toBe(21);
 			expect(t.dow).toBe(3);
 
 			// Shift to ISO year 2028
 			const t2028 = t.set({ yw: 2028 });
-			expect(t2028.yw).toBe(2028);
 			expect(t2028.yow).toBe(2028);
-			expect(t2028.wy).toBe(21);
 			expect(t2028.woy).toBe(21);
 			expect(t2028.dow).toBe(3);
 			expect(t2028.format('{hh}:{mi}:{ss}')).toBe('14:30:15');
 
 			// Alias yow
 			const tYow = t.set({ yow: 2028 });
-			expect(tYow.yw).toBe(2028);
 			expect(tYow.yow).toBe(2028);
-			expect(tYow.wy).toBe(21);
 			expect(tYow.woy).toBe(21);
 
 			// Alias isoYear
 			const tIsoYear = t.set({ isoYear: 2029 });
-			expect(tIsoYear.yw).toBe(2029);
-			expect(tIsoYear.wy).toBe(21);
+			expect(tIsoYear.yow).toBe(2029);
+			expect(tIsoYear.woy).toBe(21);
 			expect(tIsoYear.dow).toBe(3);
 
 			// Alias isoyear
 			const tIsoyearLower = t.set({ isoyear: 2030 });
-			expect(tIsoyearLower.yw).toBe(2030);
-			expect(tIsoyearLower.wy).toBe(21);
+			expect(tIsoyearLower.yow).toBe(2030);
+			expect(tIsoyearLower.woy).toBe(21);
 			expect(tIsoyearLower.dow).toBe(3);
 
 			// Clamping: 2020 has 53 ISO weeks; 2020-12-30 is Wednesday of week 53
 			const tWeek53 = new Tempo('2020-12-30T10:00:00Z');
-			expect(tWeek53.yw).toBe(2020);
-			expect(tWeek53.wy).toBe(53);
+			expect(tWeek53.yow).toBe(2020);
+			expect(tWeek53.woy).toBe(53);
 			expect(tWeek53.dow).toBe(3);
 
 			// 2021 only has 52 ISO weeks -> clamps to week 52, preserves dow: 3
 			const tClampedYear = tWeek53.set({ yw: 2021 });
-			expect(tClampedYear.yw).toBe(2021);
-			expect(tClampedYear.wy).toBe(52);
+			expect(tClampedYear.yow).toBe(2021);
+			expect(tClampedYear.woy).toBe(52);
 			expect(tClampedYear.dow).toBe(3);
 
 			// add:yw and subtract:yw
 			const tNextYw = t.add({ yw: 2 });
-			expect(tNextYw.yw).toBe(2028);
-			expect(tNextYw.wy).toBe(21);
+			expect(tNextYw.yow).toBe(2028);
+			expect(tNextYw.woy).toBe(21);
 			expect(tNextYw.dow).toBe(3);
 
 			const tPrevYw = t.subtract({ yw: 1 });
-			expect(tPrevYw.yw).toBe(2025);
-			expect(tPrevYw.wy).toBe(21);
+			expect(tPrevYw.yow).toBe(2025);
+			expect(tPrevYw.woy).toBe(21);
 			expect(tPrevYw.dow).toBe(3);
 
 			// add:yow and subtract:yow
 			const tNextYow = t.add({ yow: 2 });
-			expect(tNextYow.yw).toBe(2028);
-			expect(tNextYow.wy).toBe(21);
+			expect(tNextYow.yow).toBe(2028);
+			expect(tNextYow.woy).toBe(21);
 
 			const tPrevYow = t.subtract({ yow: 1 });
-			expect(tPrevYow.yw).toBe(2025);
-			expect(tPrevYow.wy).toBe(21);
+			expect(tPrevYow.yow).toBe(2025);
+			expect(tPrevYow.woy).toBe(21);
 		});
 
 		it('t.set({ yw: "start" | "mid" | "end" }) and aliases correctly snap to ISO year boundaries', () => {
@@ -235,8 +221,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 			// start:yw -> Monday of Week 1 at 00:00:00
 			const startYw = t.set({ yw: 'start' });
-			expect(startYw.yw).toBe(2026);
-			expect(startYw.wy).toBe(1);
+			expect(startYw.yow).toBe(2026);
+			expect(startYw.woy).toBe(1);
 			expect(startYw.dow).toBe(1);
 			expect(startYw.format('{hh}:{mi}:{ss}')).toBe('00:00:00');
 
@@ -252,8 +238,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 			// mid:yw -> Thursday of Week 26 at 00:00:00
 			const midYw = t.set({ yw: 'mid' });
-			expect(midYw.yw).toBe(2026);
-			expect(midYw.wy).toBe(26);
+			expect(midYw.yow).toBe(2026);
+			expect(midYw.woy).toBe(26);
 			expect(midYw.dow).toBe(4);
 			expect(midYw.format('{hh}:{mi}:{ss}')).toBe('00:00:00');
 
@@ -262,8 +248,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 
 			// end:yw -> Sunday of last week (Week 53 for 2026) at 23:59:59
 			const endYw = t.set({ yw: 'end' });
-			expect(endYw.yw).toBe(2026);
-			expect(endYw.wy).toBe(53);
+			expect(endYw.yow).toBe(2026);
+			expect(endYw.woy).toBe(53);
 			expect(endYw.dow).toBe(7);
 			expect(endYw.format('{hh}:{mi}:{ss}')).toBe('23:59:59');
 			expect(endYw.format('{yyyy}-{mm}-{dd}')).toBe('2027-01-03');
@@ -274,16 +260,16 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			// end:yw for a 52-week year (2025) ends on Sunday of Week 52
 			const t2025 = new Tempo('2025-06-15T12:00:00Z');
 			const end2025 = t2025.set({ yw: 'end' });
-			expect(end2025.yw).toBe(2025);
-			expect(end2025.wy).toBe(52);
+			expect(end2025.yow).toBe(2025);
+			expect(end2025.woy).toBe(52);
 			expect(end2025.dow).toBe(7);
 			expect(end2025.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2025-12-28 23:59:59');
 
 			// end:yw for a 53-week year (2020) ends on Sunday of Week 53
 			const t2020 = new Tempo('2020-06-15T12:00:00Z');
 			const end2020 = t2020.set({ yw: 'end' });
-			expect(end2020.yw).toBe(2020);
-			expect(end2020.wy).toBe(53);
+			expect(end2020.yow).toBe(2020);
+			expect(end2020.woy).toBe(53);
 			expect(end2020.dow).toBe(7);
 			expect(end2020.format('{yyyy}-{mm}-{dd} {hh}:{mi}:{ss}')).toBe('2021-01-03 23:59:59');
 		});

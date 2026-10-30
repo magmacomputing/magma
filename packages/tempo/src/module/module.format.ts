@@ -530,6 +530,19 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					} else {
 						res = `{${token}}`;
 					}
+				} else if (isTempo(obj) && isSafeKey(token) && token in obj) {
+					try {
+						const val = (obj as any)[token];
+						if (isDefined(val) && !isFunction(val)) {
+							res = isObject(val)
+								? String(val.label ?? val.key ?? val.name ?? val.value ?? val)
+								: String(val);
+						} else {
+							res = `{${token}}`;
+						}
+					} catch {
+						res = `{${token}}`;
+					}
 				} else {
 					res = `{${token}}`;
 				}

@@ -16,15 +16,17 @@ A collection of recipes for solving common date and time challenges using Tempo.
 ## The Basics
 
 ### How do I get the current date and time?
-When invoked without arguments, the constructor initializes to the current date and time.
+Use the static `Tempo.now()` factory method to capture the current system date and time:
 ```typescript
-const now = new Tempo();
+const now = Tempo.now();
 console.log(now.toString()); // e.g. "2026-07-31T14:42:11+10:00[Australia/Sydney]"
 ```
 
-### Get "Now" in UTC
+### Get "Now" in UTC or a specific time zone
+Pass an options object directly to `Tempo.now()`:
 ```typescript
-const utcNow = new Tempo({ timeZone: 'UTC' });
+const utcNow = Tempo.now({ timeZone: 'UTC' });
+const tokyoNow = Tempo.now({ timeZone: 'Asia/Tokyo' });
 ```
 
 ### How do I format a date for my UI?

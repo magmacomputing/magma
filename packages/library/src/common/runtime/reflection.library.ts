@@ -131,7 +131,9 @@ export function reset<T extends Obj>(orig: T, obj?: T) {
  * ```
  */
 export function allObject<T extends Obj>(json: T) {
-	return Object.fromEntries(ownEntries(json, true));
+	return Array.isArray(json)
+		? Array.from(json) as any
+		: Object.fromEntries(ownEntries(json, true));
 }
 
 /**

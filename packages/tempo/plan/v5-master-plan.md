@@ -12,7 +12,7 @@ This Master Plan consolidates all prior RFCs, breaking change analyses, and arch
 
 ```mermaid
 graph TD
-  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 — In Progress)</i>"] --> P2["Phase 2: Scope & Namespace Defense<br><i>(@tempo-js & @tempojs)</i>"]
+  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 Merged — now() factory pending)</i>"] --> P2["Phase 2: Scope & Namespace Defense<br><i>(@tempo-js & @tempojs)</i>"]
   P2 --> P3["Phase 3: Plugin Ecosystem Modularization<br><i>(Dialects Standalone, Core Superpowers)</i>"]
   P3 --> P4["Phase 4: Library & Code Standards<br><i>(isNonNull, Strict isDefined, Semicolons)</i>"]
   P4 --> P5["Phase 5: Multi-Version Docs & AI Context<br><i>(VitePress /v4/ & llms.txt)</i>"]
@@ -21,12 +21,13 @@ graph TD
 
 ---
 
-### Phase 1: Core Modernization, Deprecations & Signals (PR #110)
-*Status: Nearly Complete (Uncommitted working tree / PR review stage)*
+### Phase 1: Core Modernization, Deprecations & Signals (PR #110 & Phase 1 Complete)
+*Status: Completed — `Tempo.now()` instance factory and `Tempo.epoch` fully transitioned and tested*
 
 - [x] **`Tempo.now()` Transition to Instance Factory**:
   - `Tempo.now()` returns an immutable `Tempo` instance (supports options like `{ timeZone, sphere }`) instead of primitive `bigint` nanoseconds.
   - Raw epoch numbers cleanly moved to `Tempo.epoch.ns`, `Tempo.epoch.ms`, `Tempo.epoch.us`, and `Tempo.epoch.ss`.
+  - Static `Tempo.instant` returns native `Temporal.Instant`. Static tests updated in `static.methods.test.ts`.
 - [x] **Format Token Rationalization**:
   - Deprecate legacy `{ww}` and `{wy}` in favor of canonical ISO `{yow}` and `{woy}`.
   - Canonicalize orthogonal `:compact` modifier across parser, format, and explain, completely eliminating legacy fused modifiers (e.g. `{tz:offsetcompact}`).

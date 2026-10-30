@@ -2,7 +2,7 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined, isNumber, isObject } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isSafeKey } from '#library/assertion.library.js';
 import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
@@ -17,6 +17,26 @@ export type ProxyOptions = {
 	bind?: boolean;																						// bind methods to the target
 	skip?: WeakSet<object>;																		// objects to skip during deep-freeze
 }
+
+/**
+ * Base proxy interface providing direct access to the underlying un-proxied target object.
+ * Present on all proxies created by the proxy engine.
+ */
+export type Proxied<T extends object = object> = T & {
+	/** Direct access to the underlying un-proxied target object */
+	readonly [sym.$Target]?: T;
+};
+
+/**
+ * Augments an object or array type with virtual Proxy capabilities active on frozen/secured proxies,
+ * including serialization de-proxying (toJSON) and Node.js custom inspection (sym.$Inspect).
+ */
+export type Proxified<T extends object = object> = Proxied<T> & {
+	/** De-proxies the target into a plain representation for serialization */
+	toJSON(): T;
+	/** Node.js custom inspection hook (util.inspect.custom) */
+	readonly [sym.$Inspect]?: () => T;
+};
 
 /**
  * Creates a configured proxy for an object, optionally returning a revocation function.
@@ -124,7 +144,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			}
 
 			const val = Reflect.get(t, k, r);
-			if (bind && k !== 'constructor' && isFunction(val)) {
+			if (bind && isSafeKey(k) && isFunction(val)) {
 				const desc = Object.getOwnPropertyDescriptor(t, k);
 				if (desc && !desc.configurable && !desc.writable) return val;
 				let perTargetCache = boundMethodCache.get(val);
@@ -295,7 +315,7 @@ export function dynamicProxy<T extends object>(target: T): Evaluated<T> {
 		get(t, k, r) {
 			if (k === sym.$Target) return t;
 			const val = Reflect.get(t, k, r);
-			if (!isFunction(val) || isSymbol(k) || k === 'constructor')
+			if (!isFunction(val) || isSymbol(k) || !isSafeKey(k))
 				return val;
 			const desc = Reflect.getOwnPropertyDescriptor(t, k);
 			if (desc && !desc.configurable && !desc.writable)
