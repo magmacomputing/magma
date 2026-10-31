@@ -1,9 +1,16 @@
 import { isText } from '#library/assertion.library.js';
 import { markExtensible } from '#library/symbol.library.js';
 import { sym } from './support.symbol.js';
+import { TEMPO_VERSION } from '../tempo.version.js';
 import type { Plugin } from '../plugin/plugin.type.js';
 import type { TermPlugin } from '../plugin/term/term.type.js';
 import type { Internal } from '../tempo.type.js';
+
+/** @internal Centralized lifecycle flags for Tempo initialization and re-entrant extension */
+export const _lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
+
+/** @internal WeakMap associating Tempo and sandbox subclasses with their encapsulated state */
+export const ClassStates = new WeakMap<any, Internal.State>();
 
 /**
  * # TempoRuntime
@@ -45,6 +52,10 @@ export class TempoRuntime {
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
+	/** mapping of registered terms by key and alias */
+	readonly termMap: Map<string, TermPlugin> = new Map();
+	/** registry of installed plugin versions */
+	readonly versions: Record<string, string> = { Tempo: TEMPO_VERSION };
 
 	/** persistent global configuration state — mirrors Tempo.#global */
 	state?: Internal.State | undefined;

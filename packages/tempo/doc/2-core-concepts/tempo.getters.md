@@ -6,7 +6,7 @@ The `Tempo` class provides an extensive array of zero-cost getters that allow yo
 > **Zero-Cost Lazy Evaluation**  
 > Tempo uses a sophisticated proxy-based lazy-evaluation pattern. Accessing a getter (like `t.yy`) resolves the property on demand, and then overwrites the getter with a static literal. This means the first access is $O(1)$ and every subsequent access is raw property access ($O(0)$ cost).
 
-## ⚡ Native Temporal Gateway (`.zdt`)
+## ⚡ Native Temporal Gateway (`.zdt`) {#native-temporal-gateway-zdt}
 
 The **`.zdt`** getter provides direct, zero-overhead access to the underlying native `Temporal.ZonedDateTime` instance. All tables below cross-reference Tempo's ergonomic shorthand getters with their underlying native `zdt.*` properties or namespace sources:
 
@@ -84,7 +84,7 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 
 ---
 
-## 🗂️ Structured Namespaces
+## 🗂️ Structured Namespaces {#structured-namespaces}
 
 In addition to scalar getters, `Tempo` provides structured sub-namespaces for domain-specific metadata, high-precision epoch units, internationalization, and geographic context.
 
@@ -118,9 +118,9 @@ Tempo v5 intentionally avoids cluttering the top-level prototype with aliases or
 1. **Tier 1: Core Daily Primitives (`t.*`)**  
    High-frequency getters used across the majority of date applications (`.yy`, `.mm`, `.dd`, `.hh`, `.mi`, `.ss`, `.dim`, `.doy`, `.dow`, `.iso`, `.mon`, etc.).
 2. **Tier 2: Structured Namespaces (`t.<namespace>.*`)**  
-   Domain-specific sub-properties grouped into clean namespaces ([`.epoch`](#-structured-namespaces), [`.geo`](#-structured-namespaces), [`.intl`](#-structured-namespaces), [`.term`](#-structured-namespaces)) to prevent flat autocomplete pollution.
+   Domain-specific sub-properties grouped into clean namespaces ([`.epoch`](#structured-namespaces), [`.geo`](#structured-namespaces), [`.intl`](#structured-namespaces), [`.term`](#structured-namespaces)) to prevent flat autocomplete pollution.
 3. **Tier 3: The Native Temporal Gateway (`t.zdt.*`)**  
-   Standard TC39 Temporal properties (`.daysInYear`, `.inLeapYear`, `.offsetNanoseconds`, `.hoursInDay`, `.monthCode`) are accessed directly via [`.zdt`](#-native-temporal-gateway-zdt) with zero performance overhead and full TypeScript type fidelity.
+   Standard TC39 Temporal properties (`.daysInYear`, `.inLeapYear`, `.offsetNanoseconds`, `.hoursInDay`, `.monthCode`) are accessed directly via [`.zdt`](#native-temporal-gateway-zdt) with zero performance overhead and full TypeScript type fidelity.
 
 > [!NOTE]
 > **Why isn't there a `t.diy` or `t.inLeapYear` on root?**  
@@ -129,9 +129,17 @@ Tempo v5 intentionally avoids cluttering the top-level prototype with aliases or
 > [!TIP]
 > **Extending Tempo with Custom Getters & Namespaces**  
 > Developers are never limited to Tempo's built-in getters. The `Tempo` class is intentionally open for extension:
-> - **Direct Prototype Getters**: Attach custom properties directly via `Object.defineProperty(Tempo.prototype, 'myProp', { get() { ... } })`.
-> - **Reusable Plugins**: Package properties and lifecycle extensions using [`definePlugin`](../3-extending-tempo/tempo.plugin.md).
+> - **Custom Instance Getters (`defineProperties` / `defineProperty`)**: Define custom instance getters and methods directly on `Tempo` or an isolated sandbox (`Tempo.create()`). Resolver functions are automatically treated as lazy, per-instance memoized getters:
+>   ```typescript
+>   import { defineProperties } from '@magmacomputing/tempo';
+>
+>   Tempo.use(defineProperties({
+>     isWeekend: (t) => t.dow >= 6,
+>     quarter: (t) => Math.ceil(t.mm / 3),
+>   }, 'DateExtensions'));
+>   ```
 > - **Structured Sub-Namespaces**: Mount entire custom namespaces (e.g. `t.finance.*` or `t.astro.*`) with automatic proxy resolution and caching using [`defineNamespace`](../3-extending-tempo/tempo.plugin.md).
+> - **Reusable Lifecycle Plugins**: Package complex behaviors, prototype methods, and static tools using [`definePlugin`](../3-extending-tempo/tempo.plugin.md).
 >
 > Learn more in the comprehensive **[Extending Tempo with Plugins Guide](../3-extending-tempo/tempo.plugin.md)**.
 

@@ -2,17 +2,19 @@
 
 Tempo is designed with a "lean core" philosophy. While it provides robust date-time manipulation and parsing out of the box, advanced functionality (like reactive Tickers or domain-specific business logic) is added through a flexible **Plugin System**.
 
-In the Tempo ecosystem, a **Plugin** is the universal overarching term for any feature added to the core library. To make authoring plugins easy and consistent, Tempo provides two specialized factory functions:
+In the Tempo ecosystem, a **Plugin** is the universal overarching term for any feature added to the core library. To make authoring plugins easy and consistent, Tempo provides specialized factory functions:
 
 1. **`definePlugin`**: The standard factory for general-purpose features (e.g., adding prototype instance methods, static tools, or altering configuration).
 2. **`defineTerm`**: A specialized factory exclusively for defining temporal vocabulary constraints (a "Term" is technically just a highly-opinionated "Plugin" focused on date ranges and schedules).
 3. **`defineNamespace`**: A factory for creating lazily-evaluated property landing pads (e.g., `Tempo().finance.taxYear`).
+4. **`defineProperties` / `defineProperty`**: Factories for defining custom instance getters (auto-memoized) and instance methods directly on Tempo or isolated sandboxes without manual prototype mutation.
 
 ## Naming Convention Standard
 To provide a consistent and intuitive developer experience, the exported symbol of your plugin should use a suffix that directly matches the factory used to construct it. This makes it instantly obvious to consumers how the extension will attach to the Tempo core:
 - Built with `definePlugin` ➡️ **`[Name]Plugin`** (e.g., `TickerPlugin`)
 - Built with `defineTerm` ➡️ **`[Name]Term`** (e.g., `FiscalTerm`)
 - Built with `defineNamespace` ➡️ **`[Name]Namespace`** (e.g., `FinanceNamespace`)
+- Built with `defineProperties` ➡️ **`[Name]Properties`** (e.g., `DateProperties`)
 
 *(Note: The `Module` suffix and `defineModule` factory are strictly reserved for Tempo's core internal injection APIs like `ParseModule` and should not be used by external plugins.)*
 
@@ -110,7 +112,34 @@ If your plugin provides many related methods, consider grouping them under a sin
 Instead of manually building these namespaces on the prototype, Tempo provides the `defineNamespace` factory to automate lazy-evaluation. 
 👉 **[Read the Namespace Guide](./tempo.namespace.md)** to learn more.
 
-### 4. Error Handling & The Diagnostic Engine
+### 4. Custom Instance Properties (`defineProperties` & `defineProperty`)
+When authoring plugins or configuring derived sandboxes (`Tempo.create()`), you may wish to add top-level computed getters or instance methods without manual prototype manipulation.
+
+Tempo provides `defineProperties` (and its single-property alias `defineProperty`) to mount instance properties safely:
+- **Auto-Memoized Getters**: Resolver functions `(tempo) => value` are automatically evaluated lazily on first access and cached per instance.
+- **Unmemoized Getters**: Pass an explicit descriptor `{ get: () => ..., memo: false }` when values must be re-evaluated on every read.
+- **Instance Methods**: Define methods using the `methods: { ... }` shorthand or `{ value: fn }` descriptors.
+- **Strict Immutability Guard**: Because Tempo instances are immutable value objects, `set` accessors are strictly disallowed and will throw a `TempoError`.
+
+```typescript
+import { defineProperties } from '@magmacomputing/tempo';
+
+const DateExtensions = defineProperties({
+  // Auto-memoized getter (lazy per instance)
+  isWeekend: (t) => t.dow >= 6,
+
+  // Instance methods
+  methods: {
+    shiftDays(this: any, days: number) {
+      return this.add(`${days} days`);
+    },
+  },
+}, 'DateExtensions');
+
+Tempo.use(DateExtensions);
+```
+
+### 5. Error Handling & The Diagnostic Engine
 When building plugins that perform complex parsing or logic, follow Tempo's **"Fail-fast by Default"** principle.
 
 - **Strict Mode (Default)**: If your plugin encounters a terminal error (e.g., invalid input that cannot be recovered), you should `throw` a descriptive error.
@@ -131,7 +160,7 @@ if (errorCondition) {
 
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
-### 5. Unified Logging Hooks (`logWarn`, `logError`, `logDebug`)
+### 6. Unified Logging Hooks (`logWarn`, `logError`, `logDebug`)
 Plugins should avoid invoking raw `console.warn`, `console.error`, or `console.log` directly. Instead, import and use the standard logging hooks exported by `@magmacomputing/tempo/plugin/sdk`:
 
 ```typescript

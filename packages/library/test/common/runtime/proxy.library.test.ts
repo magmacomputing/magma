@@ -83,6 +83,7 @@ describe('secure serialization', () => {
 		const secured = secure(arr) as Proxified<string[]>;
 
 		expect(secured.toJSON()).toEqual(['alpha', 'beta', 'gamma']);
+		expect(secured.toJSON()).not.toBe(secured);
 		expect(Array.isArray(secured.toJSON())).toBe(true);
 		expect(JSON.stringify(secured)).toBe('["alpha","beta","gamma"]');
 	});
@@ -92,6 +93,7 @@ describe('secure serialization', () => {
 		const secured = secure(obj) as Proxified<typeof obj>;
 
 		expect(secured.toJSON()).toEqual({ a: 1, b: 2 });
+		expect(secured.toJSON()).not.toBe(secured);
 		expect(JSON.stringify(secured)).toBe('{"a":1,"b":2}');
 	});
 });

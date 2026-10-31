@@ -1,6 +1,19 @@
-import { omit, purge } from '#library/reflection.library.js';
+import { omit, purge, allObject } from '#library/reflection.library.js';
 
 describe('Reflection Library', () => {
+	describe('allObject on Array', () => {
+		it('should read array elements by numeric index rather than consuming custom Symbol.iterator', () => {
+			const arr = ['first', 'second'];
+			// Define custom iterator that yields unexpected items
+			(arr as any)[Symbol.iterator] = function* () {
+				yield 'custom-1';
+				yield 'custom-2';
+			};
+			const result = allObject(arr);
+			expect(result).toEqual(['first', 'second']);
+		});
+	});
+
 	describe('omit/purge on Array', () => {
 		it('should clear an array using purge', () => {
 			const arr = [1, 2, 3];
@@ -33,3 +46,4 @@ describe('Reflection Library', () => {
 		});
 	});
 });
+

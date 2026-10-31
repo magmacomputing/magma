@@ -25,6 +25,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Locale Calendar Preference Metadata (`international.library`)**:
   - Added `calendar: string` property to the `ResolvedLocaleInfo` interface.
   - Implemented preferred and locale-specified calendar resolution via `Intl.Locale.prototype.getCalendars()` (defaulting to cultural regional calendar when no `-u-ca-*` extension is present), allowing runtime inspection of a locale's resolved calendar (e.g. `'gregory'`, `'buddhist'`, `'hebrew'`) via `resolveLocaleInfo(locale).calendar`.
+- **Julian Day Calculation (`calendar.library`)**:
+  - Exported `toJulianDay()` in `#library/calendar.library.js` with overloads accepting discrete `(year, month, day)` integers, a native JavaScript `Date` (UTC), or an object with `{ year, month, day }` components (including Temporal date objects).
+  - Exported `EPOCH_JULIAN_DAY` constant (`2_440_588` for Unix epoch 1970-01-01), computing the astronomical integer Julian Day Number using pure civil integer arithmetic.
 
 ### Changed & Hardened
 - **Pure Integer Calendar Arithmetic (`calendar.library`, `rrule.library`)**:

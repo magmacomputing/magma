@@ -13,6 +13,7 @@ import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isDefined, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
+import { toJulianDay } from '#library/calendar.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { getStashedGeo, coerceGeo } from '#library/mapper.library.js';
@@ -21,8 +22,8 @@ import { Enum } from '#library/enumerate.library.js';
 import { LOG } from '#library/logger.class.js';
 import type { Secure } from '#library/type.library.js';
 
-import { registerPlugin, interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
-import { registerTerm, getTermRange } from './plugin/term/term.util.js';
+import { interpret, ensureModule, type TempoPlugin } from './plugin/plugin.util.js'
+import { getTermRange } from './plugin/term/term.util.js';
 import type { TermPlugin } from './plugin/term/term.type.js';
 
 import { AliasEngine } from './engine/engine.alias.js';
@@ -35,8 +36,7 @@ import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
 import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade } from '#tempo/support';
-import { TEMPO_VERSION } from './tempo.version.js';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -46,7 +46,6 @@ declare module '#library/type.library.js' {
 }
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
-/**  */																											const ClassStates = new WeakMap<typeof Tempo, Internal.State>();
 // shortcut functions to common Tempo properties / methods
 /** current timestamp (ts) */																export const getStamp = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options).ts) as t.Params<number | bigint>;
 /** create new Tempo */																			export const getTempo = ((tempo: t.DateTime, options: t.Options) => new Tempo(tempo, options)) as t.Params<Tempo>;
@@ -81,8 +80,7 @@ namespace Internal {
 let _global = {} as Internal.State;
 /** cache for next-available 'usr' Token key */
 let _usrCount = 0;
-/** flag to prevent recursion during init */
-const _lifecycle = { bootstrap: true, initialising: false, extendDepth: 0, ready: false };
+
 
 const intervalProxyHandler: ProxyHandler<typeof Interval> = {
 	construct(target, args: any[]) {
@@ -116,11 +114,10 @@ export class Tempo {
 	/** @internal check if Tempo is currently initializing */	static get isInitializing() { return !_lifecycle.ready }
 	/** @internal check if Tempo is currently extending */		static get isExtending() { return _lifecycle.extendDepth > 0 }
 
-	static #versions: Record<string, string> = { Tempo: TEMPO_VERSION };
 	/** the active versions of Tempo and any registered plugins or modules */
-	static get versions() { return Object.freeze({ ...Tempo.#versions }) as Readonly<Record<string, string>>; }
+	static get versions() { return Object.freeze({ ...getRuntime().versions }) as Readonly<Record<string, string>>; }
 	/** the version of this Tempo build (stamped at build-time from package.json) */
-	static get version() { return Tempo.#versions['Tempo']; }
+	static get version() { return getRuntime().versions['Tempo']; }
 	/** high-performance in-memory cache facade for glossary and dynamic parse results */
 	static get cache() {
 		return createCacheFacade(() => this[$Internal]());
@@ -131,7 +128,6 @@ export class Tempo {
 	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
-	/** mapping of terms to their resolved values */					static #termMap: Map<string, TermPlugin> = new Map();
 	/** tracks invalid locales already warned about to avoid log spam */		static #warnedLocales: Set<string> = new Set();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
@@ -566,348 +562,7 @@ export class Tempo {
 	 */
 	static use(...args: any[]): typeof Tempo;
 	static use(...args: any[]): typeof Tempo {
-		const isPluginLike = (arg: any): boolean =>
-			Array.isArray(arg) ||
-			isFunction(arg) ||
-			hasAnyOf(arg, 'install', 'define', sym.$PluginType);
-
-		const isPlainConfigDict = (arg: any) =>
-			isPlainObject(arg) &&
-			!ownKeys(arg).some(key => DISCOVERY.has(key as any)) &&
-			hasNoneOf(arg, 'name', 'key', 'install', 'define', sym.$PluginType) &&
-			ownKeys(arg).length > 0 &&
-			ownKeys(arg).every(k => isObject(arg[k]));
-
-		const isPluginTuple = (entry: any): entry is [any, any] =>
-			Array.isArray(entry) &&
-			entry.length === 2 &&
-			!Array.isArray(entry[0]) &&
-			isPluginLike(entry[0]) &&
-			isObject(entry[1]) &&
-			!isPlainConfigDict(entry[1]) &&
-			!isPluginLike(entry[1]);
-
-		const isOptionsArg = (arg: any) =>
-			isObject(arg) &&
-			!isPluginLike(arg) &&
-			!isPlainConfigDict(arg);
-
-		const lastArg = args.at(-1);
-		let options = (args.length > 1 && (isOptionsArg(lastArg) || isSymbol(lastArg)))
-			? args.pop()
-			: undefined;
-
-		const flattenPlugins = (arr: any[]): any[] => {
-			const result: any[] = [];
-			for (const item of arr) {
-				if (isPluginTuple(item)) {
-					result.push(item);
-				} else if (Array.isArray(item)) {
-					result.push(...flattenPlugins(item));
-				} else if (item != null) {
-					result.push(item);
-				}
-			}
-			return result;
-		}
-
-		const items = flattenPlugins(args);
-		if (isEmpty(items)) return this;
-
-		_lifecycle.extendDepth++;																// increment the re-entrant nesting counter
-		try {
-			items.forEach(item => {
-				let plugin = item;
-				let callSiteOptions: any = undefined;
-
-				// 1. Unpack tuple syntax: [Plugin, Options]
-				if (isPluginTuple(item)) {
-					plugin = item[0];
-					callSiteOptions = item[1];
-				}
-
-				// 2. Resolve Factory Closures or Callable Plugins
-				if (isFunction(plugin)) {
-					if (plugin[sym.$PluginType] || isFunction(plugin.install) || isFunction(plugin.define)) {
-						callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
-					} else if (plugin.length === 0 && callSiteOptions !== undefined) {
-						// Potential factory function passed in tuple: [factoryFn, opts]
-						const res = (plugin as any)(callSiteOptions);
-						if (hasAnyOf(res, 'install', 'define', sym.$PluginType)) {
-							plugin = res;
-							callSiteOptions = { ...((res as any).options ?? {}), ...(callSiteOptions ?? {}) };
-						}
-					}
-				} else if (hasKey(plugin, 'options') && plugin.options) {
-					callSiteOptions = { ...((plugin as any).options ?? {}), ...(callSiteOptions ?? {}) };
-				}
-
-				let pluginType = (plugin as any)?.[sym.$PluginType] || (plugin as any)?.type;
-				if (!pluginType && hasKey(plugin, 'define', isFunction) && hasKey(plugin, 'key')) pluginType = 'term';
-				if (!pluginType && hasKey(plugin, 'install', isFunction)) pluginType = 'plugin';
-
-				if (!pluginType && isFunction(plugin)) {
-					// Legacy Standard Plugin registration callback: (Tempo, options, rehydrator)
-					const state = this[$Internal]();
-					const rt = getRuntime();
-					const installed = state.installed ?? rt.installed; // ScopedSet for sandboxes, global Set for Tempo
-					if (installed.has(plugin)) return;
-					installed.add(plugin); // mark as installed (BEFORE side-effects)
-
-					registerPlugin(plugin, state);
-					const pluginName = (plugin as any).name;
-					const existingConfigOpts = isText(pluginName)
-						? (state.config.pluginOptions?.[pluginName] ?? state.config.plugins?.[pluginName])
-						: undefined;
-					const resolvedOptions = {
-						...(isObject(existingConfigOpts) ? existingConfigOpts : {}),
-						...(isObject(options) ? options : {}),
-						...(isObject(callSiteOptions) ? callSiteOptions : {})
-					};
-
-					if (isText(pluginName) && pluginName !== 'anonymous' && !isEmpty(resolvedOptions)) {
-						state.config.pluginOptions = {
-							...(state.config.pluginOptions ?? {}),
-							[pluginName]: resolvedOptions
-						};
-					}
-
-					try {
-						(plugin as any)(this, !isEmpty(resolvedOptions) ? resolvedOptions : options, (val: any) => new this(val));
-					} catch (e: any) {
-						const msg = (e?.message ?? '').toLowerCase();
-						if (msg.includes('constructor') || msg.includes('class') || msg.includes('extensible') || msg.includes('read only') || isClass(plugin)) {
-							logWarn(`Misidentified class or frozen sandbox in plugin registration: ${(plugin as any).name}`, state.config, e.stack ?? e);
-						} else {
-							throw e;
-						}
-					}
-					return;
-				}
-
-				if (isObject(plugin) || isFunction(plugin)) {
-					const assertContract = (isValid: boolean, msg: string) => {
-						if (!isValid) {
-							const config = this[$Internal]().config;
-							if (config.catch) {
-								logError(msg, config);
-								return false;
-							}
-							throw new TypeError(msg);
-						}
-						return true;
-					}
-
-					switch (pluginType) {
-						case 'plugin':
-						case 'namespace':
-						case 'module': {
-							if (!assertContract(isFunction(plugin.install), `[Tempo] Invalid ${pluginType} object: missing 'install()' method.`)) return;
-
-							const name = (plugin as any).name;
-							const state = this[$Internal]();
-							const rt = getRuntime();
-							const installed = state.installed ?? rt.installed; // ScopedSet for sandboxes, global Set for Tempo
-
-							// Resolve options precedence: existingConfigOpts < options < callSiteOptions
-							const existingConfigOpts = name
-								? (state.config.pluginOptions?.[name] ?? state.config.plugins?.[name])
-								: undefined;
-							const resolvedOptions = {
-								...(isObject(existingConfigOpts) ? existingConfigOpts : {}),
-								...(isObject(options) ? options : {}),
-								...(isObject(callSiteOptions) ? callSiteOptions : {})
-							};
-
-							// Automatically synchronize resolved options to state.config.pluginOptions
-							if (name && !isEmpty(resolvedOptions)) {
-								state.config.pluginOptions = {
-									...(state.config.pluginOptions ?? {}),
-									[name]: resolvedOptions
-								}
-							}
-
-							const hasExplicitOptions = (isObject(callSiteOptions) && !isEmpty(callSiteOptions)) ||
-								(isObject(options) && !isEmpty(options));
-
-							if (name && installed.has(name)) {
-								if (hasExplicitOptions) {
-									registerPlugin(plugin, state);
-									const installOpts = resolvedOptions;
-									(plugin as any).install.call(this, this, installOpts);
-								} else {
-									logDebug(`Plugin already installed by name: ${name}`, state.config);
-								}
-								return;
-							}
-							if (!name && installed.has(plugin)) return;		// identity-based dedup for unnamed plugins
-							if (name) installed.add(name); else installed.add(plugin);
-
-							registerPlugin(plugin, state);
-							if (plugin.version && isString(name)) {
-								let suffix = '';
-								if (pluginType === 'plugin') suffix = 'Plugin';
-								else if (pluginType === 'namespace') suffix = 'Namespace';
-								else if (pluginType === 'module') suffix = 'Module';
-								else suffix = 'Plugin';
-
-								Tempo.#versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = plugin.version;
-							}
-							const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
-							(plugin as any).install.call(this, this, installOpts);
-							break;
-						}
-						case 'term': {
-							if (!assertContract(isFunction(plugin.define), `[Tempo] Invalid term object: missing 'define()' method.`)) return;
-
-							const config = plugin as TermPlugin;
-							const state = this[$Internal]();
-							const termName = config.scope || config.key;
-
-							// Resolve options precedence: existingConfigOpts < options < callSiteOptions
-							const existingConfigOpts = termName
-								? (state.config.pluginOptions?.[termName] ?? state.config.plugins?.[termName])
-								: undefined;
-							const resolvedOptions = {
-								...(isObject(existingConfigOpts) ? existingConfigOpts : {}),
-								...(isObject(options) ? options : {}),
-								...(isObject(callSiteOptions) ? callSiteOptions : {})
-							};
-
-							// Automatically synchronize resolved options to state.config.pluginOptions
-							if (termName && !isEmpty(resolvedOptions)) {
-								state.config.pluginOptions = {
-									...(state.config.pluginOptions ?? {}),
-									[termName]: resolvedOptions
-								};
-							}
-
-							const termConfig: TermPlugin = !isEmpty(resolvedOptions)
-								? { ...config, options: resolvedOptions }
-								: config;
-
-							if (Tempo.#termMap.get(config.key) === config) {
-								if (!isEmpty(resolvedOptions)) {
-									Tempo.#termMap.set(config.key, termConfig);
-									if (config.scope) Tempo.#termMap.set(config.scope, termConfig);
-									registerTerm(termConfig, this[$Internal]());
-								}
-								return;
-							}
-							if (Tempo.#termMap.has(config.key)) {
-								const existing = Tempo.#termMap.get(config.key);
-								const rangesMatch = JSON.stringify(existing?.ranges) === JSON.stringify(config.ranges);
-								if (existing?.scope === config.scope && existing?.description === config.description && rangesMatch) {
-									logDebug(`[Tempo#extend] Duplicate term registration ignored for key: "${config.key}"`, state.config);
-									if (!isEmpty(resolvedOptions)) {
-										Tempo.#termMap.set(config.key, termConfig);
-										if (config.scope) Tempo.#termMap.set(config.scope, termConfig);
-										registerTerm(termConfig, this[$Internal]());
-									}
-									return;
-								}
-								logError(`[Tempo#extend] Term collision on key: "${config.key}". Registration aborted.`, state.config);
-								return;
-							}
-							if (config.scope && Tempo.#termMap.get(config.scope) === config) { /* continue */ }
-							else if (config.scope && Tempo.#termMap.has(config.scope)) {
-								const existingScope = Tempo.#termMap.get(config.scope);
-								const rangesMatch = JSON.stringify(existingScope?.ranges) === JSON.stringify(config.ranges);
-								if (existingScope?.key === config.key && existingScope?.description === config.description && rangesMatch) {
-									/* continue */
-								} else {
-									logError(`[Tempo#extend] Term collision on scope: "${config.scope}". Registration aborted.`, state.config);
-									return;
-								}
-							}
-
-							Tempo.#termMap.set(config.key, termConfig);
-							if (config.scope) Tempo.#termMap.set(config.scope, termConfig);
-							for (const alias of asArray(config.aliases))
-								if (!Tempo.#termMap.has(alias)) Tempo.#termMap.set(alias, termConfig);
-
-							if (config.version) {
-								const name = config.scope || config.key;
-								Tempo.#versions[`${name}Term`] = config.version;
-							}
-
-							registerTerm(termConfig, this[$Internal]());
-
-							// 1a. sync with alias engine
-							if (config.scope && config.ranges) {
-								const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
-								if (type) {
-									const aliases: [string, any][] = [];
-									const monthKeys = Enum.keys(Tempo.MONTH);
-									config.ranges.forEach(r => {
-										if (r.key) {
-											let val: string | undefined;
-											if (isDefined(r.hour)) {
-												if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
-													val = `${r.hour}:${pad(r.minute ?? 0)}`;
-											} else if (r.month) {
-												if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
-													val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
-											}
-
-											if (val) aliases.push([r.key, val]);
-										}
-									});
-
-									if (aliases.length > 0) {
-										const state = this[$Internal]();
-										if (type === 'per') this[$setPeriods](state, aliases);
-										else if (type === 'evt') this[$setEvents](state, aliases);
-									}
-								}
-							}
-							break;
-						}
-						default: {
-							// Safe fallback to Discovery Object parsing
-							const discovery = item as any;
-							const opts = this[$setDiscovery](this[$Internal](), discovery);
-							if (!isEmpty(opts)) this[$setConfig](this[$Internal](), opts);
-
-							// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
-							const isPlainConfigDict = isPlainObject(discovery) &&
-								!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
-								hasNoneOf(discovery, 'name', 'key', 'install');
-							if (isPlainConfigDict) {
-								const state = this[$Internal]();
-								/** @deprecated Supplying plain configuration dictionaries in the plugins array is deprecated. Use 'pluginOptions' instead. */
-								state.config.plugins = { ...(state.config.plugins ?? {}), ...discovery };
-								state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...discovery };
-							}
-
-							if (discovery.plugins && (Array.isArray(discovery.plugins) || isFunction(discovery.plugins) || hasAnyOf(discovery.plugins, 'name', 'key', 'install')))
-								this.use(discovery.plugins);
-
-							// only trigger init if we're assigning a new discovery object to a symbol
-							if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
-								const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
-								const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : discoveryArg;
-
-								if ((globalThis as Record<symbol, any>)[discoverySymbol as symbol] !== item)
-									(globalThis as Record<symbol, any>)[discoverySymbol as symbol] = item;
-
-								this[$setConfig](this[$Internal](), { discovery: discoverySymbol });
-							}
-							break;
-						}
-					}
-				}
-			});
-		} finally {
-			_lifecycle.extendDepth--;															// decrement the re-entrant nesting counter
-		}
-
-		if (_lifecycle.extendDepth === 0) {
-			this[$buildGuard]();
-			setPatterns(this[$Internal]());												// rebuild the global patterns
-		}
-
-		return this;
+		return usePlugin(this, args);
 	}
 
 	/**
@@ -943,105 +598,7 @@ export class Tempo {
 	static create<R>(fn: (sandbox: typeof Tempo) => R): R;
 	static create<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
 	static create<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
-		let options: t.Options = {};
-		let fn: ((sandbox: typeof Tempo) => R) | undefined;
-
-		if (isFunction(arg1)) {
-			fn = arg1 as (sandbox: typeof Tempo) => R;
-		} else if (isObject(arg1)) {
-			options = arg1 as t.Options;
-			if (isFunction(arg2))
-				fn = arg2;
-		}
-
-		const discovery = options.discovery;
-		const normalizedDiscovery = (isObject(discovery) && !isSymbol(discovery)) || isUndefined(discovery) || (isSymbol(discovery) && !Symbol.keyFor(discovery))
-			? Symbol('TempoSandbox')
-			: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
-
-		let disposed = false;
-		const SandboxTempo = class extends (this as any) {
-			static [Symbol.toStringTag] = 'TempoSandbox';
-			static [$IsBase] = false;
-			static get isDisposed(): boolean { return disposed; }
-			static [Symbol.dispose]() {
-				if (disposed) return;
-				disposed = true;
-				if ((globalThis as any)[normalizedDiscovery as any] === data)
-					delete (globalThis as any)[normalizedDiscovery as any];
-
-				ClassStates.delete(SandboxTempo as any);
-			}
-		}
-
-		let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
-
-		if (isObject(options.discovery) && !isSymbol(options.discovery))
-			data = { ...data, ...options.discovery as any };
-
-		(globalThis as any)[normalizedDiscovery as any] = data;
-
-		const state = init(options, false, this[$Internal]());
-		state.config.discovery = normalizedDiscovery as any;
-		ClassStates.set(SandboxTempo as any, state);
-		setPatterns(state); // compile regex patterns for the isolated sandbox state
-
-		// Apply configuration to the sandbox
-		(SandboxTempo as any)[$setConfig](state,
-			{
-				scope: 'sandbox',
-				discovery: normalizedDiscovery as any,
-				catch: options.catch ?? false
-			},
-			(SandboxTempo as any)[$setDiscovery](state, data),
-			{ ...options, discovery: normalizedDiscovery }
-		);
-
-		const pluginsToInstall = options.plugins ?? data?.plugins;
-		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || hasAnyOf(pluginsToInstall, 'name', 'key', 'install', sym.$PluginType, 'type'))) {
-			let toInstall = pluginsToInstall;
-			if (Array.isArray(pluginsToInstall)) {
-				const isPlainConfigDict = (item: any) =>
-					isPlainObject(item) &&
-					!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
-					hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
-
-				const remaining: any[] = [];
-				for (const item of pluginsToInstall) {
-					if (isPlainConfigDict(item)) {
-						state.config.plugins = { ...(state.config.plugins ?? {}), ...item };
-						state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...item };
-					} else {
-						remaining.push(item);
-					}
-				}
-				toInstall = remaining;
-			}
-			if (!isEmpty(toInstall))
-				(SandboxTempo as any).use(toInstall);
-		}
-
-		Object.freeze(SandboxTempo);
-
-		const sb = cast<typeof Tempo>(SandboxTempo);
-
-		if (fn) {
-			try {
-				const res = fn(sb);
-				if (res && isCallable((res as any).then)) {
-					return Promise.resolve(res).finally(() => {
-						(sb as any)[Symbol.dispose]?.();
-					}) as R;
-				}
-				(sb as any)[Symbol.dispose]?.();
-				return res;
-			} catch (err) {
-				(sb as any)[Symbol.dispose]?.();
-				throw err;
-			}
-		}
-
-		return sb;
+		return createSandbox(this, arg1, arg2);
 	}
 
 	/** 
@@ -1129,7 +686,7 @@ export class Tempo {
 				if (key.startsWith('usr.'))													// only remove 'usr.' prefixed keys
 					delete Token[key];
 
-			Tempo.#termMap.clear();																// clear term lookup map
+			getRuntime().termMap.clear();													// clear term lookup map
 			registryReset();																			// purge formats and numbers
 
 			// 3. Apply configuration via unified setters (non-destructive merge)
@@ -1319,8 +876,10 @@ export class Tempo {
 	 * Creates a new `Tempo` instance representing the current date and time.
 	 * @param options - Configuration options for this specific instance.
 	 */
-	static now(options?: t.Options): Tempo {
-		return new this(options);
+	static now(options?: Omit<t.Options, 'value'>): Tempo {
+		if (!options) return new this(instant());
+		const { value: _, ...opts } = options as any;
+		return new this(instant(), opts);
 	}
 
 	static #getEpoch(inst: { epochMilliseconds: number, epochNanoseconds: bigint }): Readonly<{ ss: number; ms: number; us: number; ns: bigint }> {
@@ -1710,7 +1269,7 @@ export class Tempo {
 				case 'term': {
 					if (!ensureModule(this, 'TermsModule')) return undefined;
 
-					const term = Tempo.#termMap.get(key);
+					const term = getRuntime().termMap.get(key);
 					if (term) {
 						const isKeyOnly = key === term.key ? Boolean(term.scope) : key !== term.scope;
 						const define = (keyOnly: boolean) => {
@@ -1854,17 +1413,14 @@ export class Tempo {
 		return (this.#memo.sphere = res as t.COMPASS | undefined);
 	}
 	/** Unix timestamp (defaults to milliseconds) */					get ts() { return this.epoch[(this.#local.config.timeStamp ?? 'ms') as t.TimeStamp] }
-	/** Short month name (e.g., 'Jan') */											get mmm() { return Tempo.MONTH.keyOf(this.toDateTime().month as t.Month) }
-	/** Full month name (e.g., 'January') */									get mon() { return Tempo.MONTHS.keyOf(this.toDateTime().month as t.Month) }
-	/** Short weekday name (e.g., 'Mon') */										get www() { return Tempo.WEEKDAY.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
-	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Tempo.WEEKDAYS.keyOf(this.toDateTime().dayOfWeek as t.Weekday) }
+	/** Short month name (e.g., 'Jan') */											get mmm() { return Enum.keyOf(Tempo.MONTH, this.toDateTime().month as t.Month) }
+	/** Full month name (e.g., 'January') */									get mon() { return Enum.keyOf(Tempo.MONTHS, this.toDateTime().month as t.Month) }
+	/** Short weekday name (e.g., 'Mon') */										get www() { return Enum.keyOf(Tempo.WEEKDAY, this.toDateTime().dayOfWeek as t.Weekday) }
+	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Enum.keyOf(Tempo.WEEKDAYS, this.toDateTime().dayOfWeek as t.Weekday) }
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
-	/** Total days in the current month, using the instance calendar. */								get dim() { return this.toDateTime().daysInMonth }
-	/** Integer Julian day number for the local ISO calendar date, ignoring time of day (1970-01-01 = 2440588). */											get jj() {
-		const pd = this.toDateTime().toPlainDate().withCalendar('iso8601');
-		return 2440588 + Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
-	}
+	/**  in current month, using instance calendar. */				get dim() { return this.toDateTime().daysInMonth }
+	/** Julian day number for the local ISO calendar date. */	get jj() { return toJulianDay(this.yy, this.mm, this.dd); }
 	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDateTime().toInstant().toString() }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 

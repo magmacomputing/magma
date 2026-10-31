@@ -254,6 +254,18 @@ describe(`${label} now`, () => {
     expect(tokyo.tz).toBe('Asia/Tokyo');
   })
 
+  test('captures call-time timestamp when mode: "defer"', async () => {
+    const t = Tempo.now({ mode: Tempo.enums.MODE.Defer });
+    const callTimeMs = Date.now();
+    await new Promise(r => setTimeout(r, 20));
+    expect(Math.abs(t.epoch.ms - callTimeMs)).toBeLessThan(15);
+  })
+
+  test('ignores value property passed in options', () => {
+    const t = Tempo.now({ value: '2020-01-01' } as any);
+    expect(t.epoch.ms).toBeGreaterThan(Date.now() - 5000);
+  })
+
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

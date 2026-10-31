@@ -22,13 +22,13 @@ graph TD
 ---
 
 ### Phase 1: Core Modernization, Deprecations & Signals (PR #110 & Phase 1 Complete)
-*Status: Completed — `Tempo.now()` instance factory and `Tempo.epoch` fully transitioned and tested*
+*Status: Nearly Completed — `Tempo.now()` instance factory and `Tempo.epoch` fully transitioned and tested*
 
 - [x] **`Tempo.now()` Transition to Instance Factory**:
   - `Tempo.now()` returns an immutable `Tempo` instance (supports options like `{ timeZone, sphere }`) instead of primitive `bigint` nanoseconds.
   - Raw epoch numbers cleanly moved to `Tempo.epoch.ns`, `Tempo.epoch.ms`, `Tempo.epoch.us`, and `Tempo.epoch.ss`.
   - Static `Tempo.instant` returns native `Temporal.Instant`. Static tests updated in `static.methods.test.ts`.
-- [x] **Format Token Rationalization**:
+- [ ] **Format Token Rationalization**:
   - Deprecate legacy `{ww}` and `{wy}` in favor of canonical ISO `{yow}` and `{woy}`.
   - Canonicalize orthogonal `:compact` modifier across parser, format, and explain, completely eliminating legacy fused modifiers (e.g. `{tz:offsetcompact}`).
   - Standardize offset sub-components on canonical `:hh`, `:mi`, `:ss`.

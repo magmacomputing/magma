@@ -68,7 +68,7 @@ Tempo bridges functional programming and traditional object-oriented architectur
 
 1. **`Tempo.from(input?, options?)` — Functional & Pipeline Gateway**  
    * **Operator Precedence**: Eliminates the parenthetical friction of the `new` keyword in method chains (e.g. `Tempo.from(val).format(...)` vs. `(new Tempo(val)).format(...)`).
-   * **First-Class Function Pointer**: Allows direct callback passing without arrow-function ceremony (e.g. `items.map(Tempo.from)`).
+   * **Functional Pipeline Usage**: Natural fit for functional transformations and callback pipelines (e.g. `items.map(d => Tempo.from(d))`).
    * **Polymorphic Parity**: Delegates directly to `new this(...)`, ensuring functional developers get the exact same Master Guard and multi-type parsing power as class instantiation.
 
 2. **`new Tempo(input?, options?)` — Object-Oriented Gateway**  

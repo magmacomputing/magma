@@ -1,4 +1,5 @@
 import { distinct, ownKeys, ownEntries } from '#library/primitive.library.js';
+import { asArray } from '#library/coercion.library.js';
 import { asType, getType } from '#library/type.library.js';
 import { isEmpty, isFunction, isPrimitive, isReference, isSymbol } from '#library/assertion.library.js';
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
@@ -132,7 +133,7 @@ export function reset<T extends Obj>(orig: T, obj?: T) {
  */
 export function allObject<T extends Obj>(json: T) {
 	return Array.isArray(json)
-		? Array.from(json) as any
+		? asArray(json) as any
 		: Object.fromEntries(ownEntries(json, true));
 }
 

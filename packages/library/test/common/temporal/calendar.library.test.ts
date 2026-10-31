@@ -18,6 +18,8 @@ import {
 	isoWeekdayFromDays,
 	epochMsFromParts,
 	partsFromEpochMs,
+	toJulianDay,
+	EPOCH_JULIAN_DAY,
 } from '#library/calendar.library.js';
 import type {
 	UtcPartsOptions,
@@ -370,6 +372,18 @@ describe('calendar.library', () => {
 			expect(civilToDays(2026, 0, 1)).toBe(civilToDays(2025, 12, 1));
 			// Month -1 of 2026 rolls back to Nov 2025
 			expect(civilToDays(2026, -1, 1)).toBe(civilToDays(2025, 11, 1));
+		});
+
+		test('toJulianDay computes Julian Day Number across numbers, Date, and Temporal objects', () => {
+			// Unix Epoch: 1970-01-01 -> 2440588
+			expect(toJulianDay(1970, 1, 1)).toBe(EPOCH_JULIAN_DAY);
+			expect(toJulianDay(new Date(Date.UTC(1970, 0, 1)))).toBe(2440588);
+			expect(toJulianDay({ year: 1970, month: 1, day: 1 })).toBe(2440588);
+
+			// J2000.0 epoch: 2000-01-01 -> 2451545
+			expect(toJulianDay(2000, 1, 1)).toBe(2451545);
+			expect(toJulianDay(new Date(Date.UTC(2000, 0, 1)))).toBe(2451545);
+			expect(toJulianDay({ year: 2000, month: 1, day: 1 })).toBe(2451545);
 		});
 	});
 });

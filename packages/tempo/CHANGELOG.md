@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dialect Mask Formatting Hardening (`module.format.ts`)**:
   - Refined dialect and mask parsing with regex anchoring (`RE_DIALECT_MASK`) to prevent false-positive dialect triggers on unescaped plain-text strings.
   - Added non-throwing fallback with informative error routing (`raise`) when an unbraced dialect format mask is supplied without `@magmacomputing/tempo-plugin-dialects`.
+- **Custom Properties & Lazy-Memoized Getters (`defineProperties`, `defineProperty`)**:
+  - Exported `defineProperties` and `defineProperty` plugin factories from `#tempo` and `#tempo/plugin/plugin.util.js`.
+  - Enables registering custom instance getters and methods directly on `Tempo` or derived sandboxes (`Tempo.create()`).
+  - Getter functions are automatically evaluated lazily on first access and memoized per instance via an internal `WeakMap` or direct non-enumerable property definition.
+  - Supports explicit descriptors with `memo: false` for volatile unmemoized getters, configurable `enumerable` flags for integration with format string token replacement (e.g. `t.format('{customProp}')`), and a `methods: { ... }` shorthand dictionary for attaching instance methods.
+  - Hardened with an immutability guard that strictly disallows `set` accessors, throwing a `TempoError` to protect Tempo's immutable value-object invariants.
 - **Ecosystem & Plugin Alignment**:
   - Synchronized monorepo package versions to `5.0.0`.
   - Widened peer dependencies across all official community plugins to `^4.0.0 || ^5.0.0` for smooth cross-version compatibility.

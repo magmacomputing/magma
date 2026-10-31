@@ -49,12 +49,12 @@ Tempo provides three clean instantiation idioms powered by a single unified poly
 | Factory / Constructor | Primary Role | Example |
 | :--- | :--- | :--- |
 | **`Tempo.now(opts?)`** | **Clock Sampling**: Captures the current system time with optional configuration. | `Tempo.now({ timeZone: 'Asia/Tokyo' })` |
-| **`Tempo.from(input, opts?)`** | **Functional Factory**: Polymorphic ingestion for chaining, callbacks, and pipelines. | `Tempo.from('2026-10-30').format('{yyyy}')`<br>`dates.map(Tempo.from)` |
+| **`Tempo.from(input, opts?)`** | **Functional Factory**: Polymorphic ingestion for chaining, callbacks, and pipelines. | `Tempo.from('2026-10-30').format('{yyyy}')`<br>`dates.map(d => Tempo.from(d))` |
 | **`new Tempo(input?, opts?)`** | **Class Constructor**: Traditional OOP instantiation sharing the exact same parser. | `new Tempo('May 20, 2026')` |
 
 > [!TIP]
 > **Preferred Pattern: `Tempo.from()` and `Tempo.now()`**  
-> While `new Tempo(...)` and `Tempo.from(...)` share identical polymorphic parsing capabilities, `Tempo.from()` eliminates the `new` keyword operator-precedence friction for method chaining and allows passing `Tempo.from` directly as a first-class function into array transformations (e.g. `items.map(Tempo.from)`). Whenever sampling the current clock, use `Tempo.now()` for unambiguous, self-documenting intent.
+> While `new Tempo(...)` and `Tempo.from(...)` share identical polymorphic parsing capabilities, `Tempo.from()` eliminates the `new` keyword operator-precedence friction for method chaining and enables smooth integration in array transformations (e.g. `items.map(d => Tempo.from(d))`). Whenever sampling the current clock, use `Tempo.now()` for unambiguous, self-documenting intent.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

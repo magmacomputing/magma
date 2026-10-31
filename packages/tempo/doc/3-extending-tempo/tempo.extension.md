@@ -8,6 +8,9 @@ This guide will teach you the "Tempo-way" of authoring a custom plugin by buildi
 > If you are building a plugin that adds multiple related properties or methods (like `.finance.taxYear` and `.finance.fiscalQuarter`), you should use the `defineNamespace` factory instead! It automatically lazy-loads your methods and prevents prototype pollution. 
 > 👉 **[Read the Namespace Guide](./tempo.namespace.md)**
 
+> [!TIP] Adding Custom Getters or Methods?
+> If you only need to define custom getters (e.g., `t.isWeekend`) or instance methods without writing full `install(TempoClass)` boilerplate, use [`defineProperties`](./tempo.plugin.md) or [`defineProperty`](./tempo.plugin.md). It automatically lazy-loads and memoizes getters per instance while strictly enforcing Tempo's immutability guarantees.
+
 ## The Goal
 
 We want to add an `.addBusinessDays()` method to the Tempo instance that adds or subtracts a specific number of working days (defaulting to 1), skipping weekends automatically.

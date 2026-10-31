@@ -22,6 +22,9 @@ export function asArray<T, K>(arr: Iterable<T> | ArrayLike<T>, fill: K): K[];
 export function asArray<T, K>(arr: T | Iterable<T> | ArrayLike<T> = [], fill?: K): (T | K)[] {
 	const mapFn = (val: unknown) => (isUndefined(fill) || isDefined(val)) ? val as unknown as K : clone(fill);
 
+	if (Array.isArray(arr))
+		return Array.from<T, K>({ length: arr.length }, (_, i) => mapFn(arr[i]));
+
 	return (isArrayLike<T>(arr) || (isIterable<T>(arr) && !isString(arr)))
 		? Array.from<T, K>(arr as Iterable<T>, mapFn)
 		: [arr as T] as (T | K)[];

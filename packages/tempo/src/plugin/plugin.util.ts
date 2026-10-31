@@ -1,5 +1,5 @@
 import { isFunction, isString, isUndefined, isCallable, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
-import { hasKey, hasOwn } from '#library/primitive.library.js';
+import { hasKey, hasOwn, ownEntries } from '#library/primitive.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
 import { cast } from '#library/type.library.js';
 
@@ -357,6 +357,179 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 	registerPlugin(result);
 	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
 }
+
+export type PropertyResolver<T = any> = (tempo: Tempo) => T;
+
+export type MethodDictionary = Record<string | symbol, Function>;
+
+export type PropertyDefinition =
+	| PropertyResolver
+	| Function
+	| (Omit<PropertyDescriptor, 'set'> & { memo?: boolean })
+	| MethodDictionary;
+
+export type PropertiesConfig = {
+	methods?: MethodDictionary;
+	[key: string | symbol]: PropertyDefinition | undefined;
+};
+
+/**
+ * ## defineProperties
+ * Defines custom instance properties (getters, methods, or descriptors) on Tempo instances.
+ * Getter functions are automatically lazy and memoized per instance.
+ *
+ * @param properties - Dictionary of property definitions, methods, or getter resolvers
+ * @param name - Optional plugin name identifier
+ * @returns A registered properties plugin factory
+ */
+export function defineProperties<Opts = any>(
+	properties: PropertiesConfig,
+	name = 'CustomProperties',
+): PluginFactory<Plugin<TempoType>, Opts> {
+	const weakCache = new WeakMap<object, Record<string | symbol, any>>();
+
+	const plugin = cast<Plugin<TempoType>>({
+		name,
+		version: TEMPO_VERSION,
+		[sym.$PluginType]: 'properties',
+		install(this: TempoType, TempoClass: TempoType) {
+			const proto = TempoClass.prototype;
+
+			for (const [key, value] of ownEntries(properties)) {
+				if (key === 'methods' && isObject(value)) {
+					for (const [mKey, mVal] of ownEntries(value)) {
+						if (mKey in proto)
+							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
+
+						Object.defineProperty(proto, mKey, {
+							value: mVal,
+							writable: true,
+							configurable: true,
+							enumerable: false,
+						});
+					}
+					continue;
+				}
+
+				if (key in proto)
+					throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(key)}' on Tempo.prototype.`);
+
+				if (isObject(value) && 'set' in value)
+					throw new TempoError(`Tempo Security: Setters are not permitted on immutable Tempo instances ('${String(key)}').`);
+
+				if (isFunction(value)) {
+					// Function shorthand is treated as a lazy, auto-memoized getter resolver: (tempo: Tempo) => any
+					Object.defineProperty(proto, key, {
+						get(this: any) {
+							let cache = weakCache.get(this);
+							if (cache && key in cache)
+								return cache[key];
+
+							const result = (value as any).call(this, this);
+
+							if (!cache) {
+								cache = Object.create(null);
+								weakCache.set(this, cache!);
+							}
+							cache![key] = result;
+
+							if (Reflect.isExtensible(this)) {
+								Object.defineProperty(this, key, {
+									value: result,
+									writable: false,
+									enumerable: false,
+									configurable: true,
+								});
+							}
+
+							return result;
+						},
+						configurable: true,
+						enumerable: false,
+					});
+				} else if (isObject(value) && ('get' in value || 'value' in value)) {
+					const desc = value as PropertyDescriptor & { memo?: boolean };
+					if (isFunction(desc.get) && desc.memo !== false) {
+						const getter = desc.get;
+						Object.defineProperty(proto, key, {
+							configurable: desc.configurable ?? true,
+							enumerable: desc.enumerable ?? false,
+							get(this: any) {
+								let cache = weakCache.get(this);
+								if (cache && key in cache)
+									return cache[key];
+
+								const result = (getter as any).call(this, this);
+
+								if (!cache) {
+									cache = Object.create(null);
+									weakCache.set(this, cache!);
+								}
+								cache![key] = result;
+
+								if (Reflect.isExtensible(this)) {
+									Object.defineProperty(this, key, {
+										value: result,
+										writable: false,
+										enumerable: desc.enumerable ?? false,
+										configurable: desc.configurable ?? true,
+									});
+								}
+
+								return result;
+							},
+						});
+					} else {
+						const def: PropertyDescriptor = {
+							configurable: desc.configurable ?? true,
+							enumerable: desc.enumerable ?? false,
+						};
+						if ('value' in desc) {
+							def.value = desc.value;
+							def.writable = desc.writable ?? true;
+						}
+						if ('get' in desc) def.get = desc.get;
+						Object.defineProperty(proto, key, def);
+					}
+				}
+			}
+		},
+	});
+
+	const factory = function (options?: Opts) {
+		return {
+			...plugin,
+			options,
+			[sym.$PluginType]: 'properties',
+		};
+	};
+
+	const { name: pluginName, ...rest } = plugin;
+	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'properties' });
+	if (pluginName)
+		Object.defineProperty(result, 'name', { value: pluginName, configurable: true });
+
+	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
+}
+
+/**
+ * Single-property overload or alias for defineProperties.
+ *
+ * @param propOrProps - Property name or dictionary of properties
+ * @param definition - Property resolver or descriptor when using single property signature
+ * @param name - Optional plugin name
+ * @returns A registered properties plugin factory
+ */
+export function defineProperty<Opts = any>(
+	propOrProps: string | symbol | PropertiesConfig,
+	definition?: PropertyDefinition,
+	name?: string,
+): PluginFactory<Plugin<TempoType>, Opts> {
+	return (isString(propOrProps) || isSymbol(propOrProps))
+		? defineProperties({ [propOrProps]: definition! }, name ?? String(propOrProps))
+		: defineProperties(propOrProps, name);
+}
+
 
 /**
  * Automatically registers a plugin onto the active Tempo constructor or global ambient instance.
