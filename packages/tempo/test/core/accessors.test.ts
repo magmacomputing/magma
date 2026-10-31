@@ -67,4 +67,15 @@ describe(`${label}`, () => {
     expect(t.zdt.month).toBe(2);
     expect(t.zdt.day).toBe(15);
   })
+
+  test(`${label} get integer Julian day number (.jj)`, () => {
+    const tEpoch = new Tempo('1970-01-01');
+    expect(tEpoch.jj).toBe(2440588);
+    const tJ2000 = new Tempo('2000-01-01');
+    expect(tJ2000.jj).toBe(2451545);
+
+    // Non-ISO calendar (e.g. Hebrew calendar) computes Julian Day from the underlying ISO date
+    const tHebrew = new Tempo('1970-01-01', { calendar: 'hebrew' });
+    expect(tHebrew.jj).toBe(2440588);
+  })
 })

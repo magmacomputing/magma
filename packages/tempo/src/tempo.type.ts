@@ -261,7 +261,7 @@ export interface TempoFormatTokens {
 	// ── composite date/time ───────────────────────────
 	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
-	ts: true; nano: true; tz: true; cal: true;
+	ts: true; nano: true; tz: true; cal: true; sphere: true; iso: true;
 	// ── specialized tokens & counters ─────────────────
 	cen: true; century: true; dim: true; jj: true; julian: true; wom: true;
 }

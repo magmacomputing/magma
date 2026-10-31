@@ -1,6 +1,7 @@
 # .coderabbit.yaml
 reviews:
   review_status: false
+  auto_resolve: true
   auto_review:
     enabled: true
     auto_pause_after_reviewed_commits: 0

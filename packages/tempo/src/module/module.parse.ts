@@ -818,12 +818,12 @@ const _ParseEngine = {
 			return false;
 
 		const keys = ownKeys(tempo);
-		if (keys.some(key => state.CONFIG.has(key) && !state.ZONED_DATE_TIME.has(key) && key !== 'value'))
+		if (keys.some(key => Enum.has(state.CONFIG, key) && !Enum.has(state.ZONED_DATE_TIME, key) && key !== 'value'))
 			return false;
 
 		return keys
 			.filter(isString)
-			.some((key: string) => state.ZONED_DATE_TIME.has(key) && !state.CONFIG.has(key))
+			.some((key: string) => Enum.has(state.ZONED_DATE_TIME, key) && !Enum.has(state.CONFIG, key))
 	},
 }
 

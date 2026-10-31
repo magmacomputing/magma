@@ -1,4 +1,4 @@
-import { delegator, proxify } from '#library/proxy.library.js';
+import { delegator, proxify, secure, type Proxified } from '#library/proxy.library.js';
 
 describe('proxy method binding', () => {
 	test('returns a stable bound wrapper for repeated method access', () => {
@@ -74,5 +74,26 @@ describe('delegator', () => {
 			proxy.alpha = 'mutated';
 		}).toThrow(/Cannot set property 'alpha' on a frozen object\./);
 		expect(proxy.alpha).toBe('alpha-value');
+	});
+});
+
+describe('secure serialization', () => {
+	test('de-proxies an array into an array via toJSON', () => {
+		const arr = ['alpha', 'beta', 'gamma'];
+		const secured = secure(arr) as Proxified<string[]>;
+
+		expect(secured.toJSON()).toEqual(['alpha', 'beta', 'gamma']);
+		expect(secured.toJSON()).not.toBe(secured);
+		expect(Array.isArray(secured.toJSON())).toBe(true);
+		expect(JSON.stringify(secured)).toBe('["alpha","beta","gamma"]');
+	});
+
+	test('de-proxies an object into an object via toJSON', () => {
+		const obj = { a: 1, b: 2 };
+		const secured = secure(obj) as Proxified<typeof obj>;
+
+		expect(secured.toJSON()).toEqual({ a: 1, b: 2 });
+		expect(secured.toJSON()).not.toBe(secured);
+		expect(JSON.stringify(secured)).toBe('{"a":1,"b":2}');
 	});
 });

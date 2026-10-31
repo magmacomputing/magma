@@ -1,6 +1,6 @@
 import { $Mutable, $Unwrapped } from '#library/symbol.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isString, isSymbol, isCallable } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol, isCallable, isSafeKey } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
@@ -113,7 +113,7 @@ function shouldSkipMember(name: string | symbol, skipList: any): boolean {
 function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockStatic = (ctor: object) => {
 		Reflect.ownKeys(ctor).forEach(name => {
-			if (name === 'prototype' || name === 'length' || name === 'name' || name === 'constructor') return;
+			if (!isSafeKey(name) || name === 'length' || name === 'name') return;
 			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(ctor, name);
 			if (!desc) return;
@@ -134,7 +134,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockPrototype = (proto: object) => {
 		if (!isReference(proto)) return;
 		Reflect.ownKeys(proto).forEach(name => {
-			if (name === 'constructor') return;
+			if (!isSafeKey(name)) return;
 			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(proto, name);
 			if (!desc) return;

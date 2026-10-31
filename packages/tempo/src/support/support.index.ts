@@ -5,6 +5,7 @@
  * These exports are primarily consumed by core modules or advanced Plugin API integrations.
  */
 export {
+	Enum,
 	enums,
 	STATE,
 	DEFAULTS,
@@ -38,7 +39,9 @@ export { BoundedCache } from '#library/cache.class.js';
 export { sym, isTempo, Token, TermError, TermHook, type TempoBrand } from './support.symbol.js';
 export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $LogConfig, $Discover } from './support.symbol.js';
 export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
-export { getRuntime, resetRuntime, TempoRuntime } from './support.runtime.js';
+export { getRuntime, resetRuntime, TempoRuntime, _lifecycle, ClassStates } from './support.runtime.js';
+export { usePlugin } from './support.plugin.js';
+export { createSandbox } from './support.sandbox.js';
 export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './support.default.js';
 export { SCHEMA, getLargestUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo, hasNativeFormatBraces, MOMENT_DIALECTS, LDML_DIALECTS, raise } from './support.util.js';
 export { setPatterns } from '../engine/engine.pattern.js';

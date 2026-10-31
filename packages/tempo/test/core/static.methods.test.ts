@@ -229,24 +229,73 @@ describe(`${label} from`, () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe(`${label} now`, () => {
 
-  test('returns a BigInt', () => {
-    expect(typeof Tempo.now()).toBe('bigint');
+  test('returns a Tempo instance', () => {
+    const now = Tempo.now();
+    expect(now).toBeInstanceOf(Tempo);
+    expect(now.isValid).toBe(true);
   })
 
   test('is close to Date.now() in magnitude', () => {
-    const nowNs = Tempo.now();
-    const nowMs = BigInt(Date.now()) * 1_000_000n;
-    const diff = nowNs > nowMs ? nowNs - nowMs : nowMs - nowNs;
-    expect(diff).toBeLessThan(1_000_000_000n);							// within 1 second
+    const now = Tempo.now();
+    const nowMs = Date.now();
+    expect(Math.abs(now.epoch.ms - nowMs)).toBeLessThan(1000);
   })
 
   test('advances over time', async () => {
     const first = Tempo.now();
     await new Promise(r => setTimeout(r, 5));
     const second = Tempo.now();
-    expect(second).toBeGreaterThan(first);
+    expect(second.epoch.ns).toBeGreaterThan(first.epoch.ns);
   })
 
+  test('accepts options (e.g. timeZone)', () => {
+    const tokyo = Tempo.now({ timeZone: 'Asia/Tokyo' });
+    expect(tokyo).toBeInstanceOf(Tempo);
+    expect(tokyo.tz).toBe('Asia/Tokyo');
+  })
+
+  test('captures call-time timestamp when mode: "defer"', async () => {
+    const t = Tempo.now({ mode: Tempo.enums.MODE.Defer });
+    const callTimeMs = Date.now();
+    await new Promise(r => setTimeout(r, 20));
+    expect(Math.abs(t.epoch.ms - callTimeMs)).toBeLessThan(15);
+  })
+
+  test('ignores value property passed in options', () => {
+    const t = Tempo.now({ value: '2020-01-01' } as any);
+    expect(t.epoch.ms).toBeGreaterThan(Date.now() - 5000);
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tempo.epoch & Tempo.instant
+// ─────────────────────────────────────────────────────────────────────────────
+describe(`${label} epoch & instant`, () => {
+
+  test('returns static epoch units', () => {
+    expect(typeof Tempo.epoch.ss).toBe('number');
+    expect(typeof Tempo.epoch.ms).toBe('number');
+    expect(typeof Tempo.epoch.us).toBe('number');
+    expect(typeof Tempo.epoch.ns).toBe('bigint');
+
+    const nowMs = Date.now();
+    expect(Math.abs(Tempo.epoch.ms - nowMs)).toBeLessThan(1000);
+  })
+
+  test('returns native Temporal.Instant via Tempo.instant', () => {
+    expect(Tempo.instant).toBeInstanceOf(Temporal.Instant);
+    expect(Math.abs(Tempo.instant.epochMilliseconds - Date.now())).toBeLessThan(1000);
+  })
+
+})
+
+describe(`${label} now`, () => {
+  test('creates a valid Tempo instance representing current time', () => {
+    const t = Tempo.now();
+    expect(t.isValid).toBe(true);
+    expect(Math.abs(t.epoch.ms - Date.now())).toBeLessThan(1000);
+  })
 })
 
 describe(`${label} readStore / writeStore`, () => {

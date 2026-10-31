@@ -62,6 +62,25 @@ Together, these pillars help ensure that `new Tempo()` maintains an extremely fa
 
 ---
 
+## 🚪 The Dual Gateway Pattern (`Tempo.from` vs. `new Tempo` vs. `Tempo.now`)
+
+Tempo bridges functional programming and traditional object-oriented architectures through complementary instantiation gateways powered by a single shared parsing pipeline:
+
+1. **`Tempo.from(input?, options?)` — Functional & Pipeline Gateway**  
+   * **Operator Precedence**: Eliminates the parenthetical friction of the `new` keyword in method chains (e.g. `Tempo.from(val).format(...)` vs. `(new Tempo(val)).format(...)`).
+   * **Functional Pipeline Usage**: Natural fit for functional transformations and callback pipelines (e.g. `items.map(d => Tempo.from(d))`).
+   * **Polymorphic Parity**: Delegates directly to `new this(...)`, ensuring functional developers get the exact same Master Guard and multi-type parsing power as class instantiation.
+
+2. **`new Tempo(input?, options?)` — Object-Oriented Gateway**  
+   * **Direct Class Semantics**: Standard ES6/TypeScript constructor for object-oriented systems, class extension, and dependency injection.
+   * **Zero Code Duplication**: Shares identical private state initialization (`#swap`, `#resolve`, and lazy evaluation).
+
+3. **`Tempo.now(options?)` — Clock-Sampling Gateway**  
+   * **Disambiguated Intent**: Separates reading the system clock from ingesting or converting existing data payloads.
+   * **Zero Argument Sniffing**: The sole argument is unambiguously configuration options (`{ timeZone, locale }`).
+
+---
+
 ## 🔁 Iteration & Enumerability (Delegator Proxies)
 
 A delegator Proxy is a wrapper whose traps forward operations to an internal target/handler pair. Unlike a standard Proxy, delegation is explicit and tightly routed through an intermediate forwarding layer. In Tempo, the "Generic Lazy Delegator Proxy" handles the public delegation mechanism, while lazy shadowing initializes the private state. These mechanisms coexist: the `instance.term` / `instance.fmt` public API employs the delegator Proxy path, and `Tempo.#term` / `Tempo.#fmt` private fields are initialized exactly once via lazy shadowing.

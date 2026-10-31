@@ -17,7 +17,7 @@ describe('Tempo Core', () => {
 				expect(t.parse.mode).toBe(Tempo.enums.MODE.Auto);
 				expect(t.parse.lazy).toBe(true);
 				expect(t.yy).toBe(2024);
-				expect(t.yw).toBe(2024);
+				expect(t.yow).toBe(2024);
 			});
 
 			it('should fail-fast (strict) if input fails Master Guard', () => {
@@ -107,6 +107,16 @@ describe('Tempo Core', () => {
 				const t = new CustomTempo('2026-09-02');
 				expect(t.sphere).toBe('south');
 				expect(t.geo).toEqual({ latitude: -33.869, longitude: 151.209, sphere: 'south' });
+			});
+
+			it('always returns a frozen non-nullable geo object containing sphere even without coordinates', () => {
+				const t = new Tempo('2026-09-02', { timeZone: 'Australia/Sydney' });
+				expect(t.geo).toBeDefined();
+				expect(typeof t.geo).toBe('object');
+				expect(t.geo.sphere).toBe('south');
+				expect(t.geo.latitude).toBeUndefined();
+				expect(t.geo.longitude).toBeUndefined();
+				expect(Object.isFrozen(t.geo)).toBe(true);
 			});
 		});
 	});

@@ -145,25 +145,44 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 });
 
-describe('Legacy v4.x Prototype Methods (Deprecated - To be removed in v5.0.0)', () => {
-	it('should support legacy prototype methods on base and extended enums', () => {
+describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
+	it('should confirm prototype methods are removed from enum instances', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = BASE.extend({ C: 3 });
+		const EXTENDED = Enum.extend(BASE, { C: 3 });
 
-		expect(EXTENDED.keys()).toEqual(['A', 'B', 'C']);
-		expect(EXTENDED.values()).toEqual([1, 2, 3]);
-		expect(EXTENDED.entries()).toEqual([['A', 1], ['B', 2], ['C', 3]]);
-		expect(EXTENDED.count()).toBe(3);
-		expect(EXTENDED.has('A')).toBe(true);
-		expect(EXTENDED.has('C')).toBe(true);
-		expect(EXTENDED.get('A')).toBe(1);
-		expect(EXTENDED.get('C')).toBe(3);
-		expect(EXTENDED.get('D')).toBeUndefined();
-		expect(EXTENDED.invert()).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
-		expect(typeof EXTENDED.extend).toBe('function');
+		// Prototype methods are no longer attached to instances
+		expect((BASE as any).keys).toBeUndefined();
+		expect((BASE as any).values).toBeUndefined();
+		expect((BASE as any).entries).toBeUndefined();
+		expect((BASE as any).has).toBeUndefined();
+		expect((BASE as any).get).toBeUndefined();
+		expect((BASE as any).extend).toBeUndefined();
+		expect((BASE as any).count).toBeUndefined();
+		expect((BASE as any).invert).toBeUndefined();
+
+		expect((EXTENDED as any).keys).toBeUndefined();
+		expect((EXTENDED as any).values).toBeUndefined();
+		expect((EXTENDED as any).entries).toBeUndefined();
+		expect((EXTENDED as any).has).toBeUndefined();
+		expect((EXTENDED as any).get).toBeUndefined();
+		expect((EXTENDED as any).extend).toBeUndefined();
+		expect((EXTENDED as any).count).toBeUndefined();
+		expect((EXTENDED as any).invert).toBeUndefined();
+
+		// All operations must be performed via static Enum.* helpers
+		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
+		expect(Enum.values(EXTENDED)).toEqual([1, 2, 3]);
+		expect(Enum.entries(EXTENDED)).toEqual([['A', 1], ['B', 2], ['C', 3]]);
+		expect(Enum.count(EXTENDED)).toBe(3);
+		expect(Enum.has(EXTENDED, 'A')).toBe(true);
+		expect(Enum.has(EXTENDED, 'C')).toBe(true);
+		expect(Enum.get(EXTENDED, 'A')).toBe(1);
+		expect(Enum.get(EXTENDED, 'C')).toBe(3);
+		expect(Enum.get(EXTENDED, 'D')).toBeUndefined();
+		expect(Enum.invert(EXTENDED)).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
 	});
 
-	it('should support legacy prototype methods with caller-context branching', () => {
+	it('should support enumify across Module caller contexts without prototype leakage', () => {
 		const invalidModuleContext = Object.create(null, {
 			[Symbol.toStringTag]: { value: 'Module' },
 			has: { value: () => true }
@@ -173,10 +192,13 @@ describe('Legacy v4.x Prototype Methods (Deprecated - To be removed in v5.0.0)',
 
 		expect(result.A).toBe(1);
 		expect(result.B).toBe(2);
-		expect(result.keys()).toEqual(['A', 'B']);
-		expect(result.values()).toEqual([1, 2]);
-		expect(result.has('A')).toBe(true);
-		expect(result.count()).toBe(2);
+		expect((result as any).keys).toBeUndefined();
+		expect((result as any).values).toBeUndefined();
+		expect((result as any).has).toBeUndefined();
+		expect(Enum.keys(result)).toEqual(['A', 'B']);
+		expect(Enum.values(result)).toEqual([1, 2]);
+		expect(Enum.has(result, 'A')).toBe(true);
+		expect(Enum.count(result)).toBe(2);
 		expect(Object.getPrototypeOf(result)).not.toBe(invalidModuleContext);
 	});
 });
