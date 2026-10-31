@@ -27,6 +27,9 @@ describe('Primitive Library', () => {
 			expect(toArray(123 as any)).toEqual([]);
 			expect(toArray({ length: -1 } as any)).toEqual([]);
 			expect(toArray({ length: 'invalid' } as any)).toEqual([]);
+			expect(toArray({ length: NaN } as any)).toEqual([]);
+			expect(toArray({ length: Infinity } as any)).toEqual([]);
+			expect(toArray({ length: 2.5 } as any)).toEqual([]);
 		});
 
 		it('should read array elements by numeric index bypassing custom Symbol.iterator', () => {
@@ -44,7 +47,7 @@ describe('Primitive Library', () => {
 			const sparse = [10];
 			sparse[2] = 30;
 			const result = toArray(sparse);
-			expect(result).toEqual([10, undefined, 30]);
+			expect(result).toStrictEqual([10, undefined, 30]);
 		});
 	});
 

@@ -19,7 +19,7 @@ To understand when to use `Tempo.derive()`, it helps to contrast it with the oth
 - **`Tempo.use({ options })`**
   **Concept:** Additive mutation. Keep all existing global settings, plugins, and formats intact, but merge in new configurations.
 - **`Tempo.derive({ options })` / `Tempo.derive(fn)` / `Tempo.derive(options, fn)`**
-  **Concept:** Sandbox Derivation. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Any future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa. Supports both long-lived derived class creation and ephemeral scoped callback execution with deterministic resource disposal.
+  **Concept:** Sandbox Derivation. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Except for terms, future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa. Terms registered in a sandbox are stored in a map that the global `Tempo` also reads. Supports both long-lived derived class creation and ephemeral scoped callback execution with deterministic resource disposal.
 
 ### Overloaded Signatures & Usage Modes
 
@@ -72,13 +72,13 @@ import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 // Synchronous callback: automatically disposed on return
 const season = Tempo.derive((sb) => {
   sb.use(CelestialPlugin);
-  return sb('2026-06-21').term.astronomy.season;
+  return new sb('2026-06-21').term.astronomy.season;
 });
 
 // Asynchronous callback: automatically disposed when the Promise settles
 const result = await Tempo.derive({ timeZone: 'Pacific/Auckland' }, async (sb) => {
   const data = await fetchFlightDeparture();
-  return sb(data.departureTime).format('{full}');
+  return new sb(data.departureTime).format('{full}');
 });
 ```
 
@@ -93,7 +93,7 @@ import { CustomPlugin } from './custom-plugin.js';
   using sb = Tempo.derive({ discovery: 'ephemeral-batch' });
   sb.use(CustomPlugin);
 
-  const formatted = sb('2026-05-10').format();
+  const formatted = new sb('2026-05-10').format();
   console.log(formatted);
 } // sb is automatically disposed here as execution leaves block scope!
 ```

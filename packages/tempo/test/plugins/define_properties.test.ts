@@ -233,4 +233,63 @@ describe('defineProperties & defineProperty', () => {
 		const t = new S();
 		expect((t as any).goodProp).toBe('repaired');
 	});
+
+	it('rejects non-callable method definitions under methods key', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({
+				methods: {
+					invalidMethod: 123 as any,
+				},
+			}));
+		}).toThrow(/Invalid method definition for 'invalidMethod'\. Expected a function\./);
+	});
+
+	it('validates get is callable in first pass so invalid descriptor leaves prototype clean', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({
+				validFirst: () => 'val',
+				badGetDesc: { get: 42 } as any,
+			}));
+		}).toThrow(/Invalid property definition for 'badGetDesc'/);
+
+		const t = new S();
+		expect((t as any).validFirst).toBeUndefined();
+	});
+
+	it('rejects duplicate property keys across methods and top-level definitions', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({
+				collision: () => 'getter',
+				methods: {
+					collision: () => 'method',
+				},
+			}));
+		}).toThrow(/Duplicate property definition 'collision' in defineProperties bundle\./);
+
+		expect(() => {
+			S.use(defineProperties({
+				methods: {
+					duplicateMethod: () => 1,
+				},
+				duplicateMethod: () => 2,
+			}));
+		}).toThrow(/Duplicate property definition 'duplicateMethod' in defineProperties bundle\./);
+	});
+
+	it('cleans up plugin registry when properties bundle installation throws so hasModule is false', () => {
+		const S = Tempo.derive({});
+		expect(S.hasModule('FaultyModule')).toBe(false);
+
+		expect(() => {
+			S.use(defineProperties({
+				badDesc: { get: 'not-a-fn' } as any,
+			}, 'FaultyModule'));
+		}).toThrow();
+
+		expect(S.hasModule('FaultyModule')).toBe(false);
+	});
 });
+

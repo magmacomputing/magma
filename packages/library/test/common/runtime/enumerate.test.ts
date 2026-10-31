@@ -184,6 +184,20 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.invert(EXTENDED)).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
 	});
 
+	it('should support Enum.derive with a plain object base retaining base members', () => {
+		const plainBase = { Alpha: 10, Beta: 20 };
+		const derived = Enum.derive(plainBase, { Gamma: 30 });
+
+		expect(derived.Alpha).toBe(10);
+		expect(derived.Beta).toBe(20);
+		expect(derived.Gamma).toBe(30);
+		expect(Enum.keys(derived)).toEqual(['Alpha', 'Beta', 'Gamma']);
+		expect(Enum.values(derived)).toEqual([10, 20, 30]);
+		expect(Enum.has(derived, 'Alpha')).toBe(true);
+		expect(Enum.has(derived, 'Gamma')).toBe(true);
+		expect(Enum.has(derived, 'Delta')).toBe(false);
+	});
+
 	it('should support enumify across Module caller contexts without prototype leakage', () => {
 		const invalidModuleContext = Object.create(null, {
 			[Symbol.toStringTag]: { value: 'Module' },

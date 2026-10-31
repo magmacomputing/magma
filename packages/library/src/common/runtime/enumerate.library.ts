@@ -130,7 +130,8 @@ const enumMethods = {
 function deriveEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
 function deriveEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
 function deriveEnum(enumObj: any, list: any, frozen?: boolean): any {
-	return (enumify as any).call(enumObj, list, frozen);
+	const base = (enumObj instanceof Enum) ? enumObj : enumify(enumObj);
+	return (enumify as any).call(base, list, frozen);
 }
 
 export const Enum: Readonly<typeof enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));

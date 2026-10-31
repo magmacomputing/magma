@@ -430,7 +430,7 @@ export function toArray<T>(arr?: ArrayLike<T> | null): T[] {
 		return [];
 
 	const len = arr.length;
-	if (typeof len !== 'number' || len <= 0)
+	if (typeof len !== 'number' || !Number.isInteger(len) || len <= 0)
 		return [];
 
 	const res = new Array<T>(len);

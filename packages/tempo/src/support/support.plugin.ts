@@ -219,8 +219,23 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						try {
 							plugin.install.call(TempoClass, TempoClass, installOpts);
 						} catch (error) {
-							if (pluginType === 'properties')
+							if (pluginType === 'properties') {
 								if (name) installed.delete(name); else installed.delete(plugin);
+								if (state?.pluginsDb?.plugins) {
+									const pIdx = state.pluginsDb.plugins.indexOf(plugin);
+									if (pIdx >= 0) {
+										state.pluginsDb.plugins.splice(pIdx, 1);
+									} else if (name) {
+										const nIdx = state.pluginsDb.plugins.findIndex((p: any) => p?.name === name);
+										if (nIdx >= 0) state.pluginsDb.plugins.splice(nIdx, 1);
+									}
+								}
+								const extIdx = rt.extensions.indexOf(plugin);
+								if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
+								if (plugin.version && isString(name)) {
+									delete rt.versions[`${name}Plugin`];
+								}
+							}
 							throw error;
 						}
 						break;

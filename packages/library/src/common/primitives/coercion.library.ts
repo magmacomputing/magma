@@ -25,7 +25,7 @@ export function asArray<T, K>(arr: T | Iterable<T> | ArrayLike<T> = [], fill?: K
 			return toArray(arr);
 
 		return (isArrayLike<T>(arr) || (isIterable<T>(arr) && !isString(arr)))
-			? (isArrayLike<T>(arr) ? toArray(arr) : Array.from<T>(arr as Iterable<T>))
+			? Array.from<T>(arr)
 			: [arr] as (T | K)[];
 	}
 

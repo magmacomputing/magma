@@ -395,23 +395,37 @@ export function defineProperties<Opts = any>(
 			const proto = TempoClass.prototype;
 			const entries = ownEntries(properties);
 
+			const seen = new Set<PropertyKey>();
+
 			// First pass: Validate every entry before defining any properties on prototype
 			for (const [key, value] of entries) {
 				if (key === 'methods' && isObject(value)) {
-					for (const [mKey] of ownEntries(value)) {
+					for (const [mKey, mVal] of ownEntries(value)) {
+						if (seen.has(mKey))
+							throw new TempoError(`Tempo Security: Duplicate property definition '${String(mKey)}' in defineProperties bundle.`);
+						seen.add(mKey);
 						if (mKey in proto)
 							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
+						if (!isFunction(mVal))
+							throw new TempoError(`Tempo Security: Invalid method definition for '${String(mKey)}'. Expected a function.`);
 					}
 					continue;
 				}
 
+				if (seen.has(key))
+					throw new TempoError(`Tempo Security: Duplicate property definition '${String(key)}' in defineProperties bundle.`);
+				seen.add(key);
+
 				if (key in proto)
 					throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(key)}' on Tempo.prototype.`);
 
-				if (isObject(value) && 'set' in value)
+				if (hasKey(value, 'set'))
 					throw new TempoError(`Tempo Security: Setters are not permitted on immutable Tempo instances ('${String(key)}').`);
 
-				if (!isFunction(value) && !(isObject(value) && ('get' in value || 'value' in value))) {
+				if (hasKey(value, 'get') && isDefined(value.get) && !isFunction(value.get))
+					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
+
+				if (!isFunction(value) && !hasKey(value, 'get') && !hasKey(value, 'value')) {
 					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
 				}
 			}
@@ -460,7 +474,7 @@ export function defineProperties<Opts = any>(
 						configurable: true,
 						enumerable: false,
 					});
-				} else if (isObject(value) && ('get' in value || 'value' in value)) {
+				} else if (hasKey(value, 'get') || hasKey(value, 'value')) {
 					const desc = value as PropertyDescriptor & { memo?: boolean };
 					if (isFunction(desc.get) && desc.memo !== false) {
 						const getter = desc.get;
