@@ -574,31 +574,31 @@ export class Tempo {
 	/**
 	 * 🏭 Sandbox Factory & Scoped Execution Mode
 	 * 
-	 * 1. Factory Mode: Creates a fresh, isolated Tempo subclass with its own configuration and registries.
+	 * 1. Factory Mode: Derives a fresh, isolated Tempo subclass with its own configuration and registries.
 	 *    The returned class implements `Disposable` (`[Symbol.dispose]()`), allowing deterministic cleanup via `using`.
 	 * 
-	 * 2. Scoped Execution Mode: When provided a callback, creates an isolated sandbox, executes the callback,
+	 * 2. Scoped Execution Mode: When provided a callback, derives an isolated sandbox, executes the callback,
 	 *    and automatically disposes the sandbox upon completion (supporting both synchronous and Promise returns).
 	 *
 	 * @example
 	 * ```ts
 	 * // Factory mode with `using`
 	 * {
-	 *   using sb = Tempo.create({ discovery: 'test' });
+	 *   using sb = Tempo.derive({ discovery: 'test' });
 	 *   sb.use(MyPlugin);
 	 * }
 	 * 
 	 * // Scoped callback mode
-	 * const result = Tempo.create((sb) => {
+	 * const result = Tempo.derive((sb) => {
 	 *   sb.use(MyPlugin);
 	 *   return sb('2026-05-10').format();
 	 * });
 	 * ```
 	 */
-	static create(options?: t.Options): typeof Tempo;
-	static create<R>(fn: (sandbox: typeof Tempo) => R): R;
-	static create<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
-	static create<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
+	static derive(options?: t.Options): typeof Tempo;
+	static derive<R>(fn: (sandbox: typeof Tempo) => R): R;
+	static derive<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
+	static derive<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
 		return createSandbox(this, arg1, arg2);
 	}
 

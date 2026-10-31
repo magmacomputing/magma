@@ -40,6 +40,9 @@ graph TD
   - Split `getRuntime` import in `@magmacomputing/tempo-plugin-dialects` to preserve dual `^4.7.0 || ^5.0.0` peer dependency support.
 - [x] **Review Remediation**:
   - Resolve all 7 CodeRabbit review findings on PR #110 with localized unit test and monorepo build verification.
+- [x] **`Tempo.derive()` Prototypal Sandbox Architecture**:
+  - Transitioned legacy `Tempo.create()` to `Tempo.derive()` (Option A: clean break) aligning conceptual parity with `Enum.derive()`.
+  - Non-destructive prototypal sandbox inheritance with full `[Symbol.dispose]` explicit resource management (`using`) and scoped callbacks (`Tempo.derive(fn)` / `Tempo.derive(options, fn)`).
 
 ---
 
@@ -101,8 +104,14 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 ---
 
 ### Phase 4: Library & Code Standards Harmonization
-*Status: Planned*
+*Status: In Progress*
 
+- [x] **Enumify Static Reflection Architecture & Prototype Removal (`@magmacomputing/library`)**:
+  - Migrate `enumify` instances from prototype methods (`.has()`, `.get()`, `.keys()`, `.values()`, `.entries()`, `.invert()`, `.keyOf()`, `.includes()`, `.count()`, `.extend()`, `.forEach()`, `.filter()`, `.map()`) to static `Enum.*` reflection suite.
+  - Eliminate member property shadowing risks on Enum instances, retaining only `[Symbol.iterator]` and `[Symbol.toStringTag]`.
+  - Migrate prototype memoization to dedicated module-scoped `WeakMap`s (`keysCache`, `valuesCache`, `entriesCache`, `invertCache`) for O(1) lookups without serialization overhead.
+  - Add `Enum[Symbol.hasInstance]` and strongly-typed `Enum.derive` overloads with `Omit<T, keyof E> & E`.
+  - Clean up obsolete prototype exclusion types (`EnumMethodKeys`, `IgnoreOfMap`, `EnumMethodExclusions`, `IgnoreOf`) in favor of direct `WellKnownSymbols`.
 - [ ] **Type-Guard Semantics Correction (`isNonNull` vs. Strict `isDefined`)**:
   - *Problem*: In v4, `isDefined(null)` returned `false`, trapping `null` in a semantic void where it was neither defined nor undefined.
   - *Step 1*: Introduce `isNonNull<T>(val): val is NonNullable<T>` in `@magmacomputing/library`.

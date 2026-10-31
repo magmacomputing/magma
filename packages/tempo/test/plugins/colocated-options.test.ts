@@ -172,7 +172,7 @@ describe('Colocated Plugin Options & Factories', () => {
 		expect(Tempo.config.pluginOptions?.mixedP3?.p3).toBe(true);
 	});
 
-	test('Sandbox Isolation: Tempo.create scopes colocated options to sandbox', () => {
+	test('Sandbox Isolation: Tempo.derive scopes colocated options to sandbox', () => {
 		let sandboxOpts: any = null;
 
 		const SandboxPlugin = definePlugin({
@@ -180,7 +180,7 @@ describe('Colocated Plugin Options & Factories', () => {
 			install(cls, opts) { sandboxOpts = opts; },
 		});
 
-		const sb = Tempo.create({
+		const sb = Tempo.derive({
 			plugins: [
 				[SandboxPlugin, { isolatedPort: 8080 }],
 			],

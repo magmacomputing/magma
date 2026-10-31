@@ -13,7 +13,7 @@ As of modern builds, all bookkeeping is consolidated inside a single **`TempoRun
 **Benefits:**
 - **Reduced Global Footprint** — Consolidation from multiple scatter-slots down to a single root.
 - **Centralized Hardening** — Strict input validation (`Tempo.use`) and hook management operate securely from one nexus.
-- **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for internal test harnesses without `globalThis` manipulation. *Note: This is an internal testing utility. For user-facing configuration and plugin isolation, use the official Sandbox Factory API (`Tempo.create()`).*
+- **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for internal test harnesses without `globalThis` manipulation. *Note: This is an internal testing utility. For user-facing configuration and plugin isolation, use the official Sandbox Factory API (`Tempo.derive()`).*
 - **Multi-Bundle / HMR Safety** — Guarantees that two bundle copies of Tempo always share the identical runtime object, resolving complex split-brain states in monorepos.
 
 **User-facing "Global Discovery" slots remain on `globalThis`.** The `Symbol.for('$Tempo')` slot (and custom discovery symbols passed to `Tempo.init`) are intentionally exposed for user-readability, remaining ordinary writable properties. Only sensitive internal bookkeeping was moved into the hardened runtime.

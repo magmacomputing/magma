@@ -118,8 +118,8 @@ const enumMethods = {
 		return cached as any;
 	},
 
-	/** Extend an enum with new entries */
-	extend: extendEnum,
+	/** Derive a new enum by inheriting from a base enum */
+	derive: deriveEnum,
 
 	/** Custom instance-of check supporting `val instanceof Enum` or predicate checking */
 	[Symbol.hasInstance](instance: any): boolean {
@@ -127,9 +127,9 @@ const enumMethods = {
 	}
 };
 
-function extendEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
-function extendEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
-function extendEnum(enumObj: any, list: any, frozen?: boolean): any {
+function deriveEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
+function deriveEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
+function deriveEnum(enumObj: any, list: any, frozen?: boolean): any {
 	return (enumify as any).call(enumObj, list, frozen);
 }
 

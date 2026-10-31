@@ -129,7 +129,7 @@ Tempo v5 intentionally avoids cluttering the top-level prototype with aliases or
 > [!TIP]
 > **Extending Tempo with Custom Getters & Namespaces**  
 > Developers are never limited to Tempo's built-in getters. The `Tempo` class is intentionally open for extension:
-> - **Custom Instance Getters (`defineProperties` / `defineProperty`)**: Define custom instance getters and methods directly on `Tempo` or an isolated sandbox (`Tempo.create()`). Resolver functions are automatically treated as lazy, per-instance memoized getters:
+> - **Custom Instance Getters (`defineProperties` / `defineProperty`)**: Define custom instance getters and methods directly on `Tempo` or an isolated sandbox (`Tempo.derive()`). Resolver functions are automatically treated as lazy, per-instance memoized getters:
 >   ```typescript
 >   import { Tempo, defineProperties } from '@magmacomputing/tempo';
 >

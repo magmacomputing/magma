@@ -230,9 +230,9 @@ Tempo.init({
 ```
 
 > [!TIP]
-> **Single-App vs. Sandboxed Environments (`Tempo.init()` vs. `Tempo.create()`)**
+> **Single-App vs. Sandboxed Environments (`Tempo.init()` vs. `Tempo.derive()`)**
 > - **`Tempo.init()`**: Designed for single-app entry points (such as client-side SPAs or CLI tools) to establish baseline defaults globally across the runtime.
-> - **`Tempo.create()`**: Designed for multi-tenant SSR servers (e.g. Next.js, Fastify), reusable npm libraries, or isolated unit test suites. [`Tempo.create()`](../4-advanced-reference/sandbox-factory.md) branches off an isolated, sandboxed class constructor with its own independent state and registry, guaranteeing zero cross-tenant preference leakage or global state pollution when using the default discovery setting or a unique `options.discovery` key.
+> - **`Tempo.derive()`**: Designed for multi-tenant SSR servers (e.g. Next.js, Fastify), reusable npm libraries, or isolated unit test suites. [`Tempo.derive()`](../4-advanced-reference/sandbox-factory.md) branches off an isolated, sandboxed class constructor with its own independent state and registry, guaranteeing zero cross-tenant preference leakage or global state pollution when using the default discovery setting or a unique `options.discovery` key.
 
 ### Available Options
 

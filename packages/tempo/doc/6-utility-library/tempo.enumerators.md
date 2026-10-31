@@ -11,7 +11,7 @@ Tempo's core enumerators (like Weekdays, Months, Seasons) are built using the ex
 Under the hood, `enumify` returns a **`Proxy`-wrapped, frozen object based on a null-prototype**:
 1. **Null-Prototype Root (`Object.create(null)`):** The base prototype is completely detached from `Object.prototype`. Standard prototype properties like `toString`, `valueOf`, `constructor`, or `hasOwnProperty` do not exist on the object, eliminating key collision and prototype pollution risks.
 2. **Strict Runtime Immutability:** The object is locked down with `Object.freeze()` and wrapped in a read-only `Proxy` that rejects writes, deletions, or runtime property additions.
-3. **Prototypal Extensibility:** Even though each enum is deeply frozen and immutable, enums remain extensible through JavaScript prototypal inheritance via `Enum.extend()`.
+3. **Prototypal Extensibility:** Even though each enum is deeply frozen and immutable, enums remain extensible through JavaScript prototypal inheritance via `Enum.derive()`.
 
 ### Array-based Definitions
 When you pass an array to `enumify`, the strings become the **keys**, and the **values** are their zero-indexed positions:
@@ -139,7 +139,7 @@ const isActive = Enum.has(STATUS, 'Active'); // true
 const value = STATUS.Resolved;               // 2
 ```
 
-### Extending Enums via Prototypal Inheritance (`Enum.extend()`)
+### Deriving Enums via Prototypal Inheritance (`Enum.derive()`)
 
 A standout capability of `enumify` is that enums are **immutable yet extendable**.
 
@@ -151,8 +151,8 @@ import { enumify, Enum } from '@magmacomputing/tempo/library';
 // Base enum (frozen and immutable)
 export const BASE_ROLE = enumify(['Viewer', 'Editor']);
 
-// Extend with additional roles
-export const ADMIN_ROLE = Enum.extend(BASE_ROLE, ['Admin', 'SuperAdmin']);
+// Derive new enum with additional roles
+export const ADMIN_ROLE = Enum.derive(BASE_ROLE, ['Admin', 'SuperAdmin']);
 
 console.log(Enum.keys(ADMIN_ROLE));             // ['Viewer', 'Editor', 'Admin', 'SuperAdmin']
 console.log(Enum.count(ADMIN_ROLE));            // 4
@@ -163,7 +163,7 @@ console.log(Enum.hasOwn(ADMIN_ROLE, 'Admin'));  // true (direct own property on 
 
 #### How Prototypal Inheritance Works Here:
 - **Zero Mutation on Parent:** `BASE_ROLE` remains untouched and completely immutable. Existing code relying on `BASE_ROLE` is guaranteed never to see unwanted keys.
-- **Prototype Delegation (`Object.create(this)`):** Calling `Enum.extend(parent, entries)` creates a new frozen child enum whose prototype is the parent enum. The child inherits all parent keys and values.
+- **Prototype Delegation (`Object.create(this)`):** Calling `Enum.derive(parent, entries)` creates a new frozen child enum whose prototype is the parent enum. The child inherits all parent keys and values.
 - **Stealth Traversal:** Reflection helpers like `Enum.keys()`, `Enum.values()`, `Enum.entries()`, `Enum.count()`, and even `JSON.stringify()` seamlessly traverse the prototype chain to treat the extended enum as a unified collection.
 - **Key Shadowing:** Child enums can cleanly shadow inherited keys with new values without polluting the ancestor.
 - **Multi-tier Hierarchies:** Enums can be extended multiple times (`BASE -> TENANT -> USER`) while keeping each level individually sealed and safe.
@@ -185,7 +185,7 @@ Using `enumify` is a deliberate choice for high-quality library design.
 ### The Wins for `enumify`
 * **Rich Static API:** Native TS enums are plain JavaScript objects at runtime. To get the keys, you must write `Object.keys(MyEnum)`. The `Enum` reflection suite gives developers `Enum.keys()`, `Enum.values()`, `Enum.has()`, `Enum.includes()`, `Enum.invert()`, `Enum.count()`, and native iteration (`[Symbol.iterator]`).
 * **Clean Namespace (Null-Prototype):** Native enums and plain objects inherit from `Object.prototype`, creating potential collisions with keys like `toString`, `valueOf`, or `constructor`. `enumify` uses a `null` prototype, keeping the namespace completely unpolluted.
-* **Prototypal Extensibility (`Enum.extend()`):** TypeScript native enums cannot be extended, inherited, or composed. `enumify` allows enums to inherit from base enums cleanly via `Enum.extend()` without mutating the parent.
+* **Prototypal Extensibility (`Enum.derive()`):** TypeScript native enums cannot be extended, inherited, or composed. `enumify` allows enums to inherit from base enums cleanly via `Enum.derive()` without mutating the parent.
 * **Predictable Serialization:** TypeScript numeric enums generate strange "reverse mappings" in compiled JS (e.g., `{ 0: "Up", "Up": 0 }`). This makes iterating over them or stringifying them to JSON very messy. `enumify` objects serialize cleanly and safely.
 * **Immutability:** `enumify` freezes the object at runtime (`Object.freeze`) and seals it with a `Proxy`. Standard TS enums can technically be mutated at runtime by malicious or sloppy ES code.
 * **NodeJS/ESM Compatibility:** Standard TS enums can cause friction with isolated module compilers (like Vite or esbuild) or when importing into vanilla JS. `enumify` generates 100% standard ES2015 JavaScript.

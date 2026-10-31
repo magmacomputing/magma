@@ -1,7 +1,7 @@
 import { clone, stringify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject, RE_INTEGER } from '#library/assertion.library.js';
-import { hasKey } from '#library/primitive.library.js';
+import { hasKey, toArray } from '#library/primitive.library.js';
 import { trimAll } from '#library/string.library.js';
 
 /**
@@ -20,7 +20,16 @@ export function asArray<T>(arr: Exclude<ArrayLike<T>, string> | undefined): T[];
 export function asArray<T>(arr: T | Exclude<Iterable<T> | undefined, string>): NonNullable<T>[];
 export function asArray<T, K>(arr: Iterable<T> | ArrayLike<T>, fill: K): K[];
 export function asArray<T, K>(arr: T | Iterable<T> | ArrayLike<T> = [], fill?: K): (T | K)[] {
-	const mapFn = (val: unknown) => (isUndefined(fill) || isDefined(val)) ? val as unknown as K : clone(fill);
+	if (isUndefined(fill)) {
+		if (Array.isArray(arr))
+			return toArray(arr);
+
+		return (isArrayLike<T>(arr) || (isIterable<T>(arr) && !isString(arr)))
+			? (isArrayLike<T>(arr) ? toArray(arr) : Array.from<T>(arr as Iterable<T>))
+			: [arr] as (T | K)[];
+	}
+
+	const mapFn = (val: unknown) => isDefined(val) ? val as unknown as K : clone(fill);
 
 	if (Array.isArray(arr))
 		return Array.from<T, K>({ length: arr.length }, (_, i) => mapFn(arr[i]));

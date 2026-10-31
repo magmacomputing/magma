@@ -4,14 +4,14 @@ import { spies } from '../support/setup.console-spy.js';
 
 describe('Sandbox Factory Pattern', () => {
 	it('should return a subclass when create is called with options', () => {
-		const Sandbox = Tempo.create({ locale: 'en-GB' });
+		const Sandbox = Tempo.derive({ locale: 'en-GB' });
 		expect(Sandbox).not.toBe(Tempo);
 		expect(Object.getPrototypeOf(Sandbox)).toBe(Tempo);
 		expect(Sandbox.name).toBe('SandboxTempo');
 	});
 
 	it('should maintain isolated registries for sandboxes', () => {
-		const MyTempo = Tempo.create({
+		const MyTempo = Tempo.derive({
 			registry: {
 				periods: {
 					'tea-time': '16:00'
@@ -31,7 +31,7 @@ describe('Sandbox Factory Pattern', () => {
 		const warnCountBefore = spies.warn.mock.calls.length;
 
 		// Global 'noon' is 12:00
-		const EarlyNoon = Tempo.create({
+		const EarlyNoon = Tempo.derive({
 			registry: {
 				periods: {
 					'noon': '11:00'
@@ -53,7 +53,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should record traceability info in parse results', () => {
-		const MyTempo = Tempo.create({
+		const MyTempo = Tempo.derive({
 			registry: {
 				periods: {
 					'half-hour': function (this: AliasContext) { return `${this.hh}:30` }
@@ -71,7 +71,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should allow instance-specific overrides to shadow sandbox aliases', () => {
-		const MyTempo = Tempo.create({
+		const MyTempo = Tempo.derive({
 			registry: {
 				periods: {
 					'break': '10:00'
@@ -95,7 +95,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should guarantee immutability of the Sandbox class', () => {
-		const Sandbox = Tempo.create({ locale: 'fr-FR' });
+		const Sandbox = Tempo.derive({ locale: 'fr-FR' });
 
 		// Attempting to modify static property should fail (if @Immutable is working)
 		try {
@@ -108,8 +108,8 @@ describe('Sandbox Factory Pattern', () => {
 	it('should share terms across sandboxes by default', () => {
 		// Terms are currently stored in the singleton Runtime pluginsDb
 		// This is expected behavior as plugins are "library level" extensions
-		const Sandbox1 = Tempo.create({});
-		const Sandbox2 = Tempo.create({});
+		const Sandbox1 = Tempo.derive({});
+		const Sandbox2 = Tempo.derive({});
 
 		expect(Sandbox1.terms).toEqual(Sandbox2.terms);
 	});
@@ -125,7 +125,7 @@ describe('Sandbox Factory Pattern', () => {
 				'sandbox_tz': 'Australia/Sydney'
 			}
 		};
-		const Sandbox = Tempo.create({ discovery });
+		const Sandbox = Tempo.derive({ discovery });
 		
 		const t = new Sandbox('2026-06-03 12:00:00', { timeZone: 'sandbox_tz' });
 		expect(t.format('sandboxed_fmt')).toBe('03/06/2026');

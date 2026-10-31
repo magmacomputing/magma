@@ -113,7 +113,7 @@ Instead of manually building these namespaces on the prototype, Tempo provides t
 👉 **[Read the Namespace Guide](./tempo.namespace.md)** to learn more.
 
 ### 4. Custom Instance Properties (`defineProperties` & `defineProperty`)
-When authoring plugins or configuring derived sandboxes (`Tempo.create()`), you may wish to add top-level computed getters or instance methods without manual prototype manipulation.
+When authoring plugins or configuring derived sandboxes (`Tempo.derive()`), you may wish to add top-level computed getters or instance methods without manual prototype manipulation.
 
 Tempo provides `defineProperties` (and its single-property alias `defineProperty`) to mount instance properties safely:
 - **Auto-Memoized Getters**: Resolver functions `(tempo) => value` are automatically evaluated lazily on first access and cached per instance.

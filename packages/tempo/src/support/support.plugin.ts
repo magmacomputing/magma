@@ -216,7 +216,13 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							rt.versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = plugin.version;
 						}
 						const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
-						(plugin as any).install.call(TempoClass, TempoClass, installOpts);
+						try {
+							plugin.install.call(TempoClass, TempoClass, installOpts);
+						} catch (error) {
+							if (pluginType === 'properties')
+								if (name) installed.delete(name); else installed.delete(plugin);
+							throw error;
+						}
 						break;
 					}
 					case 'term': {

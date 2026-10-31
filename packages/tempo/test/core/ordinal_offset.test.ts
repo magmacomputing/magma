@@ -167,9 +167,9 @@ describe('Core Ordinal Offset Parsing', () => {
 			expect(t10th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
 		});
 
-		it('supports user extensibility via Enum.extend and Tempo.init registry', () => {
+		it('supports user extensibility via Enum.derive and Tempo.init registry', () => {
 			try {
-				const CustomOrd = Enum.extend(Tempo.enums.ORDINAL, {
+				const CustomOrd = Enum.derive(Tempo.enums.ORDINAL, {
 					zeroth: 0,
 				});
 				expect(CustomOrd.zeroth).toBe(0);

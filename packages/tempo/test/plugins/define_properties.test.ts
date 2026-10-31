@@ -4,7 +4,7 @@ import { TempoError } from '#tempo/support/support.error.js';
 
 describe('defineProperties & defineProperty', () => {
 	it('defines custom getters on Tempo instances via a sandbox', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		S.use(defineProperties({
 			isWeekend: (t: any) => t.dow >= 6,
 			quarter: (t: any) => Math.ceil(t.mm / 3),
@@ -20,7 +20,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('auto-memoizes getter computations per instance', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		let computations = 0;
 
 		S.use(defineProperty('expensive', () => {
@@ -48,7 +48,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('supports unmemoized getters via explicit descriptor', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		let counter = 0;
 
 		S.use(defineProperties({
@@ -65,7 +65,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('supports defining instance methods via methods shorthand and value descriptor', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		S.use(defineProperties({
 			methods: {
 				shiftDays(this: any, days: number) {
@@ -88,7 +88,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('integrates seamlessly with t.format({token}) even when non-enumerable', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		S.use(defineProperty('isWeekend', (t: any) => t.dow >= 6));
 
 		const saturday = new S('2026-10-31');
@@ -99,7 +99,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('throws TempoError on attempt to overwrite core Tempo properties', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 
 		expect(() => {
 			S.use(defineProperty('yy', () => 9999));
@@ -117,8 +117,8 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('supports both factory invocation and raw definition in S.use', () => {
-		const S1 = Tempo.create({});
-		const S2 = Tempo.create({});
+		const S1 = Tempo.derive({});
+		const S2 = Tempo.derive({});
 
 		const propPlugin = defineProperty('customVal', () => 42);
 
@@ -132,7 +132,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('throws TempoError on attempt to define setters', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 
 		expect(() => {
 			S.use(defineProperties({
@@ -157,7 +157,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('allows multiple unnamed defineProperties bundles without name collision', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		S.use(defineProperties({
 			foo: () => 'valFoo',
 		}));
@@ -171,7 +171,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('skips reinstall for named properties plugins to avoid core property redefinition errors', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		const namedPlugin = defineProperties({
 			baz: () => 'valBaz',
 		}, 'BazExtension');
@@ -187,7 +187,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects per-property method dictionaries passed outside of methods block', () => {
-		const S = Tempo.create({});
+		const S = Tempo.derive({});
 		expect(() => {
 			S.use(defineProperties({
 				badMethodBundle: {
@@ -195,5 +195,42 @@ describe('defineProperties & defineProperty', () => {
 				} as any,
 			}));
 		}).toThrow(/Invalid property definition for 'badMethodBundle'/);
+	});
+
+	it('validates all entries atomically in a first pass so failed bundles leave prototype clean', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({
+				validFirst: () => 'should-not-exist',
+				invalidSecond: { invalidDesc: true } as any,
+			}));
+		}).toThrow(/Invalid property definition for 'invalidSecond'/);
+
+		const t = new S();
+		expect((t as any).validFirst).toBeUndefined();
+	});
+
+	it('releases installed mark when a named properties bundle throws, allowing a corrected retry to install', () => {
+		const S = Tempo.derive({});
+		const faultyBundle = defineProperties({
+			goodProp: () => 'first',
+			badProp: { notAProp: true } as any,
+		}, 'RetryBundle');
+
+		expect(() => {
+			S.use(faultyBundle);
+		}).toThrow(/Invalid property definition for 'badProp'/);
+
+		// Corrected retry with the same bundle name should install successfully
+		const correctedBundle = defineProperties({
+			goodProp: () => 'repaired',
+		}, 'RetryBundle');
+
+		expect(() => {
+			S.use(correctedBundle);
+		}).not.toThrow();
+
+		const t = new S();
+		expect((t as any).goodProp).toBe('repaired');
 	});
 });

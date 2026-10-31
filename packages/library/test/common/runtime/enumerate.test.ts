@@ -3,7 +3,7 @@ import { enumify, Enum } from '#library/enumerate.library.js';
 describe('Enum (Static Reflection & v5 Architecture)', () => {
 	it('should enumerate keys, values, and entries across prototypal extension via Enum.*', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
 		expect(Enum.values(EXTENDED)).toEqual([1, 2, 3]);
@@ -13,7 +13,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should correctly handle JSON.stringify() for extended enums', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		const json = JSON.parse(JSON.stringify(EXTENDED));
 		expect(json).toEqual({ A: 1, B: 2, C: 3 });
@@ -21,7 +21,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should distinguish own vs inherited properties via Enum.hasOwn() and Enum.has()', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		expect(Enum.has(EXTENDED, 'A')).toBe(true);
 		expect(Enum.hasOwn(EXTENDED, 'A')).toBe(false);
@@ -31,8 +31,8 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should handle multiple levels of extension', () => {
 		const BASE = enumify({ A: 1 });
-		const MID = Enum.extend(BASE, { B: 2 });
-		const TOP = Enum.extend(MID, { C: 3 });
+		const MID = Enum.derive(BASE, { B: 2 });
+		const TOP = Enum.derive(MID, { C: 3 });
 
 		expect(Enum.keys(TOP)).toEqual(['A', 'B', 'C']);
 		expect(Enum.count(TOP)).toBe(3);
@@ -41,7 +41,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should allow shadowing of inherited keys', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { B: 20, C: 3 });
+		const EXTENDED = Enum.derive(BASE, { B: 20, C: 3 });
 
 		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
 		expect(EXTENDED.B).toBe(20);
@@ -83,7 +83,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should support Enum.get() on extended enums across prototype chain', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		expect(Enum.get(EXTENDED, 'A')).toBe(1);
 		expect(Enum.get(EXTENDED, 'B')).toBe(2);
@@ -148,7 +148,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 	it('should confirm prototype methods are removed from enum instances', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		// Prototype methods are no longer attached to instances
 		expect((BASE as any).keys).toBeUndefined();
@@ -157,6 +157,7 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect((BASE as any).has).toBeUndefined();
 		expect((BASE as any).get).toBeUndefined();
 		expect((BASE as any).extend).toBeUndefined();
+		expect((BASE as any).derive).toBeUndefined();
 		expect((BASE as any).count).toBeUndefined();
 		expect((BASE as any).invert).toBeUndefined();
 
@@ -166,6 +167,7 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect((EXTENDED as any).has).toBeUndefined();
 		expect((EXTENDED as any).get).toBeUndefined();
 		expect((EXTENDED as any).extend).toBeUndefined();
+		expect((EXTENDED as any).derive).toBeUndefined();
 		expect((EXTENDED as any).count).toBeUndefined();
 		expect((EXTENDED as any).invert).toBeUndefined();
 

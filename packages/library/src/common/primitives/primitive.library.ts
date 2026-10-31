@@ -411,3 +411,32 @@ export function distinct<T>(arr: T[], mapfn?: (value: any, index: number, array:
 		? distinct(arr.map(mapfn, thisArg))
 		: Array.from(new Set(arr));
 }
+
+/**
+ * Converts an array or array-like object to a new array by numeric index.
+ * Bypasses custom `[Symbol.iterator]` definitions to preserve indexed elements during serialization,
+ * and avoids per-element callback closures.
+ *
+ * @param arr - The array or array-like object to convert
+ * @returns A fresh array containing the indexed elements
+ * @example
+ * ```ts
+ * const copy = toArray(['a', 'b']);
+ * const fromObj = toArray({ 0: 'x', 1: 'y', length: 2 });
+ * ```
+ */
+export function toArray<T>(arr?: ArrayLike<T> | null): T[] {
+	if (!arr || (typeof arr !== 'object' && typeof arr !== 'string'))
+		return [];
+
+	const len = arr.length;
+	if (typeof len !== 'number' || len <= 0)
+		return [];
+
+	const res = new Array<T>(len);
+	for (let i = 0; i < len; i++)
+		res[i] = arr[i];
+
+	return res;
+}
+

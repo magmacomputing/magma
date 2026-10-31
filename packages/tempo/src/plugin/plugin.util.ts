@@ -393,19 +393,14 @@ export function defineProperties<Opts = any>(
 		[sym.$PluginType]: 'properties',
 		install(this: TempoType, TempoClass: TempoType) {
 			const proto = TempoClass.prototype;
+			const entries = ownEntries(properties);
 
-			for (const [key, value] of ownEntries(properties)) {
+			// First pass: Validate every entry before defining any properties on prototype
+			for (const [key, value] of entries) {
 				if (key === 'methods' && isObject(value)) {
-					for (const [mKey, mVal] of ownEntries(value)) {
+					for (const [mKey] of ownEntries(value)) {
 						if (mKey in proto)
 							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
-
-						Object.defineProperty(proto, mKey, {
-							value: mVal,
-							writable: true,
-							configurable: true,
-							enumerable: false,
-						});
 					}
 					continue;
 				}
@@ -415,6 +410,25 @@ export function defineProperties<Opts = any>(
 
 				if (isObject(value) && 'set' in value)
 					throw new TempoError(`Tempo Security: Setters are not permitted on immutable Tempo instances ('${String(key)}').`);
+
+				if (!isFunction(value) && !(isObject(value) && ('get' in value || 'value' in value))) {
+					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
+				}
+			}
+
+			// Second pass: Define validated properties
+			for (const [key, value] of entries) {
+				if (key === 'methods' && isObject(value)) {
+					for (const [mKey, mVal] of ownEntries(value)) {
+						Object.defineProperty(proto, mKey, {
+							value: mVal,
+							writable: true,
+							configurable: true,
+							enumerable: false,
+						});
+					}
+					continue;
+				}
 
 				if (isFunction(value)) {
 					// Function shorthand is treated as a lazy, auto-memoized getter resolver: (tempo: Tempo) => any

@@ -310,8 +310,8 @@ describe('Intl.LocaleInfo & Regional Calendar Integration', () => {
 			expect(typeof Tempo.intl.info.script).toBe('string');
 		});
 
-		it('resolves subclass static intl for sandboxes created with Tempo.create()', () => {
-			const ArabicTempo = Tempo.create({ locale: 'ar-SA' });
+		it('resolves subclass static intl for sandboxes created with Tempo.derive()', () => {
+			const ArabicTempo = Tempo.derive({ locale: 'ar-SA' });
 			expect(ArabicTempo.intl.info.region).toBe('SA');
 			expect(ArabicTempo.intl.info.script).toBe('Arab');
 			expect(ArabicTempo.intl.info.direction).toBe('rtl');
