@@ -22,7 +22,7 @@ graph TD
 ---
 
 ### Phase 1: Core Modernization, Deprecations & Signals (PR #110 & Phase 1 Complete)
-*Status: Nearly Completed — `Tempo.now()` instance factory and `Tempo.epoch` fully transitioned and tested*
+*Status: Nearly Completed *
 
 - [x] **`Tempo.now()` Transition to Instance Factory**:
   - `Tempo.now()` returns an immutable `Tempo` instance (supports options like `{ timeZone, sphere }`) instead of primitive `bigint` nanoseconds.
@@ -108,6 +108,11 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
   - *Step 1*: Introduce `isNonNull<T>(val): val is NonNullable<T>` in `@magmacomputing/library`.
   - *Step 2*: Perform monorepo sweep migrating existing call sites from `isDefined` to `isNonNull` to ensure 100% behavioral preservation.
   - *Step 3*: Redefine `isDefined<T>(val): val is Exclude<T, undefined>` (`val !== undefined`), creating strict logical symmetry: `!isDefined(x) <=> isUndefined(x)`.
+- [ ] **Type-Guard Semantics Correction (`isInteger` vs. `isBigInt`)**:
+  - *Problem*: In `@magmacomputing/library`, `isInteger(obj)` is defined as `typeof obj === 'bigint'`, creating an unexpected semantic trap where standard JS integer numbers (`Number.isInteger(2026)`) return `false`.
+  - *Step 1*: Introduce canonical `isBigInt(obj): obj is bigint => typeof obj === 'bigint'` in `@magmacomputing/library`.
+  - *Step 2*: Migrate existing call sites checking for `bigint` (e.g. In `coercion.library`, `interval.class`, `serialize.library`) from `isInteger` to `isBigInt`.
+  - *Step 3*: Re-align `isInteger` with standard ECMAScript semantics: `isInteger(obj): obj is number => Number.isInteger(obj)`.
 - [ ] **ECMAScript Standards Compliance: Repository-Wide Semicolon Policy**:
   - Adopt explicit statement termination across all monorepo TypeScript files (`semi: true`) per ECMA-262 § 16.2.2.
   - Add standard semicolons to VitePress theme files to eliminate one-off style anomalies.

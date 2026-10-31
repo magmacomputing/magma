@@ -290,6 +290,14 @@ describe(`${label} epoch & instant`, () => {
 
 })
 
+describe(`${label} now`, () => {
+  test('creates a valid Tempo instance representing current time', () => {
+    const t = Tempo.now();
+    expect(t.isValid).toBe(true);
+    expect(Math.abs(t.epoch.ms - Date.now())).toBeLessThan(1000);
+  })
+})
+
 describe(`${label} readStore / writeStore`, () => {
 
   test('readStore returns an object (empty when nothing stored)', () => {

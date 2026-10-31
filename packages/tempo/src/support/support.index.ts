@@ -5,6 +5,7 @@
  * These exports are primarily consumed by core modules or advanced Plugin API integrations.
  */
 export {
+	Enum,
 	enums,
 	STATE,
 	DEFAULTS,

@@ -374,6 +374,31 @@ describe('calendar.library', () => {
 			expect(civilToDays(2026, -1, 1)).toBe(civilToDays(2025, 11, 1));
 		});
 
+		test('civilToDays supports Date and { year, month, day } overloads with direct roundtrip', () => {
+			expect(civilToDays(new Date(Date.UTC(1970, 0, 1)))).toBe(0);
+			expect(civilToDays({ year: 1970, month: 1, day: 1 })).toBe(0);
+			expect(civilToDays({ year: 2026, month: 10, day: 31 })).toBe(civilToDays(2026, 10, 31));
+
+			// Direct symmetry with daysToCivil without manual destructuring
+			const sampleDays = 20542;
+			expect(civilToDays(daysToCivil(sampleDays))).toBe(sampleDays);
+		});
+
+		test('civilToDays rejects non-integer components with RangeError', () => {
+			expect(() => civilToDays(2026.5, 1, 1)).toThrow(RangeError);
+			expect(() => civilToDays(2026, 1.5, 1)).toThrow(RangeError);
+			expect(() => civilToDays(2026, 1, 1.25)).toThrow(RangeError);
+			expect(() => civilToDays({ year: 2026, month: 1, day: 1.5 })).toThrow(RangeError);
+		});
+
+		test('civilToDays rejects non-ISO calendars with RangeError', () => {
+			expect(() => civilToDays({ year: 5784, month: 7, day: 15, calendarId: 'hebrew' })).toThrow(RangeError);
+			expect(() => civilToDays({ year: 1445, month: 9, day: 1, calendarId: 'islamic' })).toThrow(RangeError);
+			// ISO and Gregory should succeed
+			expect(civilToDays({ year: 1970, month: 1, day: 1, calendarId: 'iso8601' })).toBe(0);
+			expect(civilToDays({ year: 1970, month: 1, day: 1, calendarId: 'gregory' })).toBe(0);
+		});
+
 		test('toJulianDay computes Julian Day Number across numbers, Date, and Temporal objects', () => {
 			// Unix Epoch: 1970-01-01 -> 2440588
 			expect(toJulianDay(1970, 1, 1)).toBe(EPOCH_JULIAN_DAY);
@@ -384,6 +409,21 @@ describe('calendar.library', () => {
 			expect(toJulianDay(2000, 1, 1)).toBe(2451545);
 			expect(toJulianDay(new Date(Date.UTC(2000, 0, 1)))).toBe(2451545);
 			expect(toJulianDay({ year: 2000, month: 1, day: 1 })).toBe(2451545);
+		});
+
+		test('toJulianDay rejects non-integer components with RangeError', () => {
+			expect(() => toJulianDay(2026.5, 1, 1)).toThrow(RangeError);
+			expect(() => toJulianDay(2026, 1.5, 1)).toThrow(RangeError);
+			expect(() => toJulianDay(2026, 1, 1.25)).toThrow(RangeError);
+			expect(() => toJulianDay({ year: 2026, month: 1, day: 1.5 })).toThrow(RangeError);
+		});
+
+		test('toJulianDay rejects non-ISO calendars with RangeError', () => {
+			expect(() => toJulianDay({ year: 5784, month: 7, day: 15, calendarId: 'hebrew' })).toThrow(RangeError);
+			expect(() => toJulianDay({ year: 1445, month: 9, day: 1, calendarId: 'islamic' })).toThrow(RangeError);
+			// ISO and Gregory should succeed
+			expect(toJulianDay({ year: 2026, month: 1, day: 1, calendarId: 'iso8601' })).toBe(2461042);
+			expect(toJulianDay({ year: 2026, month: 1, day: 1, calendarId: 'gregory' })).toBe(2461042);
 		});
 	});
 });

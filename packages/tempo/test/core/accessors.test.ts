@@ -73,5 +73,9 @@ describe(`${label}`, () => {
     expect(tEpoch.jj).toBe(2440588);
     const tJ2000 = new Tempo('2000-01-01');
     expect(tJ2000.jj).toBe(2451545);
+
+    // Non-ISO calendar (e.g. Hebrew calendar) computes Julian Day from the underlying ISO date
+    const tHebrew = new Tempo('1970-01-01', { calendar: 'hebrew' });
+    expect(tHebrew.jj).toBe(2440588);
   })
 })

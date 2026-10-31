@@ -11,7 +11,7 @@ import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isDefined, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { toJulianDay } from '#library/calendar.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
@@ -100,6 +100,7 @@ export class Tempo {
 	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = cast<t.IntervalConstructor>(new Proxy(Interval, intervalProxyHandler));
 
 	/** Live registry enumerations */													static get enums() { return enums }
+	/** Enum reflection and helper suite */										static get Enum() { return Enum }
 
 	/** Weekday names (short-form) */													static get WEEKDAY() { return enums.WEEKDAY }
 	/** Weekday names (long-form) */													static get WEEKDAYS() { return enums.WEEKDAYS }
@@ -716,7 +717,7 @@ export class Tempo {
 
 			const isPlainConfigDict = (item: any) =>
 				isPlainObject(item) &&
-				!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
+				!ownKeys(item).some(key => Enum.has(DISCOVERY, key)) &&
 				hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
 
 			const extractConfigDicts = (plugins: any): any => {
@@ -1025,7 +1026,18 @@ export class Tempo {
 	/** instantiation Temporal Instant */											#instant?: Temporal.Instant;
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized instance properties */
-	#memo: { tz?: string; cal?: string; sphere?: t.COMPASS | undefined; geo?: t.GeoConfig | undefined; fmt?: Record<string, string | undefined> } = {};
+	#memo: {
+		tz?: string;
+		cal?: string;
+		sphere?: t.COMPASS | undefined;
+		geo?: t.GeoConfig | undefined;
+		fmt?: Record<string, string | undefined>;
+		jj?: number;
+		epoch?: Readonly<{ ss: number; ms: number; us: number; ns: bigint }>;
+		iso?: string;
+		isoWeek?: { weekOfYear: number; yearOfWeek: number };
+		config?: Readonly<t.Internal.Config>;
+	} = {};
 	/** indicator that the instance failed to parse */				#errored = false;
 	/** temporary anchor used during parsing */								#anchor: Temporal.ZonedDateTime | undefined;
 	/** mapping of terms to their resolved values */					#term?: any;
@@ -1152,6 +1164,7 @@ export class Tempo {
 
 	/** explicitly enable/disable "catch" mode for this instance */
 	setCatchMode(catchMode: boolean): this {
+		delete this.#memo.config;
 		setProperty(this.#local.config, 'catch', catchMode);
 		return this;
 	}
@@ -1359,12 +1372,10 @@ export class Tempo {
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
 	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
 	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** 4-digit ISO week-numbering year */										get yow() { return getISOWeekOfYear(this.toDateTime()).yearOfWeek; }
-	/** ISO week number of the year */												get woy() { return getISOWeekOfYear(this.toDateTime()).weekOfYear as t.woy; }
+	/** 4-digit ISO week-numbering year */										get yow() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
+	/** ISO week number of the year */												get woy() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
-	/** Internationalization namespace (info, locale, and cultural metadata) */
-	get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
 	/** Minutes of the hour (0-59) */													get mi() { return this.toDateTime().minute as t.mi }
 	/** Seconds of the minute (0-59) */												get ss() { return this.toDateTime().second as t.ss }
@@ -1374,6 +1385,7 @@ export class Tempo {
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
 	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
 	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
+	/** Internationalization namespace (info, locale) */			get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	#getRawGeo(): t.GeoConfig | undefined {
 		return this.#local.config.geo
@@ -1383,7 +1395,7 @@ export class Tempo {
 
 	/** Resolved geographic coordinates object ({ latitude, longitude, elevation, sphere, ... }) */
 	get geo(): Readonly<t.GeoConfig> {
-		if (hasOwn(this.#memo, 'geo') && this.#memo.geo) return this.#memo.geo;
+		if (this.#memo.geo) return this.#memo.geo;
 		const rawGeo = this.#getRawGeo();
 		return (this.#memo.geo = Object.freeze({
 			...rawGeo,
@@ -1419,9 +1431,9 @@ export class Tempo {
 	/** Full weekday name (e.g., 'Monday') */									get wkd() { return Enum.keyOf(Tempo.WEEKDAYS, this.toDateTime().dayOfWeek as t.Weekday) }
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
-	/**  in current month, using instance calendar. */				get dim() { return this.toDateTime().daysInMonth }
-	/** Julian day number for the local ISO calendar date. */	get jj() { return toJulianDay(this.yy, this.mm, this.dd); }
-	/** Standard ISO 8601 string in UTC */										get iso() { return this.toDateTime().toInstant().toString() }
+	/** Days in current month, using instance calendar. */		get dim() { return this.toDateTime().daysInMonth }
+	/** Julian day number for the local ISO calendar date. */	get jj() { return (this.#memo.jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
+	/** Standard ISO 8601 string in UTC */										get iso() { return (this.#memo.iso ??= this.toDateTime().toInstant().toString()); }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
 	/** list of registered terms and their available range keys */
@@ -1459,6 +1471,8 @@ export class Tempo {
 
 	/** current Tempo configuration */
 	get config(): Readonly<t.Internal.Config> {
+		if (this.#memo.config) return this.#memo.config;
+
 		const global = (this as any)[$Internal]().config;
 		const out = markConfig(Object.create(global));
 		Object.entries(this.#local.config).forEach(([k, v]) => setProperty(out, k, v));
@@ -1474,7 +1488,7 @@ export class Tempo {
 			enumerable: false, configurable: true
 		});
 
-		return dynamicProxy(proxify(out)) as Readonly<t.Internal.Config>;
+		return (this.#memo.config = dynamicProxy(proxify(out)) as Readonly<t.Internal.Config>);
 	}
 
 	/** Instance-specific parse rules (merged with global) */
@@ -1505,7 +1519,7 @@ export class Tempo {
 	/** returns the underlying Temporal.ZonedDateTime */			get zdt(): Temporal.ZonedDateTime { return this.toDateTime(); }
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
 	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
-	/** units since epoch for this date-time instance */			get epoch() { return Tempo.#getEpoch(this.toDateTime()); }
+	/** units since epoch for this date-time instance */			get epoch() { return (this.#memo.epoch ??= Tempo.#getEpoch(this.toDateTime())); }
 
 	/**
 	 * @Immutable class decorators wrap the class but leave internal lexical bindings pointing to the original, undecorated class.  
@@ -1682,6 +1696,7 @@ export class Tempo {
 	#fallbackParse(tempo: t.DateTime, dateTime?: Temporal.ZonedDateTime, term?: string): Temporal.ZonedDateTime {
 		if (isZonedDateTime(tempo)) return tempo;
 		if (isTempo(tempo)) return tempo.toDateTime();
+		if (isInstant(tempo)) return tempo.toZonedDateTimeISO(this.#local.config.timeZone);
 		if (isString(tempo)) {
 			try {
 				const tz = (this.#local.config.timeZone as string) ?? 'UTC';

@@ -9,7 +9,7 @@ import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 
-import { isTempo, enums, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise } from '#tempo/support';
+import { isTempo, enums, Enum, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -358,8 +358,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				res = pad(m);
 				break;
 			}
-			case 'mon': res = enums.MONTHS.keyOf(zdt.month as any); break;
-			case 'mmm': res = enums.MONTH.keyOf(zdt.month as any); break;
+			case 'mon': res = Enum.keyOf(enums.MONTHS, zdt.month); break;
+			case 'mmm': res = Enum.keyOf(enums.MONTH, zdt.month); break;
 			case 'dd':
 			case 'day': {
 				if (normMods.includes('year')) {
@@ -392,8 +392,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				res = pad(d, 3);
 				break;
 			}
-			case 'wkd': res = enums.WEEKDAYS.keyOf(zdt.dayOfWeek as any); break;
-			case 'www': res = enums.WEEKDAY.keyOf(zdt.dayOfWeek as any); break;
+			case 'wkd': res = Enum.keyOf(enums.WEEKDAYS, zdt.dayOfWeek); break;
+			case 'www': res = Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek); break;
 			case 'h24': case 'hh': {
 				if (normMods.includes('week')) {
 					res = ((zdt.dayOfWeek - 1) * 24 + zdt.hour).toString();

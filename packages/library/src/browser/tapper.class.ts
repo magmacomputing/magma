@@ -1,4 +1,4 @@
-import { enumify } from '#library/enumerate.library.js';
+import { enumify, Enum } from '#library/enumerate.library.js';
 import { isEmpty, isFunction } from '#library/assertion.library.js';
 import { StringTag } from '#library/decorator.library.js';
 import type { ValueOf } from '#library/type.library.js';
@@ -84,7 +84,7 @@ export class Tapper {
 	 */
 	off(...events: Tapper.EVENT[]) {
 		if (isEmpty(events))
-			events.push(...Tapper.EVENT.values());
+			events.push(...Enum.values(Tapper.EVENT));
 
 		events
 			.forEach(event => this.#hammer.forEach(hammer => hammer.off(event)))
@@ -101,7 +101,7 @@ export class Tapper {
 	 */
 	enable(enable = true, ...events: Tapper.EVENT[]) {
 		if (isEmpty(events))
-			events.push(...Tapper.EVENT.values());
+			events.push(...Enum.values(Tapper.EVENT));
 
 		this.#hammer
 			.forEach(hammer => events														// for each Hammer

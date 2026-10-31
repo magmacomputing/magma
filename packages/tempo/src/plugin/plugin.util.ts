@@ -365,12 +365,11 @@ export type MethodDictionary = Record<string | symbol, Function>;
 export type PropertyDefinition =
 	| PropertyResolver
 	| Function
-	| (Omit<PropertyDescriptor, 'set'> & { memo?: boolean })
-	| MethodDictionary;
+	| (Omit<PropertyDescriptor, 'set'> & { memo?: boolean });
 
 export type PropertiesConfig = {
 	methods?: MethodDictionary;
-	[key: string | symbol]: PropertyDefinition | undefined;
+	[key: string | symbol]: PropertyDefinition | MethodDictionary | undefined;
 };
 
 /**
@@ -384,12 +383,12 @@ export type PropertiesConfig = {
  */
 export function defineProperties<Opts = any>(
 	properties: PropertiesConfig,
-	name = 'CustomProperties',
+	name?: string,
 ): PluginFactory<Plugin<TempoType>, Opts> {
 	const weakCache = new WeakMap<object, Record<string | symbol, any>>();
 
 	const plugin = cast<Plugin<TempoType>>({
-		name,
+		name: name ?? '',
 		version: TEMPO_VERSION,
 		[sym.$PluginType]: 'properties',
 		install(this: TempoType, TempoClass: TempoType) {
@@ -491,6 +490,8 @@ export function defineProperties<Opts = any>(
 						if ('get' in desc) def.get = desc.get;
 						Object.defineProperty(proto, key, def);
 					}
+				} else {
+					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
 				}
 			}
 		},
@@ -506,8 +507,7 @@ export function defineProperties<Opts = any>(
 
 	const { name: pluginName, ...rest } = plugin;
 	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'properties' });
-	if (pluginName)
-		Object.defineProperty(result, 'name', { value: pluginName, configurable: true });
+	Object.defineProperty(result, 'name', { value: pluginName ?? '', configurable: true });
 
 	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
 }
@@ -525,9 +525,13 @@ export function defineProperty<Opts = any>(
 	definition?: PropertyDefinition,
 	name?: string,
 ): PluginFactory<Plugin<TempoType>, Opts> {
-	return (isString(propOrProps) || isSymbol(propOrProps))
-		? defineProperties({ [propOrProps]: definition! }, name ?? String(propOrProps))
-		: defineProperties(propOrProps, name);
+	if (isString(propOrProps) || isSymbol(propOrProps)) {
+		if (!isDefined(definition))
+			throw new TempoError(`Property definition is required when calling defineProperty for '${String(propOrProps)}'.`);
+
+		return defineProperties({ [propOrProps]: definition }, name ?? String(propOrProps));
+	}
+	return defineProperties(propOrProps, name);
 }
 
 

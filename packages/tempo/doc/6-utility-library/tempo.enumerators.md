@@ -11,20 +11,24 @@ Tempo's core enumerators (like Weekdays, Months, Seasons) are built using the ex
 Under the hood, `enumify` returns a **`Proxy`-wrapped, frozen object based on a null-prototype**:
 1. **Null-Prototype Root (`Object.create(null)`):** The base prototype is completely detached from `Object.prototype`. Standard prototype properties like `toString`, `valueOf`, `constructor`, or `hasOwnProperty` do not exist on the object, eliminating key collision and prototype pollution risks.
 2. **Strict Runtime Immutability:** The object is locked down with `Object.freeze()` and wrapped in a read-only `Proxy` that rejects writes, deletions, or runtime property additions.
-3. **Prototypal Extensibility:** Even though each enum is deeply frozen and immutable, enums remain extensible through JavaScript prototypal inheritance via `.extend()`.
+3. **Prototypal Extensibility:** Even though each enum is deeply frozen and immutable, enums remain extensible through JavaScript prototypal inheritance via `Enum.extend()`.
 
 ### Array-based Definitions
 When you pass an array to `enumify`, the strings become the **keys**, and the **values** are their zero-indexed positions:
 
 ```typescript
-export const WEEKDAY = enumify(['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
-// Result: { All: 0, Mon: 1, Tue: 2 ... }
+export const STATUS = enumify(['Active', 'Inactive', 'Pending']);
+// Result: { Active: 0, Inactive: 1, Pending: 2 }
 ```
 
 ### Object-based Definitions
-When you need specific string-to-string mappings, you pass an object literal directly:
+When you need explicit values (such as 1-based calendar indices or custom string mappings), you pass an object literal directly:
 
 ```typescript
+export const WEEKDAY = enumify({
+	Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7
+});
+
 export const SEASON = enumify({ Summer: 'summer', Autumn: 'autumn', Winter: 'winter', Spring: 'spring' });
 ```
 
@@ -59,7 +63,7 @@ import { Tempo } from '@magmacomputing/tempo';
 
 // Core domain enums directly on Tempo:
 const direction = Tempo.COMPASS.North; // 'north'
-const monthIndex = Tempo.MONTH.Feb;    // 2 (since 'All' was index 0)
+const monthIndex = Tempo.MONTH.Feb;    // 2 (1-based calendar index)
 
 // All enums via the unified Tempo.enums accessor:
 const first = Tempo.enums.ORDINAL.first; // 1
@@ -95,10 +99,10 @@ import { Enum } from '@magmacomputing/tempo/enums';
 // or: import { Enum } from '@magmacomputing/tempo/library';
 
 // Iterating over properties (Type-safe & collision-proof)
-const days = Enum.keys(Tempo.WEEKDAY);                  // readonly ('All' | 'Mon' | 'Tue' | ...)[]
-const values = Enum.values(Tempo.WEEKDAY);              // readonly (0 | 1 | 2 | ...)[]
+const days = Enum.keys(Tempo.WEEKDAY);                  // readonly ('Mon' | 'Tue' | 'Wed' | ...)[]
+const values = Enum.values(Tempo.WEEKDAY);              // readonly (1 | 2 | 3 | ...)[]
 const entries = Enum.entries(Tempo.WEEKDAY);            // readonly (readonly [key, value])[]
-const count = Enum.count(Tempo.WEEKDAY);                // 8
+const count = Enum.count(Tempo.WEEKDAY);                // 7
 
 // Validation
 if (Enum.has(Tempo.SEASON, 'Spring')) { ... }           // true if 'Spring' is a key
@@ -159,8 +163,8 @@ console.log(Enum.hasOwn(ADMIN_ROLE, 'Admin'));  // true (direct own property on 
 
 #### How Prototypal Inheritance Works Here:
 - **Zero Mutation on Parent:** `BASE_ROLE` remains untouched and completely immutable. Existing code relying on `BASE_ROLE` is guaranteed never to see unwanted keys.
-- **Prototype Delegation (`Object.create(this)`):** Calling `extend()` creates a new frozen child enum whose prototype is the parent enum. The child inherits all parent keys, values, and methods.
-- **Stealth Traversal:** Methods like `.keys()`, `.values()`, `.entries()`, `.count()`, and even `JSON.stringify()` seamlessly traverse the prototype chain to treat the extended enum as a unified collection.
+- **Prototype Delegation (`Object.create(this)`):** Calling `Enum.extend(parent, entries)` creates a new frozen child enum whose prototype is the parent enum. The child inherits all parent keys and values.
+- **Stealth Traversal:** Reflection helpers like `Enum.keys()`, `Enum.values()`, `Enum.entries()`, `Enum.count()`, and even `JSON.stringify()` seamlessly traverse the prototype chain to treat the extended enum as a unified collection.
 - **Key Shadowing:** Child enums can cleanly shadow inherited keys with new values without polluting the ancestor.
 - **Multi-tier Hierarchies:** Enums can be extended multiple times (`BASE -> TENANT -> USER`) while keeping each level individually sealed and safe.
 
@@ -179,9 +183,9 @@ TypeScript's native `enum` is one of the few TS features that generates structur
 Using `enumify` is a deliberate choice for high-quality library design.
 
 ### The Wins for `enumify`
-* **Rich API (Methods):** Native TS enums are plain JavaScript objects at runtime. To get the keys, you must write `Object.keys(MyEnum)`. The `enumify` wrapper gives developers `.keys()`, `.values()`, `.has()`, `.includes()`, `.map()`, `.filter()`, and native iteration (`[Symbol.iterator]`).
+* **Rich Static API:** Native TS enums are plain JavaScript objects at runtime. To get the keys, you must write `Object.keys(MyEnum)`. The `Enum` reflection suite gives developers `Enum.keys()`, `Enum.values()`, `Enum.has()`, `Enum.includes()`, `Enum.invert()`, `Enum.count()`, and native iteration (`[Symbol.iterator]`).
 * **Clean Namespace (Null-Prototype):** Native enums and plain objects inherit from `Object.prototype`, creating potential collisions with keys like `toString`, `valueOf`, or `constructor`. `enumify` uses a `null` prototype, keeping the namespace completely unpolluted.
-* **Prototypal Extensibility (`.extend()`):** TypeScript native enums cannot be extended, inherited, or composed. `enumify` allows enums to inherit from base enums cleanly without mutating the parent.
+* **Prototypal Extensibility (`Enum.extend()`):** TypeScript native enums cannot be extended, inherited, or composed. `enumify` allows enums to inherit from base enums cleanly via `Enum.extend()` without mutating the parent.
 * **Predictable Serialization:** TypeScript numeric enums generate strange "reverse mappings" in compiled JS (e.g., `{ 0: "Up", "Up": 0 }`). This makes iterating over them or stringifying them to JSON very messy. `enumify` objects serialize cleanly and safely.
 * **Immutability:** `enumify` freezes the object at runtime (`Object.freeze`) and seals it with a `Proxy`. Standard TS enums can technically be mutated at runtime by malicious or sloppy ES code.
 * **NodeJS/ESM Compatibility:** Standard TS enums can cause friction with isolated module compilers (like Vite or esbuild) or when importing into vanilla JS. `enumify` generates 100% standard ES2015 JavaScript.

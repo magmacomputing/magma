@@ -23,12 +23,12 @@ describe(`${label}`, () => {
   })
 
   test(`${label} get the elements`, () => {
-    expect(Tempo.DURATION.keys())
+    expect(Tempo.Enum.keys(Tempo.DURATION))
       .toEqual(['year', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond'])
   })
 
   test(`${label} get the durations`, () => {
-    expect(Tempo.DURATIONS.keys())
+    expect(Tempo.Enum.keys(Tempo.DURATIONS))
       .toEqual(['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds'])
   })
 

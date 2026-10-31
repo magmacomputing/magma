@@ -5,7 +5,7 @@ import { singular } from '#library/string.library.js';
 import { normaliseFractionalDurations } from '#library/temporal.library.js';
 import { getISOWeekOfYear } from '#library/international.library.js';
 
-import { sym, enums, logError, Match } from '#tempo/support';
+import { sym, enums, Enum, logError, Match } from '#tempo/support';
 import { SLICK_KEYS } from '#tempo/support/support.default.js';
 import { resolveTermMutation } from '../engine/engine.term.js';
 import { defineInterpreterModule, type TempoModule } from '../plugin/plugin.util.js';
@@ -210,7 +210,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 								if (type === 'set' && isString(adjust) && (adjust === 'start' || adjust === 'mid' || adjust === 'end')) {
 									const isIsoYear = key === 'isoYear' || key === 'isoyear' || key === 'yw' || key === 'yow';
 									const isIsoWeek = key === 'isoWeek' || key === 'isoweek' || key === 'wy' || key === 'woy';
-									const unitKey = isIsoYear ? 'yw' : (isIsoWeek ? 'isoweek' : (enums.ELEMENT.has(key) ? enums.ELEMENT[key as keyof typeof enums.ELEMENT] : key));
+									const unitKey = isIsoYear ? 'yw' : (isIsoWeek ? 'isoweek' : (Enum.has(enums.ELEMENT, key) ? enums.ELEMENT[key as keyof typeof enums.ELEMENT] : key));
 									const isTermVal = (unitKey as string).startsWith('#');
 									const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitKey as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitKey as string);
@@ -229,7 +229,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 										const val = adjust?.toString() ?? '';
 										const isIsoYear = val === 'isoYear' || val === 'isoyear' || val === 'yw' || val === 'yow';
 										const isIsoWeek = val === 'isoWeek' || val === 'isoweek' || val === 'wy' || val === 'woy';
-										const unitVal = isIsoYear ? 'yw' : (isIsoWeek ? 'isoweek' : (enums.ELEMENT.has(val) ? enums.ELEMENT[val as keyof typeof enums.ELEMENT] : val));
+										const unitVal = isIsoYear ? 'yw' : (isIsoWeek ? 'isoweek' : (Enum.has(enums.ELEMENT, val) ? enums.ELEMENT[val as keyof typeof enums.ELEMENT] : val));
 										const isTermVal = (unitVal as string).startsWith('#');
 										const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitVal as string, state));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitVal as string);

@@ -58,10 +58,10 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 
 | Getter / Path | Type | Description | Example |
 | :--- | :--- | :--- | :--- |
-| **`.mon`**<br><small>`Tempo.MONTHS.keyOf(zdt.month)`</small> | `string` | Full English month name (Gregorian registry label) | `'October'` |
-| **`.mmm`**<br><small>`Tempo.MONTH.keyOf(zdt.month)`</small> | `string` | Short English month name (Gregorian registry label) | `'Oct'` |
-| **`.wkd`**<br><small>`Tempo.WEEKDAYS.keyOf(zdt.dayOfWeek)`</small> | `string` | Full English weekday name | `'Saturday'` |
-| **`.www`**<br><small>`Tempo.WEEKDAY.keyOf(zdt.dayOfWeek)`</small> | `string` | Short English weekday name | `'Sat'` |
+| **`.mon`**<br><small>`Enum.keyOf(Tempo.MONTHS, zdt.month)`</small> | `string` | Full English month name (Gregorian registry label) | `'October'` |
+| **`.mmm`**<br><small>`Enum.keyOf(Tempo.MONTH, zdt.month)`</small> | `string` | Short English month name (Gregorian registry label) | `'Oct'` |
+| **`.wkd`**<br><small>`Enum.keyOf(Tempo.WEEKDAYS, zdt.dayOfWeek)`</small> | `string` | Full English weekday name | `'Saturday'` |
+| **`.www`**<br><small>`Enum.keyOf(Tempo.WEEKDAY, zdt.dayOfWeek)`</small> | `string` | Short English weekday name | `'Sat'` |
 
 ## 🌍 Regional, Timezone & System Properties
 
@@ -131,7 +131,7 @@ Tempo v5 intentionally avoids cluttering the top-level prototype with aliases or
 > Developers are never limited to Tempo's built-in getters. The `Tempo` class is intentionally open for extension:
 > - **Custom Instance Getters (`defineProperties` / `defineProperty`)**: Define custom instance getters and methods directly on `Tempo` or an isolated sandbox (`Tempo.create()`). Resolver functions are automatically treated as lazy, per-instance memoized getters:
 >   ```typescript
->   import { defineProperties } from '@magmacomputing/tempo';
+>   import { Tempo, defineProperties } from '@magmacomputing/tempo';
 >
 >   Tempo.use(defineProperties({
 >     isWeekend: (t) => t.dow >= 6,

@@ -122,7 +122,7 @@ Tempo provides `defineProperties` (and its single-property alias `defineProperty
 - **Strict Immutability Guard**: Because Tempo instances are immutable value objects, `set` accessors are strictly disallowed and will throw a `TempoError`.
 
 ```typescript
-import { defineProperties } from '@magmacomputing/tempo';
+import { Tempo, defineProperties } from '@magmacomputing/tempo';
 
 const DateExtensions = defineProperties({
   // Auto-memoized getter (lazy per instance)

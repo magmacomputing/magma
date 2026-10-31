@@ -189,6 +189,10 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							(isObject(options) && !isEmpty(options));
 
 						if (name && installed.has(name)) {
+							if (pluginType === 'properties') {
+								logDebug(`Properties plugin already installed by name: ${name}`, state.config);
+								return;
+							}
 							if (hasExplicitOptions) {
 								registerPlugin(plugin, state);
 								const installOpts = resolvedOptions;
@@ -329,7 +333,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 
 						// If a plain configuration dictionary was supplied directly in the plugins array (e.g. { ai: { timeout: 1000 } })
 						const isPlainConfigDict = isPlainObject(discovery) &&
-							!ownKeys(discovery).some(key => DISCOVERY.has(key as any)) &&
+							!ownKeys(discovery).some(key => Enum.has(DISCOVERY, key)) &&
 							hasNoneOf(discovery, 'name', 'key', 'install');
 						if (isPlainConfigDict) {
 							const state = (TempoClass as any)[$Internal]();
@@ -342,7 +346,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							TempoClass.use(discovery.plugins);
 
 						// only trigger init if we're assigning a new discovery object to a symbol
-						if (ownKeys(item).some(key => DISCOVERY.has(key as any))) {
+						if (ownKeys(item).some(key => Enum.has(DISCOVERY, key))) {
 							const discoveryArg = (isSymbol(options) ? options : (options as any)?.discovery) ?? sym.$Tempo;
 							const discoverySymbol = isString(discoveryArg) ? Symbol.for(discoveryArg) : discoveryArg;
 

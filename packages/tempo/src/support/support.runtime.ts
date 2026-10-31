@@ -193,8 +193,15 @@ let localFallbackRuntime: TempoRuntime | undefined;
  */
 export function getRuntime(): TempoRuntime {
 	const existing = (globalThis as any)[sym.$Bridge];
-	if (existing && existing[sym.$RuntimeBrand] === true)
+	if (existing && existing[sym.$RuntimeBrand] === true) {
+		if (!existing.termMap) (existing as any).termMap = new Map();
+		if (!existing.versions) (existing as any).versions = { Tempo: TEMPO_VERSION };
+		if (!existing.extensions) (existing as any).extensions = [];
+		if (!existing.modules) (existing as any).modules = {};
+		if (!existing.installed) (existing as any).installed = new Set();
+		if (!existing.resetHooks) (existing as any).resetHooks = new Set();
 		return existing;
+	}
 
 	if (localFallbackRuntime)
 		return localFallbackRuntime;

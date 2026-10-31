@@ -149,4 +149,51 @@ describe('defineProperties & defineProperty', () => {
 			} as any));
 		}).toThrow(/Setters are not permitted on immutable Tempo instances/);
 	});
+
+	it('throws TempoError when defineProperty is called without a definition', () => {
+		expect(() => {
+			(defineProperty as any)('propWithoutDef');
+		}).toThrow(/Property definition is required when calling defineProperty/);
+	});
+
+	it('allows multiple unnamed defineProperties bundles without name collision', () => {
+		const S = Tempo.create({});
+		S.use(defineProperties({
+			foo: () => 'valFoo',
+		}));
+		S.use(defineProperties({
+			bar: () => 'valBar',
+		}));
+
+		const t = new S('2026-10-31');
+		expect((t as any).foo).toBe('valFoo');
+		expect((t as any).bar).toBe('valBar');
+	});
+
+	it('skips reinstall for named properties plugins to avoid core property redefinition errors', () => {
+		const S = Tempo.create({});
+		const namedPlugin = defineProperties({
+			baz: () => 'valBaz',
+		}, 'BazExtension');
+
+		S.use(namedPlugin);
+		// Reinstalling the exact same plugin or invoking with options should not throw
+		expect(() => {
+			S.use(namedPlugin, { someOpt: true });
+		}).not.toThrow();
+
+		const t = new S('2026-10-31');
+		expect((t as any).baz).toBe('valBaz');
+	});
+
+	it('rejects per-property method dictionaries passed outside of methods block', () => {
+		const S = Tempo.create({});
+		expect(() => {
+			S.use(defineProperties({
+				badMethodBundle: {
+					double() { },
+				} as any,
+			}));
+		}).toThrow(/Invalid property definition for 'badMethodBundle'/);
+	});
 });

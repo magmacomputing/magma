@@ -3,7 +3,7 @@ import { ownKeys, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 
 import { sym, $IsBase, $Internal, $setConfig, $setDiscovery } from './support.symbol.js';
-import { DISCOVERY } from './support.enum.js';
+import { DISCOVERY, Enum } from './support.enum.js';
 import { ClassStates } from './support.runtime.js';
 import { init } from './support.init.js';
 import { setPatterns } from '../engine/engine.pattern.js';
@@ -61,49 +61,60 @@ export function createSandbox<R>(
 	if (isObject(options.discovery) && !isSymbol(options.discovery))
 		data = { ...data, ...options.discovery as any };
 
+	const prevDiscovery = (globalThis as any)[normalizedDiscovery as any];
 	(globalThis as any)[normalizedDiscovery as any] = data;
 
-	const state = init(options, false, (TempoClass as any)[$Internal]());
-	state.config.discovery = normalizedDiscovery as any;
-	ClassStates.set(SandboxTempo as any, state);
-	setPatterns(state); // compile regex patterns for the isolated sandbox state
+	try {
+		const state = init(options, false, (TempoClass as any)[$Internal]());
+		state.config.discovery = normalizedDiscovery as any;
+		ClassStates.set(SandboxTempo as any, state);
+		setPatterns(state); // compile regex patterns for the isolated sandbox state
 
-	// Apply configuration to the sandbox
-	(SandboxTempo as any)[$setConfig](state,
-		{
-			scope: 'sandbox',
-			discovery: normalizedDiscovery as any,
-			catch: options.catch ?? false
-		},
-		(SandboxTempo as any)[$setDiscovery](state, data),
-		{ ...options, discovery: normalizedDiscovery }
-	);
+		// Apply configuration to the sandbox
+		(SandboxTempo as any)[$setConfig](state,
+			{
+				scope: 'sandbox',
+				discovery: normalizedDiscovery as any,
+				catch: options.catch ?? false
+			},
+			(SandboxTempo as any)[$setDiscovery](state, data),
+			{ ...options, discovery: normalizedDiscovery }
+		);
 
-	const pluginsToInstall = options.plugins ?? data?.plugins;
-	if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || hasAnyOf(pluginsToInstall, 'name', 'key', 'install', sym.$PluginType, 'type'))) {
-		let toInstall = pluginsToInstall;
-		if (Array.isArray(pluginsToInstall)) {
-			const isPlainConfigDict = (item: any) =>
-				isPlainObject(item) &&
-				!ownKeys(item).some(key => DISCOVERY.has(key as any)) &&
-				hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
+		const pluginsToInstall = options.plugins ?? data?.plugins;
+		if (pluginsToInstall && (Array.isArray(pluginsToInstall) || isFunction(pluginsToInstall) || hasAnyOf(pluginsToInstall, 'name', 'key', 'install', sym.$PluginType, 'type'))) {
+			let toInstall = pluginsToInstall;
+			if (Array.isArray(pluginsToInstall)) {
+				const isPlainConfigDict = (item: any) =>
+					isPlainObject(item) &&
+					!ownKeys(item).some(key => Enum.has(DISCOVERY, key)) &&
+					hasNoneOf(item, 'name', 'key', 'install', 'define', sym.$PluginType);
 
-			const remaining: any[] = [];
-			for (const item of pluginsToInstall) {
-				if (isPlainConfigDict(item)) {
-					state.config.plugins = { ...(state.config.plugins ?? {}), ...item };
-					state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...item };
-				} else {
-					remaining.push(item);
+				const remaining: any[] = [];
+				for (const item of pluginsToInstall) {
+					if (isPlainConfigDict(item)) {
+						state.config.plugins = { ...(state.config.plugins ?? {}), ...item };
+						state.config.pluginOptions = { ...(state.config.pluginOptions ?? {}), ...item };
+					} else {
+						remaining.push(item);
+					}
 				}
+				toInstall = remaining;
 			}
-			toInstall = remaining;
+			if (!isEmpty(toInstall))
+				SandboxTempo.use(toInstall);
 		}
-		if (!isEmpty(toInstall))
-			SandboxTempo.use(toInstall);
-	}
 
-	Object.freeze(SandboxTempo);
+		Object.freeze(SandboxTempo);
+	} catch (err) {
+		if (!isUndefined(prevDiscovery)) {
+			(globalThis as any)[normalizedDiscovery as any] = prevDiscovery;
+		} else {
+			delete (globalThis as any)[normalizedDiscovery as any];
+		}
+		ClassStates.delete(SandboxTempo as any);
+		throw err;
+	}
 
 	const sb = cast<typeof Tempo>(SandboxTempo);
 
