@@ -417,7 +417,10 @@ export function Branded<T extends Constructor>(
 		if (!hasOwn(value, Symbol.hasInstance)) {
 			try {
 				Object.defineProperty(value, Symbol.hasInstance, {
-					value: isInstance,
+					value: function (val: unknown) {
+						const customGuard = (this as any)?.[methodName];
+						return isCallable(customGuard) ? customGuard.call(this, val) : isInstance(val);
+					},
 					configurable: true,
 					writable: false,
 					enumerable: false,

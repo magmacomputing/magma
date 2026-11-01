@@ -5,7 +5,7 @@ import { Branded } from '#library/decorator.library.js';
 
 import { sym, $IsBase, $Internal, $guard, $setConfig, $setDiscovery, $Sandbox, isSandbox } from './support.symbol.js';
 import { DISCOVERY, Enum } from './support.enum.js';
-import { ClassStates } from './support.runtime.js';
+import { ClassStates, getRuntime } from './support.runtime.js';
 import { init } from './support.init.js';
 import { setPatterns } from '../engine/engine.pattern.js';
 
@@ -42,7 +42,47 @@ export function createSandbox<R>(
 		? Symbol('TempoSandbox')
 		: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
 
+	let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
+
+	if (isObject(options.discovery) && !isSymbol(options.discovery))
+		data = { ...data, ...options.discovery as any };
+
+	const prevDiscovery = (globalThis as any)[normalizedDiscovery as any];
+	(globalThis as any)[normalizedDiscovery as any] = data;
+
 	let disposed = false;
+	let state: any;
+
+	const cleanupSandbox = () => {
+		if (disposed) return;
+		disposed = true;
+
+		if ((globalThis as any)[normalizedDiscovery as any] === data) {
+			const isPrevLive = prevDiscovery && (!prevDiscovery.sandbox || !prevDiscovery.sandbox.isDisposed);
+			if (isPrevLive) {
+				(globalThis as any)[normalizedDiscovery as any] = prevDiscovery;
+			} else {
+				delete (globalThis as any)[normalizedDiscovery as any];
+			}
+		}
+
+		if (state?.writtenVersions) {
+			const rt = getRuntime();
+			for (const [vKey, vInfo] of state.writtenVersions.entries()) {
+				if (!rt.versionOwners || rt.versionOwners.get(vKey) === state || rt.versionOwners.get(vKey) === SandboxTempo) {
+					if (vInfo.hadVersion && vInfo.prevVersion !== undefined) {
+						rt.versions[vKey] = vInfo.prevVersion;
+					} else {
+						delete rt.versions[vKey];
+					}
+					rt.versionOwners?.delete(vKey);
+				}
+			}
+		}
+
+		ClassStates.delete(SandboxTempo as any);
+	};
+
 	const SandboxTempo = @Branded($Sandbox, 'SandboxTempo') class extends (TempoClass as any) {
 		static [Symbol.toStringTag] = 'TempoSandbox';
 		static [$IsBase] = false;
@@ -50,15 +90,10 @@ export function createSandbox<R>(
 		static isSandbox = isSandbox;
 		static get isDisposed(): boolean { return disposed; }
 		static [Symbol.dispose]() {
-			if (disposed) return;
-			disposed = true;
-			if ((globalThis as any)[normalizedDiscovery as any] === data)
-				delete (globalThis as any)[normalizedDiscovery as any];
-
-			ClassStates.delete(SandboxTempo as any);
+			cleanupSandbox();
 		}
 		static async [Symbol.asyncDispose]() {
-			SandboxTempo[Symbol.dispose]();
+			cleanupSandbox();
 		}
 		static hasModule(name: string): boolean {
 			if (disposed) return false;
@@ -66,8 +101,8 @@ export function createSandbox<R>(
 		}
 		static get [$guard]() {
 			if (disposed) return { test: () => false };
-			const state = ClassStates.get(SandboxTempo as any);
-			return (state as any)?.[$guard] ?? { test: () => false };
+			const s = ClassStates.get(SandboxTempo as any);
+			return (s as any)?.[$guard] ?? { test: () => false };
 		}
 		get isSandbox(): boolean {
 			return isSandbox(this);
@@ -85,6 +120,8 @@ export function createSandbox<R>(
 		}
 	};
 
+	data.sandbox = SandboxTempo;
+
 	Object.defineProperty(SandboxTempo.prototype, Symbol.toStringTag, {
 		value: 'TempoSandbox',
 		configurable: true,
@@ -92,17 +129,8 @@ export function createSandbox<R>(
 		enumerable: false,
 	});
 
-
-	let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
-
-	if (isObject(options.discovery) && !isSymbol(options.discovery))
-		data = { ...data, ...options.discovery as any };
-
-	const prevDiscovery = (globalThis as any)[normalizedDiscovery as any];
-	(globalThis as any)[normalizedDiscovery as any] = data;
-
 	try {
-		const state = init(options, false, (TempoClass as any)[$Internal]());
+		state = init(options, false, (TempoClass as any)[$Internal]());
 		state.config.discovery = normalizedDiscovery as any;
 		ClassStates.set(SandboxTempo as any, state);
 		setPatterns(state); // compile regex patterns for the isolated sandbox state
@@ -112,7 +140,7 @@ export function createSandbox<R>(
 			{
 				scope: 'sandbox',
 				discovery: normalizedDiscovery as any,
-				catch: options.catch ?? false,
+				catch: options.catch ?? (state.config as any).catch ?? false,
 			},
 			(SandboxTempo as any)[$setDiscovery](state, data),
 			{ ...options, discovery: normalizedDiscovery },
@@ -144,7 +172,8 @@ export function createSandbox<R>(
 
 		Object.freeze(SandboxTempo);
 	} catch (err) {
-		if (!isUndefined(prevDiscovery)) {
+		const isPrevLive = prevDiscovery && (!prevDiscovery.sandbox || !prevDiscovery.sandbox.isDisposed);
+		if (isPrevLive) {
 			(globalThis as any)[normalizedDiscovery as any] = prevDiscovery;
 		} else {
 			delete (globalThis as any)[normalizedDiscovery as any];

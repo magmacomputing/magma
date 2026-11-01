@@ -56,6 +56,8 @@ export class TempoRuntime {
 	readonly termMap: Map<string, TermPlugin> = new Map();
 	/** registry of installed plugin versions */
 	readonly versions: Record<string, string> = { Tempo: TEMPO_VERSION };
+	/** tracking of version write ownership */
+	readonly versionOwners: Map<string, any> = new Map();
 
 	/** persistent global configuration state — mirrors Tempo.#global */
 	state?: Internal.State | undefined;

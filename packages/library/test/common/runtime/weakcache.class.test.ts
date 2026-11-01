@@ -13,6 +13,20 @@ describe('common/runtime/weakcache.class', () => {
 		expect(isWeakCache(spoofed)).toBe(false);
 		expect(spoofed instanceof WeakCache).toBe(false);
 
+		const protoOnly = Object.create(WeakCache.prototype);
+		expect(WeakCache.isWeakCache(protoOnly)).toBe(false);
+		expect(isWeakCache(protoOnly)).toBe(false);
+		expect(protoOnly instanceof WeakCache).toBe(false);
+
+		expect(WeakCache.isWeakCache(null)).toBe(false);
+		expect(WeakCache.isWeakCache(undefined)).toBe(false);
+		expect(WeakCache.isWeakCache(42)).toBe(false);
+		expect(WeakCache.isWeakCache('string')).toBe(false);
+		expect(WeakCache.isWeakCache(true)).toBe(false);
+		expect(WeakCache.isWeakCache(Symbol())).toBe(false);
+		expect(WeakCache.isWeakCache({})).toBe(false);
+		expect(WeakCache.isWeakCache(() => {})).toBe(false);
+
 		const item = { id: 1 };
 		cache.set('key1', item);
 		expect(cache.has('key1')).toBe(true);

@@ -243,9 +243,14 @@ describe('Sandbox Factory Pattern', () => {
 		expect((Sandbox as any).isDisposed).toBe(false);
 		expect((instance as any).isDisposed).toBe(false);
 
-		// Prior to disposal, guard is active
-		expect((Sandbox as any)[$guard].test('anything')).toBeDefined();
-		expect((instance as any)[$guard].test('anything')).toBeDefined();
+		// Prior to disposal, guard is active and matches valid input
+		expect((Sandbox as any)[$guard].test('now')).toBe(true);
+		expect((instance as any)[$guard].test('now')).toBe(true);
+
+		// Prior to disposal, installed modules report true
+		Sandbox.use({ name: 'ActiveModule', install: () => {} });
+		expect(Sandbox.hasModule('ActiveModule')).toBe(true);
+		expect(instance.hasModule('ActiveModule')).toBe(true);
 
 		// Dispose sandbox
 		(Sandbox as any)[Symbol.dispose]();
@@ -260,12 +265,16 @@ describe('Sandbox Factory Pattern', () => {
 		expect((instance as any).isDisposed).toBe(true);
 
 		// Disposed plugin lookups return false
+		expect(Sandbox.hasModule('ActiveModule')).toBe(false);
+		expect(instance.hasModule('ActiveModule')).toBe(false);
 		expect(Sandbox.hasModule('anyModule')).toBe(false);
 		expect(Sandbox.hasModule('TermsModule')).toBe(false);
 		expect(instance.hasModule('anyModule')).toBe(false);
 		expect(instance.hasModule('TermsModule')).toBe(false);
 
 		// Disposed guard fallbacks return false
+		expect((Sandbox as any)[$guard].test('now')).toBe(false);
+		expect((instance as any)[$guard].test('now')).toBe(false);
 		expect((Sandbox as any)[$guard].test('anything')).toBe(false);
 		expect((instance as any)[$guard].test('anything')).toBe(false);
 

@@ -313,12 +313,16 @@ describe('defineProperties & defineProperty', () => {
 		const S = Tempo.derive({});
 		expect(() => {
 			S.use(defineProperties({
+				validFirst: () => 'valid',
 				getAndWritable: {
 					get: () => 1,
 					writable: true,
 				} as any,
 			}));
 		}).toThrow(/Descriptor for 'getAndWritable' cannot define 'get' with 'value' or 'writable'\./);
+
+		const t = new S();
+		expect((t as any).validFirst).toBeUndefined();
 	});
 
 	it('restores state.config.pluginOptions if properties bundle install throws', () => {

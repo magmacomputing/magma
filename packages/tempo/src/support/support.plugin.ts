@@ -223,6 +223,12 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							hadVersion = hasKey(rt.versions, versionKey);
 							prevVersion = rt.versions[versionKey];
 							rt.versions[versionKey] = plugin.version;
+							rt.versionOwners?.set(versionKey, state ?? TempoClass);
+							if (state) {
+								if (!(state as any).writtenVersions) (state as any).writtenVersions = new Map<string, { prevVersion?: string; hadVersion: boolean }>();
+								if (!(state as any).writtenVersions.has(versionKey))
+									(state as any).writtenVersions.set(versionKey, { prevVersion, hadVersion });
+							}
 						}
 						const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
 						try {
@@ -241,12 +247,13 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 								}
 								const extIdx = rt.extensions.indexOf(plugin);
 								if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
-								if (versionKey) {
+								if (versionKey && (!rt.versionOwners || rt.versionOwners.get(versionKey) === (state ?? TempoClass))) {
 									if (hadVersion && prevVersion !== undefined) {
 										rt.versions[versionKey] = prevVersion;
 									} else {
 										delete rt.versions[versionKey];
 									}
+									rt.versionOwners?.delete(versionKey);
 								}
 								if (name && state.config.pluginOptions) {
 									if (hadPluginOpts) {

@@ -34,7 +34,10 @@ import { registryUpdate } from './support.register.js';
  * @internal
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
-	const isBoundedCacheOpt = isBoundedCache(optionsCache);
+	const isBounded = (val: any): val is BoundedCache =>
+		isBoundedCache(val) || (isObject(val) && (val as any)[Symbol.toStringTag] === 'BoundedCache' && isFunction((val as any).evictExpired));
+
+	const isBoundedCacheOpt = isBounded(optionsCache);
 	if (isBoundedCacheOpt) {
 		return optionsCache as BoundedCache;
 	} else if (optionsCache instanceof Map || (optionsCache && isFunction((optionsCache as any).entries))) {
@@ -43,7 +46,7 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
 		return targetCache;
 	} else {
-		if (isBoundedCache(existingCache)) {
+		if (isBounded(existingCache)) {
 			if (isDefined(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
 			if (isDefined(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
 			return existingCache;

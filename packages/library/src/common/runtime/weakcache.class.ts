@@ -30,7 +30,8 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 	readonly #finalizer: Finalizer<{ key: K; token: object }>;
 
 	/** Type guard to check if a value is an authentic WeakCache instance */
-	declare static isWeakCache: WeakCacheTypeGuard;
+	static isWeakCache: WeakCacheTypeGuard = (val: unknown): val is WeakCache<any, any> =>
+		typeof val === 'object' && val !== null && #cache in (val as object);
 
 	constructor() {
 		this.#finalizer = new Finalizer((held: { key: K; token: object }) => {

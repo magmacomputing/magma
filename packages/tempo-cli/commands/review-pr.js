@@ -5,7 +5,7 @@ import { execFileSync } from 'node:child_process';
  */
 function runGh(args) {
 	try {
-		return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+		return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 10 * 1024 * 1024 }).trim();
 	} catch (err) {
 		const stderr = err.stderr ? err.stderr.toString().trim() : '';
 		throw new Error(stderr || err.message);
@@ -43,9 +43,10 @@ function parseTopLevelReviewComments(rawBody) {
 		'## Review metadata'
 	];
 
+	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 	let overallEnd = normalized.length;
 	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker);
+		const idx = normalized.indexOf(marker, lastSecStart);
 		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
@@ -75,16 +76,16 @@ function parseTopLevelReviewComments(rawBody) {
 			let filePath = '';
 			let line = null;
 
-			const sumPath = item.summary.match(/([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?:[:\-](\d+(?:-\d+)?))?/);
+			const sumPath = item.summary.match(/^\s*([a-zA-Z0-9_\-\.\/ +]+\.[a-zA-Z0-9]+)(?:[:\-](\d+(?:-\d+)?))?/);
 			if (sumPath && (sumPath[1].includes('/') || sumPath[1].endsWith('.ts') || sumPath[1].endsWith('.js'))) {
-				filePath = sumPath[1];
+				filePath = sumPath[1].trim();
 				if (sumPath[2]) line = sumPath[2];
 			}
 
 			const backtickPath = itemBlock.match(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/);
 			if (backtickPath && backtickPath[1].includes('/')) {
-				filePath = backtickPath[1];
-				if (backtickPath[2]) line = backtickPath[2];
+				if (!filePath) filePath = backtickPath[1];
+				if (!line && backtickPath[2]) line = backtickPath[2];
 			}
 
 			if (!line) {
@@ -96,6 +97,12 @@ function parseTopLevelReviewComments(rawBody) {
 			if (reviewAtMatch) {
 				if (!filePath) filePath = reviewAtMatch[1];
 				if (!line) line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
+			}
+
+			const ghBlobMatch = itemBlock.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/[a-f0-9]+\/([^#\s)]+)(?:#L(\d+(?:-L\d+)?))?/);
+			if (ghBlobMatch) {
+				if (!filePath) filePath = ghBlobMatch[1];
+				if (!line && ghBlobMatch[2]) line = ghBlobMatch[2].replace(/-L/, '-');
 			}
 
 			if (!filePath && !line) continue;
@@ -301,7 +308,14 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 		const findings = [...threadFindings, ...topLevelFindings];
 
 		if (jsonOutput) {
-			console.log(JSON.stringify({ pr: prInfo, findingsCount: findings.length, findings, ...(reviewsError ? { followUpError: reviewsError.message } : {}) }, null, 2));
+			console.log(JSON.stringify({
+				pr: prInfo,
+				findingsCount: findings.length,
+				unresolvedThreadsCount: threadFindings.length,
+				topLevelCommentsCount: topLevelFindings.length,
+				findings,
+				...(reviewsError ? { followUpError: reviewsError.message } : {})
+			}, null, 2));
 			if (reviewsError) {
 				console.error(`\n⚠️  Warning: Failed to fetch follow-up reviews: ${reviewsError.message}\n`);
 				process.exitCode = 1;
@@ -312,7 +326,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 		console.log(`\n======================================================`);
 		console.log(`CodeRabbit PR Findings: PR #${prInfo.number} (${prInfo.title})`);
 		console.log(`Branch: ${prInfo.headRefName} | URL: ${prInfo.url}`);
-		console.log(`Unresolved Findings Count: ${findings.length} (${threadFindings.length} inline threads, ${topLevelFindings.length} top-level review comments)`);
+		console.log(`Findings Summary: ${findings.length} total (${threadFindings.length} unresolved inline thread(s), ${topLevelFindings.length} top-level review comment(s) - resolution not tracked)`);
 		console.log(`======================================================\n`);
 
 		if (findings.length === 0) {

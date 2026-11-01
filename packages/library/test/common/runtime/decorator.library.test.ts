@@ -311,4 +311,20 @@ describe('@Branded Decorator', () => {
     expect(d instanceof Device).toBe(true);
     expect(Object.prototype.toString.call(d)).toBe('[object Device]');
   });
+
+  it('Symbol.hasInstance dynamically delegates to custom static is<Name> guard if provided', () => {
+    @Branded('CustomValidator')
+    class CustomValidator {
+      #secret = 42;
+      static isCustomValidator(val: unknown): val is CustomValidator {
+        return !!val && typeof val === 'object' && '#secret' in (val as any);
+      }
+    }
+
+    const valid = { '#secret': 42 };
+    const invalid = Object.create(CustomValidator.prototype);
+
+    expect(valid instanceof CustomValidator).toBe(true);
+    expect(invalid instanceof CustomValidator).toBe(false);
+  });
 });
