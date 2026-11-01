@@ -6,7 +6,6 @@ describe('common/scheduling/interval.class', () => {
 		const p2 = { epochNanoseconds: 2000n };
 		const interval = new Interval(p1, p2);
 
-		expect(interval.isInterval).toBe(true);
 		expect(Interval.isInterval(interval)).toBe(true);
 		expect(isInterval(interval)).toBe(true);
 		expect(interval instanceof Interval).toBe(true);

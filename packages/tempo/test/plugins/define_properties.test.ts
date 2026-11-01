@@ -303,10 +303,22 @@ describe('defineProperties & defineProperty', () => {
 					value: 2,
 				} as any,
 			}));
-		}).toThrow(/Descriptor for 'bothGetAndVal' cannot define both 'get' and 'value'\./);
+		}).toThrow(/Descriptor for 'bothGetAndVal' cannot define 'get' with 'value' or 'writable'\./);
 
 		const t = new S();
 		expect((t as any).validFirst).toBeUndefined();
+	});
+
+	it('rejects descriptors defining both get and writable during pass 1', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({
+				getAndWritable: {
+					get: () => 1,
+					writable: true,
+				} as any,
+			}));
+		}).toThrow(/Descriptor for 'getAndWritable' cannot define 'get' with 'value' or 'writable'\./);
 	});
 
 	it('restores state.config.pluginOptions if properties bundle install throws', () => {

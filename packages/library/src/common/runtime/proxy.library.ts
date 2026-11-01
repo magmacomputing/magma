@@ -144,7 +144,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			}
 
 			const val = Reflect.get(t, k, r);
-			if (bind && isSafeKey(k) && isFunction(val)) {
+			if (bind && !isSymbol(k) && isSafeKey(k) && isFunction(val)) {
 				const desc = Object.getOwnPropertyDescriptor(t, k);
 				if (desc && !desc.configurable && !desc.writable) return val;
 				let perTargetCache = boundMethodCache.get(val);

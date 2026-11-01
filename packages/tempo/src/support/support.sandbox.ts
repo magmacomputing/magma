@@ -3,7 +3,7 @@ import { ownKeys, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
 
-import { sym, $IsBase, $Internal, $setConfig, $setDiscovery, $Sandbox, isSandbox } from './support.symbol.js';
+import { sym, $IsBase, $Internal, $guard, $setConfig, $setDiscovery, $Sandbox, isSandbox } from './support.symbol.js';
 import { DISCOVERY, Enum } from './support.enum.js';
 import { ClassStates } from './support.runtime.js';
 import { init } from './support.init.js';
@@ -57,9 +57,31 @@ export function createSandbox<R>(
 
 			ClassStates.delete(SandboxTempo as any);
 		}
-
+		static async [Symbol.asyncDispose]() {
+			SandboxTempo[Symbol.dispose]();
+		}
+		static hasModule(name: string): boolean {
+			if (disposed) return false;
+			return (TempoClass as any).hasModule.call(this, name);
+		}
+		static get [$guard]() {
+			if (disposed) return { test: () => false };
+			const state = ClassStates.get(SandboxTempo as any);
+			return (state as any)?.[$guard] ?? { test: () => false };
+		}
 		get isSandbox(): boolean {
 			return isSandbox(this);
+		}
+		get isDisposed(): boolean {
+			return disposed;
+		}
+		hasModule(name: string): boolean {
+			if (disposed) return false;
+			return (this.constructor as any).hasModule(name);
+		}
+		get [$guard]() {
+			if (disposed) return { test: () => false };
+			return (this.constructor as any)[$guard];
 		}
 	};
 
@@ -67,7 +89,7 @@ export function createSandbox<R>(
 		value: 'TempoSandbox',
 		configurable: true,
 		writable: false,
-		enumerable: false
+		enumerable: false,
 	});
 
 
@@ -90,10 +112,10 @@ export function createSandbox<R>(
 			{
 				scope: 'sandbox',
 				discovery: normalizedDiscovery as any,
-				catch: options.catch ?? false
+				catch: options.catch ?? false,
 			},
 			(SandboxTempo as any)[$setDiscovery](state, data),
-			{ ...options, discovery: normalizedDiscovery }
+			{ ...options, discovery: normalizedDiscovery },
 		);
 
 		const pluginsToInstall = options.plugins ?? data?.plugins;
@@ -134,18 +156,18 @@ export function createSandbox<R>(
 	const sb = cast<typeof Tempo>(SandboxTempo);
 
 	if (fn) {
+		let isAsync = false;
 		try {
 			const res = fn(sb);
 			if (res && isCallable((res as any).then)) {
+				isAsync = true;
 				return Promise.resolve(res).finally(() => {
 					sb[Symbol.dispose]?.();
 				}) as R;
 			}
-			sb[Symbol.dispose]?.();
 			return res;
-		} catch (err) {
-			sb[Symbol.dispose]?.();
-			throw err;
+		} finally {
+			if (!isAsync) sb[Symbol.dispose]?.();
 		}
 	}
 

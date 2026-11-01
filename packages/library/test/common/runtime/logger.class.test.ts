@@ -22,7 +22,6 @@ describe('Logger Class', () => {
 
 	it('identifies as an authentic Logger via @Branded', () => {
 		const logger = new Logger('Test');
-		expect(logger.isLogger).toBe(true);
 		expect(Logger.isLogger(logger)).toBe(true);
 		expect(isLogger(logger)).toBe(true);
 		expect(logger instanceof Logger).toBe(true);

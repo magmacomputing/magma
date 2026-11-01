@@ -12,6 +12,9 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic WebStore instance */
+type WebStoreTypeGuard = (val: unknown) => val is WebStore;
+
 const STORAGE = {
 	Local: 'local',
 	Session: 'session',
@@ -32,12 +35,7 @@ type STORAGE = ValueOf<typeof STORAGE>
 @Branded('WebStore')
 export class WebStore {
 	/** Type guard to check if a value is an authentic WebStore instance */
-	declare static isWebStore: (val: unknown) => val is WebStore;
-
-	/** True if this is an authentic WebStore instance */
-	get isWebStore(): boolean {
-		return WebStore.isWebStore(this);
-	}
+	declare static isWebStore: WebStoreTypeGuard;
 
 	private static _localInstance?: WebStore;
 	private static _sessionInstance?: WebStore;

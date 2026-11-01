@@ -208,6 +208,7 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(derived.Beta).toBe(20);
 		expect(Enum.keys(derived)).toEqual(['Alpha', Symbol.toStringTag, 'Beta']);
 		expect(Enum.entries(derived)).toEqual([['Alpha', 10], [Symbol.toStringTag, 'Enumify'], ['Beta', 20]]);
+		expect([...derived]).toEqual(Enum.entries(derived));
 		expect(derived instanceof Enum).toBe(true);
 		expect(spoofed instanceof Enum).toBe(false);
 		expect(Enum.isEnum(derived)).toBe(true);

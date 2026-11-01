@@ -6,7 +6,6 @@ describe('common/runtime/finalizer.class', () => {
 			// finalizer hook
 		});
 
-		expect(finalizer.isFinalizer).toBe(true);
 		expect(Finalizer.isFinalizer(finalizer)).toBe(true);
 		expect(isFinalizer(finalizer)).toBe(true);
 		expect(finalizer instanceof Finalizer).toBe(true);
@@ -46,7 +45,7 @@ describe('common/runtime/finalizer.class', () => {
 			throw new Error('Boom in finalizer');
 		});
 
-		expect(errFinalizer.isFinalizer).toBe(true);
+		expect(isFinalizer(errFinalizer)).toBe(true);
 		spy.mockRestore();
 	});
 });

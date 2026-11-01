@@ -10,6 +10,9 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic Logger instance */
+type LoggerTypeGuard = (val: unknown) => val is Logger;
+
 /**
  * Enumeration of available log levels from lowest to highest verbosity.
  */
@@ -79,12 +82,7 @@ export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG
 @Branded('Logger')
 export class Logger {
 	/** Type guard to check if a value is an authentic Logger instance */
-	declare static isLogger: (val: unknown) => val is Logger;
-
-	/** True if this is an authentic Logger instance */
-	get isLogger(): boolean {
-		return Logger.isLogger(this);
-	}
+	declare static isLogger: LoggerTypeGuard;
 
 	#namespace: string;
 

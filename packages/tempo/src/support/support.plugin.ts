@@ -209,6 +209,9 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						if (name) installed.add(name); else installed.add(plugin);
 
 						registerPlugin(plugin, state);
+						let versionKey: string | undefined;
+						let prevVersion: string | undefined;
+						let hadVersion = false;
 						if (plugin.version && isString(name)) {
 							let suffix = '';
 							if (pluginType === 'plugin') suffix = 'Plugin';
@@ -216,7 +219,10 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							else if (pluginType === 'module') suffix = 'Module';
 							else suffix = 'Plugin';
 
-							rt.versions[`${name}${name.endsWith(suffix) ? '' : suffix}`] = plugin.version;
+							versionKey = `${name}${name.endsWith(suffix) ? '' : suffix}`;
+							hadVersion = hasKey(rt.versions, versionKey);
+							prevVersion = rt.versions[versionKey];
+							rt.versions[versionKey] = plugin.version;
 						}
 						const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
 						try {
@@ -235,8 +241,12 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 								}
 								const extIdx = rt.extensions.indexOf(plugin);
 								if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
-								if (plugin.version && isString(name)) {
-									delete rt.versions[`${name}${name.endsWith('Plugin') ? '' : 'Plugin'}`];
+								if (versionKey) {
+									if (hadVersion && prevVersion !== undefined) {
+										rt.versions[versionKey] = prevVersion;
+									} else {
+										delete rt.versions[versionKey];
+									}
 								}
 								if (name && state.config.pluginOptions) {
 									if (hadPluginOpts) {

@@ -7,10 +7,13 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic Finalizer instance */
+type FinalizerTypeGuard = <P = void>(val: unknown) => val is Finalizer<P>;
+
 /**
  * Global singleton finalization registry for general cleanup callbacks.
  */
-const GLOBAL_FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup) => {
+const FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup) => {
 	try {
 		if (isFunction(cleanup)) cleanup();
 	} catch (err) {
@@ -28,17 +31,10 @@ export class Finalizer<T = void> {
 	readonly #callback: (heldValue: T) => void;
 
 	/** Type guard to check if a value is an authentic Finalizer instance */
-	declare static isFinalizer: <P = void>(val: unknown) => val is Finalizer<P>;
+	declare static isFinalizer: FinalizerTypeGuard;
 
 	constructor(callback: (heldValue: T) => void) {
 		this.#callback = callback;
-	}
-
-	/**
-	 * Returns true to identify this instance as a Finalizer.
-	 */
-	get isFinalizer(): boolean {
-		return Finalizer.isFinalizer(this);
 	}
 
 	/**
@@ -51,7 +47,7 @@ export class Finalizer<T = void> {
 	register(target: WeakKey, heldValue: T, unregisterToken?: WeakKey): void {
 		const token = unregisterToken ?? Object.create(null);
 		const callback = this.#callback;
-		GLOBAL_FINALIZER_REGISTRY.register(target, () => {
+		FINALIZER_REGISTRY.register(target, () => {
 			callback(heldValue);
 		}, token);
 	}
@@ -63,7 +59,7 @@ export class Finalizer<T = void> {
 	 * @returns True if a registration was found and removed
 	 */
 	unregister(unregisterToken: WeakKey): boolean {
-		return GLOBAL_FINALIZER_REGISTRY.unregister(unregisterToken);
+		return FINALIZER_REGISTRY.unregister(unregisterToken);
 	}
 
 	/**
@@ -78,11 +74,11 @@ export class Finalizer<T = void> {
 	static register(
 		target: WeakKey,
 		cleanup: () => void,
-		unregisterToken?: WeakKey
+		unregisterToken?: WeakKey,
 	): () => boolean {
 		const token = unregisterToken ?? Object.create(null);
-		GLOBAL_FINALIZER_REGISTRY.register(target, cleanup, token);
-		return () => GLOBAL_FINALIZER_REGISTRY.unregister(token);
+		FINALIZER_REGISTRY.register(target, cleanup, token);
+		return () => FINALIZER_REGISTRY.unregister(token);
 	}
 }
 

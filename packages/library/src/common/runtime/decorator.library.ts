@@ -329,7 +329,7 @@ export function StringTag<T extends Constructor>(tagOrValue?: string | T, contex
 }
 
 /**
- * Attaches an unforgeable brand symbol to a class prototype, ensures Symbol.toStringTag is set,
+ * Attaches a brand symbol to a class prototype, ensures Symbol.toStringTag is set,
  * and provides static `is<ClassName>()` and `[Symbol.hasInstance]` checking.
  *
  * Supports direct use as `@Branded` and configured use as `@Branded()`, `@Branded('CustomName')`,

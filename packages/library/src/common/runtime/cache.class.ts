@@ -7,6 +7,9 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic BoundedCache instance */
+type BoundedCacheTypeGuard = <Key = string, Val = string>(val: unknown) => val is BoundedCache<Key, Val>;
+
 /**
  * ## BoundedCache
  * High-performance Map implementation enforcing maximum capacity (LRU) and TTL eviction.
@@ -21,7 +24,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	ttl: number;
 
 	/** Type guard to check if a value is an authentic BoundedCache instance */
-	declare static isBoundedCache: <Key = string, Val = string>(val: unknown) => val is BoundedCache<Key, Val>;
+	declare static isBoundedCache: BoundedCacheTypeGuard;
 
 	/**
 	 * Creates a bounded cache with configurable capacity and entry lifetime.
@@ -33,13 +36,6 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		super();
 		this.maxSize = maxSize;
 		this.ttl = ttl;
-	}
-
-	/**
-	 * Returns true to identify this instance as a BoundedCache.
-	 */
-	get isBoundedCache(): boolean {
-		return BoundedCache.isBoundedCache(this);
 	}
 
 	/**

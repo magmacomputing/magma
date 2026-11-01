@@ -5,7 +5,6 @@ describe('common/runtime/scopedset.class', () => {
 		const parent = new Set(['a', 'b']);
 		const scoped = new ScopedSet(parent);
 
-		expect(scoped.isScopedSet).toBe(true);
 		expect(ScopedSet.isScopedSet(scoped)).toBe(true);
 		expect(isScopedSet(scoped)).toBe(true);
 		expect(scoped instanceof ScopedSet).toBe(true);

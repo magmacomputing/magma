@@ -13,55 +13,111 @@ function runGh(args) {
 }
 
 /**
- * Parses ## Follow-up Comments from a top-level review body.
+ * Parses top-level review body comments (Follow-up, Nitpicks, Additional comments).
  */
-function parseFollowUpComments(reviewBody) {
-	if (!reviewBody) return [];
-	const startIdx = reviewBody.indexOf('## Follow-up Comments');
-	if (startIdx === -1) return [];
+function parseTopLevelReviewComments(rawBody) {
+	if (!rawBody) return [];
 
-	let endIdx = reviewBody.indexOf('<!-- autofix_checkbox_start -->', startIdx);
-	if (endIdx === -1) endIdx = reviewBody.indexOf('<summary><picture><img src="https://storage.googleapis.com/coderabbit_public_assets/review-comment-icons-v1/info.svg"', startIdx);
-	if (endIdx === -1) endIdx = reviewBody.indexOf('\n## Review metadata', startIdx);
-	if (endIdx === -1) endIdx = reviewBody.length;
+	// Strip markdown blockquote prefixes ("> ") from callout alert blocks so HTML tags parse cleanly
+	const normalized = rawBody.replace(/^[ \t]*>[ \t]?/gm, '');
 
-	const section = reviewBody.slice(startIdx, endIdx);
+	const sectionSpecs = [
+		{ type: 'Follow-up', pattern: /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>.*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i },
+		{ type: 'Nitpick', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?Nitpick comments[\s\S]*?<\/summary>/i },
+		{ type: 'Additional', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?Additional comments[\s\S]*?<\/summary>/i },
+	];
+
+	const sectionStarts = [];
+	for (const s of sectionSpecs) {
+		const m = normalized.match(s.pattern);
+		if (m) sectionStarts.push({ type: s.type, index: m.index });
+	}
+
+	sectionStarts.sort((a, b) => a.index - b.index);
+	if (sectionStarts.length === 0) return [];
+
+	const endMarkers = [
+		'<!-- autofix_checkbox_start -->',
+		'<summary>Review info',
+		'<summary><picture><img src="https://storage.googleapis.com/coderabbit_public_assets/review-comment-icons-v1/info.svg"',
+		'## Review metadata'
+	];
+
+	let overallEnd = normalized.length;
+	for (const marker of endMarkers) {
+		const idx = normalized.indexOf(marker);
+		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
+	}
+
 	const findings = [];
-	const commentRegex = /<details>\s*<summary>(?:<sub>.*?<\/sub>\s*)?(.*?)<\/summary><blockquote>([\s\S]*?)<\/blockquote><\/details>/g;
-	let match;
 
-	while ((match = commentRegex.exec(section)) !== null) {
-		const rawTitle = match[1].replace(/<[^>]+>/g, '').trim();
-		const content = match[2];
+	for (let s = 0; s < sectionStarts.length; s++) {
+		const sec = sectionStarts[s];
+		const nextStart = s + 1 < sectionStarts.length ? sectionStarts[s + 1].index : overallEnd;
+		const secChunk = normalized.slice(sec.index, nextStart);
 
-		let filePath = '';
-		let line = null;
-
-		const sourceLocMatch = content.match(/\[Open the source location\]\(https:\/\/github\.com\/[^/]+\/[^/]+\/blob\/[0-9a-fA-F]+\/([^#]+)(?:#L(\d+)(?:-L?(\d+))?)?\)/);
-		if (sourceLocMatch) {
-			filePath = sourceLocMatch[1];
-			if (sourceLocMatch[2]) {
-				line = sourceLocMatch[3] ? `${sourceLocMatch[2]}-${sourceLocMatch[3]}` : sourceLocMatch[2];
+		const fileItemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
+		const itemPositions = [];
+		let im;
+		while ((im = fileItemRegex.exec(secChunk)) !== null) {
+			const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
+			if (/^(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by)/i.test(summaryText)) {
+				continue;
 			}
-		} else {
-			const reviewAtMatch = content.match(/Review comment at\s+@([^\s]+)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
-			if (reviewAtMatch) {
-				filePath = reviewAtMatch[1];
-				line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
-			}
+			itemPositions.push({ summary: summaryText, index: im.index });
 		}
 
-		const idMatch = content.match(/<!-- cr-comment:v1:([0-9a-fA-F]+) -->/);
-		const commentId = idMatch ? `cr_${idMatch[1]}` : null;
+		for (let i = 0; i < itemPositions.length; i++) {
+			const item = itemPositions[i];
+			const itemEnd = i + 1 < itemPositions.length ? itemPositions[i + 1].index : secChunk.length;
+			const itemBlock = secChunk.slice(item.index, itemEnd);
 
-		findings.push({
-			path: filePath,
-			line: line,
-			title: rawTitle,
-			commentId: commentId,
-			body: content.trim(),
-			isFollowUp: true,
-		});
+			let filePath = '';
+			let line = null;
+
+			const sumPath = item.summary.match(/([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?:[:\-](\d+(?:-\d+)?))?/);
+			if (sumPath && (sumPath[1].includes('/') || sumPath[1].endsWith('.ts') || sumPath[1].endsWith('.js'))) {
+				filePath = sumPath[1];
+				if (sumPath[2]) line = sumPath[2];
+			}
+
+			const backtickPath = itemBlock.match(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/);
+			if (backtickPath && backtickPath[1].includes('/')) {
+				filePath = backtickPath[1];
+				if (backtickPath[2]) line = backtickPath[2];
+			}
+
+			if (!line) {
+				const lineMatch = itemBlock.match(/`(\d+(?:-\d+)?)`:/);
+				if (lineMatch) line = lineMatch[1];
+			}
+
+			const reviewAtMatch = itemBlock.match(/Review comment at\s+@([^\s]+)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
+			if (reviewAtMatch) {
+				if (!filePath) filePath = reviewAtMatch[1];
+				if (!line) line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
+			}
+
+			if (!filePath && !line) continue;
+
+			const crId = itemBlock.match(/<!-- cr-comment:v1:([0-9a-fA-F]+) -->/);
+			const commentId = crId ? `cr_${crId[1]}` : null;
+
+			const cleanBody = itemBlock
+				.replace(/<details[^>]*>\s*<summary[\s\S]*?<\/summary>\s*<blockquote>/i, '')
+				.replace(/<\/blockquote>\s*<\/details>\s*$/i, '')
+				.trim();
+
+			findings.push({
+				path: filePath,
+				line: line,
+				title: item.summary,
+				category: sec.type,
+				commentId,
+				body: cleanBody,
+				isFollowUp: true,
+			});
+		}
 	}
 
 	return findings;
@@ -176,38 +232,43 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 		let hasNextReviewsPage = true;
 		let afterReviewsCursor = null;
 		const allReviews = [];
+		let reviewsError = null;
 
-		while (hasNextReviewsPage) {
-			const gqlArgs = [
-				'api',
-				'graphql',
-				'-f', `query=${reviewsQuery}`,
-				'-f', `owner=${repoOwner}`,
-				'-f', `repo=${repoName}`,
-				'-F', `pr=${prInfo.number}`,
-			];
-			if (afterReviewsCursor) {
-				gqlArgs.push('-f', `after=${afterReviewsCursor}`);
+		try {
+			while (hasNextReviewsPage) {
+				const gqlArgs = [
+					'api',
+					'graphql',
+					'-f', `query=${reviewsQuery}`,
+					'-f', `owner=${repoOwner}`,
+					'-f', `repo=${repoName}`,
+					'-F', `pr=${prInfo.number}`,
+				];
+				if (afterReviewsCursor) {
+					gqlArgs.push('-f', `after=${afterReviewsCursor}`);
+				}
+
+				const gqlRaw = runGh(gqlArgs);
+
+				const data = JSON.parse(gqlRaw);
+				const pullRequest = data?.data?.repository?.pullRequest;
+				if (!pullRequest) {
+					throw new Error(`Pull request #${prInfo.number} not found in repository ${repoOwner}/${repoName}.`);
+				}
+
+				const reviews = pullRequest.reviews;
+				const pageReviews = reviews?.nodes ?? [];
+				allReviews.push(...pageReviews);
+
+				hasNextReviewsPage = Boolean(reviews?.pageInfo?.hasNextPage);
+				afterReviewsCursor = reviews?.pageInfo?.endCursor ?? null;
+
+				if (hasNextReviewsPage && !afterReviewsCursor) {
+					throw new Error(`Reviews pagination failed: hasNextPage is true but no endCursor was returned for PR #${prInfo.number}.`);
+				}
 			}
-
-			const gqlRaw = runGh(gqlArgs);
-
-			const data = JSON.parse(gqlRaw);
-			const pullRequest = data?.data?.repository?.pullRequest;
-			if (!pullRequest) {
-				throw new Error(`Pull request #${prInfo.number} not found in repository ${repoOwner}/${repoName}.`);
-			}
-
-			const reviews = pullRequest.reviews;
-			const pageReviews = reviews?.nodes ?? [];
-			allReviews.push(...pageReviews);
-
-			hasNextReviewsPage = Boolean(reviews?.pageInfo?.hasNextPage);
-			afterReviewsCursor = reviews?.pageInfo?.endCursor ?? null;
-
-			if (hasNextReviewsPage && !afterReviewsCursor) {
-				throw new Error(`Reviews pagination failed: hasNextPage is true but no endCursor was returned for PR #${prInfo.number}.`);
-			}
+		} catch (err) {
+			reviewsError = err;
 		}
 
 		const unresolved = allThreads.filter(t => !t.isResolved);
@@ -229,41 +290,54 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 			}
 		}
 
-		// Parse follow-up comments from the latest review by CodeRabbit
-		const latestReviewWithFollowUps = allReviews
+		// Parse top-level review comments (Follow-up, Nitpick, Additional) from the latest CodeRabbit review
+		const latestCrReview = allReviews
 			.slice()
 			.reverse()
-			.find(r => (r.author?.login === 'coderabbitai' || r.author?.login === 'coderabbitai[bot]') && r.body && r.body.includes('## Follow-up Comments'));
+			.find(r => (r.author?.login === 'coderabbitai' || r.author?.login === 'coderabbitai[bot]') && r.body && r.body.trim().length > 0);
 
-		const followUpFindings = latestReviewWithFollowUps ? parseFollowUpComments(latestReviewWithFollowUps.body) : [];
+		const topLevelFindings = latestCrReview ? parseTopLevelReviewComments(latestCrReview.body) : [];
 
-		const findings = [...threadFindings, ...followUpFindings];
+		const findings = [...threadFindings, ...topLevelFindings];
 
 		if (jsonOutput) {
-			console.log(JSON.stringify({ pr: prInfo, findingsCount: findings.length, findings }, null, 2));
+			console.log(JSON.stringify({ pr: prInfo, findingsCount: findings.length, findings, ...(reviewsError ? { followUpError: reviewsError.message } : {}) }, null, 2));
+			if (reviewsError) {
+				console.error(`\n⚠️  Warning: Failed to fetch follow-up reviews: ${reviewsError.message}\n`);
+				process.exitCode = 1;
+			}
 			return;
 		}
 
 		console.log(`\n======================================================`);
 		console.log(`CodeRabbit PR Findings: PR #${prInfo.number} (${prInfo.title})`);
 		console.log(`Branch: ${prInfo.headRefName} | URL: ${prInfo.url}`);
-		console.log(`Unresolved Findings Count: ${findings.length} (${threadFindings.length} inline threads, ${followUpFindings.length} follow-up comments)`);
+		console.log(`Unresolved Findings Count: ${findings.length} (${threadFindings.length} inline threads, ${topLevelFindings.length} top-level review comments)`);
 		console.log(`======================================================\n`);
 
 		if (findings.length === 0) {
 			console.log('✅ No unresolved CodeRabbit findings found on this PR.\n');
+			if (reviewsError) {
+				console.error(`⚠️  Warning: Failed to fetch follow-up reviews: ${reviewsError.message}\n`);
+				process.exitCode = 1;
+			}
 			return;
 		}
 
 		for (let i = 0; i < findings.length; i++) {
 			const f = findings[i];
-			const typeTag = f.isFollowUp ? ' (Follow-up Comment)' : '';
+			const typeTag = f.isFollowUp ? (f.category ? ` (${f.category})` : ' (Top-level Review)') : '';
 			console.log(`--- [Finding ${i + 1}/${findings.length}${typeTag}] ---`);
 			console.log(`File: ${f.path}${f.line ? `:${f.line}` : ''}`);
 			if (f.threadId) console.log(`Thread ID: ${f.threadId}`);
 			if (f.commentId) console.log(`Comment ID: ${f.commentId}`);
 			if (f.title) console.log(`Title: ${f.title}`);
 			console.log(`\n${f.body.trim()}\n`);
+		}
+
+		if (reviewsError) {
+			console.error(`⚠️  Warning: Failed to fetch follow-up reviews: ${reviewsError.message}\n`);
+			process.exitCode = 1;
 		}
 	} catch (err) {
 		console.error(`Error fetching PR review findings: ${err.message}`);

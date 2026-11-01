@@ -3,7 +3,6 @@ import { WebStore, isWebStore } from '../../../src/browser/webstore.class.js';
 describe('WebStore', () => {
 	it('identifies as an authentic WebStore via @Branded', () => {
 		const store = WebStore.local;
-		expect(store.isWebStore).toBe(true);
 		expect(WebStore.isWebStore(store)).toBe(true);
 		expect(isWebStore(store)).toBe(true);
 		expect(store instanceof WebStore).toBe(true);

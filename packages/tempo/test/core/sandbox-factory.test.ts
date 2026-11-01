@@ -1,4 +1,5 @@
 import { Tempo, isSandbox, isTempo } from '#tempo';
+import { $guard } from '#tempo/support';
 import type { AliasContext } from '#tempo/tempo.type.js';
 import { spies } from '../support/setup.console-spy.js';
 
@@ -17,9 +18,9 @@ describe('Sandbox Factory Pattern', () => {
 
 		// Instance-level checks
 		expect(isSandbox(sInstance)).toBe(true);
-		expect((sInstance as any).isSandbox).toBe(true);
 		expect((Sandbox as any).isSandbox(sInstance)).toBe(true);
 		expect(Tempo.isSandbox(sInstance)).toBe(true);
+		expect((sInstance as any).isSandbox).toBe(true);
 		expect(sInstance instanceof Sandbox).toBe(true);
 		expect(sInstance instanceof Tempo).toBe(true);
 		expect(isTempo(sInstance)).toBe(true);
@@ -28,10 +29,10 @@ describe('Sandbox Factory Pattern', () => {
 
 		// Base Tempo instance should NOT be recognized as sandbox
 		expect(isSandbox(tInstance)).toBe(false);
-		expect((tInstance as any).isSandbox).toBeUndefined();
 		expect((Sandbox as any).isSandbox(tInstance)).toBe(false);
 		expect(Tempo.isSandbox(tInstance)).toBe(false);
 		expect(tInstance instanceof Sandbox).toBe(false);
+		expect((tInstance as any).isSandbox).toBeUndefined();
 
 
 		// Spoofed object
@@ -169,4 +170,111 @@ describe('Sandbox Factory Pattern', () => {
 		const t = new Sandbox('2026-06-03 12:00:00', { timeZone: 'sandbox_tz' });
 		expect(t.format('sandboxed_fmt')).toBe('03/06/2026');
 	});
+
+	it('should support Symbol.asyncDispose on Sandbox class', async () => {
+		const Sandbox = Tempo.derive({ locale: 'de-DE' });
+		expect((Sandbox as any).isDisposed).toBe(false);
+		await (Sandbox as any)[Symbol.asyncDispose]();
+		expect((Sandbox as any).isDisposed).toBe(true);
+	});
+
+	it('should automatically dispose after synchronous scoped callback', () => {
+		let capturedSb: any;
+		const result = Tempo.derive((sb) => {
+			capturedSb = sb;
+			expect((sb as any).isDisposed).toBe(false);
+			return 42;
+		});
+		expect(result).toBe(42);
+		expect(capturedSb.isDisposed).toBe(true);
+	});
+
+	it('should rethrow synchronous error in scoped callback and dispose', () => {
+		let capturedSb: any;
+		expect(() => {
+			Tempo.derive((sb) => {
+				capturedSb = sb;
+				throw new Error('sync callback error');
+			});
+		}).toThrow('sync callback error');
+		expect(capturedSb.isDisposed).toBe(true);
+	});
+
+	it('should defer disposal until async scoped callback promise settles', async () => {
+		let capturedSb: any;
+		let ranAsync = false;
+		const promise = Tempo.derive(async (sb) => {
+			capturedSb = sb;
+			expect((sb as any).isDisposed).toBe(false);
+			await new Promise(r => setTimeout(r, 10));
+			expect((sb as any).isDisposed).toBe(false);
+			ranAsync = true;
+			return 'async-result';
+		});
+
+		// While promise is in flight, sandbox should NOT be disposed yet
+		expect(capturedSb.isDisposed).toBe(false);
+		const val = await promise;
+		expect(val).toBe('async-result');
+		expect(ranAsync).toBe(true);
+		expect(capturedSb.isDisposed).toBe(true);
+	});
+
+	it('should rethrow async rejection in scoped callback and dispose', async () => {
+		let capturedSb: any;
+		const promise = Tempo.derive(async (sb) => {
+			capturedSb = sb;
+			await new Promise(r => setTimeout(r, 5));
+			throw new Error('async callback error');
+		});
+
+		await expect(promise).rejects.toThrow('async callback error');
+		expect(capturedSb.isDisposed).toBe(true);
+	});
+
+	it('should handle disposal state cleanly for lookups and guards without altering non-sandbox classes', () => {
+		const Sandbox = Tempo.derive({ locale: 'en-US' });
+		const instance = new Sandbox();
+
+		// Brand identity and initial state
+		expect(isSandbox(Sandbox)).toBe(true);
+		expect(isSandbox(instance)).toBe(true);
+		expect((instance as any).isSandbox).toBe(true);
+		expect((Sandbox as any).isDisposed).toBe(false);
+		expect((instance as any).isDisposed).toBe(false);
+
+		// Prior to disposal, guard is active
+		expect((Sandbox as any)[$guard].test('anything')).toBeDefined();
+		expect((instance as any)[$guard].test('anything')).toBeDefined();
+
+		// Dispose sandbox
+		(Sandbox as any)[Symbol.dispose]();
+
+		// Brand identity remains true (brand check is not disposal check)
+		expect(isSandbox(Sandbox)).toBe(true);
+		expect(isSandbox(instance)).toBe(true);
+		expect((instance as any).isSandbox).toBe(true);
+
+		// Disposal state is tracked explicitly
+		expect((Sandbox as any).isDisposed).toBe(true);
+		expect((instance as any).isDisposed).toBe(true);
+
+		// Disposed plugin lookups return false
+		expect(Sandbox.hasModule('anyModule')).toBe(false);
+		expect(Sandbox.hasModule('TermsModule')).toBe(false);
+		expect(instance.hasModule('anyModule')).toBe(false);
+		expect(instance.hasModule('TermsModule')).toBe(false);
+
+		// Disposed guard fallbacks return false
+		expect((Sandbox as any)[$guard].test('anything')).toBe(false);
+		expect((instance as any)[$guard].test('anything')).toBe(false);
+
+		// Non-sandbox classes unaffected
+		expect((Tempo as any).isDisposed).toBeUndefined();
+		const baseInstance = new Tempo();
+		expect((baseInstance as any).isDisposed).toBeUndefined();
+		expect((baseInstance as any).isSandbox).toBeUndefined();
+	});
 });
+
+

@@ -8,6 +8,9 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic WeakCache instance */
+type WeakCacheTypeGuard = <Key extends keyof any = string, Val extends WeakKey = WeakKey>(val: unknown) => val is WeakCache<Key, Val>;
+
 interface CacheEntry<V extends WeakKey> {
 	ref: WeakRef<V>;
 	token: object;
@@ -27,7 +30,7 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 	readonly #finalizer: Finalizer<{ key: K; token: object }>;
 
 	/** Type guard to check if a value is an authentic WeakCache instance */
-	declare static isWeakCache: <Key extends keyof any = string, Val extends WeakKey = WeakKey>(val: unknown) => val is WeakCache<Key, Val>;
+	declare static isWeakCache: WeakCacheTypeGuard;
 
 	constructor() {
 		this.#finalizer = new Finalizer((held: { key: K; token: object }) => {
@@ -35,13 +38,6 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 			if (entry && entry.token === held.token)
 				this.#cache.delete(held.key);
 		});
-	}
-
-	/**
-	 * Returns true to identify this instance as a WeakCache.
-	 */
-	get isWeakCache(): boolean {
-		return WeakCache.isWeakCache(this);
 	}
 
 	/**

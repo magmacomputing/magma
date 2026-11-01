@@ -12,7 +12,7 @@ import { ownEntries, hasOwn, hasNoneOf } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { coerceGeo } from '#library/mapper.library.js';
-import { BoundedCache } from '#library/cache.class.js';
+import { BoundedCache, isBoundedCache } from '#library/cache.class.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 import { getRuntime } from './support.runtime.js';
@@ -34,7 +34,7 @@ import { registryUpdate } from './support.register.js';
  * @internal
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
-	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
+	const isBoundedCacheOpt = isBoundedCache(optionsCache);
 	if (isBoundedCacheOpt) {
 		return optionsCache as BoundedCache;
 	} else if (optionsCache instanceof Map || (optionsCache && isFunction((optionsCache as any).entries))) {
@@ -43,7 +43,7 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
 		return targetCache;
 	} else {
-		if (existingCache && (existingCache.isBoundedCache || existingCache instanceof BoundedCache)) {
+		if (isBoundedCache(existingCache)) {
 			if (isDefined(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
 			if (isDefined(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
 			return existingCache;

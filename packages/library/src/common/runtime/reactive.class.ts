@@ -12,6 +12,9 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic Reactive stream instance */
+type ReactiveTypeGuard = <P = any>(val: unknown) => val is Reactive<P>;
+
 /**
  * Disposable subscription handle returned by event subscriptions (`stream.on(...)`).
  * Supports explicit resource management via `using sub = stream.on(...)`.
@@ -160,7 +163,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 	static readonly Subscription = ReactiveSubscription;
 
 	/** Type guard to check if a value is an authentic Reactive stream instance */
-	declare static isReactive: <P = any>(val: unknown) => val is Reactive<P>;
+	declare static isReactive: ReactiveTypeGuard;
 
 	readonly #tag?: string | undefined;
 	readonly #bufferSize: number;

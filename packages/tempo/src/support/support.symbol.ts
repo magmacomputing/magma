@@ -22,7 +22,7 @@ export const $Sandbox: unique symbol = Symbol.for('magmacomputing/tempo/sandbox'
 export const isTempo = (tempo?: any): tempo is TempoBrand => isBranded(tempo, sym.$Identity);
 
 /**
- * Checks if the given value is an authentic Tempo Sandbox instance or subclass.
+ * Checks if the given value carries the Tempo Sandbox brand. The brand key is a global Symbol.for key, so any object that sets it also passes. Do not use this check alone to validate untrusted input.
  * Uses brand checking via the $Sandbox symbol.
  *
  * @param sandbox - The value to check

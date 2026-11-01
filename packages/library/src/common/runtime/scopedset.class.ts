@@ -6,6 +6,9 @@ declare module '#library/type.library.js' {
 	}
 }
 
+/** Type guard predicate checking if a value is an authentic ScopedSet instance */
+type ScopedSetTypeGuard = <P = any>(val: unknown) => val is ScopedSet<P>;
+
 /**
  * A lightweight `Set`-compatible container that delegates `has()` lookups to a
  * parent Set/ScopedSet, but confines `add()` writes to its own-local storage.
@@ -22,16 +25,11 @@ declare module '#library/type.library.js' {
  * sandbox.add('b');
  * sandbox.has('b');   // true  (own-local)
  * global.has('b');    // false (never written to parent)
- */
+ * */
 @Branded('ScopedSet')
 export class ScopedSet<T> {
 	/** Type guard to check if a value is an authentic ScopedSet instance */
-	declare static isScopedSet: <P = any>(val: unknown) => val is ScopedSet<P>;
-
-	/** True if this is an authentic ScopedSet instance */
-	get isScopedSet(): boolean {
-		return ScopedSet.isScopedSet(this);
-	}
+	declare static isScopedSet: ScopedSetTypeGuard;
 
 	readonly #own = new Set<T>();
 	readonly #parent: Set<T> | ScopedSet<T> | undefined;
