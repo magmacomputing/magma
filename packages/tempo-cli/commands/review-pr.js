@@ -88,18 +88,10 @@ export async function reviewPr(args = []) {
 			throw new Error('Could not determine base repository owner and name from selected PR.');
 		}
 
-		const query = `
+		const threadsQuery = `
 query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $pr) {
-      reviews(last: 100) {
-        nodes {
-          id
-          author { login }
-          submittedAt
-          body
-        }
-      }
       reviewThreads(first: 100, after: $after) {
         pageInfo {
           hasNextPage
@@ -124,16 +116,35 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   }
 }`;
 
+		const reviewsQuery = `
+query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviews(first: 100, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          author { login }
+          submittedAt
+          body
+        }
+      }
+    }
+  }
+}`;
+
 		let hasNextPage = true;
 		let afterCursor = null;
 		const allThreads = [];
-		let allReviews = [];
 
 		while (hasNextPage) {
 			const gqlArgs = [
 				'api',
 				'graphql',
-				'-f', `query=${query}`,
+				'-f', `query=${threadsQuery}`,
 				'-f', `owner=${repoOwner}`,
 				'-f', `repo=${repoName}`,
 				'-F', `pr=${prInfo.number}`,
@@ -150,10 +161,6 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 				throw new Error(`Pull request #${prInfo.number} not found in repository ${repoOwner}/${repoName}.`);
 			}
 
-			if (pullRequest.reviews?.nodes && allReviews.length === 0) {
-				allReviews = pullRequest.reviews.nodes;
-			}
-
 			const reviewThreads = pullRequest.reviewThreads;
 			const pageThreads = reviewThreads?.nodes ?? [];
 			allThreads.push(...pageThreads);
@@ -163,6 +170,43 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 
 			if (hasNextPage && !afterCursor) {
 				throw new Error(`Review-thread pagination failed: hasNextPage is true but no endCursor was returned for PR #${prInfo.number}.`);
+			}
+		}
+
+		let hasNextReviewsPage = true;
+		let afterReviewsCursor = null;
+		const allReviews = [];
+
+		while (hasNextReviewsPage) {
+			const gqlArgs = [
+				'api',
+				'graphql',
+				'-f', `query=${reviewsQuery}`,
+				'-f', `owner=${repoOwner}`,
+				'-f', `repo=${repoName}`,
+				'-F', `pr=${prInfo.number}`,
+			];
+			if (afterReviewsCursor) {
+				gqlArgs.push('-f', `after=${afterReviewsCursor}`);
+			}
+
+			const gqlRaw = runGh(gqlArgs);
+
+			const data = JSON.parse(gqlRaw);
+			const pullRequest = data?.data?.repository?.pullRequest;
+			if (!pullRequest) {
+				throw new Error(`Pull request #${prInfo.number} not found in repository ${repoOwner}/${repoName}.`);
+			}
+
+			const reviews = pullRequest.reviews;
+			const pageReviews = reviews?.nodes ?? [];
+			allReviews.push(...pageReviews);
+
+			hasNextReviewsPage = Boolean(reviews?.pageInfo?.hasNextPage);
+			afterReviewsCursor = reviews?.pageInfo?.endCursor ?? null;
+
+			if (hasNextReviewsPage && !afterReviewsCursor) {
+				throw new Error(`Reviews pagination failed: hasNextPage is true but no endCursor was returned for PR #${prInfo.number}.`);
 			}
 		}
 

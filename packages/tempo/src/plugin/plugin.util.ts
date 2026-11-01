@@ -422,6 +422,9 @@ export function defineProperties<Opts = any>(
 				if (hasKey(value, 'set'))
 					throw new TempoError(`Tempo Security: Setters are not permitted on immutable Tempo instances ('${String(key)}').`);
 
+				if (hasKey(value, 'get') && hasKey(value, 'value'))
+					throw new TempoError(`Tempo Security: Descriptor for '${String(key)}' cannot define both 'get' and 'value'.`);
+
 				if (hasKey(value, 'get') && isDefined(value.get) && !isFunction(value.get))
 					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
 

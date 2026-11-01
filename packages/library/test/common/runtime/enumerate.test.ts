@@ -198,6 +198,20 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.has(derived, 'Delta')).toBe(false);
 	});
 
+	it('should convert spoofed Enumify tag objects through enumify preserving iteration', () => {
+		const spoofed = {
+			[Symbol.toStringTag]: 'Enumify',
+			Alpha: 10,
+		};
+		const derived = Enum.derive(spoofed, { Beta: 20 });
+		expect(derived.Alpha).toBe(10);
+		expect(derived.Beta).toBe(20);
+		expect(Enum.keys(derived)).toEqual(['Alpha', Symbol.toStringTag, 'Beta']);
+		expect(Enum.entries(derived)).toEqual([['Alpha', 10], [Symbol.toStringTag, 'Enumify'], ['Beta', 20]]);
+		expect(derived instanceof Enum).toBe(true);
+		expect(spoofed instanceof Enum).toBe(false);
+	});
+
 	it('should support enumify across Module caller contexts without prototype leakage', () => {
 		const invalidModuleContext = Object.create(null, {
 			[Symbol.toStringTag]: { value: 'Module' },

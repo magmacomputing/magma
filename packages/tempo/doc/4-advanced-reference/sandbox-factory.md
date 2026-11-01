@@ -19,7 +19,7 @@ To understand when to use `Tempo.derive()`, it helps to contrast it with the oth
 - **`Tempo.use({ options })`**
   **Concept:** Additive mutation. Keep all existing global settings, plugins, and formats intact, but merge in new configurations.
 - **`Tempo.derive({ options })` / `Tempo.derive(fn)` / `Tempo.derive(options, fn)`**
-  **Concept:** Sandbox Derivation. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Except for terms, future changes made to this Sandbox will not affect the global `Tempo`, and vice-versa. Terms registered in a sandbox are stored in a map that the global `Tempo` also reads. Supports both long-lived derived class creation and ephemeral scoped callback execution with deterministic resource disposal.
+  **Concept:** Sandbox Derivation. Clone the current global state (inheriting all currently loaded plugins and settings), but branch it off into a brand new, isolated class. Future changes made to this Sandbox do not affect the global `Tempo`, except for terms, which both classes read from the same map. Global prototype members installed after derivation remain visible in the Sandbox through prototype inheritance. Supports both long-lived derived class creation and ephemeral scoped callback execution with deterministic resource disposal.
 
 ### Overloaded Signatures & Usage Modes
 

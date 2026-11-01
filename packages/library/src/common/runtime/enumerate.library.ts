@@ -1,5 +1,5 @@
 import { asType, getType } from '#library/type.library.js';
-import { isNumeric } from '#library/assertion.library.js';
+import { isFunction, isNull, isNumeric, isObject } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
@@ -30,10 +30,17 @@ const valuesCache = new WeakMap<object, readonly any[]>();
 const entriesCache = new WeakMap<object, readonly (readonly [any, any])[]>();
 const invertCache = new WeakMap<object, Readonly<Record<string, any>>>();
 
+const $EnumBrand = Symbol('EnumBrand');
+
 const ENUM: any = secure(Object.create(null, {
 	[Symbol.iterator]: { value: function* (this) { for (const entry of Enum.entries(this)) yield entry; } },
-	[Symbol.toStringTag]: { value: tag }
+	[Symbol.toStringTag]: { value: tag },
+	[$EnumBrand]: { value: true }
 }));
+
+function isEnumInstance(val: any): boolean {
+	return Boolean((isObject(val) || isFunction(val)) && val[$EnumBrand] === true);
+}
 
 /**
  * # Enum
@@ -123,23 +130,24 @@ const enumMethods = {
 
 	/** Custom instance-of check supporting `val instanceof Enum` or predicate checking */
 	[Symbol.hasInstance](instance: any): boolean {
-		return instance != null && instance[Symbol.toStringTag] === 'Enumify';
+		return isEnumInstance(instance);
 	}
 };
+type enumMethods = typeof enumMethods;
 
 function deriveEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
 function deriveEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
 function deriveEnum(enumObj: any, list: any, frozen?: boolean): any {
-	const base = (enumObj instanceof Enum) ? enumObj : enumify(enumObj);
+	const base = isEnumInstance(enumObj) ? enumObj : enumify(enumObj);
 	return (enumify as any).call(base, list, frozen);
 }
 
-export const Enum: Readonly<typeof enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));
+export const Enum: Readonly<enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));
 
 /** namespace for Enum type-helpers */
 export namespace Enum {
 	/** Enum properties & methods */ export type wrap<T = any> = T extends Property<any> ? EnumifyType<T> : any;
-	/** Enum static method keys */ export type methods = keyof typeof enumMethods;
+	/** Enum static method keys */ export type methods = keyof enumMethods;
 	/** Enum own properties */ export type props<T = any> = Readonly<T>;
 }
 
@@ -160,7 +168,7 @@ export function enumify<const T extends readonly any[]>(list: T, frozen?: boolea
 export function enumify<const T extends Property<any>>(list: T, frozen?: boolean): Enum.wrap<T>;
 export function enumify<T>(this: any, list: T, frozen = true): any {
 	const type = getType(this);
-	const isEnum = type !== 'Module' && this instanceof Enum;
+	const isEnum = type !== 'Module' && isEnumInstance(this);
 	const proto = isEnum ? this : ENUM;
 	const arg = asType(list);
 	const target = Object.create(proto);

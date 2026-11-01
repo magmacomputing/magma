@@ -49,6 +49,11 @@ describe('Primitive Library', () => {
 			const result = toArray(sparse);
 			expect(result).toStrictEqual([10, undefined, 30]);
 		});
+
+		it('should return empty array for lengths exceeding maximum array length 0xFFFFFFFF', () => {
+			const arrayLike = { length: 0x100000000 };
+			expect(toArray(arrayLike)).toEqual([]);
+		});
 	});
 
 	describe('ownEntries, ownKeys, ownValues', () => {

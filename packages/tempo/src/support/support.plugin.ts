@@ -177,6 +177,9 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							...(isObject(callSiteOptions) ? callSiteOptions : {})
 						};
 
+						const prevPluginOpts = (name && state.config.pluginOptions) ? state.config.pluginOptions[name] : undefined;
+						const hadPluginOpts = Boolean(name && state.config.pluginOptions && Object.hasOwn(state.config.pluginOptions, name));
+
 						// Automatically synchronize resolved options to state.config.pluginOptions
 						if (name && !isEmpty(resolvedOptions)) {
 							state.config.pluginOptions = {
@@ -233,7 +236,14 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 								const extIdx = rt.extensions.indexOf(plugin);
 								if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
 								if (plugin.version && isString(name)) {
-									delete rt.versions[`${name}Plugin`];
+									delete rt.versions[`${name}${name.endsWith('Plugin') ? '' : 'Plugin'}`];
+								}
+								if (name && state.config.pluginOptions) {
+									if (hadPluginOpts) {
+										state.config.pluginOptions[name] = prevPluginOpts;
+									} else {
+										delete state.config.pluginOptions[name];
+									}
 								}
 							}
 							throw error;

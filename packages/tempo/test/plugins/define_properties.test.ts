@@ -1,6 +1,7 @@
 import { Tempo } from '#tempo';
 import { defineProperties, defineProperty } from '#tempo/plugin/plugin.util.js';
 import { TempoError } from '#tempo/support/support.error.js';
+import { $Internal } from '#tempo/support';
 
 describe('defineProperties & defineProperty', () => {
 	it('defines custom getters on Tempo instances via a sandbox', () => {
@@ -290,6 +291,39 @@ describe('defineProperties & defineProperty', () => {
 		}).toThrow();
 
 		expect(S.hasModule('FaultyModule')).toBe(false);
+	});
+
+	it('rejects descriptors defining both get and value during pass 1', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({
+				validFirst: () => 'valid',
+				bothGetAndVal: {
+					get: () => 1,
+					value: 2,
+				} as any,
+			}));
+		}).toThrow(/Descriptor for 'bothGetAndVal' cannot define both 'get' and 'value'\./);
+
+		const t = new S();
+		expect((t as any).validFirst).toBeUndefined();
+	});
+
+	it('restores state.config.pluginOptions if properties bundle install throws', () => {
+		const S = Tempo.derive({
+			pluginOptions: {
+				TestPlugin: { existing: 'original' },
+			},
+		});
+
+		expect(() => {
+			S.use(defineProperties({
+				badDesc: { get: 123 } as any,
+			}, 'TestPlugin'), { existing: 'overwritten' });
+		}).toThrow();
+
+		const state = (S as any)[$Internal]();
+		expect(state.config.pluginOptions.TestPlugin).toEqual({ existing: 'original' });
 	});
 });
 
