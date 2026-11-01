@@ -185,6 +185,10 @@
       "development": "./src/common/scheduling/schedule.library.ts",
       "default": "./dist/common/scheduling/schedule.library.js"
     },
+    "#library/interval.class.js": {
+      "development": "./src/common/scheduling/interval.class.ts",
+      "default": "./dist/common/scheduling/interval.class.js"
+    },
     "#library/cache.class.js": {
       "development": "./src/common/runtime/cache.class.ts",
       "default": "./dist/common/runtime/cache.class.js"
@@ -260,6 +264,10 @@
     "#library/signify.library.js": {
       "development": "./src/common/runtime/signify.library.ts",
       "default": "./dist/common/runtime/signify.library.js"
+    },
+    "#library/scopedset.class.js": {
+      "development": "./src/common/runtime/scopedset.class.ts",
+      "default": "./dist/common/runtime/scopedset.class.js"
     },
     "#library/*.js": {
       "development": "./src/common/*.ts",
