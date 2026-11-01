@@ -374,8 +374,7 @@ export interface TypeValueMap<T = any> {
 	'Temporal.PlainMonthDayLike': { type: 'Temporal.PlainMonthDayLike', value: Temporal.PlainMonthDayLike };
 }
 
-/** add Special Type placeholders to the keyof TypeValueMap */
-export type Type = keyof TypeValueMap<any> | 'Enumify' | 'Pledge' | 'Tempo';
+export type Type = keyof TypeValueMap<any>;
 export type TypeValue<T> = { [K in Type]: { type: K, value: GetType<K, T> } }[Type];
 
 /** late-binding Type utility for augmented modules */
@@ -504,9 +503,8 @@ export type IntRange<Lower extends number, Upper extends number> = Exclude<Enume
 
 // branded object
 declare const __brand: unique symbol
-type Brand<B> = { [__brand]: B }
 /** Type utility for creating branded types that are nominally distinct from their base type */
-export type Branded<T, B> = T & Brand<B>
+export type Brand<T, B> = T & { [__brand]: B };
 
 /** Type representing a JSON object with no own properties */
 export type EmptyObject = { [__brand]?: never }

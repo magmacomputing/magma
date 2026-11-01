@@ -1,4 +1,4 @@
-import { enumify, Enum } from '#library/enumerate.library.js';
+import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
 
 describe('Enum (Static Reflection & v5 Architecture)', () => {
 	it('should enumerate keys, values, and entries across prototypal extension via Enum.*', () => {
@@ -210,6 +210,13 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.entries(derived)).toEqual([['Alpha', 10], [Symbol.toStringTag, 'Enumify'], ['Beta', 20]]);
 		expect(derived instanceof Enum).toBe(true);
 		expect(spoofed instanceof Enum).toBe(false);
+		expect(Enum.isEnum(derived)).toBe(true);
+		expect(Enum.isEnum(spoofed)).toBe(false);
+		expect(isEnum(derived)).toBe(true);
+		expect(isEnum(spoofed)).toBe(false);
+		expect(Enum.isEnum({})).toBe(false);
+		expect(Enum.isEnum(null)).toBe(false);
+		expect(Enum.isEnum('string')).toBe(false);
 	});
 
 	it('should support enumify across Module caller contexts without prototype leakage', () => {

@@ -1,6 +1,12 @@
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
 import { isDefined, isUndefined } from '#library/assertion.library.js';
 import { Finalizer } from './finalizer.class.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		WeakCache: { type: 'WeakCache'; value: WeakCache<any, any> };
+	}
+}
 
 interface CacheEntry<V extends WeakKey> {
 	ref: WeakRef<V>;
@@ -15,10 +21,13 @@ interface CacheEntry<V extends WeakKey> {
  * Keys must be primitive (`string | number | symbol`) to ensure the key
  * does not create a strong reference cycle with the cached value.
  */
-@StringTag('WeakCache')
+@Branded('WeakCache')
 export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey> {
 	readonly #cache = new Map<K, CacheEntry<V>>();
 	readonly #finalizer: Finalizer<{ key: K; token: object }>;
+
+	/** Type guard to check if a value is an authentic WeakCache instance */
+	declare static isWeakCache: <Key extends keyof any = string, Val extends WeakKey = WeakKey>(val: unknown) => val is WeakCache<Key, Val>;
 
 	constructor() {
 		this.#finalizer = new Finalizer((held: { key: K; token: object }) => {
@@ -32,7 +41,7 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 	 * Returns true to identify this instance as a WeakCache.
 	 */
 	get isWeakCache(): boolean {
-		return true;
+		return WeakCache.isWeakCache(this);
 	}
 
 	/**
@@ -129,3 +138,6 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 		this.#cache.clear();
 	}
 }
+
+/** Type guard to check if a value is an authentic WeakCache instance */
+export const isWeakCache = WeakCache.isWeakCache;

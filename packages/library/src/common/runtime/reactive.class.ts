@@ -1,4 +1,4 @@
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
 import { isCallable, isClass, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
 import { Pledge } from './pledge.class.js';
 import { Finalizer } from './finalizer.class.js';
@@ -16,7 +16,7 @@ declare module '#library/type.library.js' {
  * Disposable subscription handle returned by event subscriptions (`stream.on(...)`).
  * Supports explicit resource management via `using sub = stream.on(...)`.
  */
-@StringTag('Reactive.Subscription')
+@Branded('Reactive.Subscription')
 class ReactiveSubscription implements Disposable {
 	#closed = false;
 	#cleanup: () => void = NOOP;
@@ -155,9 +155,12 @@ function cleanupReactiveState<T>(state: ReactiveCleanupState<T>): void {
  * stream.push(42);
  * ```
  */
-@StringTag('Reactive')
+@Branded('Reactive')
 export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unknown>, Disposable, AsyncDisposable {
 	static readonly Subscription = ReactiveSubscription;
+
+	/** Type guard to check if a value is an authentic Reactive stream instance */
+	declare static isReactive: <P = any>(val: unknown) => val is Reactive<P>;
 
 	readonly #tag?: string | undefined;
 	readonly #bufferSize: number;
@@ -205,7 +208,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 
 	/** Identifies this object as a Reactive instance */
 	get isReactive(): boolean {
-		return true;
+		return Reactive.isReactive(this);
 	}
 
 	/** Returns the operational state of this stream */
@@ -826,5 +829,8 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		return new Reactive<V>(options);
 	}
 }
+
+/** Type guard to check if a value is an authentic Reactive stream instance */
+export const isReactive = Reactive.isReactive;
 
 export default Reactive;

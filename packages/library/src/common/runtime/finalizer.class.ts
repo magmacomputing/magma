@@ -1,5 +1,11 @@
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
 import { isFunction } from '#library/assertion.library.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Finalizer: { type: 'Finalizer'; value: Finalizer<T> };
+	}
+}
 
 /**
  * Global singleton finalization registry for general cleanup callbacks.
@@ -17,9 +23,12 @@ const GLOBAL_FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup)
  * Wrapper around FinalizationRegistry providing typed, safe resource cleanup
  * callbacks triggered when objects are reclaimed by the Garbage Collector.
  */
-@StringTag('Finalizer')
+@Branded('Finalizer')
 export class Finalizer<T = void> {
 	readonly #callback: (heldValue: T) => void;
+
+	/** Type guard to check if a value is an authentic Finalizer instance */
+	declare static isFinalizer: <P = void>(val: unknown) => val is Finalizer<P>;
 
 	constructor(callback: (heldValue: T) => void) {
 		this.#callback = callback;
@@ -29,7 +38,7 @@ export class Finalizer<T = void> {
 	 * Returns true to identify this instance as a Finalizer.
 	 */
 	get isFinalizer(): boolean {
-		return true;
+		return Finalizer.isFinalizer(this);
 	}
 
 	/**
@@ -76,3 +85,6 @@ export class Finalizer<T = void> {
 		return () => GLOBAL_FINALIZER_REGISTRY.unregister(token);
 	}
 }
+
+/** Type guard to check if a value is an authentic Finalizer instance */
+export const isFinalizer = Finalizer.isFinalizer;

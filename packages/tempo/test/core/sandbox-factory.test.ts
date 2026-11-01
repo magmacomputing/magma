@@ -1,14 +1,53 @@
-import { Tempo } from '#tempo';
+import { Tempo, isSandbox, isTempo } from '#tempo';
 import type { AliasContext } from '#tempo/tempo.type.js';
 import { spies } from '../support/setup.console-spy.js';
 
 describe('Sandbox Factory Pattern', () => {
+	it('should identify authentic Sandbox classes and instances via @Branded', () => {
+		const Sandbox = Tempo.derive({ locale: 'en-GB' });
+		const sInstance = new Sandbox('2026-07-01');
+		const tInstance = new Tempo('2026-07-01');
+
+		// Class-level checks
+		expect(isSandbox(Sandbox)).toBe(true);
+		expect((Sandbox as any).isSandbox(Sandbox)).toBe(true);
+		expect(Tempo.isSandbox(Sandbox)).toBe(true);
+		expect(isSandbox(Tempo)).toBe(false);
+		expect(Tempo.isSandbox(Tempo)).toBe(false);
+
+		// Instance-level checks
+		expect(isSandbox(sInstance)).toBe(true);
+		expect((sInstance as any).isSandbox).toBe(true);
+		expect((Sandbox as any).isSandbox(sInstance)).toBe(true);
+		expect(Tempo.isSandbox(sInstance)).toBe(true);
+		expect(sInstance instanceof Sandbox).toBe(true);
+		expect(sInstance instanceof Tempo).toBe(true);
+		expect(isTempo(sInstance)).toBe(true);
+		expect(Tempo.isTempo(sInstance)).toBe(true);
+		expect(Object.prototype.toString.call(sInstance)).toBe('[object TempoSandbox]');
+
+		// Base Tempo instance should NOT be recognized as sandbox
+		expect(isSandbox(tInstance)).toBe(false);
+		expect((tInstance as any).isSandbox).toBeUndefined();
+		expect((Sandbox as any).isSandbox(tInstance)).toBe(false);
+		expect(Tempo.isSandbox(tInstance)).toBe(false);
+		expect(tInstance instanceof Sandbox).toBe(false);
+
+
+		// Spoofed object
+		const spoofed = { [Symbol.toStringTag]: 'TempoSandbox' };
+		expect(isSandbox(spoofed)).toBe(false);
+		expect(Tempo.isSandbox(spoofed)).toBe(false);
+		expect(spoofed instanceof Sandbox).toBe(false);
+	});
+
 	it('should return a subclass when create is called with options', () => {
 		const Sandbox = Tempo.derive({ locale: 'en-GB' });
 		expect(Sandbox).not.toBe(Tempo);
 		expect(Object.getPrototypeOf(Sandbox)).toBe(Tempo);
 		expect(Sandbox.name).toBe('SandboxTempo');
 	});
+
 
 	it('should maintain isolated registries for sandboxes', () => {
 		const MyTempo = Tempo.derive({

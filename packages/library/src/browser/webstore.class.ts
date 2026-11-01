@@ -3,8 +3,14 @@ import { stringify, objectify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
 import { isEmpty, isNullish, isString } from '#library/assertion.library.js';
 import { getSafeStorage, getMemoryStorage } from '#library/storage.library.js';
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
 import type { Property, ValueOf } from '#library/type.library.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		WebStore: { type: 'WebStore'; value: WebStore };
+	}
+}
 
 const STORAGE = {
 	Local: 'local',
@@ -23,8 +29,16 @@ type STORAGE = ValueOf<typeof STORAGE>
  * const user = store.get('user');
  * ```
  */
-@StringTag('WebStore')
+@Branded('WebStore')
 export class WebStore {
+	/** Type guard to check if a value is an authentic WebStore instance */
+	declare static isWebStore: (val: unknown) => val is WebStore;
+
+	/** True if this is an authentic WebStore instance */
+	get isWebStore(): boolean {
+		return WebStore.isWebStore(this);
+	}
+
 	private static _localInstance?: WebStore;
 	private static _sessionInstance?: WebStore;
 
@@ -238,3 +252,6 @@ export class WebStore {
 		return this;
 	}
 }
+
+/** Type guard to check if a value is an authentic WebStore instance */
+export const isWebStore = WebStore.isWebStore;

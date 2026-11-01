@@ -1,18 +1,27 @@
 import { isDefined, isEmpty, isString } from '#library/assertion.library.js';
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		BoundedCache: { type: 'BoundedCache'; value: BoundedCache<any, any> };
+	}
+}
 
 /**
  * ## BoundedCache
  * High-performance Map implementation enforcing maximum capacity (LRU) and TTL eviction.
  * Supports static keys (immortal glossary definitions) and date-salt staleness purging.
  */
-@StringTag('BoundedCache')
+@Branded('BoundedCache')
 export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	#expires = new Map<K, number>();
 	#staticKeys = new Set<K>();
 	#ttls = new Map<K, number>();
 	maxSize: number;
 	ttl: number;
+
+	/** Type guard to check if a value is an authentic BoundedCache instance */
+	declare static isBoundedCache: <Key = string, Val = string>(val: unknown) => val is BoundedCache<Key, Val>;
 
 	/**
 	 * Creates a bounded cache with configurable capacity and entry lifetime.
@@ -30,7 +39,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 	 * Returns true to identify this instance as a BoundedCache.
 	 */
 	get isBoundedCache(): boolean {
-		return true;
+		return BoundedCache.isBoundedCache(this);
 	}
 
 	/**
@@ -323,3 +332,6 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		return cache;
 	}
 }
+
+/** Type guard to check if a value is an authentic BoundedCache instance */
+export const isBoundedCache = BoundedCache.isBoundedCache;

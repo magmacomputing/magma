@@ -1,8 +1,9 @@
 import { isString, isObject, isPlainObject, isUndefined, isSymbol, isEmpty, isFunction, isCallable } from '#library/assertion.library.js';
 import { ownKeys, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
+import { Branded } from '#library/decorator.library.js';
 
-import { sym, $IsBase, $Internal, $setConfig, $setDiscovery } from './support.symbol.js';
+import { sym, $IsBase, $Internal, $setConfig, $setDiscovery, $Sandbox, isSandbox } from './support.symbol.js';
 import { DISCOVERY, Enum } from './support.enum.js';
 import { ClassStates } from './support.runtime.js';
 import { init } from './support.init.js';
@@ -42,9 +43,11 @@ export function createSandbox<R>(
 		: (isString(discovery) ? Symbol.for(discovery) : discovery) as string | symbol;
 
 	let disposed = false;
-	const SandboxTempo = class extends (TempoClass as any) {
+	const SandboxTempo = @Branded($Sandbox, 'SandboxTempo') class extends (TempoClass as any) {
 		static [Symbol.toStringTag] = 'TempoSandbox';
 		static [$IsBase] = false;
+		static [$Sandbox] = true;
+		static isSandbox = isSandbox;
 		static get isDisposed(): boolean { return disposed; }
 		static [Symbol.dispose]() {
 			if (disposed) return;
@@ -54,7 +57,19 @@ export function createSandbox<R>(
 
 			ClassStates.delete(SandboxTempo as any);
 		}
+
+		get isSandbox(): boolean {
+			return isSandbox(this);
+		}
 	};
+
+	Object.defineProperty(SandboxTempo.prototype, Symbol.toStringTag, {
+		value: 'TempoSandbox',
+		configurable: true,
+		writable: false,
+		enumerable: false
+	});
+
 
 	let data: any = { options: { ...options, discovery: normalizedDiscovery }, scope: 'sandbox' };
 

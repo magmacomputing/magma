@@ -1,4 +1,4 @@
-import { Immutable, Mutable, Securable, StringTag, Singleton } from '#library/decorator.library.js';
+import { Immutable, Mutable, Securable, StringTag, Singleton, Branded } from '#library/decorator.library.js';
 
 describe('Class Decorators: Immutable & Secure', () => {
   it('Immutable: should throw on mutation (Object.freeze, strict mode)', () => {
@@ -268,5 +268,47 @@ describe('Class Decorators: Mutable', () => {
 
     const c = new Component();
     expect((c as any).dynamicData).toBe(100);
+  });
+});
+
+describe('@Branded Decorator', () => {
+  it('direct @Branded usage attaches brand, Symbol.toStringTag, and static is<ClassName>', () => {
+    @Branded
+    class Widget {}
+
+    const w = new Widget();
+    expect((Widget as any).isWidget(w)).toBe(true);
+    expect(w instanceof Widget).toBe(true);
+    expect(Object.prototype.toString.call(w)).toBe('[object Widget]');
+
+    expect((Widget as any).isWidget({ [Symbol.toStringTag]: 'Widget' })).toBe(false);
+    expect((Widget as any).isWidget(null)).toBe(false);
+    expect((Widget as any).isWidget(undefined)).toBe(false);
+  });
+
+  it('configured @Branded("CustomTag") overrides name and sets Symbol.toStringTag', () => {
+    @Branded('FancyGadget')
+    class Gadget {}
+
+    const g = new Gadget();
+    expect((Gadget as any).isFancyGadget(g)).toBe(true);
+    expect(g instanceof Gadget).toBe(true);
+    expect(Object.prototype.toString.call(g)).toBe('[object FancyGadget]');
+    expect(Gadget.name).toBe('FancyGadget');
+
+    expect((Gadget as any).isFancyGadget({ [Symbol.toStringTag]: 'FancyGadget' })).toBe(false);
+  });
+
+  it('custom symbol brand works with @Branded(customSymbol, "CustomName")', () => {
+    const $custom = Symbol('CustomBrand');
+
+    @Branded($custom, 'Device')
+    class Device {}
+
+    const d = new Device();
+    expect((Device as any).isDevice(d)).toBe(true);
+    expect((d as any)[$custom]).toBe(true);
+    expect(d instanceof Device).toBe(true);
+    expect(Object.prototype.toString.call(d)).toBe('[object Device]');
   });
 });

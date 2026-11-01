@@ -4,7 +4,7 @@ import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/json.library.js';
-import { Immutable, StringTag } from '#library/decorator.library.js';
+import { Immutable, Branded } from '#library/decorator.library.js';
 import { isEmpty, isObject } from '#library/assertion.library.js';
 import { Finalizer } from './finalizer.class.js';
 import { signify, Signify, type WritableSignal, type ReadonlySignal } from './signify.library.js';
@@ -36,12 +36,15 @@ const _STATE = secure({
  * ```
  */
 @Immutable
-@StringTag('Pledge')
+@Branded('Pledge')
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;
 	readonly #signal: WritableSignal<number>;
 	#cachedSignal: ReadonlySignal<T | undefined> | undefined = undefined;
+
+	/** Type guard to check if a value is an authentic Pledge instance */
+	declare static isPledge: <P = any>(val: unknown) => val is Pledge<P>;
 
 	static get STATE() { return _STATE; }
 
@@ -310,3 +313,6 @@ export namespace Pledge {
 		error?: any | undefined;
 	}
 }
+
+/** Type guard to check if a value is an authentic Pledge instance */
+export const isPledge = Pledge.isPledge;

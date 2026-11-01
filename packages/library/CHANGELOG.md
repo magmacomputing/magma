@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.0.0] - Unreleased
 
 ### Added & Architecture
+- **Unforgeable Brand Verification & `@Branded` Class Decorator (`decorator.library`, `assertion.library`, `string.library`)**:
+  - Implemented `@Branded` class decorator in `#library/decorator.library.js` that stamps an unforgeable brand Symbol onto `Target.prototype` (non-enumerable, non-writable, non-configurable).
+  - Automatically defines `[Symbol.toStringTag]` on `Target.prototype` if not already defined, eliminating redundant `@StringTag` annotations.
+  - Automatically attaches a static `is<ClassName>()` predicate method (e.g. `Pledge.isPledge(val)`) and wires `[Symbol.hasInstance]` for runtime brand validation via `val instanceof Target`.
+  - Supports direct usage (`@Branded`), configured string tag (`@Branded('CustomName')`), or custom symbol (`@Branded(mySymbol, 'CustomName')`), with minification safety.
+  - Exported `isBranded<T>(val, brand)` in `#library/assertion.library.js` providing a unified, cross-realm safe type guard for branded objects and functions.
+  - Exported `capitalize<T>(str)` in `#library/string.library.js` preserving camelCase, PascalCase, and acronym casing for method name generation.
+  - Hardened `Pledge`, `Finalizer`, `WeakCache`, `BoundedCache`, `Reactive`, `ReactiveSubscription`, `Interval`, `ScopedSet`, `Logger`, and `WebStore` with `@Branded` and exported standalone `isPledge`, `isFinalizer`, `isWeakCache`, `isBoundedCache`, `isReactive`, `isInterval`, `isScopedSet`, `isLogger`, and `isWebStore` type guards.
+
 - **TC39 Signals Core Reactive Engine (`Signify`)**:
   - Implemented zero-dependency, memory-safe reactive primitives conforming to the TC39 Signals proposal in `#library/signify.library.js`.
   - Added `Signify.state(initialValue, options?)` (`Signify.State`) supporting custom `equals` comparators, `.get()`, `.set()`, `.value`, and epoch tracking.

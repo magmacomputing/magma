@@ -1,12 +1,12 @@
 import { asType, getType } from '#library/type.library.js';
-import { isFunction, isNull, isNumeric, isObject } from '#library/assertion.library.js';
+import { isNumeric, isBranded } from '#library/assertion.library.js';
 import { ownEntries } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
 
 declare module '#library/type.library.js' {
-	interface TypeValueMap<T = any> {
+	interface TypeValueMap<T> {
 		Enumify: { type: 'Enumify', value: Enum.wrap<T> };
 	}
 }
@@ -30,7 +30,7 @@ const valuesCache = new WeakMap<object, readonly any[]>();
 const entriesCache = new WeakMap<object, readonly (readonly [any, any])[]>();
 const invertCache = new WeakMap<object, Readonly<Record<string, any>>>();
 
-const $EnumBrand = Symbol('EnumBrand');
+const $EnumBrand = Symbol('Brand.Enum');
 
 const ENUM: any = secure(Object.create(null, {
 	[Symbol.iterator]: { value: function* (this) { for (const entry of Enum.entries(this)) yield entry; } },
@@ -38,8 +38,9 @@ const ENUM: any = secure(Object.create(null, {
 	[$EnumBrand]: { value: true }
 }));
 
-function isEnumInstance(val: any): boolean {
-	return Boolean((isObject(val) || isFunction(val)) && val[$EnumBrand] === true);
+/** Check if a value is a genuine Enum instance (mirrors Array.isArray) */
+export function isEnum<T extends Property<any> = any>(val: unknown): val is Enum.wrap<T> {
+	return isBranded(val, $EnumBrand);
 }
 
 /**
@@ -48,6 +49,9 @@ function isEnumInstance(val: any): boolean {
  * Immune to member property shadowing and replaces legacy prototype methods.
  */
 const enumMethods = {
+	/** Check if a value is a genuine Enum instance (mirrors Array.isArray) */
+	isEnum,
+
 	/** Check if a key exists in an Enum or any inherited parent Enum */
 	has<T extends Property<any>>(enumObj: T, key: LooseKey<KeyOf<T>> | PropertyKey): key is KeyOf<T> {
 		return enumMethods.keys(enumObj).includes(key as any);
@@ -130,7 +134,7 @@ const enumMethods = {
 
 	/** Custom instance-of check supporting `val instanceof Enum` or predicate checking */
 	[Symbol.hasInstance](instance: any): boolean {
-		return isEnumInstance(instance);
+		return isEnum(instance);
 	}
 };
 type enumMethods = typeof enumMethods;
@@ -138,7 +142,7 @@ type enumMethods = typeof enumMethods;
 function deriveEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
 function deriveEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
 function deriveEnum(enumObj: any, list: any, frozen?: boolean): any {
-	const base = isEnumInstance(enumObj) ? enumObj : enumify(enumObj);
+	const base = isEnum(enumObj) ? enumObj : enumify(enumObj);
 	return (enumify as any).call(base, list, frozen);
 }
 
@@ -168,8 +172,8 @@ export function enumify<const T extends readonly any[]>(list: T, frozen?: boolea
 export function enumify<const T extends Property<any>>(list: T, frozen?: boolean): Enum.wrap<T>;
 export function enumify<T>(this: any, list: T, frozen = true): any {
 	const type = getType(this);
-	const isEnum = type !== 'Module' && isEnumInstance(this);
-	const proto = isEnum ? this : ENUM;
+	const isDeriving = type !== 'Module' && isEnum(this);
+	const proto = isDeriving ? this : ENUM;
 	const arg = asType(list);
 	const target = Object.create(proto);
 

@@ -1,10 +1,18 @@
-import { WeakCache } from '#library/weakcache.class.js';
+import { WeakCache, isWeakCache } from '#library/weakcache.class.js';
 
 describe('common/runtime/weakcache.class', () => {
 	it('identifies as a WeakCache and provides basic cache semantics', () => {
 		const cache = new WeakCache<string, { id: number }>();
 		expect(cache.isWeakCache).toBe(true);
+		expect(WeakCache.isWeakCache(cache)).toBe(true);
+		expect(isWeakCache(cache)).toBe(true);
+		expect(cache instanceof WeakCache).toBe(true);
 		expect(Object.prototype.toString.call(cache)).toBe('[object WeakCache]');
+
+		const spoofed = { [Symbol.toStringTag]: 'WeakCache' };
+		expect(WeakCache.isWeakCache(spoofed)).toBe(false);
+		expect(isWeakCache(spoofed)).toBe(false);
+		expect(spoofed instanceof WeakCache).toBe(false);
 
 		const item = { id: 1 };
 		cache.set('key1', item);

@@ -1,4 +1,10 @@
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		ScopedSet: { type: 'ScopedSet'; value: ScopedSet<any> };
+	}
+}
 
 /**
  * A lightweight `Set`-compatible container that delegates `has()` lookups to a
@@ -17,8 +23,16 @@ import { StringTag } from '#library/decorator.library.js';
  * sandbox.has('b');   // true  (own-local)
  * global.has('b');    // false (never written to parent)
  */
-@StringTag('ScopedSet')
+@Branded('ScopedSet')
 export class ScopedSet<T> {
+	/** Type guard to check if a value is an authentic ScopedSet instance */
+	declare static isScopedSet: <P = any>(val: unknown) => val is ScopedSet<P>;
+
+	/** True if this is an authentic ScopedSet instance */
+	get isScopedSet(): boolean {
+		return ScopedSet.isScopedSet(this);
+	}
+
 	readonly #own = new Set<T>();
 	readonly #parent: Set<T> | ScopedSet<T> | undefined;
 
@@ -59,3 +73,7 @@ export class ScopedSet<T> {
 	
 	[Symbol.iterator](): IterableIterator<T> { return this.#own[Symbol.iterator](); }
 }
+
+/** Type guard to check if a value is an authentic ScopedSet instance */
+export const isScopedSet = ScopedSet.isScopedSet;
+

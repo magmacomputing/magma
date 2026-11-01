@@ -1,10 +1,18 @@
-import { BoundedCache } from '#library/cache.class.js';
+import { BoundedCache, isBoundedCache } from '#library/cache.class.js';
 
 describe('common/runtime/cache.class', () => {
 	it('identifies as a BoundedCache and provides basic Map semantics', () => {
 		const cache = new BoundedCache<string, string>(10, 60000);
 		expect(cache.isBoundedCache).toBe(true);
+		expect(BoundedCache.isBoundedCache(cache)).toBe(true);
+		expect(isBoundedCache(cache)).toBe(true);
+		expect(cache instanceof BoundedCache).toBe(true);
 		expect(Object.prototype.toString.call(cache)).toBe('[object BoundedCache]');
+
+		const spoofed = { [Symbol.toStringTag]: 'BoundedCache' };
+		expect(BoundedCache.isBoundedCache(spoofed)).toBe(false);
+		expect(isBoundedCache(spoofed)).toBe(false);
+		expect(spoofed instanceof BoundedCache).toBe(false);
 
 		cache.set('foo', 'bar');
 		expect(cache.has('foo')).toBe(true);

@@ -1,4 +1,4 @@
-import { Finalizer } from '#library/finalizer.class.js';
+import { Finalizer, isFinalizer } from '#library/finalizer.class.js';
 
 describe('common/runtime/finalizer.class', () => {
 	it('identifies as a Finalizer instance and supports lifecycle registration', () => {
@@ -7,7 +7,15 @@ describe('common/runtime/finalizer.class', () => {
 		});
 
 		expect(finalizer.isFinalizer).toBe(true);
+		expect(Finalizer.isFinalizer(finalizer)).toBe(true);
+		expect(isFinalizer(finalizer)).toBe(true);
+		expect(finalizer instanceof Finalizer).toBe(true);
 		expect(Object.prototype.toString.call(finalizer)).toBe('[object Finalizer]');
+
+		const spoofed = { [Symbol.toStringTag]: 'Finalizer' };
+		expect(Finalizer.isFinalizer(spoofed)).toBe(false);
+		expect(isFinalizer(spoofed)).toBe(false);
+		expect(spoofed instanceof Finalizer).toBe(false);
 
 		const target = { id: 1 };
 		const unregisterToken = { token: 'tok1' };

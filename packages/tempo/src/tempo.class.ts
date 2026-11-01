@@ -36,14 +36,16 @@ import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
 import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, $Sandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
-		Tempo: { type: 'Tempo', value: Tempo };
+		Tempo: { type: 'Tempo'; value: Tempo };
+		TempoSandbox: { type: 'TempoSandbox'; value: typeof Tempo };
 	}
 }
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /** current execution context */														const Context = getContext();
 // shortcut functions to common Tempo properties / methods
@@ -143,7 +145,6 @@ export class Tempo {
 
 	/** @internal brand check to distinguish Tempo objects from other objects */
 	get [$Identity](): true { return true }
-
 
 	/**
 	 * Registers event or period aliases and updates the corresponding snippet pattern.
@@ -996,6 +997,9 @@ export class Tempo {
 	static isTempo(instance?: any): instance is Tempo {
 		return instance instanceof Tempo;
 	}
+
+	/** check if a supplied variable is a valid Tempo sandbox subclass or instance */
+	static isSandbox = isSandbox;
 
 	static {																									// Static initialization block to sequence the bootstrap phase
 		// Define the reactive register hook
@@ -1869,3 +1873,9 @@ export namespace Tempo {
 	 */
 	export interface Params<T> extends t.Params<T> { }
 }
+
+/** Check if a supplied value is a valid Tempo instance */
+export { isTempo };
+
+/** Check if a supplied value is a valid Tempo sandbox subclass or instance */
+export { isSandbox };
