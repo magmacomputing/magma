@@ -1,4 +1,4 @@
-import { isString, isObject, isPlainObject, isUndefined, isSymbol, isEmpty, isFunction, isCallable } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
 import { ownKeys, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
@@ -11,6 +11,14 @@ import { setPatterns } from '../engine/engine.pattern.js';
 
 import type * as t from '../tempo.type.js';
 import type { Tempo } from '../tempo.class.js';
+
+const sandboxPredecessors = new WeakMap<object, any>();
+
+const findLivePredecessor = (prev: any): any => {
+	let live = prev;
+	while (live?.sandbox?.isDisposed) live = sandboxPredecessors.get(live);
+	return live;
+};
 
 /**
  * Creates an isolated Tempo subclass sandbox with its own configuration and registries.
@@ -49,6 +57,7 @@ export function createSandbox<R>(
 
 	const prevDiscovery = (globalThis as any)[normalizedDiscovery as any];
 	(globalThis as any)[normalizedDiscovery as any] = data;
+	sandboxPredecessors.set(data, prevDiscovery);
 
 	let disposed = false;
 	let state: any;
@@ -58,9 +67,9 @@ export function createSandbox<R>(
 		disposed = true;
 
 		if ((globalThis as any)[normalizedDiscovery as any] === data) {
-			const isPrevLive = prevDiscovery && (!prevDiscovery.sandbox || !prevDiscovery.sandbox.isDisposed);
-			if (isPrevLive) {
-				(globalThis as any)[normalizedDiscovery as any] = prevDiscovery;
+			const live = findLivePredecessor(prevDiscovery);
+			if (live) {
+				(globalThis as any)[normalizedDiscovery as any] = live;
 			} else {
 				delete (globalThis as any)[normalizedDiscovery as any];
 			}
@@ -76,6 +85,16 @@ export function createSandbox<R>(
 						delete rt.versions[vKey];
 					}
 					rt.versionOwners?.delete(vKey);
+				} else {
+					const survivingOwner = rt.versionOwners.get(vKey);
+					const survivingState = survivingOwner?.writtenVersions
+						? survivingOwner
+						: ClassStates.get(survivingOwner as any);
+					const survivingInfo = survivingState?.writtenVersions?.get(vKey);
+					if (survivingInfo) {
+						survivingInfo.prevVersion = vInfo.prevVersion;
+						survivingInfo.hadVersion = vInfo.hadVersion;
+					}
 				}
 			}
 		}
@@ -88,6 +107,9 @@ export function createSandbox<R>(
 		static [$IsBase] = false;
 		static [$Sandbox] = true;
 		static isSandbox = isSandbox;
+		static [Symbol.hasInstance](val: unknown): boolean {
+			return isReference(val) && isReference(this?.prototype) && Object.prototype.isPrototypeOf.call(this.prototype, val);
+		}
 		static get isDisposed(): boolean { return disposed; }
 		static [Symbol.dispose]() {
 			cleanupSandbox();
@@ -172,11 +194,13 @@ export function createSandbox<R>(
 
 		Object.freeze(SandboxTempo);
 	} catch (err) {
-		const isPrevLive = prevDiscovery && (!prevDiscovery.sandbox || !prevDiscovery.sandbox.isDisposed);
-		if (isPrevLive) {
-			(globalThis as any)[normalizedDiscovery as any] = prevDiscovery;
-		} else {
-			delete (globalThis as any)[normalizedDiscovery as any];
+		if ((globalThis as any)[normalizedDiscovery as any] === data) {
+			const live = findLivePredecessor(prevDiscovery);
+			if (live) {
+				(globalThis as any)[normalizedDiscovery as any] = live;
+			} else {
+				delete (globalThis as any)[normalizedDiscovery as any];
+			}
 		}
 		ClassStates.delete(SandboxTempo as any);
 		throw err;

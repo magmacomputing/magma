@@ -44,9 +44,25 @@ function parseTopLevelReviewComments(rawBody) {
 	];
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
+
+	const itemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
+	itemRegex.lastIndex = lastSecStart;
+	let lastItemEnd = lastSecStart;
+	let imSearch;
+	while ((imSearch = itemRegex.exec(normalized)) !== null) {
+		const summaryText = imSearch[1].replace(/<[^>]+>/g, '').trim();
+		if (/^(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+			continue;
+		}
+		const closeTag = normalized.indexOf('</details>', imSearch.index);
+		if (closeTag !== -1) {
+			lastItemEnd = Math.max(lastItemEnd, closeTag + '</details>'.length);
+		}
+	}
+
 	let overallEnd = normalized.length;
 	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastSecStart);
+		const idx = normalized.indexOf(marker, lastItemEnd);
 		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
@@ -62,7 +78,7 @@ function parseTopLevelReviewComments(rawBody) {
 		let im;
 		while ((im = fileItemRegex.exec(secChunk)) !== null) {
 			const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
-			if (/^(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by)/i.test(summaryText)) {
+			if (/^(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
 				continue;
 			}
 			itemPositions.push({ summary: summaryText, index: im.index });
@@ -76,8 +92,9 @@ function parseTopLevelReviewComments(rawBody) {
 			let filePath = '';
 			let line = null;
 
-			const sumPath = item.summary.match(/^\s*([a-zA-Z0-9_\-\.\/ +]+\.[a-zA-Z0-9]+)(?:[:\-](\d+(?:-\d+)?))?/);
-			if (sumPath && (sumPath[1].includes('/') || sumPath[1].endsWith('.ts') || sumPath[1].endsWith('.js'))) {
+			const sumPath = item.summary.match(/^\s*([a-zA-Z0-9_\-\.\/ +]+?\.[a-zA-Z0-9]+)(?:\s*[:\-]\s*(\d+(?:-\d+)?))?(?:\s*[:\-]\s+.*|\s*$)/);
+			const allowedRootExt = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
+			if (sumPath && (sumPath[1].includes('/') || allowedRootExt.test(sumPath[1]))) {
 				filePath = sumPath[1].trim();
 				if (sumPath[2]) line = sumPath[2];
 			}
@@ -85,7 +102,7 @@ function parseTopLevelReviewComments(rawBody) {
 			const backtickPath = itemBlock.match(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/);
 			if (backtickPath && backtickPath[1].includes('/')) {
 				if (!filePath) filePath = backtickPath[1];
-				if (!line && backtickPath[2]) line = backtickPath[2];
+				if (!line && backtickPath[2] && backtickPath[1] === filePath) line = backtickPath[2];
 			}
 
 			if (!line) {
@@ -99,7 +116,7 @@ function parseTopLevelReviewComments(rawBody) {
 				if (!line) line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
 			}
 
-			const ghBlobMatch = itemBlock.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/[a-f0-9]+\/([^#\s)]+)(?:#L(\d+(?:-L\d+)?))?/);
+			const ghBlobMatch = itemBlock.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/[^\/]+\/([^#\s)]+)(?:#L(\d+(?:-L\d+)?))?/);
 			if (ghBlobMatch) {
 				if (!filePath) filePath = ghBlobMatch[1];
 				if (!line && ghBlobMatch[2]) line = ghBlobMatch[2].replace(/-L/, '-');

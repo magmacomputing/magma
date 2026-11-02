@@ -51,16 +51,24 @@ describe('defineProperties & defineProperty', () => {
 	it('supports unmemoized getters via explicit descriptor', () => {
 		const S = Tempo.derive({});
 		let counter = 0;
+		let receivedInstance: any;
+		let receivedThis: any;
 
 		S.use(defineProperties({
 			volatile: {
-				get: () => ++counter,
+				get(this: any, instance: any) {
+					receivedThis = this;
+					receivedInstance = instance;
+					return ++counter;
+				},
 				memo: false,
 			},
 		}, 'VolatileProperty'));
 
 		const t = new S();
 		expect((t as any).volatile).toBe(1);
+		expect(receivedThis).toBe(t);
+		expect(receivedInstance).toBe(t);
 		expect((t as any).volatile).toBe(2);
 		expect((t as any).volatile).toBe(3);
 	});

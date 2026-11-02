@@ -35,7 +35,14 @@ import { registryUpdate } from './support.register.js';
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
 	const isBounded = (val: any): val is BoundedCache =>
-		isBoundedCache(val) || (isObject(val) && (val as any)[Symbol.toStringTag] === 'BoundedCache' && isFunction((val as any).evictExpired));
+		isBoundedCache(val) || (
+			isObject(val) &&
+			(val as any)[Symbol.toStringTag] === 'BoundedCache' &&
+			isFunction((val as any).evictExpired) &&
+			isFunction((val as any).isStatic) &&
+			isFunction((val as any).get) &&
+			isFunction((val as any).set)
+		);
 
 	const isBoundedCacheOpt = isBounded(optionsCache);
 	if (isBoundedCacheOpt) {

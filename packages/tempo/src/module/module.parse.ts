@@ -817,13 +817,19 @@ const _ParseEngine = {
 		if (!isPlainObject(tempo) || isEmpty(tempo))
 			return false;
 
+		const hasMembership = (collection: any, key: any): boolean => {
+			if (!collection) return false;
+			if (typeof collection.has === 'function') return collection.has(key);
+			return Enum.has(collection, key);
+		};
+
 		const keys = ownKeys(tempo);
-		if (keys.some(key => Enum.has(state.CONFIG, key) && !Enum.has(state.ZONED_DATE_TIME, key) && key !== 'value'))
+		if (keys.some(key => hasMembership(state?.CONFIG, key) && !hasMembership(state?.ZONED_DATE_TIME, key) && key !== 'value'))
 			return false;
 
 		return keys
 			.filter(isString)
-			.some((key: string) => Enum.has(state.ZONED_DATE_TIME, key) && !Enum.has(state.CONFIG, key))
+			.some((key: string) => hasMembership(state?.ZONED_DATE_TIME, key) && !hasMembership(state?.CONFIG, key));
 	},
 }
 

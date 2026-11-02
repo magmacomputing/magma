@@ -1191,9 +1191,11 @@ export class Tempo {
 					logError(msg, this.#local.config);
 					this.#zdt = this.#now.toZonedDateTimeISO('UTC');
 				}
+				delete this.#memo.config;
 				secure(this.#local.config);
 				secure(this.#local.parse, new WeakSet(skip));
 			} catch (err) {
+				delete this.#memo.config;
 				this.#errored = true;																// mark as errored
 				const msg = `Cannot create Tempo: ${(err as Error).message}\n${(err as Error).stack}`;
 				if (this.#local.config.catch === true) {
@@ -1461,7 +1463,7 @@ export class Tempo {
 
 	/** current Tempo configuration */
 	get config(): Readonly<t.Internal.Config> {
-		if (this.#memo.config) return this.#memo.config;
+		if (this.#zdt && this.#memo.config) return this.#memo.config;
 
 		const global = (this as any)[$Internal]().config;
 		const out = markConfig(Object.create(global));
@@ -1478,7 +1480,9 @@ export class Tempo {
 			enumerable: false, configurable: true
 		});
 
-		return (this.#memo.config = dynamicProxy(proxify(out)) as Readonly<t.Internal.Config>);
+		const configProxy = dynamicProxy(proxify(out, true, false)) as Readonly<t.Internal.Config>;
+		if (this.#zdt) this.#memo.config = configProxy;
+		return configProxy;
 	}
 
 	/** Instance-specific parse rules (merged with global) */

@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed & Hardened
 - **Civil Days to Calendar Overload & Integer Validation (`calendar.library`)**:
   - Enhanced `civilToDays()` with flexible input overloads matching `toJulianDay()`: accepts discrete `(year, month, day)` numbers, a JavaScript `Date` (UTC), or an object with `{ year, month, day }` properties.
-  - Added strict integer assertions (`Number.isInteger`) ensuring non-integer inputs throw a `TypeError` early rather than propagating corrupted fractional day calculations.
+  - Added strict integer assertions (`Number.isInteger`) ensuring non-integer inputs throw a `RangeError` early rather than propagating corrupted fractional day calculations.
 - **Pure Integer Calendar Arithmetic (`calendar.library`, `rrule.library`)**:
   - Eliminated legacy `Date` object instantiations across calendar calculation algorithms, migrating fully to pure integer arithmetic for leap year, day-of-year, and ISO week date resolution.
   - Hardened pre-1970 calculations and negative astronomical years across RRULE recurrence expansions and calendar operations.

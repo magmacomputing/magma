@@ -317,7 +317,7 @@ describe('@Branded Decorator', () => {
     class CustomValidator {
       #secret = 42;
       static isCustomValidator(val: unknown): val is CustomValidator {
-        return !!val && typeof val === 'object' && '#secret' in (val as any);
+        return this === CustomValidator && !!val && typeof val === 'object' && '#secret' in (val as any);
       }
     }
 
@@ -326,5 +326,31 @@ describe('@Branded Decorator', () => {
 
     expect(valid instanceof CustomValidator).toBe(true);
     expect(invalid instanceof CustomValidator).toBe(false);
+  });
+
+  it('undecorated subclass inheriting Symbol.hasInstance does not accept parent instances', () => {
+    @Branded('ParentBrand')
+    class ParentClass {}
+
+    class ChildClass extends ParentClass {}
+
+    const parent = new ParentClass();
+    const child = new ChildClass();
+
+    expect(child instanceof ChildClass).toBe(true);
+    expect(child instanceof ParentClass).toBe(true);
+    expect(parent instanceof ParentClass).toBe(true);
+    expect(parent instanceof ChildClass).toBe(false);
+  });
+
+  it('uses globally registered brand symbol so equivalent class copies recognize instances', () => {
+    @Branded('SharedService')
+    class CopyA {}
+
+    @Branded('SharedService')
+    class CopyB {}
+
+    const a = new CopyA();
+    expect((CopyB as any).isSharedService(a)).toBe(true);
   });
 });

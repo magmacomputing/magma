@@ -284,6 +284,124 @@ describe('Sandbox Factory Pattern', () => {
 		expect((baseInstance as any).isDisposed).toBeUndefined();
 		expect((baseInstance as any).isSandbox).toBeUndefined();
 	});
+
+	it('should restore the nearest live predecessor when disposing named sandboxes out of order', () => {
+		const discKey = 'shared-predecessor-test';
+		const sb1 = Tempo.derive({ discovery: discKey });
+		const sb2 = Tempo.derive({ discovery: discKey });
+		const sb3 = Tempo.derive({ discovery: discKey });
+
+		const globalSlot = Symbol.for(discKey);
+		expect((globalThis as any)[globalSlot]?.sandbox).toBe(sb3);
+
+		// Dispose middle sandbox sb2 first
+		(sb2 as any)[Symbol.dispose]();
+		// Slot should still be sb3
+		expect((globalThis as any)[globalSlot]?.sandbox).toBe(sb3);
+
+		// Now dispose sb3 (its immediate predecessor sb2 was disposed, so nearest live is sb1)
+		(sb3 as any)[Symbol.dispose]();
+		expect((globalThis as any)[globalSlot]?.sandbox).toBe(sb1);
+
+		// Finally dispose sb1, slot is deleted
+		(sb1 as any)[Symbol.dispose]();
+		expect((globalThis as any)[globalSlot]).toBeUndefined();
+	});
+
+	it('should transfer prevVersion to surviving owner when earlier sandbox is disposed', () => {
+		const pluginA = {
+			name: 'TestPluginA',
+			version: '1.0.0',
+			install: () => {}
+		};
+		const pluginB = {
+			name: 'TestPluginA',
+			version: '2.0.0',
+			install: () => {}
+		};
+
+		const sbA = Tempo.derive();
+		sbA.use(pluginA);
+		expect(Tempo.versions['TestPluginAPlugin']).toBe('1.0.0');
+
+		const sbB = Tempo.derive();
+		sbB.use(pluginB);
+		expect(Tempo.versions['TestPluginAPlugin']).toBe('2.0.0');
+
+		// Dispose sbA while sbB is the owner of TestPluginAPlugin
+		(sbA as any)[Symbol.dispose]();
+		// Version should still be 2.0.0 from sbB
+		expect(Tempo.versions['TestPluginAPlugin']).toBe('2.0.0');
+
+		// When sbB is disposed last, it restores the version prior to sbA (which was undefined/deleted)
+		(sbB as any)[Symbol.dispose]();
+		expect(Tempo.versions['TestPluginAPlugin']).toBeUndefined();
+	});
+
+	it('should preserve nested derive discovery slot if setup throws', () => {
+		const discKey = 'failing-setup-test';
+		const globalSlot = Symbol.for(discKey);
+		let nestedSandbox: any;
+
+		expect(() => {
+			Tempo.derive({
+				discovery: discKey,
+				plugins: [
+					{
+						name: 'FailingPlugin',
+						install: () => {
+							nestedSandbox = Tempo.derive({ discovery: discKey });
+							throw new Error('Boom');
+						}
+					}
+				]
+			});
+		}).toThrow('Boom');
+
+		// Slot should still belong to nestedSandbox
+		expect((globalThis as any)[globalSlot]?.sandbox).toBe(nestedSandbox);
+		(nestedSandbox as any)[Symbol.dispose]();
+	});
+
+	it('should ensure instanceof checks differentiate between distinct sandbox classes', () => {
+		const SandboxA = Tempo.derive({ locale: 'en-US' });
+		const SandboxB = Tempo.derive({ locale: 'ja-JP' });
+
+		const instanceA = new SandboxA('2026-01-01');
+		const instanceB = new SandboxB('2026-01-01');
+
+		// Shared brand check is true for all sandboxes
+		expect(isSandbox(instanceA)).toBe(true);
+		expect(isSandbox(instanceB)).toBe(true);
+		expect(Tempo.isSandbox(instanceA)).toBe(true);
+		expect(Tempo.isSandbox(instanceB)).toBe(true);
+
+		// Instanceof reflects actual prototype membership
+		expect(instanceA instanceof SandboxA).toBe(true);
+		expect(instanceB instanceof SandboxB).toBe(true);
+		expect(instanceA instanceof SandboxB).toBe(false);
+		expect(instanceB instanceof SandboxA).toBe(false);
+		expect(instanceA instanceof Tempo).toBe(true);
+		expect(instanceB instanceof Tempo).toBe(true);
+	});
+
+	it('should invalidate cached config snapshot when lazy instance resolves', () => {
+		const t = new Tempo('2026-05-15', { mode: 'defer', locale: 'en-US' });
+		// Access config before resolution
+		const preConfig = t.config;
+		expect(preConfig.locale).toBe('en-US');
+
+		// Modify catch mode
+		t.setCatchMode(true);
+		expect(t.config.catch).toBe(true);
+
+		// Resolve by accessing toDateTime
+		const dt = t.toDateTime();
+		expect(dt).toBeDefined();
+
+		// Post-resolution config remains consistent
+		expect(t.config.catch).toBe(true);
+	});
 });
 
 

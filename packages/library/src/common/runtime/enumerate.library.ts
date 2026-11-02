@@ -1,6 +1,6 @@
 import { asType, getType } from '#library/type.library.js';
 import { isNumeric, isBranded } from '#library/assertion.library.js';
-import { ownEntries } from '#library/primitive.library.js';
+import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
@@ -69,35 +69,38 @@ const enumMethods = {
 
 	/** Safely extract all enum member keys, immune to shadowing */
 	keys<T extends Property<any>>(enumObj: T): readonly KeyOf<T>[] {
-		let cached = keysCache.get(enumObj);
-		if (!cached) {
-			const keys = Object.freeze(ownEntries(enumObj, true).map(([key]: any) => key));
-			keysCache.set(enumObj, keys);
-			cached = keys;
+		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		if (isFrozen) {
+			const cached = keysCache.get(enumObj);
+			if (cached) return cached as any;
 		}
-		return cached as any;
+		const keys = Object.freeze(ownEntries(enumObj, true).map(([key]: any) => key));
+		if (isFrozen) keysCache.set(enumObj, keys);
+		return keys as any;
 	},
 
 	/** Safely extract all enum member values, immune to shadowing */
 	values<T extends Property<any>>(enumObj: T): readonly ValueOf<T>[] {
-		let cached = valuesCache.get(enumObj);
-		if (!cached) {
-			const values = Object.freeze(ownEntries(enumObj, true).map(([_, val]: any) => val));
-			valuesCache.set(enumObj, values);
-			cached = values;
+		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		if (isFrozen) {
+			const cached = valuesCache.get(enumObj);
+			if (cached) return cached as any;
 		}
-		return cached as any;
+		const values = Object.freeze(ownEntries(enumObj, true).map(([_, val]: any) => val));
+		if (isFrozen) valuesCache.set(enumObj, values);
+		return values as any;
 	},
 
 	/** Safely extract [key, value] pairs, immune to shadowing */
 	entries<T extends Property<any>>(enumObj: T): readonly (readonly [KeyOf<T>, ValueOf<T>])[] {
-		let cached = entriesCache.get(enumObj);
-		if (!cached) {
-			const pairs: readonly (readonly [any, any])[] = Object.freeze(ownEntries(enumObj, true).map(([key, val]: any) => Object.freeze([key, val] as const)));
-			entriesCache.set(enumObj, pairs);
-			cached = pairs;
+		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		if (isFrozen) {
+			const cached = entriesCache.get(enumObj);
+			if (cached) return cached as any;
 		}
-		return cached as any;
+		const pairs: readonly (readonly [any, any])[] = Object.freeze(ownEntries(enumObj, true).map(([key, val]: any) => Object.freeze([key, val] as const)));
+		if (isFrozen) entriesCache.set(enumObj, pairs);
+		return pairs as any;
 	},
 
 	/** Safely look up the key corresponding to a given value (reverse mapping) */
@@ -120,13 +123,14 @@ const enumMethods = {
 	 * Supports aliased enums (last-key-wins on duplicate values).
 	 */
 	invert<T extends Property<any>>(enumObj: T): Readonly<Invert<T>> {
-		let cached = invertCache.get(enumObj);
-		if (!cached) {
-			const inverted = Object.freeze(Object.fromEntries(enumMethods.entries(enumObj).map(([key, val]: any) => [val, key])));
-			invertCache.set(enumObj, inverted);
-			cached = inverted;
+		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		if (isFrozen) {
+			const cached = invertCache.get(enumObj);
+			if (cached) return cached as any;
 		}
-		return cached as any;
+		const inverted = Object.freeze(Object.fromEntries(enumMethods.entries(enumObj).map(([key, val]: any) => [val, key])));
+		if (isFrozen) invertCache.set(enumObj, inverted);
+		return inverted as any;
 	},
 
 	/** Derive a new enum by inheriting from a base enum */

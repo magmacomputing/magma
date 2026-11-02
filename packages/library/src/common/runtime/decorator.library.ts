@@ -363,7 +363,7 @@ export function Branded<T extends Constructor>(
 			?? getClassName(value, contextName);
 
 		const name = rawName ? String(rawName).replace(/^\$/, '') : 'Instance';
-		const brandSymbol = isSymbol(customBrand) ? customBrand : Symbol(`Brand.${name}`);
+		const brandSymbol = isSymbol(customBrand) ? customBrand : Symbol.for(`Brand.${name}`);
 
 		const isInstance = (val: unknown): boolean => isBranded(val, brandSymbol);
 
@@ -418,8 +418,11 @@ export function Branded<T extends Constructor>(
 			try {
 				Object.defineProperty(value, Symbol.hasInstance, {
 					value: function (val: unknown) {
-						const customGuard = (this as any)?.[methodName];
-						return isCallable(customGuard) ? customGuard.call(this, val) : isInstance(val);
+						if (hasOwn(this, methodName)) {
+							const customGuard = (this as any)[methodName];
+							if (isCallable(customGuard)) return customGuard.call(this, val);
+						}
+						return isReference(val) && isReference(this?.prototype) && Object.prototype.isPrototypeOf.call(this.prototype, val);
 					},
 					configurable: true,
 					writable: false,

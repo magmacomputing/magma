@@ -362,10 +362,15 @@ export type PropertyResolver<T = any> = (tempo: Tempo) => T;
 
 export type MethodDictionary = Record<string | symbol, Function>;
 
+export type PropertyDescriptorDefinition<T = any> = Omit<PropertyDescriptor, 'set' | 'get'> & {
+	get?(this: any, instance?: any, ...args: any[]): T;
+	memo?: boolean;
+};
+
 export type PropertyDefinition =
 	| PropertyResolver
 	| Function
-	| (Omit<PropertyDescriptor, 'set'> & { memo?: boolean });
+	| PropertyDescriptorDefinition;
 
 export type PropertiesConfig = {
 	methods?: MethodDictionary;
@@ -518,7 +523,17 @@ export function defineProperties<Opts = any>(
 							def.value = desc.value;
 							def.writable = desc.writable ?? true;
 						}
-						if ('get' in desc) def.get = desc.get;
+						if ('get' in desc) {
+							if (isFunction(desc.get)) {
+								const getter = desc.get;
+								def.get = function (this: any) {
+									return (getter as any).call(this, this);
+								};
+							} else {
+								def.get = desc.get;
+							}
+						}
+						if ('set' in desc) def.set = desc.set;
 						Object.defineProperty(proto, key, def);
 					}
 				} else {
