@@ -1,5 +1,6 @@
 import { looseIndex } from '#library/object.library.js';
 import { isBranded } from '#library/assertion.library.js';
+import type { LiteralKey, RemoveIndex } from '#library/type.library.js';
 import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity } from '#library/symbol.library.js';
 export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity };
 
@@ -152,3 +153,4 @@ export const Token = looseIndex<string, symbol>()({
 	/** archival / inscription Roman year (e.g. MMXXVI) */		Ryy: Symbol('romanYearOnly'),
 });
 export type Token = typeof Token;
+

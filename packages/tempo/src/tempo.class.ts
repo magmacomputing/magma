@@ -1,11 +1,11 @@
 import '#library/temporal.polyfill.js';
 
-import { Immutable, Mutable, Serializable, StringTag } from '#library/decorator.library.js';
+import { Immutable, Mutable, Serializable, Branded } from '#library/decorator.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage, isTestEnvironment } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
-import { ownKeys, ownEntries, ownValues, unwrap, hasKey, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, ownValues, unwrap, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
@@ -36,7 +36,7 @@ import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
 import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, $Sandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -97,7 +97,7 @@ const intervalProxyHandler: ProxyHandler<typeof Interval> = {
  */
 @Serializable
 @Immutable
-@StringTag('Tempo')
+@Branded($Identity, 'Tempo')
 export class Tempo {
 	/** Interval class for checking overlaps and bounds between Temporal points */	static Interval = cast<t.IntervalConstructor>(new Proxy(Interval, intervalProxyHandler));
 
@@ -142,9 +142,6 @@ export class Tempo {
 	static [$Internal]() {
 		return ClassStates.get(this) ?? _global;
 	}
-
-	/** @internal brand check to distinguish Tempo objects from other objects */
-	get [$Identity](): true { return true }
 
 	/**
 	 * Registers event or period aliases and updates the corresponding snippet pattern.
@@ -801,10 +798,10 @@ export class Tempo {
 
 		if (isString(key) && key.includes('.')) {
 			const description = key.split('.').at(-1)!;						// use last segment as description
-			return Token[key as keyof typeof Token] ??= Symbol(description);
+			return Token[key] ??= Symbol(description);
 		}
 
-		return Token[key as keyof typeof Token] ?? Symbol.for(`$Tempo.${key}`);
+		return Token[key] ?? Symbol.for(`$Tempo.${key}`);
 	}
 
 	/** translates {layout} into an anchored, case-insensitive RegExp. */
@@ -819,9 +816,9 @@ export class Tempo {
 
 	/** Compares two `Tempo` instances or date-time values. Returns -1 (earlier), 0 (equal), or 1 (later). */
 	static compare(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options) {
-		const host = hasKey(this, $Identity) ? this : Tempo;
-		const one = host.isTempo(tempo1) ? tempo1 : new host(tempo1 as t.DateTime),
-			two = host.isTempo(tempo2) ? tempo2 : new host(tempo2 as t.DateTime);
+		const host: typeof Tempo = isCallable((this as any)?.isTempo) ? this : Tempo;
+		const one: Tempo = host.isTempo(tempo1) ? tempo1 : new host(tempo1 as t.DateTime),
+			two: Tempo = host.isTempo(tempo2) ? tempo2 : new host(tempo2 as t.DateTime);
 
 		return Number((one.epoch.ns > two.epoch.ns) || -(one.epoch.ns < two.epoch.ns)) + 0;
 	}
@@ -983,20 +980,9 @@ export class Tempo {
 	/** allow instanceof to work across module boundaries via the local brand symbol */
 	/** @internal */
 	static [$Identity] = true;
-	/**
-	 * Checks if an instance is a Tempo object using the brand symbol.
-	 * Allows instanceof to work across module boundaries.
-	 * @param instance - The instance to check
-	 * @returns True if the instance is a Tempo object
-	 */
-	static [Symbol.hasInstance](instance: any): boolean {
-		return hasKey(instance, $Identity);
-	}
 
-	/** check if a supplied variable is a valid Tempo instance */
-	static isTempo(instance?: any): instance is Tempo {
-		return instance instanceof Tempo;
-	}
+	/** Type guard to check if a supplied variable is a valid Tempo instance */
+	declare static isTempo: (instance?: unknown) => instance is Tempo;
 
 	/** check if a supplied variable is a valid Tempo sandbox subclass or instance */
 	static isSandbox = isSandbox;

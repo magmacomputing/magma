@@ -1,7 +1,7 @@
 import { protoType, getType, cast } from '#library/type.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { looseIndex } from '#library/object.library.js';
-import type { Singular, CountOf, AssertEqual, Cast, KeyOf, ValueOf, EntryOf } from '#library/type.library.js';
+import type { Singular, CountOf, AssertEqual, Cast, KeyOf, ValueOf, EntryOf, RemoveIndex, LiteralKey } from '#library/type.library.js';
 
 describe('Type Library (Compile-Time)', () => {
 	it('should correctly resolve KeyOf, ValueOf, and correlated EntryOf', () => {
@@ -71,6 +71,21 @@ describe('Type Library (Compile-Time)', () => {
 
 		expect(testValid).toBe(true);
 		expect(testFallback).toBe(true);
+	});
+
+	it('should correctly strip index signatures via RemoveIndex and LiteralKey', () => {
+		const looseObj = looseIndex<string, symbol>()({
+			foo: Symbol('foo'),
+			bar: Symbol('bar'),
+		});
+		type LooseObj = typeof looseObj;
+
+		type Cleaned = RemoveIndex<LooseObj>;
+		const testRemoveIndex: AssertEqual<keyof Cleaned, 'foo' | 'bar'> = true;
+		expect(testRemoveIndex).toBe(true);
+
+		const testLiteralKey: AssertEqual<LiteralKey<LooseObj>, 'foo' | 'bar'> = true;
+		expect(testLiteralKey).toBe(true);
 	});
 });
 

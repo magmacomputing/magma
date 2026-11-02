@@ -237,8 +237,13 @@ export type EntryOf<T extends Obj | readonly any[]> =
 	? [number, T[number]]
 	: { [K in KeyOf<T> & PropertyKey]-?: [K, T[K & keyof T]] }[KeyOf<T> & PropertyKey];
 
+/** Removes generic index signatures (string, number, symbol) from an object type, preserving known literal properties */
+export type RemoveIndex<T> = {
+	[K in keyof T as string extends K ? never : number extends K ? never : symbol extends K ? never : K]: T[K];
+};
+
 /** extracts only the Literal string keys (not index signatures) from an object/interface */
-export type LiteralKey<T> = { [K in keyof T]: string extends K ? never : K }[keyof T] & string
+export type LiteralKey<T> = keyof RemoveIndex<T> & string;
 /** remove readonly from all keys */
 export type MutableObject<T> = { -readonly [K in keyof T]: T[K]; }
 
