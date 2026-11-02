@@ -1,4 +1,5 @@
 import os from 'node:os';
+import fs from 'node:fs';
 import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -7,7 +8,11 @@ import path from 'node:path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isTS = __filename.endsWith('.ts');
-const WORKER_PATH = isTS ? path.join(__dirname, '../dist/worker.js') : path.join(__dirname, 'worker.js');
+const WORKER_PATH = isTS
+	? (fs.existsSync(path.join(__dirname, 'worker.ts'))
+		? path.join(__dirname, 'worker.ts')
+		: path.join(__dirname, '../dist/worker.js'))
+	: path.join(__dirname, 'worker.js');
 
 export interface BatchOptions {
 	/**
