@@ -212,6 +212,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						let versionKey: string | undefined;
 						let prevVersion: string | undefined;
 						let hadVersion = false;
+						let prevOwner: any;
 						if (plugin.version && isString(name)) {
 							let suffix = '';
 							if (pluginType === 'plugin') suffix = 'Plugin';
@@ -222,12 +223,14 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							versionKey = `${name}${name.endsWith(suffix) ? '' : suffix}`;
 							hadVersion = hasKey(rt.versions, versionKey);
 							prevVersion = rt.versions[versionKey];
+							prevOwner = rt.versionOwners?.get(versionKey);
+							const owner = state ?? TempoClass;
 							rt.versions[versionKey] = plugin.version;
-							rt.versionOwners?.set(versionKey, state ?? TempoClass);
+							rt.versionOwners?.set(versionKey, owner);
 							if (state) {
-								if (!(state as any).writtenVersions) (state as any).writtenVersions = new Map<string, { prevVersion?: string; hadVersion: boolean }>();
+								if (!Object.hasOwn(state, 'writtenVersions')) (state as any).writtenVersions = new Map<string, { prevVersion?: string; hadVersion: boolean; prevOwner?: any }>();
 								if (!(state as any).writtenVersions.has(versionKey))
-									(state as any).writtenVersions.set(versionKey, { prevVersion, hadVersion });
+									(state as any).writtenVersions.set(versionKey, { prevVersion, hadVersion, prevOwner });
 							}
 						}
 						const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
@@ -253,7 +256,11 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 									} else {
 										delete rt.versions[versionKey];
 									}
-									rt.versionOwners?.delete(versionKey);
+									if (prevOwner) {
+										rt.versionOwners?.set(versionKey, prevOwner);
+									} else {
+										rt.versionOwners?.delete(versionKey);
+									}
 								}
 								if (name && state.config.pluginOptions) {
 									if (hadPluginOpts) {

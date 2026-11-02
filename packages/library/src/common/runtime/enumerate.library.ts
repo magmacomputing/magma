@@ -43,6 +43,17 @@ export function isEnum<T extends Property<any> = any>(val: unknown): val is Enum
 	return isBranded(val, $EnumBrand);
 }
 
+function isChainFrozen(obj: unknown): boolean {
+	if (!obj || (typeof obj !== 'object' && typeof obj !== 'function')) return false;
+	let curr: any = unwrap(obj as object);
+	while (curr && curr !== Object.prototype) {
+		if (typeof curr !== 'object' && typeof curr !== 'function') return false;
+		if (!Object.isFrozen(curr)) return false;
+		curr = Object.getPrototypeOf(curr);
+	}
+	return true;
+}
+
 /**
  * # Enum
  * Static reflection and helper suite for Enumify objects.
@@ -69,7 +80,7 @@ const enumMethods = {
 
 	/** Safely extract all enum member keys, immune to shadowing */
 	keys<T extends Property<any>>(enumObj: T): readonly KeyOf<T>[] {
-		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		const isFrozen = isChainFrozen(enumObj);
 		if (isFrozen) {
 			const cached = keysCache.get(enumObj);
 			if (cached) return cached as any;
@@ -81,7 +92,7 @@ const enumMethods = {
 
 	/** Safely extract all enum member values, immune to shadowing */
 	values<T extends Property<any>>(enumObj: T): readonly ValueOf<T>[] {
-		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		const isFrozen = isChainFrozen(enumObj);
 		if (isFrozen) {
 			const cached = valuesCache.get(enumObj);
 			if (cached) return cached as any;
@@ -93,7 +104,7 @@ const enumMethods = {
 
 	/** Safely extract [key, value] pairs, immune to shadowing */
 	entries<T extends Property<any>>(enumObj: T): readonly (readonly [KeyOf<T>, ValueOf<T>])[] {
-		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		const isFrozen = isChainFrozen(enumObj);
 		if (isFrozen) {
 			const cached = entriesCache.get(enumObj);
 			if (cached) return cached as any;
@@ -123,7 +134,7 @@ const enumMethods = {
 	 * Supports aliased enums (last-key-wins on duplicate values).
 	 */
 	invert<T extends Property<any>>(enumObj: T): Readonly<Invert<T>> {
-		const isFrozen = Object.isFrozen(unwrap(enumObj));
+		const isFrozen = isChainFrozen(enumObj);
 		if (isFrozen) {
 			const cached = invertCache.get(enumObj);
 			if (cached) return cached as any;

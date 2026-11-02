@@ -260,6 +260,29 @@ describe('defineProperties & defineProperty', () => {
 		expect(() => {
 			(bundle as any).install(Sub);
 		}).not.toThrow();
+		expect(Object.prototype.hasOwnProperty.call(Sub.prototype, 'ownedProp')).toBe(true);
+		expect(Object.prototype.hasOwnProperty.call(Sub.prototype, 'ownedMethod')).toBe(true);
+
+		// Sibling sandbox defining its own property with the same name throws
+		const Sibling = Tempo.derive({});
+		Object.defineProperty(Sibling.prototype, 'ownedProp', { value: 'siblingVal', configurable: true });
+		expect(() => {
+			(bundle as any).install(Sibling);
+		}).toThrow(/Cannot overwrite existing core property/);
+	});
+
+	it('rejects null getter during first-pass validation', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({ badProp: { get: null as any } }));
+		}).toThrow(/Invalid property definition/);
+	});
+
+	it('rejects descriptor with get and writable or value', () => {
+		const S = Tempo.derive({});
+		expect(() => {
+			S.use(defineProperties({ badProp: { get: () => 1, writable: false } as any }));
+		}).toThrow(/cannot define 'get' with 'value' or 'writable'/);
 	});
 
 	it('assigns unique distinct names to unnamed properties plugins', () => {

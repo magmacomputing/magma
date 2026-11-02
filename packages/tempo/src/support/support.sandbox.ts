@@ -1,5 +1,5 @@
 import { isString, isObject, isPlainObject, isUndefined, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
-import { ownKeys, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
+import { ownKeys, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
 
@@ -62,9 +62,27 @@ export function createSandbox<R>(
 	let disposed = false;
 	let state: any;
 
+	const getOwnerState = (owner: any): any => {
+		if (!owner) return undefined;
+		if (hasOwn(owner, 'writtenVersions')) return owner;
+		const s = ClassStates.get(owner);
+		if (s) return s;
+		return owner;
+	};
+
+	const isOwnerDisposed = (owner: any): boolean => {
+		if (!owner) return false;
+		if (owner === TempoClass) return false;
+		if (owner.disposed === true || owner.isDisposed === true) return true;
+		const s = getOwnerState(owner);
+		if (s?.disposed === true || s?.isDisposed === true) return true;
+		return false;
+	};
+
 	const cleanupSandbox = () => {
 		if (disposed) return;
 		disposed = true;
+		if (state) state.disposed = true;
 
 		if ((globalThis as any)[normalizedDiscovery as any] === data) {
 			const live = findLivePredecessor(prevDiscovery);
@@ -75,25 +93,57 @@ export function createSandbox<R>(
 			}
 		}
 
-		if (state?.writtenVersions) {
+		if (state && hasOwn(state, 'writtenVersions') && state.writtenVersions) {
 			const rt = getRuntime();
+			const myOwner = state;
+			const myClass = SandboxTempo;
+
 			for (const [vKey, vInfo] of state.writtenVersions.entries()) {
-				if (!rt.versionOwners || rt.versionOwners.get(vKey) === state || rt.versionOwners.get(vKey) === SandboxTempo) {
+				const currentOwner = rt.versionOwners?.get(vKey);
+				const isCurrentOwner = currentOwner === myOwner || currentOwner === myClass;
+
+				if (isCurrentOwner) {
 					if (vInfo.hadVersion && vInfo.prevVersion !== undefined) {
 						rt.versions[vKey] = vInfo.prevVersion;
 					} else {
 						delete rt.versions[vKey];
 					}
-					rt.versionOwners?.delete(vKey);
+
+					let pred = vInfo.prevOwner;
+					while (pred && isOwnerDisposed(pred)) {
+						const predState = getOwnerState(pred);
+						pred = predState?.writtenVersions?.get(vKey)?.prevOwner;
+					}
+
+					if (pred) {
+						rt.versionOwners?.set(vKey, pred);
+					} else {
+						rt.versionOwners?.delete(vKey);
+					}
 				} else {
-					const survivingOwner = rt.versionOwners.get(vKey);
-					const survivingState = survivingOwner?.writtenVersions
-						? survivingOwner
-						: ClassStates.get(survivingOwner as any);
-					const survivingInfo = survivingState?.writtenVersions?.get(vKey);
-					if (survivingInfo) {
-						survivingInfo.prevVersion = vInfo.prevVersion;
-						survivingInfo.hadVersion = vInfo.hadVersion;
+					let curr = currentOwner;
+					const chain: Array<{ owner: any; state: any; info: any }> = [];
+					while (curr) {
+						const s = getOwnerState(curr);
+						const info = s?.writtenVersions?.get(vKey);
+						chain.push({ owner: curr, state: s, info });
+						curr = info?.prevOwner;
+					}
+
+					const myIdx = chain.findIndex(node => node.owner === myOwner || node.owner === myClass || node.state === state);
+					if (myIdx > 0) {
+						let successorNode: { owner: any; state: any; info: any } | undefined;
+						for (let i = myIdx - 1; i >= 0; i--) {
+							if (!isOwnerDisposed(chain[i].owner)) {
+								successorNode = chain[i];
+								break;
+							}
+						}
+						if (successorNode?.info) {
+							successorNode.info.prevVersion = vInfo.prevVersion;
+							successorNode.info.hadVersion = vInfo.hadVersion;
+							successorNode.info.prevOwner = vInfo.prevOwner;
+						}
 					}
 				}
 			}

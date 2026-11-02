@@ -264,8 +264,11 @@ describe(`${label} now`, () => {
   })
 
   test('ignores value property passed in options', () => {
+    const before = Date.now();
     const t = Tempo.now({ value: '2020-01-01' } as any);
-    expect(t.epoch.ms).toBeGreaterThan(Date.now() - 5000);
+    const after = Date.now();
+    expect(t.epoch.ms).toBeGreaterThanOrEqual(before);
+    expect(t.epoch.ms).toBeLessThanOrEqual(after);
   })
 
   test('throws TypeError on non-object options such as legacy unit strings', () => {

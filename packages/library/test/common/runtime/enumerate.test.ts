@@ -239,4 +239,15 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.count(result)).toBe(2);
 		expect(Object.getPrototypeOf(result)).not.toBe(invalidModuleContext);
 	});
+
+	it('should not cache member lists if any prototype level in the chain is not frozen', () => {
+		const base = { A: 1 };
+		const derived = Object.freeze(Object.create(base, {
+			B: { value: 2, enumerable: true }
+		}));
+
+		expect(Enum.keys(derived)).toEqual(['A', 'B']);
+		(base as any).C = 3;
+		expect(Enum.keys(derived)).toEqual(['A', 'C', 'B']);
+	});
 });

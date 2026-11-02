@@ -23,8 +23,8 @@ function parseTopLevelReviewComments(rawBody) {
 
 	const sectionSpecs = [
 		{ type: 'Follow-up', pattern: /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>.*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i },
-		{ type: 'Nitpick', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?Nitpick comments[\s\S]*?<\/summary>/i },
-		{ type: 'Additional', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?Additional comments[\s\S]*?<\/summary>/i },
+		{ type: 'Nitpick', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i },
+		{ type: 'Additional', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i },
 	];
 
 	const sectionStarts = [];
@@ -45,26 +45,25 @@ function parseTopLevelReviewComments(rawBody) {
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
-	let overallEnd = normalized.length;
-	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastSecStart);
-		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
-	}
-
 	const itemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 	itemRegex.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
 	while ((imSearch = itemRegex.exec(normalized)) !== null) {
-		if (imSearch.index >= overallEnd) break;
 		const summaryText = imSearch[1].replace(/<[^>]+>/g, '').trim();
 		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
 			continue;
 		}
 		const closeTag = normalized.indexOf('</details>', imSearch.index);
-		if (closeTag !== -1 && closeTag < overallEnd) {
+		if (closeTag !== -1) {
 			lastItemEnd = Math.max(lastItemEnd, closeTag + '</details>'.length);
 		}
+	}
+
+	let overallEnd = normalized.length;
+	for (const marker of endMarkers) {
+		const idx = normalized.indexOf(marker, lastItemEnd);
+		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
 	const findings = [];
@@ -79,7 +78,7 @@ function parseTopLevelReviewComments(rawBody) {
 		let im;
 		while ((im = fileItemRegex.exec(secChunk)) !== null) {
 			const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
-			if (/^(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+			if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
 				continue;
 			}
 			itemPositions.push({ summary: summaryText, index: im.index });
@@ -117,7 +116,7 @@ function parseTopLevelReviewComments(rawBody) {
 				if (!line) line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
 			}
 
-			const ghBlobMatch = itemBlock.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/[^\/]+\/([^#\s)]+)(?:#L(\d+(?:-L\d+)?))?/);
+			const ghBlobMatch = itemBlock.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/[^\/]+\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/);
 			if (ghBlobMatch) {
 				if (!filePath) filePath = ghBlobMatch[1];
 				if (!line && ghBlobMatch[2]) line = ghBlobMatch[2].replace(/-L/, '-');

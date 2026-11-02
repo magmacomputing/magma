@@ -362,10 +362,24 @@ export type PropertyResolver<T = any> = (tempo: Tempo) => T;
 
 export type MethodDictionary = Record<string | symbol, Function>;
 
-export type PropertyDescriptorDefinition<T = any> = Omit<PropertyDescriptor, 'set' | 'get'> & {
-	get?(this: any, instance?: any, ...args: any[]): T;
-	memo?: boolean;
-};
+export type PropertyDescriptorDefinition<T = any> =
+	| {
+			configurable?: boolean;
+			enumerable?: boolean;
+			get(this: any, instance?: any, ...args: any[]): T;
+			set?: never;
+			value?: never;
+			writable?: never;
+			memo?: boolean;
+	  }
+	| {
+			configurable?: boolean;
+			enumerable?: boolean;
+			get?: never;
+			value?: any;
+			writable?: boolean;
+			memo?: never;
+	  };
 
 export type PropertyDefinition =
 	| PropertyResolver
@@ -377,7 +391,12 @@ export type PropertiesConfig = {
 	[key: string | symbol]: PropertyDefinition | MethodDictionary | undefined;
 };
 
-let unnamedPropertiesCounter = 0;
+const UNNAMED_PROPERTIES_COUNTER = Symbol.for('Tempo.unnamedPropertiesCounter');
+function nextUnnamedPropertiesId(): number {
+	const g = globalThis as any;
+	g[UNNAMED_PROPERTIES_COUNTER] = (g[UNNAMED_PROPERTIES_COUNTER] ?? 0) + 1;
+	return g[UNNAMED_PROPERTIES_COUNTER];
+}
 
 /**
  * ## defineProperties
@@ -393,8 +412,22 @@ export function defineProperties<Opts = any>(
 	name?: string,
 ): PluginFactory<Plugin<TempoType>, Opts> {
 	const weakCache = new WeakMap<object, Record<string | symbol, any>>();
-	const ownedKeys = new Set<PropertyKey>();
-	const pluginName = name ?? `PropertiesPlugin#${++unnamedPropertiesCounter}`;
+	const bundleHolders = new WeakMap<object, Set<PropertyKey>>();
+	const pluginName = name ?? `PropertiesPlugin#${nextUnnamedPropertiesId()}`;
+
+	function findPropertyHolder(target: any, propKey: PropertyKey): any {
+		let curr = target;
+		while (curr) {
+			if (Object.prototype.hasOwnProperty.call(curr, propKey)) return curr;
+			curr = Object.getPrototypeOf(curr);
+		}
+		return null;
+	}
+
+	function isKeyOwnedByBundle(target: any, propKey: PropertyKey): boolean {
+		const holder = findPropertyHolder(target, propKey);
+		return holder ? Boolean(bundleHolders.get(holder)?.has(propKey)) : false;
+	}
 
 	const plugin = cast<Plugin<TempoType>>({
 		name: pluginName,
@@ -413,7 +446,7 @@ export function defineProperties<Opts = any>(
 						if (seen.has(mKey))
 							throw new TempoError(`Tempo Security: Duplicate property definition '${String(mKey)}' in defineProperties bundle.`);
 						seen.add(mKey);
-						if (mKey in proto && !ownedKeys.has(mKey))
+						if (mKey in proto && !isKeyOwnedByBundle(proto, mKey))
 							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
 						if (!isFunction(mVal))
 							throw new TempoError(`Tempo Security: Invalid method definition for '${String(mKey)}'. Expected a function.`);
@@ -425,7 +458,7 @@ export function defineProperties<Opts = any>(
 					throw new TempoError(`Tempo Security: Duplicate property definition '${String(key)}' in defineProperties bundle.`);
 				seen.add(key);
 
-				if (key in proto && !ownedKeys.has(key))
+				if (key in proto && !isKeyOwnedByBundle(proto, key))
 					throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(key)}' on Tempo.prototype.`);
 
 				if (hasKey(value, 'set'))
@@ -434,7 +467,7 @@ export function defineProperties<Opts = any>(
 				if (hasKey(value, 'get') && (hasKey(value, 'value') || hasKey(value, 'writable')))
 					throw new TempoError(`Tempo Security: Descriptor for '${String(key)}' cannot define 'get' with 'value' or 'writable'.`);
 
-				if (hasKey(value, 'get') && isDefined(value.get) && !isFunction(value.get))
+				if (hasKey(value, 'get') && value.get !== undefined && !isFunction(value.get))
 					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
 
 				if (!isFunction(value) && !hasKey(value, 'get') && !hasKey(value, 'value')) {
@@ -443,10 +476,16 @@ export function defineProperties<Opts = any>(
 			}
 
 			// Second pass: Define validated properties
+			let holderKeys = bundleHolders.get(proto);
+			if (!holderKeys) {
+				holderKeys = new Set<PropertyKey>();
+				bundleHolders.set(proto, holderKeys);
+			}
+
 			for (const [key, value] of entries) {
 				if (key === 'methods' && isObject(value)) {
 					for (const [mKey, mVal] of ownEntries(value)) {
-						ownedKeys.add(mKey);
+						holderKeys.add(mKey);
 						Object.defineProperty(proto, mKey, {
 							value: mVal,
 							writable: true,
@@ -457,7 +496,7 @@ export function defineProperties<Opts = any>(
 					continue;
 				}
 
-				ownedKeys.add(key);
+				holderKeys.add(key);
 
 				if (isFunction(value)) {
 					// Function shorthand is treated as a lazy, auto-memoized getter resolver: (tempo: Tempo) => any

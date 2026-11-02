@@ -41,14 +41,15 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 			isFunction((val as any).evictExpired) &&
 			isFunction((val as any).isStatic) &&
 			isFunction((val as any).get) &&
-			isFunction((val as any).set)
+			isFunction((val as any).set) &&
+			isFunction((val as any).setStatic)
 		);
 
 	const isBoundedCacheOpt = isBounded(optionsCache);
 	if (isBoundedCacheOpt) {
 		return optionsCache as BoundedCache;
 	} else if (optionsCache instanceof Map || (optionsCache && isFunction((optionsCache as any).entries))) {
-		const targetCache = existingCache ?? new BoundedCache();
+		const targetCache = existingCache && isFunction(existingCache.setStatic) ? existingCache : new BoundedCache();
 		for (const [k, v] of (optionsCache as any).entries())
 			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
 		return targetCache;

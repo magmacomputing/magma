@@ -425,6 +425,59 @@ describe('Sandbox Factory Pattern', () => {
 		// Version from plugin1 should have been rolled back
 		expect(Tempo.versions['RollbackPluginPlugin']).toBeUndefined();
 	});
+
+	it('should hand version back to live predecessor across multi-sandbox lifecycles', () => {
+		const S_A = Tempo.derive({});
+		const S_B = Tempo.derive({});
+		const S_C = Tempo.derive({});
+
+		S_A.use({ name: 'Chained', version: '1.0.0', install: () => {} });
+		expect(Tempo.versions['ChainedPlugin']).toBe('1.0.0');
+
+		S_B.use({ name: 'Chained', version: '2.0.0', install: () => {} });
+		expect(Tempo.versions['ChainedPlugin']).toBe('2.0.0');
+
+		S_C.use({ name: 'Chained', version: '3.0.0', install: () => {} });
+		expect(Tempo.versions['ChainedPlugin']).toBe('3.0.0');
+
+		// Disposing non-owner A transfers predecessor info to B
+		S_A[Symbol.dispose]();
+		expect(Tempo.versions['ChainedPlugin']).toBe('3.0.0');
+
+		// Disposing owner C restores B's live version 2.0.0
+		S_C[Symbol.dispose]();
+		expect(Tempo.versions['ChainedPlugin']).toBe('2.0.0');
+
+		// Disposing B leaves no live sandbox, removing the version
+		S_B[Symbol.dispose]();
+		expect(Tempo.versions['ChainedPlugin']).toBeUndefined();
+	});
+
+	it('preserves predecessor owner on failed same-name install so version cleans up on disposal', () => {
+		const S_A = Tempo.derive({});
+		S_A.use({ name: 'Preserved', version: '1.0.0', install: () => {} });
+		expect(Tempo.versions['PreservedPlugin']).toBe('1.0.0');
+
+		const S_B = Tempo.derive({});
+		expect(() => {
+			S_B.use({
+				name: 'Preserved',
+				version: '2.0.0',
+				type: 'properties',
+				install: () => {
+					throw new Error('install failed');
+				}
+			});
+		}).toThrow('install failed');
+
+		// Version restored to 1.0.0 and owned by S_A
+		expect(Tempo.versions['PreservedPlugin']).toBe('1.0.0');
+
+		// Disposing S_A cleanly removes the version
+		S_A[Symbol.dispose]();
+		expect(Tempo.versions['PreservedPlugin']).toBeUndefined();
+		S_B[Symbol.dispose]();
+	});
 });
 
 
