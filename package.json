@@ -18,6 +18,7 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "test:leaks": "cross-env NODE_OPTIONS=\"--expose-gc\" vitest run",
     "review:agent": "coderabbit review --agent",
     "review:uncommitted": "coderabbit review --agent --uncommitted",
     "review:pr": "tempo-cli review-pr",

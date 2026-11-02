@@ -244,6 +244,7 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:leaks": "cross-env NODE_OPTIONS=\"--expose-gc\" vitest run",
     "test:dist": "TEST_DIST=true vitest run",
     "test:ci": "TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
     "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
