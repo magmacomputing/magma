@@ -65,7 +65,7 @@ export function createSandbox<R>(
 	const getOwnerState = (owner: any): any => {
 		if (!owner) return undefined;
 		if (hasOwn(owner, 'writtenVersions')) return owner;
-		const s = ClassStates.get(owner);
+		const s = ClassStates.get(owner) ?? (isFunction(owner?.[$Internal]) ? owner[$Internal]() : undefined);
 		if (s) return s;
 		return owner;
 	};
@@ -175,6 +175,9 @@ export function createSandbox<R>(
 			if (disposed) return { test: () => false };
 			const s = ClassStates.get(SandboxTempo as any);
 			return (s as any)?.[$guard] ?? { test: () => false };
+		}
+		static [$Internal]() {
+			return ClassStates.get(this) ?? state;
 		}
 		get isSandbox(): boolean {
 			return isSandbox(this);

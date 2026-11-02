@@ -166,7 +166,7 @@ describe('Sandbox Factory Pattern', () => {
 			}
 		};
 		const Sandbox = Tempo.derive({ discovery });
-		
+
 		const t = new Sandbox('2026-06-03 12:00:00', { timeZone: 'sandbox_tz' });
 		expect(t.format('sandboxed_fmt')).toBe('03/06/2026');
 	});
@@ -248,7 +248,7 @@ describe('Sandbox Factory Pattern', () => {
 		expect((instance as any)[$guard].test('now')).toBe(true);
 
 		// Prior to disposal, installed modules report true
-		Sandbox.use({ name: 'ActiveModule', install: () => {} });
+		Sandbox.use({ name: 'ActiveModule', install: () => { } });
 		expect(Sandbox.hasModule('ActiveModule')).toBe(true);
 		expect(instance.hasModule('ActiveModule')).toBe(true);
 
@@ -285,6 +285,43 @@ describe('Sandbox Factory Pattern', () => {
 		expect((baseInstance as any).isSandbox).toBeUndefined();
 	});
 
+	it('should retain sandbox configuration rather than falling back to global config after disposal', () => {
+		const S = Tempo.derive({ locale: 'fr-FR', timeZone: 'Africa/Cairo' });
+		const beforeInst = new S('2026-01-01');
+		expect(beforeInst.locale).toBe('fr-FR');
+		expect(beforeInst.config.timeZone).toBe('Africa/Cairo');
+		expect(beforeInst.zdt.timeZoneId).toBe('Africa/Cairo');
+		expect(S.config.locale).toBe('fr-FR');
+		expect(S.config.timeZone).toBe('Africa/Cairo');
+
+		(S as any)[Symbol.dispose]();
+		expect((S as any).isDisposed).toBe(true);
+
+		// Disposed class retains its configuration instead of falling back to global
+		expect(S.config.locale).toBe('fr-FR');
+		expect(S.config.timeZone).toBe('Africa/Cairo');
+
+		// Construction after disposal retains sandbox configuration instead of falling back to global
+		const afterInst = new S('2026-01-01');
+		expect(afterInst.locale).toBe('fr-FR');
+		expect(afterInst.config.timeZone).toBe('Africa/Cairo');
+		expect(afterInst.zdt.timeZoneId).toBe('Africa/Cairo');
+		expect((afterInst as any).isDisposed).toBe(true);
+
+		// Mutation on instances retains sandbox configuration
+		const mutated = beforeInst.add({ days: 1 });
+		expect(mutated.locale).toBe('fr-FR');
+		expect(mutated.config.timeZone).toBe('Africa/Cairo');
+		expect(mutated.zdt.timeZoneId).toBe('Africa/Cairo');
+
+		// Derived children retain parent sandbox configuration
+		const child = (S as any).derive();
+		const childInst = new child('2026-01-01');
+		expect(childInst.locale).toBe('fr-FR');
+		expect(childInst.config.timeZone).toBe('Africa/Cairo');
+		expect(childInst.zdt.timeZoneId).toBe('Africa/Cairo');
+	});
+
 	it('should restore the nearest live predecessor when disposing named sandboxes out of order', () => {
 		const discKey = 'shared-predecessor-test';
 		const sb1 = Tempo.derive({ discovery: discKey });
@@ -312,12 +349,12 @@ describe('Sandbox Factory Pattern', () => {
 		const pluginA = {
 			name: 'TestPluginA',
 			version: '1.0.0',
-			install: () => {}
+			install: () => { }
 		};
 		const pluginB = {
 			name: 'TestPluginA',
 			version: '2.0.0',
-			install: () => {}
+			install: () => { }
 		};
 
 		const sbA = Tempo.derive();
@@ -407,7 +444,7 @@ describe('Sandbox Factory Pattern', () => {
 		const plugin1 = {
 			name: 'RollbackPlugin',
 			version: '3.0.0',
-			install: () => {}
+			install: () => { }
 		};
 		const failingPlugin = {
 			name: 'FailingInstallPlugin',
@@ -431,13 +468,13 @@ describe('Sandbox Factory Pattern', () => {
 		const S_B = Tempo.derive({});
 		const S_C = Tempo.derive({});
 
-		S_A.use({ name: 'Chained', version: '1.0.0', install: () => {} });
+		S_A.use({ name: 'Chained', version: '1.0.0', install: () => { } });
 		expect(Tempo.versions['ChainedPlugin']).toBe('1.0.0');
 
-		S_B.use({ name: 'Chained', version: '2.0.0', install: () => {} });
+		S_B.use({ name: 'Chained', version: '2.0.0', install: () => { } });
 		expect(Tempo.versions['ChainedPlugin']).toBe('2.0.0');
 
-		S_C.use({ name: 'Chained', version: '3.0.0', install: () => {} });
+		S_C.use({ name: 'Chained', version: '3.0.0', install: () => { } });
 		expect(Tempo.versions['ChainedPlugin']).toBe('3.0.0');
 
 		// Disposing non-owner A transfers predecessor info to B
@@ -455,7 +492,7 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('preserves predecessor owner on failed same-name install so version cleans up on disposal', () => {
 		const S_A = Tempo.derive({});
-		S_A.use({ name: 'Preserved', version: '1.0.0', install: () => {} });
+		S_A.use({ name: 'Preserved', version: '1.0.0', install: () => { } });
 		expect(Tempo.versions['PreservedPlugin']).toBe('1.0.0');
 
 		const S_B = Tempo.derive({});

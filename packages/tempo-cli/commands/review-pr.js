@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 /**
  * Executes a gh CLI command and returns trimmed stdout.
@@ -92,34 +93,57 @@ function parseTopLevelReviewComments(rawBody) {
 			let filePath = '';
 			let line = null;
 
-			const sumPath = item.summary.match(/^\s*([a-zA-Z0-9_\-\.\/ +]+?\.[a-zA-Z0-9]+)(?:\s*[:\-]\s*(\d+(?:-\d+)?))?(?:\s*[:\-]\s+.*|\s*$)/);
-			const allowedRootExt = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
-			if (sumPath && (sumPath[1].includes('/') || allowedRootExt.test(sumPath[1]))) {
-				filePath = sumPath[1].trim();
-				if (sumPath[2]) line = sumPath[2];
+			const reviewAtMatch = itemBlock.match(/Review comment at\s+@([^\s]+)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
+			if (reviewAtMatch) {
+				filePath = reviewAtMatch[1];
+				line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
 			}
 
-			const backtickPath = itemBlock.match(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/);
-			if (backtickPath && backtickPath[1].includes('/')) {
-				if (!filePath) filePath = backtickPath[1];
-				if (!line && backtickPath[2] && backtickPath[1] === filePath) line = backtickPath[2];
+			const ghBlobMatch = itemBlock.match(/(?:https?:\/\/)?github\.com\/[^\/]+\/[^\/]+\/blob\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/);
+			if (ghBlobMatch) {
+				const blobUrl = ghBlobMatch[0];
+				const afterBlob = ghBlobMatch[1];
+				const blobLine = ghBlobMatch[2] ? ghBlobMatch[2].replace(/-L/, '-') : null;
+				if (!line && blobLine) line = blobLine;
+
+				if (!filePath) {
+					const segments = afterBlob.split('/');
+					let matchedFile = '';
+					for (let i = 1; i < segments.length; i++) {
+						const candidate = segments.slice(i).join('/');
+						if (existsSync(candidate)) {
+							matchedFile = candidate;
+							break;
+						}
+					}
+					filePath = matchedFile || blobUrl;
+				}
+			}
+
+			if (!filePath) {
+				const sumPath = item.summary.match(/^\s*([a-zA-Z0-9_\-\.\/ +]+?\.[a-zA-Z0-9]+)(?:\s*[:\-]\s*(\d+(?:-\d+)?))?(?:\s*[:\-]\s+.*|\s*$)/);
+				const allowedRootExt = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
+				if (sumPath && (sumPath[1].includes('/') || allowedRootExt.test(sumPath[1]))) {
+					const candidate = sumPath[1].trim();
+					filePath = candidate;
+					if (sumPath[2] && !line) line = sumPath[2];
+				}
+			}
+
+			if (!filePath) {
+				const backtickPath = itemBlock.match(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/);
+				if (backtickPath && backtickPath[1].includes('/')) {
+					const candidate = backtickPath[1];
+					if (existsSync(candidate)) {
+						filePath = candidate;
+						if (backtickPath[2] && !line) line = backtickPath[2];
+					}
+				}
 			}
 
 			if (!line) {
 				const lineMatch = itemBlock.match(/`(\d+(?:-\d+)?)`:/);
 				if (lineMatch) line = lineMatch[1];
-			}
-
-			const reviewAtMatch = itemBlock.match(/Review comment at\s+@([^\s]+)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
-			if (reviewAtMatch) {
-				if (!filePath) filePath = reviewAtMatch[1];
-				if (!line) line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
-			}
-
-			const ghBlobMatch = itemBlock.match(/github\.com\/[^\/]+\/[^\/]+\/blob\/[^\/]+\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/);
-			if (ghBlobMatch) {
-				if (!filePath) filePath = ghBlobMatch[1];
-				if (!line && ghBlobMatch[2]) line = ghBlobMatch[2].replace(/-L/, '-');
 			}
 
 			if (!filePath && !line) continue;
