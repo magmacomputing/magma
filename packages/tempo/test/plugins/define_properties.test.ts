@@ -48,6 +48,50 @@ describe('defineProperties & defineProperty', () => {
 		expect(computations).toBe(2);
 	});
 
+	it('does not cache values on prototype when getters are evaluated on proto directly', () => {
+		const S = Tempo.derive({});
+		let fnCalls = 0;
+		let descCalls = 0;
+
+		S.use(defineProperties({
+			fnGetter: () => ++fnCalls,
+			descGetter: {
+				get: () => ++descCalls,
+				memo: true,
+			},
+		}));
+
+		// Access on prototype directly
+		const proto = S.prototype as any;
+		expect(proto.fnGetter).toBe(1);
+		expect(proto.fnGetter).toBe(1);
+		expect(proto.descGetter).toBe(1);
+		expect(proto.descGetter).toBe(1);
+
+		// Proto should keep its getter and not have an own value property
+		const fnDesc = Object.getOwnPropertyDescriptor(proto, 'fnGetter');
+		expect(typeof fnDesc?.get).toBe('function');
+		expect(fnDesc?.value).toBeUndefined();
+
+		const descDesc = Object.getOwnPropertyDescriptor(proto, 'descGetter');
+		expect(typeof descDesc?.get).toBe('function');
+		expect(descDesc?.value).toBeUndefined();
+
+		// Real instances compute independently and memoize
+		const t = new S();
+		expect((t as any).fnGetter).toBe(2);
+		expect((t as any).fnGetter).toBe(2);
+		expect((t as any).descGetter).toBe(2);
+		expect((t as any).descGetter).toBe(2);
+
+		// Extensible instances receive own property
+		const plain = Object.create(proto);
+		expect(plain.fnGetter).toBe(3);
+		expect(Object.getOwnPropertyDescriptor(plain, 'fnGetter')?.value).toBe(3);
+		expect(plain.descGetter).toBe(3);
+		expect(Object.getOwnPropertyDescriptor(plain, 'descGetter')?.value).toBe(3);
+	});
+
 	it('supports unmemoized getters via explicit descriptor', () => {
 		const S = Tempo.derive({});
 		let counter = 0;
@@ -193,6 +237,38 @@ describe('defineProperties & defineProperty', () => {
 
 		const t = new S('2026-10-31');
 		expect((t as any).baz).toBe('valBaz');
+	});
+
+	it('allows reinstalling property bundles on subclasses or same class when keys are owned by the plugin', () => {
+		const S = Tempo.derive({});
+		const bundle = defineProperties({
+			ownedProp: () => 'ownedVal',
+			methods: {
+				ownedMethod() { return 'methodVal'; },
+			},
+		});
+
+		S.use(bundle);
+		// Re-invoking install of the same bundle instance does not throw
+		expect(() => {
+			(bundle as any).install(S);
+		}).not.toThrow();
+
+		// Subclass inheriting prototype
+		const Sub = Tempo.derive({});
+		Object.setPrototypeOf(Sub.prototype, S.prototype);
+		expect(() => {
+			(bundle as any).install(Sub);
+		}).not.toThrow();
+	});
+
+	it('assigns unique distinct names to unnamed properties plugins', () => {
+		const p1 = defineProperties({ a: () => 1 });
+		const p2 = defineProperties({ b: () => 2 });
+
+		expect((p1 as any).name).toMatch(/^PropertiesPlugin#\d+$/);
+		expect((p2 as any).name).toMatch(/^PropertiesPlugin#\d+$/);
+		expect((p1 as any).name).not.toBe((p2 as any).name);
 	});
 
 	it('rejects per-property method dictionaries passed outside of methods block', () => {

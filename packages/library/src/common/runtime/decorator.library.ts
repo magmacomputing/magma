@@ -363,7 +363,12 @@ export function Branded<T extends Constructor>(
 			?? getClassName(value, contextName);
 
 		const name = rawName ? String(rawName).replace(/^\$/, '') : 'Instance';
-		const brandSymbol = isSymbol(customBrand) ? customBrand : Symbol.for(`Brand.${name}`);
+		const isExplicit = isString(customBrand) || isString(customName);
+		const brandSymbol = isSymbol(customBrand)
+			? customBrand
+			: isExplicit
+				? Symbol.for(`Brand.${name}`)
+				: Symbol(`Brand.${name}`);
 
 		const isInstance = (val: unknown): boolean => isBranded(val, brandSymbol);
 

@@ -876,7 +876,11 @@ export class Tempo {
 	 * @param options - Configuration options for this specific instance.
 	 */
 	static now(options?: Omit<t.Options, 'value'>): Tempo {
-		if (!options) return new this(instant());
+		if (isUndefined(options))
+			return new this(instant());
+		if (!isObject(options))
+			throw new TypeError(`Invalid options provided to Tempo.now(). Expected an options object, but received ${typeof options}. Note: In Tempo v5, Tempo.now() is an instance factory and no longer accepts legacy timestamp-unit strings.`);
+
 		const { value: _, ...opts } = options as any;
 		return new this(instant(), opts);
 	}
@@ -982,7 +986,9 @@ export class Tempo {
 	static [$Identity] = true;
 
 	/** Type guard to check if a supplied variable is a valid Tempo instance */
-	declare static isTempo: (instance?: unknown) => instance is Tempo;
+	static isTempo(instance?: unknown): instance is Tempo {
+		return isTempo(instance);
+	}
 
 	/** check if a supplied variable is a valid Tempo sandbox subclass or instance */
 	static isSandbox = isSandbox;

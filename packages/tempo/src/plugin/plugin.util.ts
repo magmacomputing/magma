@@ -377,6 +377,8 @@ export type PropertiesConfig = {
 	[key: string | symbol]: PropertyDefinition | MethodDictionary | undefined;
 };
 
+let unnamedPropertiesCounter = 0;
+
 /**
  * ## defineProperties
  * Defines custom instance properties (getters, methods, or descriptors) on Tempo instances.
@@ -384,16 +386,18 @@ export type PropertiesConfig = {
  *
  * @param properties - Dictionary of property definitions, methods, or getter resolvers
  * @param name - Optional plugin name identifier
- * @returns A registered properties plugin factory
+ * @returns A properties plugin factory
  */
 export function defineProperties<Opts = any>(
 	properties: PropertiesConfig,
 	name?: string,
 ): PluginFactory<Plugin<TempoType>, Opts> {
 	const weakCache = new WeakMap<object, Record<string | symbol, any>>();
+	const ownedKeys = new Set<PropertyKey>();
+	const pluginName = name ?? `PropertiesPlugin#${++unnamedPropertiesCounter}`;
 
 	const plugin = cast<Plugin<TempoType>>({
-		name: name ?? '',
+		name: pluginName,
 		version: TEMPO_VERSION,
 		[sym.$PluginType]: 'properties',
 		install(this: TempoType, TempoClass: TempoType) {
@@ -409,7 +413,7 @@ export function defineProperties<Opts = any>(
 						if (seen.has(mKey))
 							throw new TempoError(`Tempo Security: Duplicate property definition '${String(mKey)}' in defineProperties bundle.`);
 						seen.add(mKey);
-						if (mKey in proto)
+						if (mKey in proto && !ownedKeys.has(mKey))
 							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
 						if (!isFunction(mVal))
 							throw new TempoError(`Tempo Security: Invalid method definition for '${String(mKey)}'. Expected a function.`);
@@ -421,7 +425,7 @@ export function defineProperties<Opts = any>(
 					throw new TempoError(`Tempo Security: Duplicate property definition '${String(key)}' in defineProperties bundle.`);
 				seen.add(key);
 
-				if (key in proto)
+				if (key in proto && !ownedKeys.has(key))
 					throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(key)}' on Tempo.prototype.`);
 
 				if (hasKey(value, 'set'))
@@ -442,6 +446,7 @@ export function defineProperties<Opts = any>(
 			for (const [key, value] of entries) {
 				if (key === 'methods' && isObject(value)) {
 					for (const [mKey, mVal] of ownEntries(value)) {
+						ownedKeys.add(mKey);
 						Object.defineProperty(proto, mKey, {
 							value: mVal,
 							writable: true,
@@ -451,6 +456,8 @@ export function defineProperties<Opts = any>(
 					}
 					continue;
 				}
+
+				ownedKeys.add(key);
 
 				if (isFunction(value)) {
 					// Function shorthand is treated as a lazy, auto-memoized getter resolver: (tempo: Tempo) => any
@@ -468,7 +475,7 @@ export function defineProperties<Opts = any>(
 							}
 							cache![key] = result;
 
-							if (Reflect.isExtensible(this)) {
+							if (this !== proto && Reflect.isExtensible(this)) {
 								Object.defineProperty(this, key, {
 									value: result,
 									writable: false,
@@ -502,7 +509,7 @@ export function defineProperties<Opts = any>(
 								}
 								cache![key] = result;
 
-								if (Reflect.isExtensible(this)) {
+								if (this !== proto && Reflect.isExtensible(this)) {
 									Object.defineProperty(this, key, {
 										value: result,
 										writable: false,
@@ -551,9 +558,9 @@ export function defineProperties<Opts = any>(
 		};
 	};
 
-	const { name: pluginName, ...rest } = plugin;
+	const { name: pName, ...rest } = plugin;
 	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'properties' });
-	Object.defineProperty(result, 'name', { value: pluginName ?? '', configurable: true });
+	Object.defineProperty(result, 'name', { value: pName ?? '', configurable: true });
 
 	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
 }

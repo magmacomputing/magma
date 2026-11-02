@@ -45,25 +45,26 @@ function parseTopLevelReviewComments(rawBody) {
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
+	let overallEnd = normalized.length;
+	for (const marker of endMarkers) {
+		const idx = normalized.indexOf(marker, lastSecStart);
+		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
+	}
+
 	const itemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 	itemRegex.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
 	while ((imSearch = itemRegex.exec(normalized)) !== null) {
+		if (imSearch.index >= overallEnd) break;
 		const summaryText = imSearch[1].replace(/<[^>]+>/g, '').trim();
-		if (/^(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
 			continue;
 		}
 		const closeTag = normalized.indexOf('</details>', imSearch.index);
-		if (closeTag !== -1) {
+		if (closeTag !== -1 && closeTag < overallEnd) {
 			lastItemEnd = Math.max(lastItemEnd, closeTag + '</details>'.length);
 		}
-	}
-
-	let overallEnd = normalized.length;
-	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastItemEnd);
-		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
 	const findings = [];

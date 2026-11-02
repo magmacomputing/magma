@@ -194,15 +194,7 @@ export function createSandbox<R>(
 
 		Object.freeze(SandboxTempo);
 	} catch (err) {
-		if ((globalThis as any)[normalizedDiscovery as any] === data) {
-			const live = findLivePredecessor(prevDiscovery);
-			if (live) {
-				(globalThis as any)[normalizedDiscovery as any] = live;
-			} else {
-				delete (globalThis as any)[normalizedDiscovery as any];
-			}
-		}
-		ClassStates.delete(SandboxTempo as any);
+		cleanupSandbox();
 		throw err;
 	}
 

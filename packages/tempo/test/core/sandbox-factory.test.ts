@@ -402,6 +402,29 @@ describe('Sandbox Factory Pattern', () => {
 		// Post-resolution config remains consistent
 		expect(t.config.catch).toBe(true);
 	});
+
+	it('should roll back recorded versions if plugin setup fails', () => {
+		const plugin1 = {
+			name: 'RollbackPlugin',
+			version: '3.0.0',
+			install: () => {}
+		};
+		const failingPlugin = {
+			name: 'FailingInstallPlugin',
+			install: () => {
+				throw new Error('Install failed');
+			}
+		};
+
+		expect(() => {
+			Tempo.derive({
+				plugins: [plugin1, failingPlugin]
+			});
+		}).toThrow('Install failed');
+
+		// Version from plugin1 should have been rolled back
+		expect(Tempo.versions['RollbackPluginPlugin']).toBeUndefined();
+	});
 });
 
 

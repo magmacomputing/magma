@@ -255,10 +255,12 @@ describe(`${label} now`, () => {
   })
 
   test('captures call-time timestamp when mode: "defer"', async () => {
+    const before = Date.now();
     const t = Tempo.now({ mode: Tempo.enums.MODE.Defer });
-    const callTimeMs = Date.now();
+    const after = Date.now();
     await new Promise(r => setTimeout(r, 20));
-    expect(Math.abs(t.epoch.ms - callTimeMs)).toBeLessThan(15);
+    expect(t.epoch.ms).toBeGreaterThanOrEqual(before);
+    expect(t.epoch.ms).toBeLessThanOrEqual(after);
   })
 
   test('ignores value property passed in options', () => {
@@ -266,6 +268,41 @@ describe(`${label} now`, () => {
     expect(t.epoch.ms).toBeGreaterThan(Date.now() - 5000);
   })
 
+  test('throws TypeError on non-object options such as legacy unit strings', () => {
+    expect(() => (Tempo.now as any)('ms')).toThrow(TypeError);
+    expect(() => (Tempo.now as any)('ms')).toThrow(/Expected an options object, but received string/);
+    expect(() => (Tempo.now as any)('ns')).toThrow(TypeError);
+    expect(() => (Tempo.now as any)(123)).toThrow(TypeError);
+    expect(() => (Tempo.now as any)(null)).toThrow(TypeError);
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tempo.isTempo
+// ─────────────────────────────────────────────────────────────────────────────
+describe(`${label} isTempo`, () => {
+  test('correctly identifies authentic Tempo instances', () => {
+    const t = new Tempo();
+    expect(Tempo.isTempo(t)).toBe(true);
+    expect(Tempo.isTempo(new Tempo('2026-01-01'))).toBe(true);
+
+    const Sandbox = Tempo.derive();
+    const s = new Sandbox('2026-01-01');
+    expect(Tempo.isTempo(s)).toBe(true);
+    expect(Sandbox.isTempo(s)).toBe(true);
+    expect(Sandbox.isTempo(t)).toBe(true);
+  })
+
+  test('rejects non-Tempo values, primitives, and plain objects', () => {
+    expect(Tempo.isTempo(null)).toBe(false);
+    expect(Tempo.isTempo(undefined)).toBe(false);
+    expect(Tempo.isTempo('2026-01-01')).toBe(false);
+    expect(Tempo.isTempo(123456789)).toBe(false);
+    expect(Tempo.isTempo({})).toBe(false);
+    expect(Tempo.isTempo({ toDateTime: () => {} })).toBe(false);
+    expect(Tempo.isTempo(new Date())).toBe(false);
+  })
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

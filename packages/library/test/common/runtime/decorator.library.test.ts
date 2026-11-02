@@ -353,4 +353,30 @@ describe('@Branded Decorator', () => {
     const a = new CopyA();
     expect((CopyB as any).isSharedService(a)).toBe(true);
   });
+
+  it('uses unique brand symbol for inferred class names so distinct classes do not cross-brand', () => {
+    @Branded
+    class InferredA {}
+
+    @Branded
+    class InferredB {}
+
+    const a = new InferredA();
+    expect((InferredA as any).isInferredA(a)).toBe(true);
+    expect((InferredB as any).isInferredB(a)).toBe(false);
+
+    // Bare @Branded() with same inferred name
+    function createBareClass() {
+      @Branded()
+      class LocalWorker {}
+      return LocalWorker;
+    }
+
+    const Class1 = createBareClass();
+    const Class2 = createBareClass();
+    const inst1 = new Class1();
+
+    expect((Class1 as any).isLocalWorker(inst1)).toBe(true);
+    expect((Class2 as any).isLocalWorker(inst1)).toBe(false);
+  });
 });
