@@ -627,6 +627,39 @@ describe('Sandbox Factory Pattern', () => {
 		(sb as any)[Symbol.dispose]();
 		expect(Tempo.versions['NestedPreservePlugin']).toBeUndefined();
 	});
+
+	it('restores previous version writer when nested install fails for the same version key', () => {
+		const sb = Tempo.derive({});
+		const outerPlugin: any = {
+			name: 'WriterTest',
+			version: '1.0.0',
+			install: (T: any) => {
+				// Attempt to install another plugin with the same versionKey that fails
+				expect(() => {
+					T.use({
+						name: 'WriterTestPlugin',
+						version: '2.0.0',
+						install: () => {
+							throw new Error('nested writer failed');
+						}
+					});
+				}).toThrow('nested writer failed');
+
+				// Outer version should still be maintained
+				expect(Tempo.versions['WriterTestPlugin']).toBe('1.0.0');
+				throw new Error('outer also failed');
+			}
+		};
+
+		expect(() => {
+			sb.use(outerPlugin);
+		}).toThrow('outer also failed');
+
+		// Outer rollback should have cleanly succeeded because prevWriter was restored
+		expect(Tempo.versions['WriterTestPlugin']).toBeUndefined();
+
+		(sb as any)[Symbol.dispose]();
+	});
 });
 
 

@@ -214,6 +214,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						let hadVersion = false;
 						let prevOwner: any;
 						let didRecordWrittenVersion = false;
+						let prevWriter: any;
 						if (plugin.version && isString(name)) {
 							let suffix = '';
 							if (pluginType === 'plugin') suffix = 'Plugin';
@@ -231,6 +232,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							if (state) {
 								if (!Object.hasOwn(state, 'writtenVersions')) (state as any).writtenVersions = new Map<string, { prevVersion?: string; hadVersion: boolean; prevOwner?: any }>();
 								if (!Object.hasOwn(state, 'versionWriters')) (state as any).versionWriters = new Map<string, any>();
+								prevWriter = (state as any).versionWriters.get(versionKey);
 								(state as any).versionWriters.set(versionKey, plugin);
 								if (!(state as any).writtenVersions.has(versionKey)) {
 									(state as any).writtenVersions.set(versionKey, { prevVersion, hadVersion, prevOwner });
@@ -258,7 +260,9 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							if (versionKey) {
 								const stillOwnsVersion =
 									(!rt.versionOwners || rt.versionOwners.get(versionKey) === (state ?? TempoClass)) &&
-									(state && (state as any).versionWriters ? (state as any).versionWriters.get(versionKey) === plugin : rt.versions[versionKey] === plugin.version);
+									(state && (state as any).versionWriters
+										? (state as any).versionWriters.get(versionKey) === plugin
+										: rt.versions[versionKey] === plugin.version);
 
 								if (stillOwnsVersion) {
 									if (hadVersion && prevVersion !== undefined) {
@@ -273,8 +277,10 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 									}
 									if (didRecordWrittenVersion && state && (state as any).writtenVersions)
 										(state as any).writtenVersions.delete(versionKey);
-									if (state && (state as any).versionWriters)
-										(state as any).versionWriters.delete(versionKey);
+									if (state && (state as any).versionWriters) {
+										if (prevWriter) (state as any).versionWriters.set(versionKey, prevWriter);
+										else (state as any).versionWriters.delete(versionKey);
+									}
 								}
 							}
 

@@ -243,6 +243,13 @@ jobs:
             local ver
             ver=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$pkg_json')).version)")
 
+            local manifest_name
+            manifest_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$pkg_json')).name)")
+            if [ "$pkg" != "$manifest_name" ]; then
+              echo "❌ Error: Requested package '$pkg' does not match manifest name '$manifest_name' in $pkg_json"
+              exit 1
+            fi
+
             echo "🔍 Preflight check for $pkg@$ver on npm registry..."
             
             local remote_ver=""

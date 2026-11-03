@@ -24,7 +24,7 @@ function fileExistsInRef(ref, filePath) {
 	}
 }
 
-function resolveExistingPath(candidate) {
+function resolveExistingPath(candidate, ref = null) {
 	if (!candidate) return null;
 	const root = getRepoRoot();
 	const toTest = [];
@@ -42,6 +42,10 @@ function resolveExistingPath(candidate) {
 			const rel = path.relative(root, abs);
 			if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) continue;
 			if (existsSync(abs)) return rel.split(path.sep).join('/');
+			if (ref) {
+				const gitRel = rel.split(path.sep).join('/');
+				if (fileExistsInRef(ref, gitRel)) return gitRel;
+			}
 		}
 	}
 	return null;
@@ -108,11 +112,12 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			closeEnd = imSearch.index + cr.index + cr[0].length;
 		} else {
 			let d = 0;
-			const detailTagRegex = /<\/?details\b[^>]*>/gi;
+			const detailTagRegex = /(`{3,}|~{3,})[\s\S]*?(?:\1|$)|(<\/?details\b[^>]*>)/gi;
 			detailTagRegex.lastIndex = imSearch.index;
 			let dMatch;
 			while ((dMatch = detailTagRegex.exec(normalized)) !== null) {
-				if (dMatch[0].startsWith('</details')) {
+				if (!dMatch[2]) continue;
+				if (dMatch[2].startsWith('</details')) {
 					d--;
 					if (d <= 0) {
 						closeEnd = dMatch.index + dMatch[0].length;
@@ -140,18 +145,19 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		const nextStart = s + 1 < sectionStarts.length ? sectionStarts[s + 1].index : overallEnd;
 		const secChunk = normalized.slice(sec.index, nextStart);
 
-		const tagRegex = /<\/?details\b[^>]*>|<summary[^>]*>([\s\S]*?)<\/summary>/gi;
+		const tagRegex = /(`{3,}|~{3,})[\s\S]*?(?:\1|$)|(<\/?details\b[^>]*>|<summary[^>]*>([\s\S]*?)<\/summary>)/gi;
 		const itemPositions = [];
 		let depth = 0;
 		let im;
 		while ((im = tagRegex.exec(secChunk)) !== null) {
-			const tag = im[0];
+			if (!im[2]) continue;
+			const tag = im[2];
 			if (tag.startsWith('</details')) {
 				if (depth > 0) depth--;
 			} else if (tag.startsWith('<details')) {
 				depth++;
-			} else if (im[1] !== undefined && depth === 1) {
-				const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
+			} else if (im[3] !== undefined && depth === 1) {
+				const summaryText = im[3].replace(/<[^>]+>/g, '').trim();
 				if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText))
 					continue;
 				itemPositions.push({ summary: summaryText, index: im.index });
@@ -197,23 +203,19 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 				const afterBlob = ghBlobMatch[1];
 				blobLine = ghBlobMatch[2] ? ghBlobMatch[2].replace(/-L/, '-') : null;
 
+				const root = getRepoRoot();
 				const segments = afterBlob.split('/');
+				const splits = [];
 				for (let s = 1; s < segments.length; s++) {
 					const refCandidate = segments.slice(0, s).join('/');
-					const candidate = segments.slice(s).join('/');
-					const resolved = resolveExistingPath(candidate);
-					if (resolved) {
-						const root = getRepoRoot();
-						const matchesRef = !root || fileExistsInRef(refCandidate, resolved);
-						if (matchesRef) {
-							blobFilePath = resolved;
-							break;
-						}
-					}
+					const resolved = resolveExistingPath(segments.slice(s).join('/'), refCandidate);
+					if (resolved) splits.push({ refCandidate, resolved });
 				}
-				if (!blobFilePath) {
-					blobFilePath = blobUrl;
-				}
+				const localMatch = splits.find(({ refCandidate, resolved }) => !root || fileExistsInRef(refCandidate, resolved));
+				const prMatches = root && prRef ? splits.filter(({ resolved }) => fileExistsInRef(prRef, resolved)) : [];
+				if (localMatch) blobFilePath = localMatch.resolved;
+				else if (prMatches.length === 1) blobFilePath = prMatches[0].resolved;
+				else blobFilePath = blobUrl;
 			}
 
 			if (!filePath && blobFilePath)
@@ -226,7 +228,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 				for (const backtickMatch of itemBlock.matchAll(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/g)) {
 					const candidate = backtickMatch[1];
 					if (candidate.includes('/')) {
-						const resolved = resolveExistingPath(candidate);
+						const resolved = resolveExistingPath(candidate, prRef);
 						if (resolved) {
 							filePath = resolved;
 							if (backtickMatch[2] && !line) line = backtickMatch[2];
