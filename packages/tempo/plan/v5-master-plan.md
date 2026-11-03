@@ -55,9 +55,10 @@ Following the industry precedent established by Vite (`@vitejs/*`), Svelte (`@sv
   - Claim and initialize the **`@tempo-js`** (and defensive **`@tempo-fns`**) organization on npm under organization admin.
   - Claimed unscoped companion packages **`tempo-fns`** and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
   - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
-- [ ] **Step 2: File npm Name Dispute for `@tempojs` (Defensive Anti-Squatting)**:
-  - File a formal npm Name Dispute / transfer request with npm Support for the dormant `@tempojs` scope (abandoned by the Bebop RPC project).
-  - Once secured, maintain `@tempojs` defensively alongside `@tempo-js` to eliminate typosquatting and supply-chain confusion.
+- [x] **Step 2: File npm Name Disputes (Defensive Anti-Squatting)**:
+  - **`@tempojs` Scope Dispute**: Formal transfer request submitted to `support@npmjs.com` following 30-day unanswered outreach to Andrew Sampson (Oct 02 – Nov 03).
+  - **`tempojs` / `tempo-js` Unscoped Inquiry**: Direct outreach sent to Brendon Ribeiro (`brendondominic@gmail.com`) on Nov 03 requesting ownership/maintainer transfer for the dormant (2018) `tempojs` package (which will also unlock publishing `tempo-js`). Grace period active through early December 2026.
+  - Once secured, maintain defensively alongside `@tempo-js` to eliminate typosquatting and supply-chain confusion.
 - [ ] **Step 3: Establish Canonical Package Mapping**:
   | Current v4 Scope (`@magmacomputing/*`) | Target v5 Scope (`@tempo-js/*`) | Role / Exports |
   | :--- | :--- | :--- |

@@ -571,6 +571,62 @@ describe('Sandbox Factory Pattern', () => {
 		(sb as any)[Symbol.dispose]();
 		expect(Tempo.versions['MultiInstallPlugin']).toBeUndefined();
 	});
+
+	it('rolls back installed marker and version when a non-properties plugin install throws', () => {
+		const sb = Tempo.derive({});
+		expect(() => {
+			sb.use({
+				name: 'ThrowingModule',
+				version: '1.0.0',
+				type: 'module',
+				install: () => {
+					throw new Error('module install failed');
+				}
+			});
+		}).toThrow('module install failed');
+
+		expect(Tempo.versions['ThrowingModule']).toBeUndefined();
+
+		let retried = false;
+		sb.use({
+			name: 'ThrowingModule',
+			version: '1.0.1',
+			type: 'module',
+			install: () => {
+				retried = true;
+			}
+		});
+		expect(retried).toBe(true);
+		expect(Tempo.versions['ThrowingModule']).toBe('1.0.1');
+
+		(sb as any)[Symbol.dispose]();
+		expect(Tempo.versions['ThrowingModule']).toBeUndefined();
+	});
+
+	it('preserves same-key nested plugin version when outer install throws', () => {
+		const sb = Tempo.derive({});
+		expect(() => {
+			sb.use({
+				name: 'NestedPreserve',
+				version: '1.0.0',
+				type: 'properties',
+				install: (T: any) => {
+					T.use({
+						name: 'NestedPreservePlugin',
+						version: '2.0.0',
+						install: () => { }
+					});
+					throw new Error('outer install failed');
+				}
+			});
+		}).toThrow('outer install failed');
+
+		// The nested plugin version should be preserved despite outer failure
+		expect(Tempo.versions['NestedPreservePlugin']).toBe('2.0.0');
+
+		(sb as any)[Symbol.dispose]();
+		expect(Tempo.versions['NestedPreservePlugin']).toBeUndefined();
+	});
 });
 
 

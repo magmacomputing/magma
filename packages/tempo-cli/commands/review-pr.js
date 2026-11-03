@@ -38,11 +38,11 @@ function resolveExistingPath(candidate) {
 			if (existsSync(p)) return p;
 			continue;
 		}
-		if (existsSync(path.resolve(root, p))) return p;
-		const abs = path.resolve(p);
-		const rel = path.relative(root, abs);
-		if (existsSync(abs) && rel && !rel.startsWith('..') && !path.isAbsolute(rel))
-			return rel.split(path.sep).join('/')
+		for (const abs of [path.resolve(root, p), path.resolve(p)]) {
+			const rel = path.relative(root, abs);
+			if (!rel || rel.startsWith('..') || path.isAbsolute(rel)) continue;
+			if (existsSync(abs)) return rel.split(path.sep).join('/');
+		}
 	}
 	return null;
 }
@@ -107,12 +107,20 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		if (cr) {
 			closeEnd = imSearch.index + cr.index + cr[0].length;
 		} else {
-			const fallbackMatch = slice.match(/\n<\/blockquote><\/details>|\n<\/details>/i);
-			if (fallbackMatch) {
-				closeEnd = imSearch.index + fallbackMatch.index + fallbackMatch[0].length;
-			} else {
-				const closeTag = normalized.indexOf('</details>', imSearch.index);
-				if (closeTag !== -1) closeEnd = closeTag + '</details>'.length;
+			let d = 0;
+			const detailTagRegex = /<\/?details\b[^>]*>/gi;
+			detailTagRegex.lastIndex = imSearch.index;
+			let dMatch;
+			while ((dMatch = detailTagRegex.exec(normalized)) !== null) {
+				if (dMatch[0].startsWith('</details')) {
+					d--;
+					if (d <= 0) {
+						closeEnd = dMatch.index + dMatch[0].length;
+						break;
+					}
+				} else {
+					d++;
+				}
 			}
 		}
 		if (closeEnd !== -1)
@@ -132,14 +140,22 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		const nextStart = s + 1 < sectionStarts.length ? sectionStarts[s + 1].index : overallEnd;
 		const secChunk = normalized.slice(sec.index, nextStart);
 
-		const fileItemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
+		const tagRegex = /<\/?details\b[^>]*>|<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 		const itemPositions = [];
+		let depth = 0;
 		let im;
-		while ((im = fileItemRegex.exec(secChunk)) !== null) {
-			const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
-			if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText))
-				continue;
-			itemPositions.push({ summary: summaryText, index: im.index });
+		while ((im = tagRegex.exec(secChunk)) !== null) {
+			const tag = im[0];
+			if (tag.startsWith('</details')) {
+				if (depth > 0) depth--;
+			} else if (tag.startsWith('<details')) {
+				depth++;
+			} else if (im[1] !== undefined && depth === 1) {
+				const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
+				if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText))
+					continue;
+				itemPositions.push({ summary: summaryText, index: im.index });
+			}
 		}
 
 		for (let i = 0; i < itemPositions.length; i++) {
@@ -188,7 +204,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 					const resolved = resolveExistingPath(candidate);
 					if (resolved) {
 						const root = getRepoRoot();
-						const matchesRef = !root || fileExistsInRef(refCandidate, resolved) || (prRef && fileExistsInRef(prRef, resolved));
+						const matchesRef = !root || fileExistsInRef(refCandidate, resolved);
 						if (matchesRef) {
 							blobFilePath = resolved;
 							break;

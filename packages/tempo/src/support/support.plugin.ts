@@ -230,6 +230,8 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							rt.versionOwners?.set(versionKey, owner);
 							if (state) {
 								if (!Object.hasOwn(state, 'writtenVersions')) (state as any).writtenVersions = new Map<string, { prevVersion?: string; hadVersion: boolean; prevOwner?: any }>();
+								if (!Object.hasOwn(state, 'versionWriters')) (state as any).versionWriters = new Map<string, any>();
+								(state as any).versionWriters.set(versionKey, plugin);
 								if (!(state as any).writtenVersions.has(versionKey)) {
 									(state as any).writtenVersions.set(versionKey, { prevVersion, hadVersion, prevOwner });
 									didRecordWrittenVersion = true;
@@ -240,34 +242,41 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						try {
 							plugin.install.call(TempoClass, TempoClass, installOpts);
 						} catch (error) {
-							if (pluginType === 'properties') {
-								if (name) installed.delete(name); else installed.delete(plugin);
-								if (state?.pluginsDb?.plugins) {
-									const pIdx = state.pluginsDb.plugins.indexOf(plugin);
-									if (pIdx >= 0) {
-										state.pluginsDb.plugins.splice(pIdx, 1);
-									} else if (name) {
-										const nIdx = state.pluginsDb.plugins.findIndex((p: any) => p?.name === name);
-										if (nIdx >= 0) state.pluginsDb.plugins.splice(nIdx, 1);
-									}
+							if (name) installed.delete(name); else installed.delete(plugin);
+							if (state?.pluginsDb?.plugins) {
+								const pIdx = state.pluginsDb.plugins.indexOf(plugin);
+								if (pIdx >= 0) {
+									state.pluginsDb.plugins.splice(pIdx, 1);
+								} else if (name) {
+									const nIdx = state.pluginsDb.plugins.findIndex((p: any) => p?.name === name);
+									if (nIdx >= 0) state.pluginsDb.plugins.splice(nIdx, 1);
 								}
-								const extIdx = rt.extensions.indexOf(plugin);
-								if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
-								if (versionKey && (!rt.versionOwners || rt.versionOwners.get(versionKey) === (state ?? TempoClass))) {
-									if (hadVersion && prevVersion !== undefined) {
-										rt.versions[versionKey] = prevVersion;
-									} else {
-										delete rt.versions[versionKey];
-									}
-									if (prevOwner) {
-										rt.versionOwners?.set(versionKey, prevOwner);
-									} else {
-										rt.versionOwners?.delete(versionKey);
-									}
-								}
-								if (didRecordWrittenVersion && versionKey && state && (state as any).writtenVersions)
-									(state as any).writtenVersions.delete(versionKey);
+							}
+							const extIdx = rt.extensions.indexOf(plugin);
+							if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
 
+							const stillOwnsVersion = versionKey &&
+								(!rt.versionOwners || rt.versionOwners.get(versionKey) === (state ?? TempoClass)) &&
+								(state && (state as any).versionWriters ? (state as any).versionWriters.get(versionKey) === plugin : rt.versions[versionKey] === plugin.version);
+
+							if (stillOwnsVersion) {
+								if (hadVersion && prevVersion !== undefined) {
+									rt.versions[versionKey] = prevVersion;
+								} else {
+									delete rt.versions[versionKey];
+								}
+								if (prevOwner) {
+									rt.versionOwners?.set(versionKey, prevOwner);
+								} else {
+									rt.versionOwners?.delete(versionKey);
+								}
+								if (didRecordWrittenVersion && state && (state as any).writtenVersions)
+									(state as any).writtenVersions.delete(versionKey);
+								if (state && (state as any).versionWriters)
+									(state as any).versionWriters.delete(versionKey);
+							}
+
+							if (pluginType === 'properties') {
 								if (name && state.config.pluginOptions) {
 									if (hadPluginOpts) {
 										state.config.pluginOptions[name] = prevPluginOpts;
