@@ -213,6 +213,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						let prevVersion: string | undefined;
 						let hadVersion = false;
 						let prevOwner: any;
+						let didRecordWrittenVersion = false;
 						if (plugin.version && isString(name)) {
 							let suffix = '';
 							if (pluginType === 'plugin') suffix = 'Plugin';
@@ -229,8 +230,10 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							rt.versionOwners?.set(versionKey, owner);
 							if (state) {
 								if (!Object.hasOwn(state, 'writtenVersions')) (state as any).writtenVersions = new Map<string, { prevVersion?: string; hadVersion: boolean; prevOwner?: any }>();
-								if (!(state as any).writtenVersions.has(versionKey))
+								if (!(state as any).writtenVersions.has(versionKey)) {
 									(state as any).writtenVersions.set(versionKey, { prevVersion, hadVersion, prevOwner });
+									didRecordWrittenVersion = true;
+								}
 							}
 						}
 						const installOpts = !isEmpty(resolvedOptions) ? resolvedOptions : options;
@@ -262,7 +265,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 										rt.versionOwners?.delete(versionKey);
 									}
 								}
-								if (versionKey && state && (state as any).writtenVersions)
+								if (didRecordWrittenVersion && versionKey && state && (state as any).writtenVersions)
 									(state as any).writtenVersions.delete(versionKey);
 
 								if (name && state.config.pluginOptions) {

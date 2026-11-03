@@ -14,18 +14,35 @@ function getRepoRoot() {
 	return repoRoot;
 }
 
+function fileExistsInRef(ref, filePath) {
+	if (!ref || !filePath) return false;
+	try {
+		execFileSync('git', ['cat-file', '-e', `${ref}:${filePath}`], { stdio: ['ignore', 'ignore', 'ignore'] });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
 function resolveExistingPath(candidate) {
 	if (!candidate) return null;
 	const root = getRepoRoot();
 	const toTest = [];
 	try {
 		toTest.push(decodeURIComponent(candidate));
-	} catch {}
+	} catch { }
 	toTest.push(candidate);
 
 	for (const p of toTest) {
-		if (existsSync(p)) return p;
-		if (root && existsSync(path.resolve(root, p))) return p;
+		if (!root) {
+			if (existsSync(p)) return p;
+			continue;
+		}
+		if (existsSync(path.resolve(root, p))) return p;
+		const abs = path.resolve(p);
+		const rel = path.relative(root, abs);
+		if (existsSync(abs) && rel && !rel.startsWith('..') && !path.isAbsolute(rel))
+			return rel.split(path.sep).join('/')
 	}
 	return null;
 }
@@ -45,7 +62,7 @@ function runGh(args) {
 /**
  * Parses top-level review body comments (Follow-up, Nitpicks, Additional comments).
  */
-function parseTopLevelReviewComments(rawBody) {
+function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 	if (!rawBody) return [];
 
 	// Strip markdown blockquote prefixes ("> ") from callout alert blocks so HTML tags parse cleanly
@@ -75,26 +92,37 @@ function parseTopLevelReviewComments(rawBody) {
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
-	let overallEnd = normalized.length;
-	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastSecStart);
-		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
-	}
-
 	const itemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 	itemRegex.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
 	while ((imSearch = itemRegex.exec(normalized)) !== null) {
-		if (imSearch.index >= overallEnd) break;
 		const summaryText = imSearch[1].replace(/<[^>]+>/g, '').trim();
-		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText)) {
 			continue;
 		}
-		const closeTag = normalized.indexOf('</details>', imSearch.index);
-		if (closeTag !== -1 && closeTag < overallEnd) {
-			lastItemEnd = Math.max(lastItemEnd, closeTag + '</details>'.length);
+		let closeEnd = -1;
+		const slice = normalized.slice(imSearch.index);
+		const cr = slice.match(/<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i);
+		if (cr) {
+			closeEnd = imSearch.index + cr.index + cr[0].length;
+		} else {
+			const fallbackMatch = slice.match(/\n<\/blockquote><\/details>|\n<\/details>/i);
+			if (fallbackMatch) {
+				closeEnd = imSearch.index + fallbackMatch.index + fallbackMatch[0].length;
+			} else {
+				const closeTag = normalized.indexOf('</details>', imSearch.index);
+				if (closeTag !== -1) closeEnd = closeTag + '</details>'.length;
+			}
 		}
+		if (closeEnd !== -1)
+			lastItemEnd = Math.max(lastItemEnd, closeEnd);
+	}
+
+	let overallEnd = normalized.length;
+	for (const marker of endMarkers) {
+		const idx = normalized.indexOf(marker, lastItemEnd);
+		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
 	const findings = [];
@@ -109,15 +137,21 @@ function parseTopLevelReviewComments(rawBody) {
 		let im;
 		while ((im = fileItemRegex.exec(secChunk)) !== null) {
 			const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
-			if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+			if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText))
 				continue;
-			}
 			itemPositions.push({ summary: summaryText, index: im.index });
 		}
 
 		for (let i = 0; i < itemPositions.length; i++) {
 			const item = itemPositions[i];
-			const itemEnd = i + 1 < itemPositions.length ? itemPositions[i + 1].index : secChunk.length;
+			let itemEnd;
+			if (i + 1 < itemPositions.length) {
+				itemEnd = itemPositions[i + 1].index;
+			} else if (s === sectionStarts.length - 1 && lastItemEnd > sec.index + item.index && lastItemEnd <= sec.index + secChunk.length) {
+				itemEnd = lastItemEnd - sec.index;
+			} else {
+				itemEnd = secChunk.length;
+			}
 			const itemBlock = secChunk.slice(item.index, itemEnd);
 
 			let filePath = '';
@@ -149,28 +183,28 @@ function parseTopLevelReviewComments(rawBody) {
 
 				const segments = afterBlob.split('/');
 				for (let s = 1; s < segments.length; s++) {
+					const refCandidate = segments.slice(0, s).join('/');
 					const candidate = segments.slice(s).join('/');
 					const resolved = resolveExistingPath(candidate);
 					if (resolved) {
-						blobFilePath = resolved;
-						break;
+						const root = getRepoRoot();
+						const matchesRef = !root || fileExistsInRef(refCandidate, resolved) || (prRef && fileExistsInRef(prRef, resolved));
+						if (matchesRef) {
+							blobFilePath = resolved;
+							break;
+						}
 					}
 				}
 				if (!blobFilePath) {
-					try {
-						blobFilePath = decodeURIComponent(segments.slice(1).join('/'));
-					} catch {
-						blobFilePath = blobUrl;
-					}
+					blobFilePath = blobUrl;
 				}
 			}
 
-			if (!filePath && blobFilePath) {
+			if (!filePath && blobFilePath)
 				filePath = blobFilePath;
-			}
-			if (filePath && blobFilePath === filePath && !line && blobLine) {
+
+			if (filePath && blobFilePath === filePath && !line && blobLine)
 				line = blobLine;
-			}
 
 			if (!filePath) {
 				for (const backtickMatch of itemBlock.matchAll(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/g)) {
@@ -389,7 +423,8 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 			.reverse()
 			.find(r => (r.author?.login === 'coderabbitai' || r.author?.login === 'coderabbitai[bot]') && r.body && r.body.trim().length > 0);
 
-		const topLevelFindings = latestCrReview ? parseTopLevelReviewComments(latestCrReview.body) : [];
+		const prRef = prInfo.headRefName || 'HEAD';
+		const topLevelFindings = latestCrReview ? parseTopLevelReviewComments(latestCrReview.body, prRef) : [];
 
 		const findings = [...threadFindings, ...topLevelFindings];
 

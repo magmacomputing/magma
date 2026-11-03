@@ -1,4 +1,4 @@
-import { isString, isObject, isPlainObject, isUndefined, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isDefined, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
 import { ownKeys, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
@@ -7,6 +7,7 @@ import { sym, $IsBase, $Internal, $guard, $setConfig, $setDiscovery, $Sandbox, i
 import { DISCOVERY, Enum } from './support.enum.js';
 import { ClassStates, getRuntime } from './support.runtime.js';
 import { init } from './support.init.js';
+import { usePlugin } from './support.plugin.js';
 import { setPatterns } from '../engine/engine.pattern.js';
 
 import type * as t from '../tempo.type.js';
@@ -168,12 +169,15 @@ export function createSandbox<R>(
 			cleanupSandbox();
 		}
 		static hasModule(name: string): boolean {
-			if (disposed) return false;
-			return (TempoClass as any).hasModule.call(this, name);
+			if (this === SandboxTempo ? disposed : Boolean((this as any)?.isDisposed)) return false;
+			const rt = getRuntime();
+			const mod = name === 'term' ? 'TermsModule' : name;
+			const internal = (this as any)[$Internal]?.();
+			return isDefined(rt.modules[mod]) || rt.installed.has(mod) || (internal?.pluginsDb?.plugins?.some((p: any) => p?.name === mod) ?? false);
 		}
 		static use(...args: any[]): any {
-			if (disposed) return this;
-			return (TempoClass as any).use.apply(this, args);
+			if (this === SandboxTempo ? disposed : Boolean((this as any)?.isDisposed)) return this;
+			return usePlugin(this as any, args);
 		}
 		static get [$guard]() {
 			if (disposed) return { test: () => false };

@@ -515,6 +515,62 @@ describe('Sandbox Factory Pattern', () => {
 		expect(Tempo.versions['PreservedPlugin']).toBeUndefined();
 		S_B[Symbol.dispose]();
 	});
+
+	it('allows child sandboxes to use modules and install plugins after parent disposal', () => {
+		const parent = Tempo.derive({});
+		parent.use({ name: 'SharedMod', install: () => { } });
+
+		const child = (parent as any).derive({});
+
+		expect(child.hasModule('SharedMod')).toBe(true);
+		expect(new child('2026-01-01').hasModule('SharedMod')).toBe(true);
+
+		(parent as any)[Symbol.dispose]();
+		expect((parent as any).isDisposed).toBe(true);
+		expect((child as any).isDisposed).toBe(false);
+
+		// Child static and instance hasModule still report true for usable modules
+		expect(child.hasModule('SharedMod')).toBe(true);
+		expect(new child('2026-01-01').hasModule('SharedMod')).toBe(true);
+
+		// Child can use plugins after parent disposal
+		let installedOnChild = false;
+		child.use({
+			name: 'ChildOnlyPlugin',
+			version: '1.0.0',
+			install: () => { installedOnChild = true; }
+		});
+		expect(installedOnChild).toBe(true);
+		(child as any)[Symbol.dispose]();
+	});
+
+	it('preserves writtenVersions across failed install in the same sandbox', () => {
+		const sb = Tempo.derive({});
+		sb.use({
+			name: 'MultiInstallPlugin',
+			version: '1.0.0',
+			install: () => { }
+		});
+		expect(Tempo.versions['MultiInstallPlugin']).toBe('1.0.0');
+
+		expect(() => {
+			sb.use({
+				name: 'MultiInstall',
+				version: '2.0.0',
+				type: 'properties',
+				install: () => {
+					throw new Error('second install failed');
+				}
+			});
+		}).toThrow('second install failed');
+
+		// Still 1.0.0
+		expect(Tempo.versions['MultiInstallPlugin']).toBe('1.0.0');
+
+		// On sandbox disposal, 1.0.0 is cleanly cleaned up
+		(sb as any)[Symbol.dispose]();
+		expect(Tempo.versions['MultiInstallPlugin']).toBeUndefined();
+	});
 });
 
 
