@@ -112,7 +112,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			closeEnd = imSearch.index + cr.index + cr[0].length;
 		} else {
 			let d = 0;
-			const detailTagRegex = /(`{3,}|~{3,})[\s\S]*?(?:\1|$)|(<\/?details\b[^>]*>)/gi;
+			const detailTagRegex = /(?:^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n[ \t]*\1[ \t]*(?:\n|$))|(<\/?details\b[^>]*>)/gim;
 			detailTagRegex.lastIndex = imSearch.index;
 			let dMatch;
 			while ((dMatch = detailTagRegex.exec(normalized)) !== null) {
@@ -145,7 +145,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		const nextStart = s + 1 < sectionStarts.length ? sectionStarts[s + 1].index : overallEnd;
 		const secChunk = normalized.slice(sec.index, nextStart);
 
-		const tagRegex = /(`{3,}|~{3,})[\s\S]*?(?:\1|$)|(<\/?details\b[^>]*>|<summary[^>]*>([\s\S]*?)<\/summary>)/gi;
+		const tagRegex = /(?:^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n[ \t]*\1[ \t]*(?:\n|$))|(<\/?details\b[^>]*>|<summary[^>]*>([\s\S]*?)<\/summary>)/gim;
 		const itemPositions = [];
 		let depth = 0;
 		let im;
