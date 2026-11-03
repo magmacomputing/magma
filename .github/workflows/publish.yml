@@ -214,18 +214,20 @@ jobs:
       - name: Publish Package(s) with Provenance
         env:
           INPUT_TAG: ${{ inputs.tag || 'auto' }}
+          NODE_AUTH_TOKEN: ${{ secrets.TEMPO_NPM_TOKEN || secrets.NPM_TOKEN }}
         run: |
           publish_pkg() {
             local pkg="$1"
             
             # Read exact version from workspace package.json
             local pkg_json=""
-            if [ "$pkg" = "@magmacomputing/tempo" ]; then
+            if [ "$pkg" = "@magmacomputing/tempo" ] || [ "$pkg" = "@tempo-js/core" ]; then
               pkg_json="packages/tempo/package.json"
-            elif [ "$pkg" = "@magmacomputing/tempo-fns" ]; then
+            elif [ "$pkg" = "@magmacomputing/tempo-fns" ] || [ "$pkg" = "@tempo-js/fns" ]; then
               pkg_json="packages/functions/package.json"
             else
               local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"
+              plugin_dir="${plugin_dir#@tempo-js/plugin-}"
               if [ -f "packages/plugins/$plugin_dir/package.json" ]; then
                 pkg_json="packages/plugins/$plugin_dir/package.json"
               elif [ -f "packages/plugins/tempo-plugin-$plugin_dir/package.json" ]; then

@@ -51,17 +51,19 @@ graph TD
 
 Following the industry precedent established by Vite (`@vitejs/*`), Svelte (`@sveltejs/*`), and Discord (`@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing JavaScript/TypeScript scope:
 
-- [ ] **Step 1: Claim `@tempo-js` Organization on npm**:
-  - Claim and initialize the **`@tempo-js`** organization on npm under organization admin.
-  - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`NPM_TOKEN`).
+- [x] **Step 1: Claim `@tempo-js` Organization and Unscoped Packages on npm**:
+  - Claim and initialize the **`@tempo-js`** (and defensive **`@tempo-fns`**) organization on npm under organization admin.
+  - Claimed unscoped companion packages **`tempo-fns`** and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
+  - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
 - [ ] **Step 2: File npm Name Dispute for `@tempojs` (Defensive Anti-Squatting)**:
   - File a formal npm Name Dispute / transfer request with npm Support for the dormant `@tempojs` scope (abandoned by the Bebop RPC project).
   - Once secured, maintain `@tempojs` defensively alongside `@tempo-js` to eliminate typosquatting and supply-chain confusion.
 - [ ] **Step 3: Establish Canonical Package Mapping**:
   | Current v4 Scope (`@magmacomputing/*`) | Target v5 Scope (`@tempo-js/*`) | Role / Exports |
   | :--- | :--- | :--- |
-  | `@magmacomputing/tempo` | **`@tempo-js/core`** | Fluent engine with subpath exports (`./parse`, `./format`, `./mutate`, `./duration`, `./library`, `./plugin/sdk`) |
-  | `@magmacomputing/tempo-fns` | **`@tempo-js/fns`** | Standalone functional date math & algorithms |
+  | `@magmacomputing/tempo` | **`@tempo-js/core`** | Fluent engine with subpath exports (`./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`, and **`./base`** for the minimal tree-shakeable kernel, migrated from v4 `./core`) |
+  | `@magmacomputing/tempo-fns` | **`tempo-fns`** / **`@tempo-js/fns`** | Standalone functional date math & algorithms for Temporal |
+  | `@magmacomputing/library` | **`tempo-lib`** / **`@tempo-js/lib`** | Modularized core primitives, assertions, type-guards, and reflection |
   | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-js/plugin-dialects`** | Moment / Day.js / Luxon / SQL format compatibility |
   | `@magmacomputing/tempo-plugin-ticker` | **`@tempo-js/plugin-ticker`** | High-precision reactive scheduler & pulse engine |
   | `@magmacomputing/tempo-plugin-ntp` | **`@tempo-js/plugin-ntp`** | Network Time Protocol clock drift synchronization |
