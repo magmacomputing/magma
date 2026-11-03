@@ -255,25 +255,27 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							const extIdx = rt.extensions.indexOf(plugin);
 							if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
 
-							const stillOwnsVersion = versionKey &&
-								(!rt.versionOwners || rt.versionOwners.get(versionKey) === (state ?? TempoClass)) &&
-								(state && (state as any).versionWriters ? (state as any).versionWriters.get(versionKey) === plugin : rt.versions[versionKey] === plugin.version);
+							if (versionKey) {
+								const stillOwnsVersion =
+									(!rt.versionOwners || rt.versionOwners.get(versionKey) === (state ?? TempoClass)) &&
+									(state && (state as any).versionWriters ? (state as any).versionWriters.get(versionKey) === plugin : rt.versions[versionKey] === plugin.version);
 
-							if (stillOwnsVersion) {
-								if (hadVersion && prevVersion !== undefined) {
-									rt.versions[versionKey] = prevVersion;
-								} else {
-									delete rt.versions[versionKey];
+								if (stillOwnsVersion) {
+									if (hadVersion && prevVersion !== undefined) {
+										rt.versions[versionKey] = prevVersion;
+									} else {
+										delete rt.versions[versionKey];
+									}
+									if (prevOwner) {
+										rt.versionOwners?.set(versionKey, prevOwner);
+									} else {
+										rt.versionOwners?.delete(versionKey);
+									}
+									if (didRecordWrittenVersion && state && (state as any).writtenVersions)
+										(state as any).writtenVersions.delete(versionKey);
+									if (state && (state as any).versionWriters)
+										(state as any).versionWriters.delete(versionKey);
 								}
-								if (prevOwner) {
-									rt.versionOwners?.set(versionKey, prevOwner);
-								} else {
-									rt.versionOwners?.delete(versionKey);
-								}
-								if (didRecordWrittenVersion && state && (state as any).writtenVersions)
-									(state as any).writtenVersions.delete(versionKey);
-								if (state && (state as any).versionWriters)
-									(state as any).versionWriters.delete(versionKey);
 							}
 
 							if (pluginType === 'properties') {
