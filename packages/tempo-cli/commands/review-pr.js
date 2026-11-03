@@ -1,5 +1,34 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import path from 'node:path';
+
+let repoRoot = null;
+function getRepoRoot() {
+	if (repoRoot === null) {
+		try {
+			repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+		} catch {
+			repoRoot = '';
+		}
+	}
+	return repoRoot;
+}
+
+function resolveExistingPath(candidate) {
+	if (!candidate) return null;
+	const root = getRepoRoot();
+	const toTest = [];
+	try {
+		toTest.push(decodeURIComponent(candidate));
+	} catch {}
+	toTest.push(candidate);
+
+	for (const p of toTest) {
+		if (existsSync(p)) return p;
+		if (root && existsSync(path.resolve(root, p))) return p;
+	}
+	return null;
+}
 
 /**
  * Executes a gh CLI command and returns trimmed stdout.
@@ -46,25 +75,26 @@ function parseTopLevelReviewComments(rawBody) {
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
+	let overallEnd = normalized.length;
+	for (const marker of endMarkers) {
+		const idx = normalized.indexOf(marker, lastSecStart);
+		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
+	}
+
 	const itemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 	itemRegex.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
 	while ((imSearch = itemRegex.exec(normalized)) !== null) {
+		if (imSearch.index >= overallEnd) break;
 		const summaryText = imSearch[1].replace(/<[^>]+>/g, '').trim();
-		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
 			continue;
 		}
 		const closeTag = normalized.indexOf('</details>', imSearch.index);
-		if (closeTag !== -1) {
+		if (closeTag !== -1 && closeTag < overallEnd) {
 			lastItemEnd = Math.max(lastItemEnd, closeTag + '</details>'.length);
 		}
-	}
-
-	let overallEnd = normalized.length;
-	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastItemEnd);
-		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
 	const findings = [];
@@ -79,7 +109,7 @@ function parseTopLevelReviewComments(rawBody) {
 		let im;
 		while ((im = fileItemRegex.exec(secChunk)) !== null) {
 			const summaryText = im[1].replace(/<[^>]+>/g, '').trim();
-			if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
+			if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits)/i.test(summaryText)) {
 				continue;
 			}
 			itemPositions.push({ summary: summaryText, index: im.index });
@@ -93,35 +123,14 @@ function parseTopLevelReviewComments(rawBody) {
 			let filePath = '';
 			let line = null;
 
-			const reviewAtMatch = itemBlock.match(/Review comment at\s+@([^\s]+)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
+			const reviewAtMatch = itemBlock.match(/Review comment at\s+@(.+?)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
 			if (reviewAtMatch) {
 				filePath = reviewAtMatch[1];
 				line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
 			}
 
-			const ghBlobMatch = itemBlock.match(/(?:https?:\/\/)?github\.com\/[^\/]+\/[^\/]+\/blob\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/);
-			if (ghBlobMatch) {
-				const blobUrl = ghBlobMatch[0];
-				const afterBlob = ghBlobMatch[1];
-				const blobLine = ghBlobMatch[2] ? ghBlobMatch[2].replace(/-L/, '-') : null;
-				if (!line && blobLine) line = blobLine;
-
-				if (!filePath) {
-					const segments = afterBlob.split('/');
-					let matchedFile = '';
-					for (let i = 1; i < segments.length; i++) {
-						const candidate = segments.slice(i).join('/');
-						if (existsSync(candidate)) {
-							matchedFile = candidate;
-							break;
-						}
-					}
-					filePath = matchedFile || blobUrl;
-				}
-			}
-
 			if (!filePath) {
-				const sumPath = item.summary.match(/^\s*([a-zA-Z0-9_\-\.\/ +]+?\.[a-zA-Z0-9]+)(?:\s*[:\-]\s*(\d+(?:-\d+)?))?(?:\s*[:\-]\s+.*|\s*$)/);
+				const sumPath = item.summary.match(/^\s*(?:[a-zA-Z]+\s+)?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)(?:\s*[:\-]\s*(\d+(?:-\d+)?))?(?:\s*[:\-]\s+.*|\s*$)/);
 				const allowedRootExt = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
 				if (sumPath && (sumPath[1].includes('/') || allowedRootExt.test(sumPath[1]))) {
 					const candidate = sumPath[1].trim();
@@ -130,13 +139,49 @@ function parseTopLevelReviewComments(rawBody) {
 				}
 			}
 
+			const ghBlobMatch = itemBlock.match(/(?:https?:\/\/)?github\.com\/[^\/]+\/[^\/]+\/blob\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/);
+			let blobFilePath = '';
+			let blobLine = null;
+			if (ghBlobMatch) {
+				const blobUrl = ghBlobMatch[0];
+				const afterBlob = ghBlobMatch[1];
+				blobLine = ghBlobMatch[2] ? ghBlobMatch[2].replace(/-L/, '-') : null;
+
+				const segments = afterBlob.split('/');
+				for (let s = 1; s < segments.length; s++) {
+					const candidate = segments.slice(s).join('/');
+					const resolved = resolveExistingPath(candidate);
+					if (resolved) {
+						blobFilePath = resolved;
+						break;
+					}
+				}
+				if (!blobFilePath) {
+					try {
+						blobFilePath = decodeURIComponent(segments.slice(1).join('/'));
+					} catch {
+						blobFilePath = blobUrl;
+					}
+				}
+			}
+
+			if (!filePath && blobFilePath) {
+				filePath = blobFilePath;
+			}
+			if (filePath && blobFilePath === filePath && !line && blobLine) {
+				line = blobLine;
+			}
+
 			if (!filePath) {
-				const backtickPath = itemBlock.match(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/);
-				if (backtickPath && backtickPath[1].includes('/')) {
-					const candidate = backtickPath[1];
-					if (existsSync(candidate)) {
-						filePath = candidate;
-						if (backtickPath[2] && !line) line = backtickPath[2];
+				for (const backtickMatch of itemBlock.matchAll(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/g)) {
+					const candidate = backtickMatch[1];
+					if (candidate.includes('/')) {
+						const resolved = resolveExistingPath(candidate);
+						if (resolved) {
+							filePath = resolved;
+							if (backtickMatch[2] && !line) line = backtickMatch[2];
+							break;
+						}
 					}
 				}
 			}
@@ -146,7 +191,7 @@ function parseTopLevelReviewComments(rawBody) {
 				if (lineMatch) line = lineMatch[1];
 			}
 
-			if (!filePath && !line) continue;
+			if (!filePath) continue;
 
 			const crId = itemBlock.match(/<!-- cr-comment:v1:([0-9a-fA-F]+) -->/);
 			const commentId = crId ? `cr_${crId[1]}` : null;

@@ -91,6 +91,6 @@ describe('Batch Plugin', () => {
 
 		const result = await (Tempo as any).batch(epochs, '+1w', { weeks: 1 });
 
-		expect(result).toHaveLength(2);
+		expect(result).toEqual(epochs.map(e => new Tempo(e).add({ weeks: 1 }).epoch.ms));
 	});
 });

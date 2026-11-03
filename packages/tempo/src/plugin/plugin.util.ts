@@ -364,22 +364,22 @@ export type MethodDictionary = Record<string | symbol, Function>;
 
 export type PropertyDescriptorDefinition<T = any> =
 	| {
-			configurable?: boolean;
-			enumerable?: boolean;
-			get(this: any, instance?: any, ...args: any[]): T;
-			set?: never;
-			value?: never;
-			writable?: never;
-			memo?: boolean;
-	  }
+		configurable?: boolean;
+		enumerable?: boolean;
+		get(this: any, instance?: any, ...args: any[]): T;
+		set?: never;
+		value?: never;
+		writable?: never;
+		memo?: boolean;
+	}
 	| {
-			configurable?: boolean;
-			enumerable?: boolean;
-			get?: never;
-			value?: any;
-			writable?: boolean;
-			memo?: never;
-	  };
+		configurable?: boolean;
+		enumerable?: boolean;
+		get?: never;
+		value?: any;
+		writable?: boolean;
+		memo?: never;
+	};
 
 export type PropertyDefinition =
 	| PropertyResolver
@@ -413,6 +413,9 @@ export function defineProperties<Opts = any>(
 ): PluginFactory<Plugin<TempoType>, Opts> {
 	const weakCache = new WeakMap<object, Record<string | symbol, any>>();
 	const bundleHolders = new WeakMap<object, Set<PropertyKey>>();
+	if (name && /^PropertiesPlugin#\d+$/i.test(name))
+		throw new TempoError(`Tempo Security: Plugin name '${name}' is reserved for generated properties bundles.`);
+
 	const pluginName = name ?? `PropertiesPlugin#${nextUnnamedPropertiesId()}`;
 
 	function findPropertyHolder(target: any, propKey: PropertyKey): any {
@@ -439,7 +442,15 @@ export function defineProperties<Opts = any>(
 
 			const seen = new Set<PropertyKey>();
 
-			// First pass: Validate every entry before defining any properties on prototype
+			type NormalizedDef =
+				| { type: 'method'; key: PropertyKey; value: Function }
+				| { type: 'fn'; key: PropertyKey; fn: Function }
+				| { type: 'memo'; key: PropertyKey; getter: Function; configurable: boolean; enumerable: boolean }
+				| { type: 'raw'; key: PropertyKey; desc: PropertyDescriptor };
+
+			const normalizedDefs: NormalizedDef[] = [];
+
+			// First pass: Validate and snapshot every entry before defining any properties on prototype
 			for (const [key, value] of entries) {
 				if (key === 'methods' && isObject(value)) {
 					for (const [mKey, mVal] of ownEntries(value)) {
@@ -450,6 +461,7 @@ export function defineProperties<Opts = any>(
 							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
 						if (!isFunction(mVal))
 							throw new TempoError(`Tempo Security: Invalid method definition for '${String(mKey)}'. Expected a function.`);
+						normalizedDefs.push({ type: 'method', key: mKey, value: mVal });
 					}
 					continue;
 				}
@@ -473,6 +485,35 @@ export function defineProperties<Opts = any>(
 				if (!isFunction(value) && !hasKey(value, 'get') && !hasKey(value, 'value')) {
 					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
 				}
+
+				if (isFunction(value)) {
+					normalizedDefs.push({ type: 'fn', key, fn: value });
+				} else if (hasKey(value, 'get') || hasKey(value, 'value')) {
+					const desc = value as PropertyDescriptor & { memo?: boolean };
+					const configurable = desc.configurable ?? true;
+					const enumerable = desc.enumerable ?? false;
+					if (isFunction(desc.get) && desc.memo !== false) {
+						normalizedDefs.push({ type: 'memo', key, getter: desc.get, configurable, enumerable });
+					} else {
+						const def: PropertyDescriptor = { configurable, enumerable };
+						if ('value' in desc) {
+							def.value = desc.value;
+							def.writable = desc.writable ?? true;
+						}
+						if ('get' in desc) {
+							if (isFunction(desc.get)) {
+								const getter = desc.get;
+								def.get = function (this: any) {
+									return (getter as any).call(this, this);
+								};
+							} else {
+								def.get = desc.get;
+							}
+						}
+						if ('set' in desc) def.set = desc.set;
+						normalizedDefs.push({ type: 'raw', key, desc: def });
+					}
+				}
 			}
 
 			// Second pass: Define validated properties
@@ -482,31 +523,30 @@ export function defineProperties<Opts = any>(
 				bundleHolders.set(proto, holderKeys);
 			}
 
-			for (const [key, value] of entries) {
-				if (key === 'methods' && isObject(value)) {
-					for (const [mKey, mVal] of ownEntries(value)) {
-						holderKeys.add(mKey);
-						Object.defineProperty(proto, mKey, {
-							value: mVal,
-							writable: true,
-							configurable: true,
-							enumerable: false,
-						});
-					}
+			for (const def of normalizedDefs) {
+				const existingDesc = Object.getOwnPropertyDescriptor(proto, def.key);
+				if (existingDesc && existingDesc.configurable === false)
 					continue;
-				}
 
-				holderKeys.add(key);
+				holderKeys.add(def.key);
 
-				if (isFunction(value)) {
-					// Function shorthand is treated as a lazy, auto-memoized getter resolver: (tempo: Tempo) => any
+				if (def.type === 'method') {
+					Object.defineProperty(proto, def.key, {
+						value: def.value,
+						writable: true,
+						configurable: true,
+						enumerable: false,
+					});
+				} else if (def.type === 'fn') {
+					const fn = def.fn;
+					const key = def.key;
 					Object.defineProperty(proto, key, {
 						get(this: any) {
 							let cache = weakCache.get(this);
 							if (cache && key in cache)
 								return cache[key];
 
-							const result = (value as any).call(this, this);
+							const result = (fn as any).call(this, this);
 
 							if (!cache) {
 								cache = Object.create(null);
@@ -528,62 +568,39 @@ export function defineProperties<Opts = any>(
 						configurable: true,
 						enumerable: false,
 					});
-				} else if (hasKey(value, 'get') || hasKey(value, 'value')) {
-					const desc = value as PropertyDescriptor & { memo?: boolean };
-					if (isFunction(desc.get) && desc.memo !== false) {
-						const getter = desc.get;
-						Object.defineProperty(proto, key, {
-							configurable: desc.configurable ?? true,
-							enumerable: desc.enumerable ?? false,
-							get(this: any) {
-								let cache = weakCache.get(this);
-								if (cache && key in cache)
-									return cache[key];
+				} else if (def.type === 'memo') {
+					const getter = def.getter;
+					const key = def.key;
+					Object.defineProperty(proto, key, {
+						configurable: def.configurable,
+						enumerable: def.enumerable,
+						get(this: any) {
+							let cache = weakCache.get(this);
+							if (cache && key in cache)
+								return cache[key];
 
-								const result = (getter as any).call(this, this);
+							const result = (getter as any).call(this, this);
 
-								if (!cache) {
-									cache = Object.create(null);
-									weakCache.set(this, cache!);
-								}
-								cache![key] = result;
-
-								if (this !== proto && Reflect.isExtensible(this)) {
-									Object.defineProperty(this, key, {
-										value: result,
-										writable: false,
-										enumerable: desc.enumerable ?? false,
-										configurable: desc.configurable ?? true,
-									});
-								}
-
-								return result;
-							},
-						});
-					} else {
-						const def: PropertyDescriptor = {
-							configurable: desc.configurable ?? true,
-							enumerable: desc.enumerable ?? false,
-						};
-						if ('value' in desc) {
-							def.value = desc.value;
-							def.writable = desc.writable ?? true;
-						}
-						if ('get' in desc) {
-							if (isFunction(desc.get)) {
-								const getter = desc.get;
-								def.get = function (this: any) {
-									return (getter as any).call(this, this);
-								};
-							} else {
-								def.get = desc.get;
+							if (!cache) {
+								cache = Object.create(null);
+								weakCache.set(this, cache!);
 							}
-						}
-						if ('set' in desc) def.set = desc.set;
-						Object.defineProperty(proto, key, def);
-					}
-				} else {
-					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
+							cache![key] = result;
+
+							if (this !== proto && Reflect.isExtensible(this)) {
+								Object.defineProperty(this, key, {
+									value: result,
+									writable: false,
+									enumerable: def.enumerable,
+									configurable: def.configurable,
+								});
+							}
+
+							return result;
+						},
+					});
+				} else if (def.type === 'raw') {
+					Object.defineProperty(proto, def.key, def.desc);
 				}
 			}
 		},

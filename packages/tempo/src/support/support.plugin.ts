@@ -262,6 +262,9 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 										rt.versionOwners?.delete(versionKey);
 									}
 								}
+								if (versionKey && state && (state as any).writtenVersions)
+									(state as any).writtenVersions.delete(versionKey);
+
 								if (name && state.config.pluginOptions) {
 									if (hadPluginOpts) {
 										state.config.pluginOptions[name] = prevPluginOpts;

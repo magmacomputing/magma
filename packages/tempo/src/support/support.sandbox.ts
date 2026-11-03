@@ -171,6 +171,10 @@ export function createSandbox<R>(
 			if (disposed) return false;
 			return (TempoClass as any).hasModule.call(this, name);
 		}
+		static use(...args: any[]): any {
+			if (disposed) return this;
+			return (TempoClass as any).use.apply(this, args);
+		}
 		static get [$guard]() {
 			if (disposed) return { test: () => false };
 			const s = ClassStates.get(SandboxTempo as any);

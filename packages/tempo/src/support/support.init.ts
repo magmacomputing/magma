@@ -42,7 +42,12 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 			isFunction((val as any).isStatic) &&
 			isFunction((val as any).get) &&
 			isFunction((val as any).set) &&
-			isFunction((val as any).setStatic)
+			isFunction((val as any).setStatic) &&
+			isFunction((val as any).has) &&
+			isFunction((val as any).delete) &&
+			isFunction((val as any).clear) &&
+			isFunction((val as any).entries) &&
+			isFunction((val as any).deletePrefix)
 		);
 
 	const isBoundedCacheOpt = isBounded(optionsCache);
