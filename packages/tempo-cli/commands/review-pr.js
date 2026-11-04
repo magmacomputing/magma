@@ -84,7 +84,7 @@ const FOLLOW_UP_SECTION_PATTERN = /(?:##\s*Follow-up\s*Comments|<summary>(?:<pic
 const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i;
 const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
 
-const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
+const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-ups?\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt (?:for|to)\b|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
 
 const ITEM_DETAILS_REGEX = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 const CR_COMMENT_CLOSE_PATTERN = /<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i;
@@ -138,16 +138,23 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
+	let scanLimit = normalized.length;
+	for (const marker of endMarkers) {
+		const idx = normalized.indexOf(marker, lastSecStart);
+		if (idx !== -1 && idx < scanLimit) scanLimit = idx;
+	}
+
 	ITEM_DETAILS_REGEX.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
 	while ((imSearch = ITEM_DETAILS_REGEX.exec(normalized)) !== null) {
+		if (imSearch.index >= scanLimit) break;
 		const summaryText = imSearch[1].replace(HTML_TAG_REGEX, '').trim();
 		if (SUMMARY_EXCLUSION_PATTERN.test(summaryText)) {
 			continue;
 		}
 		let closeEnd = -1;
-		const slice = normalized.slice(imSearch.index);
+		const slice = normalized.slice(imSearch.index, scanLimit);
 		const cr = slice.match(CR_COMMENT_CLOSE_PATTERN);
 		if (cr) {
 			closeEnd = imSearch.index + cr.index + cr[0].length;
@@ -172,7 +179,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			lastItemEnd = Math.max(lastItemEnd, closeEnd);
 	}
 
-	let overallEnd = normalized.length;
+	let overallEnd = scanLimit;
 	for (const marker of endMarkers) {
 		const idx = normalized.indexOf(marker, lastItemEnd);
 		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
@@ -196,7 +203,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 				if (depth > 0) depth--;
 			} else if (tag.startsWith('<details')) {
 				depth++;
-			} else if (im[3] !== undefined && depth === 1) {
+			} else if (im[3] !== undefined && (depth === 1 || depth === 2)) {
 				const summaryText = im[3].replace(HTML_TAG_REGEX, '').trim();
 				if (SUMMARY_EXCLUSION_PATTERN.test(summaryText))
 					continue;
@@ -234,7 +241,29 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 				}
 			}
 
-			const ghBlobMatch = itemBlock.match(GH_BLOB_URL_PATTERN);
+			let ghBlobMatch = null;
+			const labeledBlobMatch = itemBlock.match(/\[(?:[^\]]*?([a-zA-Z0-9_\-./@]+\.[a-zA-Z0-9]+)[^\]]*?)\]\((https?:\/\/github\.com\/[^\/]+\/[^\/]+\/blob\/[^)]+)\)/i);
+			if (labeledBlobMatch) {
+				ghBlobMatch = labeledBlobMatch[2].match(GH_BLOB_URL_PATTERN);
+			}
+			if (!ghBlobMatch) {
+				const prefixMatch = itemBlock.match(CLEAN_BODY_PREFIX_PATTERN);
+				const headerRegion = itemBlock.slice(0, prefixMatch ? prefixMatch[0].length + 300 : 400);
+				ghBlobMatch = headerRegion.match(GH_BLOB_URL_PATTERN);
+			}
+			if (!ghBlobMatch) {
+				for (const m of itemBlock.matchAll(new RegExp(GH_BLOB_URL_PATTERN.source, 'g'))) {
+					const candidatePath = m[1]?.split('/')?.pop();
+					if (candidatePath && item.summary.includes(candidatePath)) {
+						ghBlobMatch = m;
+						break;
+					}
+				}
+			}
+			if (!ghBlobMatch) {
+				ghBlobMatch = itemBlock.match(GH_BLOB_URL_PATTERN);
+			}
+
 			let blobFilePath = '';
 			let blobLine = null;
 			if (ghBlobMatch) {
@@ -263,10 +292,19 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			if (filePath && blobFilePath === filePath && !line && blobLine)
 				line = blobLine;
 
+			const prefixMatch = itemBlock.match(CLEAN_BODY_PREFIX_PATTERN);
+			const headerRegion = (item.summary || '') + '\n' + itemBlock.slice(0, prefixMatch ? prefixMatch[0].length + 200 : 300);
+
 			if (!filePath) {
 				for (const backtickMatch of itemBlock.matchAll(BACKTICK_FILE_PATH_PATTERN)) {
 					const candidate = backtickMatch[1];
-					if (candidate.includes('/')) {
+					const isNested = candidate.includes('/');
+					const isAttributed = !isNested && ALLOWED_ROOT_EXT_PATTERN.test(candidate) && (
+						Boolean(backtickMatch[2]) ||
+						headerRegion.includes(backtickMatch[0]) ||
+						/(?:file|path|in|at|from)\s+`[^`]*`$/i.test(itemBlock.slice(0, backtickMatch.index + backtickMatch[0].length))
+					);
+					if (isNested || isAttributed) {
 						const resolved = resolveExistingPath(candidate, prRef);
 						if (resolved) {
 							filePath = resolved;
@@ -278,7 +316,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			}
 
 			if (!line) {
-				const lineMatch = itemBlock.match(INLINE_LINE_NUMBER_PATTERN);
+				const lineMatch = headerRegion.match(INLINE_LINE_NUMBER_PATTERN);
 				if (lineMatch) line = lineMatch[1];
 			}
 
