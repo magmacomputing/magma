@@ -70,7 +70,7 @@ const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t
 const INLINE_FENCE_SOURCE = '(?:`{3,}[^\\n]*?`{3,})';
 const FENCE_SKIP_PREFIX = `${FENCE_BLOCK_SOURCE}|${INLINE_FENCE_SOURCE}`;
 
-const FILE_PATH_SOURCE = '([a-zA-Z0-9_\\-./]+\\.[a-zA-Z0-9]+)';
+const FILE_PATH_SOURCE = '([a-zA-Z0-9_\\-./@]+\\.[a-zA-Z0-9]+)';
 const LINE_RANGE_SOURCE = '(\\d+(?:-\\d+)?)';
 
 /**
@@ -80,9 +80,9 @@ const BLOCKQUOTE_PREFIX_REGEX = /^[ \t]*>[ \t]?/gm;
 const HTML_TAG_REGEX = /<[^>]+>/g;
 const ALLOWED_ROOT_EXT_PATTERN = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
 
-const FOLLOW_UP_SECTION_PATTERN = /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>.*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i;
-const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i;
-const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
+const FOLLOW_UP_SECTION_PATTERN = /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i;
+const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i;
+const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
 
 const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
 
@@ -100,8 +100,8 @@ const GH_LINE_RANGE_SEPARATOR_REGEX = /-L/;
 const BACKTICK_FILE_PATH_PATTERN = new RegExp(`\`${FILE_PATH_SOURCE}(?::${LINE_RANGE_SOURCE})?\``, 'g');
 const INLINE_LINE_NUMBER_PATTERN = new RegExp(`\`${LINE_RANGE_SOURCE}\`:`);
 
-const CLEAN_BODY_PREFIX_PATTERN = /<details[^>]*>\s*<summary[\s\S]*?<\/summary>\s*<blockquote>/i;
-const CLEAN_BODY_SUFFIX_PATTERN = /<\/blockquote>\s*<\/details>\s*$/i;
+const CLEAN_BODY_PREFIX_PATTERN = /^\s*<summary[^>]*>[\s\S]*?<\/summary>\s*<blockquote>/i;
+const CLEAN_BODY_SUFFIX_PATTERN = /<\/blockquote>\s*<\/details>\s*(?:<details[^>]*>\s*)?$/i;
 
 const PR_URL_PATTERN = /\/([^/]+)\/([^/]+)\/pull\/\d+/;
 
