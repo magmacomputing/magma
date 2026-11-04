@@ -64,18 +64,60 @@ function runGh(args) {
 }
 
 /**
+ * Reusable Markdown and token subpatterns.
+ */
+const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\1[`~]*[ \\t]*(?:\\n|$))';
+const INLINE_FENCE_SOURCE = '(?:`{3,}[^\\n]*?`{3,})';
+const FENCE_SKIP_PREFIX = `${FENCE_BLOCK_SOURCE}|${INLINE_FENCE_SOURCE}`;
+
+const FILE_PATH_SOURCE = '([a-zA-Z0-9_\\-./]+\\.[a-zA-Z0-9]+)';
+const LINE_RANGE_SOURCE = '(\\d+(?:-\\d+)?)';
+
+/**
+ * Patterns for parsing review comments, summaries, and Markdown constructs.
+ */
+const BLOCKQUOTE_PREFIX_REGEX = /^[ \t]*>[ \t]?/gm;
+const HTML_TAG_REGEX = /<[^>]+>/g;
+const ALLOWED_ROOT_EXT_PATTERN = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
+
+const FOLLOW_UP_SECTION_PATTERN = /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>.*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i;
+const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i;
+const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
+
+const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
+
+const ITEM_DETAILS_REGEX = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
+const CR_COMMENT_CLOSE_PATTERN = /<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i;
+const CR_COMMENT_ID_PATTERN = /<!-- cr-comment:v1:([0-9a-fA-F]+) -->/;
+
+const DETAIL_TAG_REGEX = new RegExp(`${FENCE_SKIP_PREFIX}|(<\\/?details\\b[^>]*>)`, 'gim');
+const SECTION_TAG_REGEX = new RegExp(`${FENCE_SKIP_PREFIX}|(<\\/?details\\b[^>]*>|<summary[^>]*>([\\s\\S]*?)<\\/summary>)`, 'gim');
+
+const REVIEW_COMMENT_AT_PATTERN = /Review comment at\s+@(.+?)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/;
+const SUMMARY_FILE_PATH_PATTERN = new RegExp(`^\\s*(?:[a-zA-Z]+\\s+)?${FILE_PATH_SOURCE}(?:\\s*[:\\-]\\s*${LINE_RANGE_SOURCE})?(?:\\s*[:\\-]\\s+.*|\\s*$)`);
+const GH_BLOB_URL_PATTERN = /(?:https?:\/\/)?github\.com\/[^\/]+\/[^\/]+\/blob\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/;
+const GH_LINE_RANGE_SEPARATOR_REGEX = /-L/;
+const BACKTICK_FILE_PATH_PATTERN = new RegExp(`\`${FILE_PATH_SOURCE}(?::${LINE_RANGE_SOURCE})?\``, 'g');
+const INLINE_LINE_NUMBER_PATTERN = new RegExp(`\`${LINE_RANGE_SOURCE}\`:`);
+
+const CLEAN_BODY_PREFIX_PATTERN = /<details[^>]*>\s*<summary[\s\S]*?<\/summary>\s*<blockquote>/i;
+const CLEAN_BODY_SUFFIX_PATTERN = /<\/blockquote>\s*<\/details>\s*$/i;
+
+const PR_URL_PATTERN = /\/([^/]+)\/([^/]+)\/pull\/\d+/;
+
+/**
  * Parses top-level review body comments (Follow-up, Nitpicks, Additional comments).
  */
 function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 	if (!rawBody) return [];
 
 	// Strip markdown blockquote prefixes ("> ") from callout alert blocks so HTML tags parse cleanly
-	const normalized = rawBody.replace(/^[ \t]*>[ \t]?/gm, '');
+	const normalized = rawBody.replace(BLOCKQUOTE_PREFIX_REGEX, '');
 
 	const sectionSpecs = [
-		{ type: 'Follow-up', pattern: /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>.*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i },
-		{ type: 'Nitpick', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i },
-		{ type: 'Additional', pattern: /<summary>(?:<picture>.*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i },
+		{ type: 'Follow-up', pattern: FOLLOW_UP_SECTION_PATTERN },
+		{ type: 'Nitpick', pattern: NITPICK_SECTION_PATTERN },
+		{ type: 'Additional', pattern: ADDITIONAL_SECTION_PATTERN },
 	];
 
 	const sectionStarts = [];
@@ -96,26 +138,24 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
-	const itemRegex = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
-	itemRegex.lastIndex = lastSecStart;
+	ITEM_DETAILS_REGEX.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
-	while ((imSearch = itemRegex.exec(normalized)) !== null) {
-		const summaryText = imSearch[1].replace(/<[^>]+>/g, '').trim();
-		if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText)) {
+	while ((imSearch = ITEM_DETAILS_REGEX.exec(normalized)) !== null) {
+		const summaryText = imSearch[1].replace(HTML_TAG_REGEX, '').trim();
+		if (SUMMARY_EXCLUSION_PATTERN.test(summaryText)) {
 			continue;
 		}
 		let closeEnd = -1;
 		const slice = normalized.slice(imSearch.index);
-		const cr = slice.match(/<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i);
+		const cr = slice.match(CR_COMMENT_CLOSE_PATTERN);
 		if (cr) {
 			closeEnd = imSearch.index + cr.index + cr[0].length;
 		} else {
 			let d = 0;
-			const detailTagRegex = /(?:^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n[ \t]*\1[ \t]*(?:\n|$))|(?:`{3,}[^\n]*?`{3,})|(<\/?details\b[^>]*>)/gim;
-			detailTagRegex.lastIndex = imSearch.index;
+			DETAIL_TAG_REGEX.lastIndex = imSearch.index;
 			let dMatch;
-			while ((dMatch = detailTagRegex.exec(normalized)) !== null) {
+			while ((dMatch = DETAIL_TAG_REGEX.exec(normalized)) !== null) {
 				if (!dMatch[2]) continue;
 				if (dMatch[2].startsWith('</details')) {
 					d--;
@@ -145,11 +185,11 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		const nextStart = s + 1 < sectionStarts.length ? sectionStarts[s + 1].index : overallEnd;
 		const secChunk = normalized.slice(sec.index, nextStart);
 
-		const tagRegex = /(?:^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?\n[ \t]*\1[ \t]*(?:\n|$))|(?:`{3,}[^\n]*?`{3,})|(<\/?details\b[^>]*>|<summary[^>]*>([\s\S]*?)<\/summary>)/gim;
+		SECTION_TAG_REGEX.lastIndex = 0;
 		const itemPositions = [];
 		let depth = 0;
 		let im;
-		while ((im = tagRegex.exec(secChunk)) !== null) {
+		while ((im = SECTION_TAG_REGEX.exec(secChunk)) !== null) {
 			if (!im[2]) continue;
 			const tag = im[2];
 			if (tag.startsWith('</details')) {
@@ -157,8 +197,8 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			} else if (tag.startsWith('<details')) {
 				depth++;
 			} else if (im[3] !== undefined && depth === 1) {
-				const summaryText = im[3].replace(/<[^>]+>/g, '').trim();
-				if (/^[^\w]*(?:Follow-up\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt for|Supported by|Review info|Run configuration|Files selected|Commits\b)/i.test(summaryText))
+				const summaryText = im[3].replace(HTML_TAG_REGEX, '').trim();
+				if (SUMMARY_EXCLUSION_PATTERN.test(summaryText))
 					continue;
 				itemPositions.push({ summary: summaryText, index: im.index });
 			}
@@ -179,29 +219,28 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			let filePath = '';
 			let line = null;
 
-			const reviewAtMatch = itemBlock.match(/Review comment at\s+@(.+?)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/);
+			const reviewAtMatch = itemBlock.match(REVIEW_COMMENT_AT_PATTERN);
 			if (reviewAtMatch) {
 				filePath = reviewAtMatch[1];
 				line = reviewAtMatch[3] ? `${reviewAtMatch[2]}-${reviewAtMatch[3]}` : reviewAtMatch[2];
 			}
 
 			if (!filePath) {
-				const sumPath = item.summary.match(/^\s*(?:[a-zA-Z]+\s+)?([a-zA-Z0-9_\-./]+\.[a-zA-Z0-9]+)(?:\s*[:\-]\s*(\d+(?:-\d+)?))?(?:\s*[:\-]\s+.*|\s*$)/);
-				const allowedRootExt = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
-				if (sumPath && (sumPath[1].includes('/') || allowedRootExt.test(sumPath[1]))) {
+				const sumPath = item.summary.match(SUMMARY_FILE_PATH_PATTERN);
+				if (sumPath && (sumPath[1].includes('/') || ALLOWED_ROOT_EXT_PATTERN.test(sumPath[1]))) {
 					const candidate = sumPath[1].trim();
 					filePath = candidate;
 					if (sumPath[2] && !line) line = sumPath[2];
 				}
 			}
 
-			const ghBlobMatch = itemBlock.match(/(?:https?:\/\/)?github\.com\/[^\/]+\/[^\/]+\/blob\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/);
+			const ghBlobMatch = itemBlock.match(GH_BLOB_URL_PATTERN);
 			let blobFilePath = '';
 			let blobLine = null;
 			if (ghBlobMatch) {
 				const blobUrl = ghBlobMatch[0];
 				const afterBlob = ghBlobMatch[1];
-				blobLine = ghBlobMatch[2] ? ghBlobMatch[2].replace(/-L/, '-') : null;
+				blobLine = ghBlobMatch[2] ? ghBlobMatch[2].replace(GH_LINE_RANGE_SEPARATOR_REGEX, '-') : null;
 
 				const root = getRepoRoot();
 				const segments = afterBlob.split('/');
@@ -225,7 +264,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 				line = blobLine;
 
 			if (!filePath) {
-				for (const backtickMatch of itemBlock.matchAll(/`([a-zA-Z0-9_\-\.\/]+\.[a-zA-Z0-9]+)(?::(\d+(?:-\d+)?))?`/g)) {
+				for (const backtickMatch of itemBlock.matchAll(BACKTICK_FILE_PATH_PATTERN)) {
 					const candidate = backtickMatch[1];
 					if (candidate.includes('/')) {
 						const resolved = resolveExistingPath(candidate, prRef);
@@ -239,18 +278,18 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			}
 
 			if (!line) {
-				const lineMatch = itemBlock.match(/`(\d+(?:-\d+)?)`:/);
+				const lineMatch = itemBlock.match(INLINE_LINE_NUMBER_PATTERN);
 				if (lineMatch) line = lineMatch[1];
 			}
 
 			if (!filePath) continue;
 
-			const crId = itemBlock.match(/<!-- cr-comment:v1:([0-9a-fA-F]+) -->/);
+			const crId = itemBlock.match(CR_COMMENT_ID_PATTERN);
 			const commentId = crId ? `cr_${crId[1]}` : null;
 
 			const cleanBody = itemBlock
-				.replace(/<details[^>]*>\s*<summary[\s\S]*?<\/summary>\s*<blockquote>/i, '')
-				.replace(/<\/blockquote>\s*<\/details>\s*$/i, '')
+				.replace(CLEAN_BODY_PREFIX_PATTERN, '')
+				.replace(CLEAN_BODY_SUFFIX_PATTERN, '')
 				.trim();
 
 			findings.push({
@@ -281,7 +320,7 @@ export async function reviewPr(args = []) {
 		const prInfoRaw = runGh(['pr', 'view', '--json', 'number,title,headRefName,url,headRepository,headRepositoryOwner']);
 		const prInfo = JSON.parse(prInfoRaw);
 
-		const urlMatch = prInfo.url?.match(/\/([^/]+)\/([^/]+)\/pull\/\d+/);
+		const urlMatch = prInfo.url?.match(PR_URL_PATTERN);
 		const repoOwner = urlMatch ? urlMatch[1] : prInfo.headRepositoryOwner?.login;
 		const repoName = urlMatch ? urlMatch[2] : prInfo.headRepository?.name;
 
