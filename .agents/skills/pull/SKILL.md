@@ -56,7 +56,7 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      }' -f threadId="<THREAD_ID>" -f body="<Accepted. ... / Skipped. ...>"
      ```
    - If **Remediated**: Format reply starting with `Remediated locally (pending push): <Brief summary of the local fix applied in the working tree>`.
-     *(Note: Omitting the trigger word `Accepted.` keeps the thread open on GitHub until the commit is pushed. Upon git push, CodeRabbit automatically inspects the commit diff, verifies the fix, and auto-resolves the thread).*
+     *(Note: Omitting the trigger word `Accepted.` keeps the thread open on GitHub until the commit is pushed and a review is manually triggered, at which point CodeRabbit inspects the commit diff, verifies the fix, and auto-resolves the thread).*
    - If **Skipped**: Format reply starting with `Skipped. <Clear technical rationale why no change was needed>`.
    - **Do NOT call `resolveReviewThread` directly**: The agent never manually executes thread resolution mutations; thread resolution is handled natively by CodeRabbit's bot after verifying the pushed commit, or left for the user's manual review.
 
