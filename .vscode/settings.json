@@ -1,0 +1,26 @@
+{
+	"typescript.tsdk": "node_modules/typescript/lib",
+	"typescript.enablePromptUseWorkspaceTsdk": true,
+	"editor.insertSpaces": false,
+	"editor.tabSize": 2,
+	"files.eol": "\n",
+	"files.insertFinalNewline": true,
+	"files.trimTrailingWhitespace": true,
+	"files.readonlyInclude": {
+		"packages/tempo/doc/9-plugins/**": true,
+		"packages/tempo/public/api/**": true,
+		"packages/tempo/public/llms-full.txt": true
+	},
+	"search.exclude": {
+		"**/node_modules": true,
+		"**/dist": true,
+		"**/.vitepress/cache": true,
+		"**/.vitepress/dist": true,
+		"**/.vitepress/.temp": true,
+		"packages/tempo/doc/9-plugins": true,
+		"packages/tempo/public/api": true,
+		"packages/tempo/public/llms-full.txt": true,
+		"**/package-lock.json": true
+	}
+}
+

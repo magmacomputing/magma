@@ -30,6 +30,10 @@ node_modules/
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# AI / Agent Local State & Backups
+.gemini/
+.agents/workflows/*.bak
+
 # misc
 /.sass-cache
 /connect.lock

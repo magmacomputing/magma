@@ -69,6 +69,7 @@ function runGh(args) {
 const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\1[`~]*[ \\t]*(?:\\n|$))';
 const INLINE_FENCE_SOURCE = '(?:`{3,}[^\\n]*?`{3,})';
 const FENCE_SKIP_PREFIX = `${FENCE_BLOCK_SOURCE}|${INLINE_FENCE_SOURCE}`;
+const FENCE_MASK_REGEX = new RegExp(FENCE_SKIP_PREFIX, 'gm');
 
 const FILE_PATH_SOURCE = '([a-zA-Z0-9_\\-./@]+\\.[a-zA-Z0-9]+)';
 const LINE_RANGE_SOURCE = '(\\d+(?:-\\d+)?)';
@@ -90,14 +91,15 @@ const ITEM_DETAILS_REGEX = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>
 const CR_COMMENT_CLOSE_PATTERN = /<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i;
 const CR_COMMENT_ID_PATTERN = /<!-- cr-comment:v1:([0-9a-fA-F]+) -->/;
 
-const DETAIL_TAG_REGEX = new RegExp(`${FENCE_SKIP_PREFIX}|(<\\/?details\\b[^>]*>)`, 'gim');
-const SECTION_TAG_REGEX = new RegExp(`${FENCE_SKIP_PREFIX}|(<\\/?details\\b[^>]*>|<summary[^>]*>([\\s\\S]*?)<\\/summary>)`, 'gim');
+const DETAIL_TAG_REGEX = new RegExp(`${FENCE_SKIP_PREFIX}|(<\\/?details\\b[^>]*>)|(?:(\`+)[^\`\\n]*?\\3)`, 'gim');
+const SECTION_TAG_REGEX = new RegExp(`${FENCE_SKIP_PREFIX}|(<\\/?details\\b[^>]*>|<summary[^>]*>([\\s\\S]*?)<\\/summary>)|(?:(\`+)[^\`\\n]*?\\4)`, 'gim');
 
 const REVIEW_COMMENT_AT_PATTERN = /Review comment at\s+@(.+?)(?:\s+around lines|\s+at line)\s+(\d+)(?:\s*-\s*(\d+))?/;
-const SUMMARY_FILE_PATH_PATTERN = new RegExp(`^\\s*(?:[a-zA-Z]+\\s+)?${FILE_PATH_SOURCE}(?:\\s*[:\\-]\\s*${LINE_RANGE_SOURCE})?(?:\\s*[:\\-]\\s+.*|\\s*$)`);
+const SUMMARY_FILE_PATH_PATTERN = new RegExp(`^\\s*(?:[a-zA-Z]+\\s+)?${FILE_PATH_SOURCE}(?:\\s*\\(\\d+\\)\\s*|(?:\\s*[:\\-]\\s*${LINE_RANGE_SOURCE})?(?:\\s*[:\\-]\\s+.*|\\s*$))`);
 const GH_BLOB_URL_PATTERN = /(?:https?:\/\/)?github\.com\/[^\/]+\/[^\/]+\/blob\/([^#?\s)]+)(?:\?[^#\s)]*)?(?:#L(\d+(?:-L\d+)?))?/;
 const GH_LINE_RANGE_SEPARATOR_REGEX = /-L/;
 const BACKTICK_FILE_PATH_PATTERN = new RegExp(`\`${FILE_PATH_SOURCE}(?::${LINE_RANGE_SOURCE})?\``, 'g');
+const LEADING_BODY_MARKUP_PATTERN = /^[\s\S]*?<\/summary>\s*(?:<(?:blockquote|dl|dd|p)[^>]*>\s*)*$/i;
 const INLINE_LINE_NUMBER_PATTERN = new RegExp(`\`${LINE_RANGE_SOURCE}\`:`);
 
 const CLEAN_BODY_PREFIX_PATTERN = /^\s*<summary[^>]*>[\s\S]*?<\/summary>\s*<blockquote>/i;
@@ -108,11 +110,12 @@ const PR_URL_PATTERN = /\/([^/]+)\/([^/]+)\/pull\/\d+/;
 /**
  * Parses top-level review body comments (Follow-up, Nitpicks, Additional comments).
  */
-function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
+export function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 	if (!rawBody) return [];
 
 	// Strip markdown blockquote prefixes ("> ") from callout alert blocks so HTML tags parse cleanly
 	const normalized = rawBody.replace(BLOCKQUOTE_PREFIX_REGEX, '');
+	const masked = normalized.replace(FENCE_MASK_REGEX, m => m.replace(/[^\n]/g, ' '));
 
 	const sectionSpecs = [
 		{ type: 'Follow-up', pattern: FOLLOW_UP_SECTION_PATTERN },
@@ -122,7 +125,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 
 	const sectionStarts = [];
 	for (const s of sectionSpecs) {
-		const m = normalized.match(s.pattern);
+		const m = masked.match(s.pattern);
 		if (m) sectionStarts.push({ type: s.type, index: m.index });
 	}
 
@@ -139,22 +142,27 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 	const lastSecStart = sectionStarts.length > 0 ? sectionStarts[sectionStarts.length - 1].index : 0;
 
 	let scanLimit = normalized.length;
-	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastSecStart);
-		if (idx !== -1 && idx < scanLimit) scanLimit = idx;
-	}
-
 	ITEM_DETAILS_REGEX.lastIndex = lastSecStart;
 	let lastItemEnd = lastSecStart;
 	let imSearch;
-	while ((imSearch = ITEM_DETAILS_REGEX.exec(normalized)) !== null) {
-		if (imSearch.index >= scanLimit) break;
+	while ((imSearch = ITEM_DETAILS_REGEX.exec(masked)) !== null) {
+		let markerIdx = -1;
+		for (const marker of endMarkers) {
+			const idx = masked.indexOf(marker, lastItemEnd);
+			if (idx !== -1 && idx < imSearch.index + imSearch[0].length) {
+				if (markerIdx === -1 || idx < markerIdx) markerIdx = idx;
+			}
+		}
+		if (markerIdx !== -1) {
+			scanLimit = markerIdx;
+			break;
+		}
 		const summaryText = imSearch[1].replace(HTML_TAG_REGEX, '').trim();
 		if (SUMMARY_EXCLUSION_PATTERN.test(summaryText)) {
 			continue;
 		}
 		let closeEnd = -1;
-		const slice = normalized.slice(imSearch.index, scanLimit);
+		const slice = masked.slice(imSearch.index);
 		const cr = slice.match(CR_COMMENT_CLOSE_PATTERN);
 		if (cr) {
 			closeEnd = imSearch.index + cr.index + cr[0].length;
@@ -162,7 +170,7 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			let d = 0;
 			DETAIL_TAG_REGEX.lastIndex = imSearch.index;
 			let dMatch;
-			while ((dMatch = DETAIL_TAG_REGEX.exec(normalized)) !== null) {
+			while ((dMatch = DETAIL_TAG_REGEX.exec(masked)) !== null) {
 				if (!dMatch[2]) continue;
 				if (dMatch[2].startsWith('</details')) {
 					d--;
@@ -175,13 +183,15 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 				}
 			}
 		}
-		if (closeEnd !== -1)
+		if (closeEnd !== -1) {
 			lastItemEnd = Math.max(lastItemEnd, closeEnd);
+			ITEM_DETAILS_REGEX.lastIndex = closeEnd;
+		}
 	}
 
 	let overallEnd = scanLimit;
 	for (const marker of endMarkers) {
-		const idx = normalized.indexOf(marker, lastItemEnd);
+		const idx = masked.indexOf(marker, lastItemEnd);
 		if (idx !== -1 && idx < overallEnd) overallEnd = idx;
 	}
 
@@ -195,18 +205,22 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		SECTION_TAG_REGEX.lastIndex = 0;
 		const itemPositions = [];
 		let depth = 0;
+		let inDepthOneFinding = false;
 		let im;
 		while ((im = SECTION_TAG_REGEX.exec(secChunk)) !== null) {
 			if (!im[2]) continue;
 			const tag = im[2];
 			if (tag.startsWith('</details')) {
 				if (depth > 0) depth--;
+				if (depth === 0) inDepthOneFinding = false;
 			} else if (tag.startsWith('<details')) {
 				depth++;
-			} else if (im[3] !== undefined && (depth === 1 || depth === 2)) {
+				if (depth === 1) inDepthOneFinding = false;
+			} else if (im[3] !== undefined && (depth === 1 || (depth === 2 && !inDepthOneFinding))) {
 				const summaryText = im[3].replace(HTML_TAG_REGEX, '').trim();
 				if (SUMMARY_EXCLUSION_PATTERN.test(summaryText))
 					continue;
+				if (depth === 1) inDepthOneFinding = true;
 				itemPositions.push({ summary: summaryText, index: im.index });
 			}
 		}
@@ -296,20 +310,33 @@ function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 			const headerRegion = (item.summary || '') + '\n' + itemBlock.slice(0, prefixMatch ? prefixMatch[0].length + 200 : 300);
 
 			if (!filePath) {
-				for (const backtickMatch of itemBlock.matchAll(BACKTICK_FILE_PATH_PATTERN)) {
+				const backtickMatches = Array.from(itemBlock.matchAll(BACKTICK_FILE_PATH_PATTERN));
+				for (const backtickMatch of backtickMatches) {
 					const candidate = backtickMatch[1];
-					const isNested = candidate.includes('/');
-					const isAttributed = !isNested && ALLOWED_ROOT_EXT_PATTERN.test(candidate) && (
-						Boolean(backtickMatch[2]) ||
-						headerRegion.includes(backtickMatch[0]) ||
-						/(?:file|path|in|at|from)\s+`[^`]*`$/i.test(itemBlock.slice(0, backtickMatch.index + backtickMatch[0].length))
-					);
-					if (isNested || isAttributed) {
+					if (candidate.includes('/')) {
 						const resolved = resolveExistingPath(candidate, prRef);
 						if (resolved) {
 							filePath = resolved;
 							if (backtickMatch[2] && !line) line = backtickMatch[2];
 							break;
+						}
+					}
+				}
+				if (!filePath) {
+					for (const backtickMatch of backtickMatches) {
+						const candidate = backtickMatch[1];
+						const isNested = candidate.includes('/');
+						const isAttributed = !isNested && ALLOWED_ROOT_EXT_PATTERN.test(candidate) && Boolean(backtickMatch[2]) && (
+							LEADING_BODY_MARKUP_PATTERN.test(itemBlock.slice(0, backtickMatch.index)) ||
+							(item.summary || '').includes(`${candidate}:${backtickMatch[2]}`)
+						);
+						if (isAttributed) {
+							const resolved = resolveExistingPath(candidate, prRef);
+							if (resolved) {
+								filePath = resolved;
+								if (backtickMatch[2] && !line) line = backtickMatch[2];
+								break;
+							}
 						}
 					}
 				}
