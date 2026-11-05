@@ -1,6 +1,27 @@
-import { ifNumeric, asInteger, asText, asNumber, when } from '#library/coercion.library.js';
+import { ifNumeric, asInteger, asText, asNumber, when, asArray } from '#library/coercion.library.js';
 
 describe('Coercion Library', () => {
+	describe('asArray', () => {
+		it('should convert single values and iterables to array', () => {
+			expect(asArray(42)).toEqual([42]);
+			expect(asArray('hello')).toEqual(['hello']);
+			expect(asArray(new Set([1, 2, 3]))).toEqual([1, 2, 3]);
+		});
+
+		it('should preserve indexed elements for arrays with custom Symbol.iterator', () => {
+			const arr = ['alpha', 'beta'];
+			(arr as any)[Symbol.iterator] = function* () {
+				yield 'custom-1';
+				yield 'custom-2';
+			};
+			expect(asArray(arr)).toEqual(['alpha', 'beta']);
+		});
+
+		it('should apply fill when value is undefined in an array', () => {
+			const arr = [1, undefined, 3];
+			expect(asArray(arr, 99)).toEqual([1, 99, 3]);
+		});
+	});
 	describe('asText', () => {
 		it('should return trimmed string for non-empty strings', () => {
 			expect(asText('hello')).toBe('hello');

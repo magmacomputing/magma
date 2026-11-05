@@ -1,6 +1,11 @@
 ---
-description: Fetch unresolved CodeRabbit review findings from the open GitHub PR and evaluate/apply fixes locally
+name: pull
+description: >-
+  Use this skill when the user asks to fetch unresolved CodeRabbit review
+  findings from the open GitHub PR (e.g. /pull) and evaluate or apply fixes locally.
 ---
+
+# Fetch & Remediate PR CodeRabbit Review Findings
 
 ## Purpose
 Fetches unresolved review comments and findings posted by CodeRabbit on the branch's active GitHub PR using `npm run review:pr`, evaluates their validity, applies necessary code changes locally in a batched pass, and verifies them with tests while keeping changes uncommitted in the working tree for user review.
@@ -51,7 +56,7 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      }' -f threadId="<THREAD_ID>" -f body="<Accepted. ... / Skipped. ...>"
      ```
    - If **Remediated**: Format reply starting with `Remediated locally (pending push): <Brief summary of the local fix applied in the working tree>`.
-     *(Note: Omitting the trigger word `Accepted.` keeps the thread open on GitHub until the commit is pushed. Upon git push, CodeRabbit automatically inspects the commit diff, verifies the fix, and auto-resolves the thread).*
+     *(Note: Omitting the trigger word `Accepted.` keeps the thread open on GitHub until the commit is pushed and a review is manually triggered, at which point CodeRabbit inspects the commit diff, verifies the fix, and auto-resolves the thread).*
    - If **Skipped**: Format reply starting with `Skipped. <Clear technical rationale why no change was needed>`.
    - **Do NOT call `resolveReviewThread` directly**: The agent never manually executes thread resolution mutations; thread resolution is handled natively by CodeRabbit's bot after verifying the pushed commit, or left for the user's manual review.
 
@@ -62,3 +67,4 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      - Modified files left in the working tree.
      - Test run results.
    - Prompt the user to inspect `git diff`, push commits, and verify any remaining unresolved threads on GitHub.
+

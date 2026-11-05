@@ -1,7 +1,16 @@
 import { isInteger } from '../primitives/assertion.library.js';
-import { Immutable, StringTag } from '../runtime/decorator.library.js';
+import { Immutable, Branded } from '../runtime/decorator.library.js';
 
 export type TemporalPoint = { epoch?: { ns: bigint } } | { epochNanoseconds: bigint } | any;
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Interval: { type: 'Interval'; value: Interval<any> };
+	}
+}
+
+/** Type guard predicate checking if a value is an authentic Interval instance */
+type IntervalTypeGuard = <P extends TemporalPoint = TemporalPoint>(val: unknown) => val is Interval<P>;
 
 /**
  * Extracts epoch nanoseconds from a temporal point.
@@ -19,8 +28,11 @@ function getNs(point: TemporalPoint | unknown): bigint {
 
 /** Represents a continuous span of time with optional start and end boundaries, supporting set operations. */
 @Immutable
-@StringTag('Interval')
+@Branded('Interval')
 export class Interval<T extends TemporalPoint = TemporalPoint> {
+	/** Type guard to check if a value is an authentic Interval instance */
+	declare static isInterval: IntervalTypeGuard;
+
 	readonly #start: T | null;
 	readonly #end: T | null;
 	readonly #startNs: bigint | number;
@@ -97,3 +109,7 @@ export class Interval<T extends TemporalPoint = TemporalPoint> {
 		return new Interval<T | U>(minStart, maxEnd);
 	}
 }
+
+/** Type guard to check if a value is an authentic Interval instance */
+export const isInterval = Interval.isInterval;
+

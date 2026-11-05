@@ -27,6 +27,7 @@ type State = Record<AliasKey, Registry>
 
 export interface AliasResult {
 	value: string;
+	raw?: any;
 	key: string;																							// the normalized baseWord (e.g. 'noon')
 	type: AliasType;
 	source: 'global' | 'local';
@@ -214,17 +215,19 @@ export class AliasEngine {
 		if (!register) return undefined;
 
 		let value = '';
+		let raw: any;
 		const isFn = isFunction(register.target);
 
 		if (isFunction(register.target)) {
-			const result = register.target.call(thisArg);
-			value = isDefined(result) ? result.toString() : '';
+			raw = register.target.call(thisArg);
+			value = isDefined(raw) ? raw.toString() : '';
 		} else {
 			value = register.target.toString();
 		}
 
 		return {
 			value,
+			raw,
 			key: register.baseWord,
 			type: register.type,
 			source: register.depth === 0 ? 'global' : 'local',

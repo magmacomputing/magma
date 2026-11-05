@@ -1,10 +1,19 @@
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
 import { isFunction } from '#library/assertion.library.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Finalizer: { type: 'Finalizer'; value: Finalizer<T> };
+	}
+}
+
+/** Type guard predicate checking if a value is an authentic Finalizer instance */
+type FinalizerTypeGuard = <P = void>(val: unknown) => val is Finalizer<P>;
 
 /**
  * Global singleton finalization registry for general cleanup callbacks.
  */
-const GLOBAL_FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup) => {
+const FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup) => {
 	try {
 		if (isFunction(cleanup)) cleanup();
 	} catch (err) {
@@ -17,19 +26,15 @@ const GLOBAL_FINALIZER_REGISTRY = new FinalizationRegistry<() => void>((cleanup)
  * Wrapper around FinalizationRegistry providing typed, safe resource cleanup
  * callbacks triggered when objects are reclaimed by the Garbage Collector.
  */
-@StringTag('Finalizer')
+@Branded('Finalizer')
 export class Finalizer<T = void> {
 	readonly #callback: (heldValue: T) => void;
 
+	/** Type guard to check if a value is an authentic Finalizer instance */
+	declare static isFinalizer: FinalizerTypeGuard;
+
 	constructor(callback: (heldValue: T) => void) {
 		this.#callback = callback;
-	}
-
-	/**
-	 * Returns true to identify this instance as a Finalizer.
-	 */
-	get isFinalizer(): boolean {
-		return true;
 	}
 
 	/**
@@ -42,7 +47,7 @@ export class Finalizer<T = void> {
 	register(target: WeakKey, heldValue: T, unregisterToken?: WeakKey): void {
 		const token = unregisterToken ?? Object.create(null);
 		const callback = this.#callback;
-		GLOBAL_FINALIZER_REGISTRY.register(target, () => {
+		FINALIZER_REGISTRY.register(target, () => {
 			callback(heldValue);
 		}, token);
 	}
@@ -54,7 +59,7 @@ export class Finalizer<T = void> {
 	 * @returns True if a registration was found and removed
 	 */
 	unregister(unregisterToken: WeakKey): boolean {
-		return GLOBAL_FINALIZER_REGISTRY.unregister(unregisterToken);
+		return FINALIZER_REGISTRY.unregister(unregisterToken);
 	}
 
 	/**
@@ -69,10 +74,13 @@ export class Finalizer<T = void> {
 	static register(
 		target: WeakKey,
 		cleanup: () => void,
-		unregisterToken?: WeakKey
+		unregisterToken?: WeakKey,
 	): () => boolean {
 		const token = unregisterToken ?? Object.create(null);
-		GLOBAL_FINALIZER_REGISTRY.register(target, cleanup, token);
-		return () => GLOBAL_FINALIZER_REGISTRY.unregister(token);
+		FINALIZER_REGISTRY.register(target, cleanup, token);
+		return () => FINALIZER_REGISTRY.unregister(token);
 	}
 }
+
+/** Type guard to check if a value is an authentic Finalizer instance */
+export const isFinalizer = Finalizer.isFinalizer;

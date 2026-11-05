@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Logger, LOG, parseLogLevel } from '#library/logger.class.js';
+import { Logger, isLogger, LOG, parseLogLevel } from '#library/logger.class.js';
 import { sym } from '#library/symbol.library.js';
 
 describe('Logger Class', () => {
@@ -18,6 +18,19 @@ describe('Logger Class', () => {
 
 	afterEach(() => {
 		vi.restoreAllMocks();
+	});
+
+	it('identifies as an authentic Logger via @Branded', () => {
+		const logger = new Logger('Test');
+		expect(Logger.isLogger(logger)).toBe(true);
+		expect(isLogger(logger)).toBe(true);
+		expect(logger instanceof Logger).toBe(true);
+		expect(Object.prototype.toString.call(logger)).toBe('[object Logger]');
+
+		const spoofed = { [Symbol.toStringTag]: 'Logger' };
+		expect(Logger.isLogger(spoofed)).toBe(false);
+		expect(isLogger(spoofed)).toBe(false);
+		expect(spoofed instanceof Logger).toBe(false);
 	});
 
 	it('should parse log levels correctly', () => {

@@ -8,7 +8,7 @@ import { getRelativeTime, formatNumber, formatDuration, formatList } from '#libr
 
 import { defineInterpreterModule, interpret, type TempoModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
-import { enums, isTempo, TempoError, sym, TermHook } from '#tempo/support';
+import { enums, Enum, isTempo, TempoError, sym, TermHook } from '#tempo/support';
 import { Tempo } from '../tempo.class.js';
 import type * as t from '../tempo.type.js';
 
@@ -41,7 +41,7 @@ declare module '#library/type.library.js' {
  * Maps shorthand units (via enums.ELEMENT) to standard plural unit names.
  */
 function resolveElementUnit(unit: string): string | undefined {
-	return (enums.ELEMENT.has(unit))
+	return (Enum.has(enums.ELEMENT, unit))
 		? `${enums.ELEMENT[unit as t.Element]}s`
 		: undefined;
 }
@@ -150,7 +150,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	let value, opts: any = {}, unit: any;
 
 	switch (true) {
-		case isString(arg) && (enums.ELEMENT.values().includes(singular(arg) as any) || enums.ELEMENT.has(arg)):
+		case isString(arg) && (Enum.values(enums.ELEMENT).includes(singular(arg) as any) || Enum.has(enums.ELEMENT, arg)):
 			unit = arg;
 			({ value, ...opts } = until || {});
 			break;

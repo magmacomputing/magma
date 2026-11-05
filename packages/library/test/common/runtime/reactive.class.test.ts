@@ -1,11 +1,20 @@
-import { Reactive } from '#library/reactive.class.js';
+import { Reactive, isReactive } from '#library/reactive.class.js';
 import { Signify } from '#library/signify.library.js';
 
 describe('common/runtime/reactive.class', () => {
 	it('identifies as a Reactive instance and has correct StringTag', () => {
 		const stream = new Reactive<number>({ tag: 'TestStream' });
 		expect(stream.isReactive).toBe(true);
+		expect(Reactive.isReactive(stream)).toBe(true);
+		expect(isReactive(stream)).toBe(true);
+		expect(stream instanceof Reactive).toBe(true);
 		expect(Object.prototype.toString.call(stream)).toBe('[object Reactive]');
+
+		const spoofed = { [Symbol.toStringTag]: 'Reactive' };
+		expect(Reactive.isReactive(spoofed)).toBe(false);
+		expect(isReactive(spoofed)).toBe(false);
+		expect(spoofed instanceof Reactive).toBe(false);
+
 		expect(stream.state.active).toBe(true);
 		expect(stream.state.completed).toBe(false);
 		expect(stream.state.tag).toBe('TestStream');

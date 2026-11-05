@@ -65,7 +65,7 @@ export class AtomicClock {
 		if (this.#state.timer) return;
 		const view = this.#view;
 		const timer = setInterval(() => {
-			const nowNano = Tempo.now();
+			const nowNano = Tempo.epoch.ns;
 			Atomics.store(view, 0, nowNano);
 		}, this.#interval);
 
@@ -97,7 +97,7 @@ export class AtomicClock {
 	 * Writes the current exact time to the shared memory.
 	 */
 	#tick(): void {
-		const nowNano = Tempo.now(); // returns epochNanoseconds as bigint
+		const nowNano = Tempo.epoch.ns; // returns epochNanoseconds as bigint
 		// Lock-free atomic write to index 0
 		Atomics.store(this.#view, 0, nowNano);
 	}

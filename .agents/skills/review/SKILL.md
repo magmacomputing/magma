@@ -1,6 +1,11 @@
 ---
-description: Run CodeRabbit review using a batched remediation strategy and verify a clean, PR-ready state
+name: review
+description: >-
+  Use this skill when the user asks to run a local CodeRabbit review (e.g. /review)
+  using a batched remediation strategy and verify a clean, PR-ready state.
 ---
+
+# Local CodeRabbit Review & Batched Remediation
 
 ## Purpose
 Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews efficiently using a **batched remediation strategy** to conserve review limits (3 reviews / hour sliding window on standard tier) and leaving code changes in the working tree for user review.
@@ -50,3 +55,4 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews effic
      ```
    - Check `git status` to ensure only intended, clean changes exist.
    - Report a clear, structured summary of resolved findings and leave commits for the user.
+

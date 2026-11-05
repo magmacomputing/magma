@@ -8,7 +8,7 @@
  */
 import type { DebugLevel } from '#library/logger.class.js';
 import type { ScopedSet } from '#library/scopedset.class.js';
-import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Branded, LooseUnion, Evaluable, MutableObject, ValueOf } from '#library/type.library.js';
+import type { IntRange, NonOptional, Property, Plural, TemporalObject, TypeValue, RegistryOption, Brand, LooseUnion, Evaluable, MutableObject, ValueOf } from '#library/type.library.js';
 import type { GeoOptions, GeoConfig } from '#library/mapper.library.js';
 import type { BoundedCache } from '#library/cache.class.js';
 import type { WeakCache } from '#library/weakcache.class.js';
@@ -61,7 +61,7 @@ declare global {
 }
 
 /** A string representing a Temporal.ZonedDateTime in ISO 8601 format (e.g. 2026-05-10T10:26:04+10:00[Australia/Sydney]) */
-export type ISOString = Branded<string, 'ISO8601'>;
+export type ISOString = Brand<string, 'ISO8601'>;
 
 /** the value that Tempo will attempt to interpret as a valid ISO date / time */
 export type DateTime = ISOString | string | number | bigint | Date | Tempo | TempoBrand | TemporalObject | Temporal.ZonedDateTimeLike | Temporal.DurationLike | undefined | null;
@@ -261,7 +261,7 @@ export interface TempoFormatTokens {
 	// ── composite date/time ───────────────────────────
 	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
-	ts: true; nano: true; tz: true; cal: true;
+	ts: true; nano: true; tz: true; cal: true; sphere: true; iso: true;
 	// ── specialized tokens & counters ─────────────────
 	cen: true; century: true; dim: true; jj: true; julian: true; wom: true;
 }

@@ -152,7 +152,7 @@ describe('Tempo Plugin: Geo', () => {
 
 		it('should allow instance method .geoLocate() to return a new Tempo instance with full context sync', async () => {
 			const t = new Tempo('2026-01-01T12:00:00Z');
-			expect(t.geo).toBeUndefined();
+			expect(t.geo.latitude).toBeUndefined();
 
 			const mockPayload = {
 				ip: '1.1.1.1',
@@ -171,11 +171,11 @@ describe('Tempo Plugin: Geo', () => {
 			const located = await t.geoLocate();
 			expect(located).toBeInstanceOf(Tempo);
 			expect(located.geo).toBeDefined();
-			expect(located.geo?.latitude).toBe(48.857);
-			expect(located.geo?.longitude).toBe(2.352);
-			expect(located.geo?.city).toBe('Paris');
-			expect(located.geo?.country).toBe('France');
-			expect(located.geo?.sphere).toBe('north');
+			expect(located.geo.latitude).toBe(48.857);
+			expect(located.geo.longitude).toBe(2.352);
+			expect(located.geo.city).toBe('Paris');
+			expect(located.geo.country).toBe('France');
+			expect(located.geo.sphere).toBe('north');
 			expect(located.tz).toBe('Europe/Paris');
 			expect(located.sphere).toBe('north');
 		});
@@ -205,12 +205,12 @@ describe('Tempo Plugin: Geo', () => {
 			);
 
 			const located = await t.geoLocate();
-			expect(located.geo?.latitude).toBe(-33.869);
-			expect(located.geo?.longitude).toBe(151.209);
+			expect(located.geo.latitude).toBe(-33.869);
+			expect(located.geo.longitude).toBe(151.209);
 			expect((located.geo as any)?.elevation).toBe(150);
-			expect(located.geo?.city).toBe('Sydney'); // Option B: fresh city overwrites OldCity
-			expect(located.geo?.country).toBe('Australia');
-			expect(located.geo?.sphere).toBe('south');
+			expect(located.geo.city).toBe('Sydney'); // Option B: fresh city overwrites OldCity
+			expect(located.geo.country).toBe('Australia');
+			expect(located.geo.sphere).toBe('south');
 			expect((located.geo as any)?.customKey).toBe('customValue'); // Custom non-geo keys preserved
 			expect((located.geo as any)?.venue).toBe('Harbour');
 			expect(located.tz).toBe('Australia/Sydney');
@@ -235,10 +235,10 @@ describe('Tempo Plugin: Geo', () => {
 
 			// Call-site override: specify custom country and city
 			const located = await t.geoLocate({ country: 'GB', city: 'London' });
-			expect(located.geo?.country).toBe('GB'); // Option C wins
-			expect(located.geo?.city).toBe('London'); // Option C wins
-			expect(located.geo?.latitude).toBe(37.422);
-			expect(located.geo?.longitude).toBe(-122.085);
+			expect(located.geo.country).toBe('GB'); // Option C wins
+			expect(located.geo.city).toBe('London'); // Option C wins
+			expect(located.geo.latitude).toBe(37.422);
+			expect(located.geo.longitude).toBe(-122.085);
 		});
 
 		it('should support setTimezone: false opt-out to retain original timezone', async () => {
@@ -260,9 +260,9 @@ describe('Tempo Plugin: Geo', () => {
 
 			const located = await t.geoLocate({ setTimezone: false });
 			expect(located.tz).toBe('UTC'); // Original tz preserved
-			expect(located.geo?.latitude).toBe(35.676);
-			expect(located.geo?.city).toBe('Tokyo');
-			expect(located.geo?.timezone).toBe('Asia/Tokyo');
+			expect(located.geo.latitude).toBe(35.676);
+			expect(located.geo.city).toBe('Tokyo');
+			expect(located.geo.timezone).toBe('Asia/Tokyo');
 		});
 	});
 
@@ -416,10 +416,10 @@ describe('Tempo Plugin: Geo', () => {
 
 			const located = await t.geoLocate({ reverse: true });
 			expect(mockFetch).toHaveBeenCalledTimes(1);
-			expect(located.geo?.city).toBe('Paris');
-			expect(located.geo?.country).toBe('FR');
-			expect(located.geo?.latitude).toBe(48.857);
-			expect(located.geo?.longitude).toBe(2.352);
+			expect(located.geo.city).toBe('Paris');
+			expect(located.geo.country).toBe('FR');
+			expect(located.geo.latitude).toBe(48.857);
+			expect(located.geo.longitude).toBe(2.352);
 		});
 
 		it('should support polymorphic options in Tempo.geo.resolve({ reverse: true })', async () => {
@@ -491,7 +491,7 @@ describe('Tempo Plugin: Geo', () => {
 			const regionalLoc = await event.geoLocate();
 			expect(regionalLoc.locale).toBe('en-SA');
 			expect(regionalLoc.tz).toBe('Asia/Riyadh');
-			expect(regionalLoc.geo?.country).toBe('SA');
+			expect(regionalLoc.geo.country).toBe('SA');
 
 			// 2. Native mode: converts to primary native locale ('ar-SA')
 			vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
@@ -588,9 +588,9 @@ describe('Tempo Plugin: Geo', () => {
 			const located = await t.geoLocate({ provider: customProvider, setLocale: 'native' });
 
 			expect(customProvider.lookup).toHaveBeenCalled();
-			expect(located.geo?.city).toBe('Tokyo');
-			expect(located.geo?.latitude).toBe(35.676);
-			expect(located.geo?.longitude).toBe(139.65);
+			expect(located.geo.city).toBe('Tokyo');
+			expect(located.geo.latitude).toBe(35.676);
+			expect(located.geo.longitude).toBe(139.65);
 			expect(located.tz).toBe('Asia/Tokyo');
 			expect(located.locale).toBe('ja-JP');
 		});
@@ -711,9 +711,9 @@ describe('Tempo Plugin: Geo', () => {
 
 			const t = new Tempo('2026-01-01T00:00:00Z');
 			const located = await t.geoLocate({ provider: mockProvider, fallback: false });
-			expect((located.geo as any).provider).toBeUndefined();
-			expect((located.geo as any).fallback).toBeUndefined();
-			expect(located.geo?.city).toBe('Frankfurt');
+			expect(located.geo.provider).toBeUndefined();
+			expect(located.geo.fallback).toBeUndefined();
+			expect(located.geo.city).toBe('Frankfurt');
 		});
 	});
 });

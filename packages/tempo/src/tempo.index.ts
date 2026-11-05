@@ -63,6 +63,7 @@ export { TermHook } from '#tempo/support';
 export type { TempoFormatTokens } from './tempo.type.js';
 
 export { defineConfig } from './config/config.define.js';
+export { definePlugin, defineNamespace, defineProperties, defineProperty } from './plugin/plugin.util.js';
 export { Interval } from './interval.index.js';
 export * from './tempo.class.js';
 export default Tempo;

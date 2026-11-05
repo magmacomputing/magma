@@ -1,0 +1,9 @@
+{
+	"recommendations": [
+		"vitest.explorer",
+		"editorconfig.editorconfig",
+		"vuejs.volar",
+		"coderabbit.coderabbit-vscode"
+	]
+}
+

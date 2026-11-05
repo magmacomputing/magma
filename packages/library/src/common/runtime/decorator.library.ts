@@ -1,6 +1,7 @@
 import { $Mutable, $Unwrapped } from '#library/symbol.library.js';
+import { capitalize } from '#library/string.library.js';
 import { secure } from '#library/proxy.library.js';
-import { isReference, isUndefined, isString, isSymbol, isCallable } from '#library/assertion.library.js';
+import { isReference, isUndefined, isString, isSymbol, isCallable, isSafeKey, isBranded } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { registerSerializable } from '#library/serialize.library.js';
 import { registerType, getSafeTag } from '#library/type.library.js';
@@ -113,7 +114,7 @@ function shouldSkipMember(name: string | symbol, skipList: any): boolean {
 function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockStatic = (ctor: object) => {
 		Reflect.ownKeys(ctor).forEach(name => {
-			if (name === 'prototype' || name === 'length' || name === 'name' || name === 'constructor') return;
+			if (!isSafeKey(name) || name === 'length' || name === 'name') return;
 			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(ctor, name);
 			if (!desc) return;
@@ -134,7 +135,7 @@ function hardenClassStaticsAndPrototypes(value: any, wrapper: any, skip: any) {
 	const lockPrototype = (proto: object) => {
 		if (!isReference(proto)) return;
 		Reflect.ownKeys(proto).forEach(name => {
-			if (name === 'constructor') return;
+			if (!isSafeKey(name)) return;
 			if (shouldSkipMember(name, skip)) return;
 			const desc = Object.getOwnPropertyDescriptor(proto, name);
 			if (!desc) return;
@@ -325,6 +326,129 @@ export function StringTag<T extends Constructor>(tagOrValue?: string | T, contex
 	return (value: T, ctx?: ClassDecoratorContext<T>) => {
 		return applyTag(value, isString(tagOrValue) ? tagOrValue : undefined, ctx?.name);
 	}
+}
+
+/**
+ * Attaches a brand symbol to a class prototype, ensures Symbol.toStringTag is set,
+ * and provides static `is<ClassName>()` and `[Symbol.hasInstance]` checking.
+ *
+ * Supports direct use as `@Branded` and configured use as `@Branded()`, `@Branded('CustomName')`,
+ * or `@Branded(mySymbol, 'CustomName')`.
+ *
+ * @param brandOrValue - A custom symbol, string name, or the class constructor when used directly.
+ * @param nameOrContext - A custom name string, or the decorator context when used directly.
+ * @returns The decorated class or a decorator factory that applies the brand.
+ * @example
+ * ```ts
+ * @Branded
+ * class Pledge<T> { ... }
+ * 
+ * Pledge.isPledge(p); // true
+ * p instanceof Pledge; // true
+ * ```
+ */
+export function Branded<T extends Constructor>(
+	brandOrValue?: symbol | string | T,
+	nameOrContext?: string | ClassDecoratorContext<T>,
+): any {
+	const applyBrand = (
+		value: T,
+		customBrand?: symbol | string,
+		customName?: string,
+		contextName?: string | symbol
+	) => {
+		const rawName = customName
+			?? (isString(customBrand) ? customBrand : undefined)
+			?? (isSymbol(customBrand) && customBrand.description ? customBrand.description : undefined)
+			?? getClassName(value, contextName);
+
+		const name = rawName ? String(rawName).replace(/^\$/, '') : 'Instance';
+		const isExplicit = isString(customBrand) || isString(customName);
+		const brandSymbol = isSymbol(customBrand)
+			? customBrand
+			: isExplicit
+				? Symbol.for(`Brand.${name}`)
+				: Symbol(`Brand.${name}`);
+
+		const isInstance = (val: unknown): boolean => isBranded(val, brandSymbol);
+
+		// 1. Attach brand symbol to prototype (non-enumerable, non-writable, non-configurable)
+		const proto = value.prototype;
+		if (proto && !hasOwn(proto, brandSymbol)) {
+			Object.defineProperty(proto, brandSymbol, {
+				value: true,
+				configurable: false,
+				writable: false,
+				enumerable: false,
+			});
+		}
+
+		// 2. Auto-apply Symbol.toStringTag to prototype if not already defined
+		if (proto && !hasOwn(proto, Symbol.toStringTag)) {
+			Object.defineProperty(proto, Symbol.toStringTag, {
+				value: name,
+				configurable: true,
+				writable: false,
+				enumerable: false,
+			});
+		}
+
+		// 3. Align constructor name if needed (e.g. minified builds)
+		if (!value.name || value.name !== name) {
+			try {
+				Object.defineProperty(value, 'name', {
+					value: name,
+					configurable: true,
+					writable: false,
+					enumerable: false,
+				});
+			} catch { }
+		}
+
+		// 4. Attach static is<ClassName> method (e.g. isPledge)
+		const methodName = `is${capitalize(name)}`;
+		if (!hasOwn(value, methodName)) {
+			try {
+				Object.defineProperty(value, methodName, {
+					value: isInstance,
+					configurable: true,
+					writable: false,
+					enumerable: false,
+				});
+			} catch { }
+		}
+
+		// 5. Attach Symbol.hasInstance for instanceof checking
+		if (!hasOwn(value, Symbol.hasInstance)) {
+			try {
+				Object.defineProperty(value, Symbol.hasInstance, {
+					value: function (val: unknown) {
+						if (hasOwn(this, methodName)) {
+							const customGuard = (this as any)[methodName];
+							if (isCallable(customGuard)) return customGuard.call(this, val);
+						}
+						return isReference(val) && isReference(this?.prototype) && Object.prototype.isPrototypeOf.call(this.prototype, val);
+					},
+					configurable: true,
+					writable: false,
+					enumerable: false,
+				});
+			} catch { }
+		}
+
+		return value;
+	};
+
+	// Direct decorator usage: @Branded
+	if (isCallable(brandOrValue) && (nameOrContext as ClassDecoratorContext<T>)?.kind === 'class')
+		return applyBrand(brandOrValue as T, undefined, undefined, (nameOrContext as ClassDecoratorContext<T>).name);
+
+	// Configured usage: @Branded(...)
+	return (value: T, ctx?: ClassDecoratorContext<T>) => {
+		const customBrand = (isString(brandOrValue) || isSymbol(brandOrValue)) ? brandOrValue : undefined;
+		const customName = isString(nameOrContext) ? nameOrContext : undefined;
+		return applyBrand(value, customBrand, customName, ctx?.name);
+	};
 }
 
 export interface SingletonOptions {

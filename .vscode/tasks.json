@@ -1,0 +1,60 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build: All",
+			"type": "npm",
+			"script": "build:all",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "Build: Tempo",
+			"type": "npm",
+			"script": "build:tempo",
+			"group": "build",
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "Build: Library",
+			"type": "npm",
+			"script": "build:library",
+			"group": "build",
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "Test: All (Vitest)",
+			"type": "npm",
+			"script": "test",
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Test: Dist",
+			"type": "npm",
+			"script": "test:dist",
+			"group": "test",
+			"problemMatcher": []
+		},
+		{
+			"label": "Docs: Dev Server",
+			"type": "npm",
+			"script": "docs:dev",
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "Lockfile: Sync",
+			"type": "npm",
+			"script": "lock:sync",
+			"problemMatcher": []
+		}
+	]
+}
+

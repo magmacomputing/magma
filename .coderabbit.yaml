@@ -2,8 +2,7 @@
 reviews:
   review_status: false
   auto_review:
-    enabled: true
-    auto_pause_after_reviewed_commits: 0
+    enabled: false
   auto_title_instructions: "Generate a concise PR title that starts with a conventional commit type (feat, fix, chore, etc.) followed by a short imperative description of the change."
   path_filters:
     # Use "! " at the start of a pattern to EXCLUDE it from the review

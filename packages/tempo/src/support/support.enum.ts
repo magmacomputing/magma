@@ -176,9 +176,9 @@ defineExtensible(STATE.MONTH_DAY);
 defineExtensible(STATE.LOCALE);
 
 /** Gregorian calendar week-days (short-form) */
-export const WEEKDAY = enumify(['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
+export const WEEKDAY = enumify({ Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 });
 /** Gregorian calendar week-days (long-form) */
-export const WEEKDAYS = enumify(['Everyday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+export const WEEKDAYS = enumify({ Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 });
 
 export type WEEKDAY = KeyOf<typeof WEEKDAY>
 export type Weekday = ValueOf<typeof WEEKDAY>
@@ -186,9 +186,9 @@ export type WEEKDAYS = KeyOf<typeof WEEKDAYS>
 export type Weekdays = ValueOf<typeof WEEKDAYS>
 
 /** Gregorian calendar months (short-form) */
-export const MONTH = enumify(['All', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+export const MONTH = enumify({ Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 });
 /** Gregorian calendar months (long-form) */
-export const MONTHS = enumify(['Every', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']);
+export const MONTHS = enumify({ January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7, August: 8, September: 9, October: 10, November: 11, December: 12 });
 
 export type MONTH = KeyOf<typeof MONTH>
 export type Month = ValueOf<typeof MONTH>

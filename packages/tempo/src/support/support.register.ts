@@ -70,6 +70,7 @@ export function registryReset() {
 	}
 	rt.extensions.length = 0;
 	rt.installed.clear();
+	rt.termMap.clear();
 
 	// Trigger all registered reset hooks
 	const hooks = resetHooks();

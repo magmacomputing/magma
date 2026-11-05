@@ -25,11 +25,9 @@ describe('Tempo.format() refinements', () => {
     expect(typeof t2.format('{dd}')).toBe('string');
   })
 
-  it('should handle yw and yow for ISO year, and wy / woy for ISO week', () => {
+  it('should handle yow for ISO year, and woy for ISO week', () => {
     const t3 = new Tempo('2024-12-30');										// Monday, Week 1 of 2025
-    expect(t3.yw).toBe(2025);
     expect(t3.yow).toBe(2025);
-    expect(t3.wy).toBe(1);
     expect(t3.woy).toBe(1);
     expect(t3.format('{yw}{ww}')).toBe('202501');
     expect(t3.format('{yow}{woy}')).toBe('202501');
@@ -528,5 +526,77 @@ describe('Tempo.format() refinements', () => {
       expect(tTarget.format('{woy:0}')).toBe('41');
     });
   })
+
+  describe('automatic getter-to-format-token resolution', () => {
+    it('automatically formats instance getters without explicit token cases (e.g. sphere, iso)', () => {
+      const t = new Tempo('2026-10-24T12:00:00Z', { timeZone: 'Australia/Sydney' });
+      expect(t.format('{sphere}')).toBe('south');
+      expect(t.format('{sphere:upper}')).toBe('SOUTH');
+      expect(t.format('{iso}')).toBe('2026-10-24T12:00:00Z');
+    });
+
+    it('automatically formats custom user-defined getters on Tempo prototype', () => {
+      Object.defineProperty(Tempo.prototype, 'fiscalYear', {
+        get(this: Tempo) {
+          return this.mm >= 7 ? this.yy + 1 : this.yy;
+        },
+        configurable: true,
+      });
+
+      Object.defineProperty(Tempo.prototype, 'greeting', {
+        get() {
+          return 'hello world';
+        },
+        configurable: true,
+      });
+
+      try {
+        const t = new Tempo('2026-10-24');
+        expect((t as any).fiscalYear).toBe(2027);
+        expect(t.format('{fiscalYear}')).toBe('2027');
+        expect(t.format('FY{fiscalYear}')).toBe('FY2027');
+
+        expect(t.format('{greeting}')).toBe('hello world');
+        expect(t.format('{greeting:upper}')).toBe('HELLO WORLD');
+        expect(t.format('{greeting:title}')).toBe('Hello world');
+      } finally {
+        delete (Tempo.prototype as any).fiscalYear;
+        delete (Tempo.prototype as any).greeting;
+      }
+    });
+
+    it('ignores methods and unknown properties, falling back to literal token', () => {
+      const t = new Tempo('2026-10-24');
+      expect(t.format('{add}')).toBe('{add}');
+      expect(t.format('{nonExistentProp}')).toBe('{nonExistentProp}');
+    });
+
+    it('ensures an explicitly registered format token overrides a getter of the same name', () => {
+      Object.defineProperty(Tempo.prototype, 'customTag', {
+        get() {
+          return 'getter-value';
+        },
+        configurable: true,
+      });
+
+      try {
+        const t = new Tempo('2026-10-24');
+        // Without registered token, falls back to getter
+        expect(t.format('{customTag}')).toBe('getter-value');
+
+        // With registered token, registered token takes precedence over getter
+        const withToken = t.format('{customTag}', {
+          registry: {
+            tokens: {
+              customTag: () => 'token-override',
+            },
+          },
+        });
+        expect(withToken).toBe('token-override');
+      } finally {
+        delete (Tempo.prototype as any).customTag;
+      }
+    });
+  });
 })
 

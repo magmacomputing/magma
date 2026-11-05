@@ -28,6 +28,6 @@ describe('Tempo.from() static method', () => {
 		const t1 = new Tempo('2024-12-25');
 		const t2 = Tempo.from(t1);
 		expect(t2).toBeInstanceOf(Tempo);
-		expect(t2.nano).toBe(t1.nano);
+		expect(t2.epoch.ns).toBe(t1.epoch.ns);
 	})
 })

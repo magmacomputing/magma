@@ -1,14 +1,19 @@
 ---
-description: Start an interactive Node.js REPL session with Tempo and Temporal pre-loaded
+name: repl
+description: >-
+  Use this skill when the user asks to start an interactive Node.js REPL session
+  with Tempo and Temporal pre-loaded (e.g. /repl).
 ---
 
-To use a NodeJS interactive session to test your Tempo library, you can use the following command-line syntax:
+# Start Tempo Interactive REPL
 
-// turbo
+To use a Node.js interactive session to test the Tempo library, run:
+
 ```bash
 npx tsx --conditions=development -i --harmony-temporal --import ./bin/repl.ts
 ```
 
+*(Or from the monorepo root: `npm run repl` or `npm run repl:plugins`).*
 
 ### Purpose
 This command starts a Node.js REPL (Read-Eval-Print Loop) while pre-loading the `Tempo` class and the `Temporal` support into the global scope. This allows you to try different invocations of `Tempo` directly without writing a script.

@@ -1,4 +1,4 @@
-import { Immutable, Mutable, Securable, StringTag, Singleton } from '#library/decorator.library.js';
+import { Immutable, Mutable, Securable, StringTag, Singleton, Branded } from '#library/decorator.library.js';
 
 describe('Class Decorators: Immutable & Secure', () => {
   it('Immutable: should throw on mutation (Object.freeze, strict mode)', () => {
@@ -268,5 +268,115 @@ describe('Class Decorators: Mutable', () => {
 
     const c = new Component();
     expect((c as any).dynamicData).toBe(100);
+  });
+});
+
+describe('@Branded Decorator', () => {
+  it('direct @Branded usage attaches brand, Symbol.toStringTag, and static is<ClassName>', () => {
+    @Branded
+    class Widget {}
+
+    const w = new Widget();
+    expect((Widget as any).isWidget(w)).toBe(true);
+    expect(w instanceof Widget).toBe(true);
+    expect(Object.prototype.toString.call(w)).toBe('[object Widget]');
+
+    expect((Widget as any).isWidget({ [Symbol.toStringTag]: 'Widget' })).toBe(false);
+    expect((Widget as any).isWidget(null)).toBe(false);
+    expect((Widget as any).isWidget(undefined)).toBe(false);
+  });
+
+  it('configured @Branded("CustomTag") overrides name and sets Symbol.toStringTag', () => {
+    @Branded('FancyGadget')
+    class Gadget {}
+
+    const g = new Gadget();
+    expect((Gadget as any).isFancyGadget(g)).toBe(true);
+    expect(g instanceof Gadget).toBe(true);
+    expect(Object.prototype.toString.call(g)).toBe('[object FancyGadget]');
+    expect(Gadget.name).toBe('FancyGadget');
+
+    expect((Gadget as any).isFancyGadget({ [Symbol.toStringTag]: 'FancyGadget' })).toBe(false);
+  });
+
+  it('custom symbol brand works with @Branded(customSymbol, "CustomName")', () => {
+    const $custom = Symbol('CustomBrand');
+
+    @Branded($custom, 'Device')
+    class Device {}
+
+    const d = new Device();
+    expect((Device as any).isDevice(d)).toBe(true);
+    expect((d as any)[$custom]).toBe(true);
+    expect(d instanceof Device).toBe(true);
+    expect(Object.prototype.toString.call(d)).toBe('[object Device]');
+  });
+
+  it('Symbol.hasInstance dynamically delegates to custom static is<Name> guard if provided', () => {
+    @Branded('CustomValidator')
+    class CustomValidator {
+      #secret = 42;
+      static isCustomValidator(val: unknown): val is CustomValidator {
+        return this === CustomValidator && !!val && typeof val === 'object' && '#secret' in (val as any);
+      }
+    }
+
+    const valid = { '#secret': 42 };
+    const invalid = Object.create(CustomValidator.prototype);
+
+    expect(valid instanceof CustomValidator).toBe(true);
+    expect(invalid instanceof CustomValidator).toBe(false);
+  });
+
+  it('undecorated subclass inheriting Symbol.hasInstance does not accept parent instances', () => {
+    @Branded('ParentBrand')
+    class ParentClass {}
+
+    class ChildClass extends ParentClass {}
+
+    const parent = new ParentClass();
+    const child = new ChildClass();
+
+    expect(child instanceof ChildClass).toBe(true);
+    expect(child instanceof ParentClass).toBe(true);
+    expect(parent instanceof ParentClass).toBe(true);
+    expect(parent instanceof ChildClass).toBe(false);
+  });
+
+  it('uses globally registered brand symbol so equivalent class copies recognize instances', () => {
+    @Branded('SharedService')
+    class CopyA {}
+
+    @Branded('SharedService')
+    class CopyB {}
+
+    const a = new CopyA();
+    expect((CopyB as any).isSharedService(a)).toBe(true);
+  });
+
+  it('uses unique brand symbol for inferred class names so distinct classes do not cross-brand', () => {
+    @Branded
+    class InferredA {}
+
+    @Branded
+    class InferredB {}
+
+    const a = new InferredA();
+    expect((InferredA as any).isInferredA(a)).toBe(true);
+    expect((InferredB as any).isInferredB(a)).toBe(false);
+
+    // Bare @Branded() with same inferred name
+    function createBareClass() {
+      @Branded()
+      class LocalWorker {}
+      return LocalWorker;
+    }
+
+    const Class1 = createBareClass();
+    const Class2 = createBareClass();
+    const inst1 = new Class1();
+
+    expect((Class1 as any).isLocalWorker(inst1)).toBe(true);
+    expect((Class2 as any).isLocalWorker(inst1)).toBe(false);
   });
 });

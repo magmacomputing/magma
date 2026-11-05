@@ -1,9 +1,14 @@
 import { looseIndex } from '#library/object.library.js';
+import { isBranded } from '#library/assertion.library.js';
+import type { LiteralKey, RemoveIndex } from '#library/type.library.js';
 import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity } from '#library/symbol.library.js';
 export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity };
 
+/** key for Tempo Sandbox branding */
+export const $Sandbox: unique symbol = Symbol.for('magmacomputing/tempo/sandbox') as any;
+
 /**
- * Checks if the given value is a valid Tempo instance.
+ * Checks if the given value is an authentic Tempo instance.
  * Uses brand checking via the $Identity symbol.
  *
  * @param tempo - The value to check
@@ -15,7 +20,22 @@ export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibR
  * }
  * ```
  */
-export const isTempo = (tempo?: any): tempo is TempoBrand => tempo?.[sym.$Identity] === true;
+export const isTempo = (tempo?: any): tempo is TempoBrand => isBranded(tempo, sym.$Identity);
+
+/**
+ * Checks if the given value carries the Tempo Sandbox brand. The brand key is a global Symbol.for key, so any object that sets it also passes. Do not use this check alone to validate untrusted input.
+ * Uses brand checking via the $Sandbox symbol.
+ *
+ * @param sandbox - The value to check
+ * @returns True if the value is a Tempo sandbox instance or subclass
+ * @example
+ * ```ts
+ * if (isSandbox(value)) {
+ *   // value is narrowed
+ * }
+ * ```
+ */
+export const isSandbox = <T = any>(sandbox?: any): sandbox is T => isBranded(sandbox, $Sandbox);
 
 /**
  * Centralized registry for all Tempo-specific Global Symbols.
@@ -64,8 +84,10 @@ export type TermHook = typeof TermHook;
 const local = {
 	$Tempo, $Register, $Interpreter, $guard, $errored,
 	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery,
-	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType
+	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType,
+	$Sandbox
 } as const;
+
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */
 export const sym = Object.assign(Object.create(lib), local) as Omit<typeof lib, '$Register'> & typeof local;
@@ -131,3 +153,4 @@ export const Token = looseIndex<string, symbol>()({
 	/** archival / inscription Roman year (e.g. MMXXVI) */		Ryy: Symbol('romanYearOnly'),
 });
 export type Token = typeof Token;
+

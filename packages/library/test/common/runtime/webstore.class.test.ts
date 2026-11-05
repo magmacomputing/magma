@@ -1,6 +1,19 @@
-import { WebStore } from '../../../src/browser/webstore.class.js';
+import { WebStore, isWebStore } from '../../../src/browser/webstore.class.js';
 
 describe('WebStore', () => {
+	it('identifies as an authentic WebStore via @Branded', () => {
+		const store = WebStore.local;
+		expect(WebStore.isWebStore(store)).toBe(true);
+		expect(isWebStore(store)).toBe(true);
+		expect(store instanceof WebStore).toBe(true);
+		expect(Object.prototype.toString.call(store)).toBe('[object WebStore]');
+
+		const spoofed = { [Symbol.toStringTag]: 'WebStore' };
+		expect(WebStore.isWebStore(spoofed)).toBe(false);
+		expect(isWebStore(spoofed)).toBe(false);
+		expect(spoofed instanceof WebStore).toBe(false);
+	});
+
 	it('instantiates local and session stores safely', () => {
 		const local = WebStore.local;
 		const session = WebStore.session;

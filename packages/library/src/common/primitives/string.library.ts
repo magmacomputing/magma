@@ -74,6 +74,20 @@ export function toTitleCase(str: string, locale?: string): string {
 	}
 }
 
+/**
+ * Capitalizes the first character of a string without lowercasing subsequent characters,
+ * preserving camelCase and PascalCase identifiers.
+ * 
+ * @param str - The string to capitalize
+ * @returns The capitalized string
+ * @example
+ * ```ts
+ * capitalize('fancyGadget'); // 'FancyGadget'
+ * ```
+ */
+export const capitalize = <T extends string>(str: T): Capitalize<T> =>
+	(str ? str.charAt(0).toUpperCase() + str.slice(1) : '') as Capitalize<T>;
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 const PAT = /[A-Z\xC0-\xD6\xD8-\xDE]?[a-z\xDF-\xF6\xF8-\xFF]+|[A-Z\xC0-\xD6\xD8-\xDE]+(?![a-z\xDF-\xF6\xF8-\xFF])|\d+/g;
 /**

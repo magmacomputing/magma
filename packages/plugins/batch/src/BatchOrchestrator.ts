@@ -1,4 +1,5 @@
 import os from 'node:os';
+import fs from 'node:fs';
 import { Worker } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -7,7 +8,19 @@ import path from 'node:path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isTS = __filename.endsWith('.ts');
-const WORKER_PATH = isTS ? path.join(__dirname, '../dist/worker.js') : path.join(__dirname, 'worker.js');
+const distWorkerPath = path.join(__dirname, '../dist/worker.js');
+const srcWorkerPath = path.join(__dirname, 'worker.ts');
+const hasDist = fs.existsSync(distWorkerPath);
+const hasSrc = fs.existsSync(srcWorkerPath);
+
+const nodeMajor = parseInt(process.versions.node?.split('.')[0] || '0', 10);
+const hasTsSupport = nodeMajor >= 26 || (process.execArgv || []).some(arg =>
+	arg.includes('tsx') || arg.includes('ts-node') || arg.includes('strip-types') || arg.includes('--loader')
+);
+
+const WORKER_PATH = isTS
+	? (hasDist && !hasTsSupport ? distWorkerPath : (hasSrc ? srcWorkerPath : distWorkerPath))
+	: path.join(__dirname, 'worker.js');
 
 export interface BatchOptions {
 	/**

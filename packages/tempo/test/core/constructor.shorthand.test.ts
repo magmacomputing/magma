@@ -9,12 +9,13 @@ describe('Tempo Shorthand Constructor', () => {
 
 	it('should support DurationLike objects as shorthand for "now plus duration"', () => {
 		const t = new Tempo({ hours: 2 });
-		
+		expect(t.toDateTime().timeZoneId).toBe(Tempo.config.timeZone);
+
 		// Since we can't easily mock the internal 'instant()' call in the constructor 
 		// without deeper integration, we'll verify it's approximately 2 hours from now.
-		const now = Temporal.Now.zonedDateTimeISO('UTC');
+		const now = Temporal.Now.zonedDateTimeISO(t.toDateTime().timeZoneId);
 		const expected = now.add({ hours: 2 });
-		
+
 		// Allow for 1 second of drift during test execution
 		const diff = t.toDateTime().epochMilliseconds - expected.epochMilliseconds;
 		expect(Math.abs(diff)).toBeLessThanOrEqual(1000);
@@ -22,9 +23,11 @@ describe('Tempo Shorthand Constructor', () => {
 
 	it('should support negative durations as shorthand for "now minus duration"', () => {
 		const t = new Tempo({ days: -1 });
-		const now = Temporal.Now.zonedDateTimeISO('UTC');
+		expect(t.toDateTime().timeZoneId).toBe(Tempo.config.timeZone);
+
+		const now = Temporal.Now.zonedDateTimeISO(t.toDateTime().timeZoneId);
 		const expected = now.subtract({ days: 1 });
-		
+
 		const diff = t.toDateTime().epochMilliseconds - expected.epochMilliseconds;
 		expect(Math.abs(diff)).toBeLessThanOrEqual(1000);
 	});

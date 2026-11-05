@@ -1,6 +1,12 @@
 ---
-description: Bump package version, update CHANGELOG, release notes, and documentation
+name: bump
+description: >-
+  Use this skill when the user asks to bump a package version (e.g. /bump tempo,
+  /bump celestial, /bump library), update CHANGELOG.md, write release notes,
+  synchronize plugin catalogs, and verify builds.
 ---
+
+# Bump Package Version & Release Notes
 
 When invoked with a package argument (e.g. `/bump tempo`, `/bump celestial`, `/bump library`):
 
@@ -36,4 +42,6 @@ When invoked with a package argument (e.g. `/bump tempo`, `/bump celestial`, `/b
    - **Strict Rule**: User documentation must **never** mention, reference, or promote "Tempo Premium Plugins" or commercial offerings.
 
 5. **Verification**:
+   - Synchronize lockfile (`npm run lock:sync`) if any `package.json` changed.
    - Execute package build and test suites (`npm run build:all && npm test`) to verify all changes pass without regressions.
+

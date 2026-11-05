@@ -1,3 +1,5 @@
+import { isNumber, isDate } from '#library/assertion.library.js';
+
 /**
  * Number of days in a standard week.
  */
@@ -146,12 +148,52 @@ export function shiftDateByDays(date: Date, days: number): Date {
  * @param day - 1-indexed day of month (1..31)
  * @returns Unix epoch days count
  */
-export function civilToDays(year: number, month: number, day: number): number {
+export function civilToDays(year: number, month: number, day: number): number;
+
+/**
+ * Computes Unix epoch days (days since 1970-01-01) from a date object.
+ * Accepts a native JavaScript Date (UTC), a Temporal date-time object,
+ * or any object containing `{ year, month, day }` components.
+ *
+ * @param date - Date instance or Temporal-compatible date object with `{ year, month, day }`
+ * @returns Unix epoch days count
+ */
+export function civilToDays(date: Date | { year: number; month: number; day: number; calendarId?: string }): number;
+
+export function civilToDays(
+	arg1: number | Date | { year: number; month: number; day: number; calendarId?: string },
+	arg2?: number,
+	arg3?: number,
+): number {
+	let year: number, month: number, day: number;
+
+	if (isNumber(arg1)) {
+		year = arg1;
+		month = arg2!;
+		day = arg3!;
+	} else if (isDate(arg1)) {
+		year = arg1.getUTCFullYear();
+		month = arg1.getUTCMonth() + 1;
+		day = arg1.getUTCDate();
+	} else {
+		const calId = (arg1 as any)?.calendarId ?? (arg1 as any)?.calendar?.id;
+		if (calId && calId !== 'iso8601' && calId !== 'gregory')
+			throw new RangeError(`civilToDays requires an ISO or Gregorian calendar date, got "${calId}"`);
+
+		year = arg1.year;
+		month = arg1.month;
+		day = arg1.day;
+	}
+
+	if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day))
+		throw new RangeError(`Year, month, and day must be integers: got year=${year}, month=${month}, day=${day}`);
+
 	if (month < 1 || month > 12) {
 		const m = month - 1;
 		year += Math.floor(m / 12);
 		month = ((m % 12) + 12) % 12 + 1;
 	}
+
 	const y = year - (month <= 2 ? 1 : 0);
 	const era = Math.floor(y / 400);
 	const yoe = y - era * 400;
@@ -392,4 +434,41 @@ export function resolveIsoCalendarYear(
 		? matching[0]
 		: undefined;
 }
+
+/**
+ * Julian Day Number at Unix Epoch (1970-01-01T00:00:00Z).
+ */
+export const EPOCH_JULIAN_DAY = 2_440_588;
+
+/**
+ * Computes the integer Julian Day Number for a Gregorian calendar date.
+ * Accepts discrete year, month, and day integers (1-indexed month, 1..12).
+ *
+ * @param year - Gregorian calendar year (e.g. 2026)
+ * @param month - 1-indexed month (1..12)
+ * @param day - 1-indexed day of month (1..31)
+ * @returns Integer Julian Day Number (e.g. 2440588 for 1970-01-01)
+ */
+export function toJulianDay(year: number, month: number, day: number): number;
+
+/**
+ * Computes the integer Julian Day Number for a date.
+ * Accepts a native JavaScript Date (UTC), a Temporal date-time object,
+ * or any object containing `{ year, month, day }` components.
+ *
+ * @param date - Date instance or Temporal-compatible date object with `{ year, month, day }`
+ * @returns Integer Julian Day Number (e.g. 2440588 for 1970-01-01)
+ */
+export function toJulianDay(date: Date | { year: number; month: number; day: number; calendarId?: string }): number;
+
+export function toJulianDay(
+	arg1: number | Date | { year: number; month: number; day: number; calendarId?: string },
+	arg2?: number,
+	arg3?: number,
+): number {
+	return (isNumber(arg1)
+		? civilToDays(arg1, arg2!, arg3!)
+		: civilToDays(arg1)) + EPOCH_JULIAN_DAY;
+}
+
 

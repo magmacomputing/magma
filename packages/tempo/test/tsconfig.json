@@ -40,6 +40,7 @@
 			"#tempo/config": [ "../src/config/config.index.ts" ],
 			"#tempo/plugin/extend/*.js": [ "../src/plugin/extend/*.ts" ],
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
+			"#tempo/plugin/plugin.*.js": [ "../src/plugin/plugin.*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
 			"#tempo/std": [ "../../plugins/.std/src/index.ts" ],
 			"#tempo/*": [ "../src/*" ]

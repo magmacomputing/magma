@@ -4,16 +4,19 @@ import { asArray } from '#library/coercion.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { secure } from '#library/proxy.library.js';
 import { cleanify } from '#library/json.library.js';
-import { Immutable, StringTag } from '#library/decorator.library.js';
+import { Immutable, Branded } from '#library/decorator.library.js';
 import { isEmpty, isObject } from '#library/assertion.library.js';
-import { Finalizer } from './finalizer.class.js';
-import { signify, Signify, type WritableSignal, type ReadonlySignal } from './signify.library.js';
+import { Finalizer } from '#library/finalizer.class.js';
+import { signify, Signify, type WritableSignal, type ReadonlySignal } from '#library/signify.library.js';
 
 declare module '#library/type.library.js' {
 	interface TypeValueMap<T> {
 		Pledge: { type: 'Pledge', value: Pledge<T> };
 	}
 }
+
+/** Type guard predicate checking if a value is an authentic Pledge instance */
+type PledgeTypeGuard = <P = any>(val: unknown) => val is Pledge<P>;
 
 const _dbg = new Logger('[Pledge]');
 let _static = {} as Pledge.Constructor;
@@ -36,12 +39,15 @@ const _STATE = secure({
  * ```
  */
 @Immutable
-@StringTag('Pledge')
+@Branded('Pledge')
 export class Pledge<T> {
 	#pledge: PromiseWithResolvers<T>;
 	#status = {} as Pledge.Status<T>;
-	readonly #signal: WritableSignal<number>;
+	#signal: WritableSignal<number>;
 	#cachedSignal: ReadonlySignal<T | undefined> | undefined = undefined;
+
+	/** Type guard to check if a value is an authentic Pledge instance */
+	declare static isPledge: PledgeTypeGuard;
 
 	static get STATE() { return _STATE; }
 
@@ -310,3 +316,6 @@ export namespace Pledge {
 		error?: any | undefined;
 	}
 }
+
+/** Type guard to check if a value is an authentic Pledge instance */
+export const isPledge = Pledge.isPledge;

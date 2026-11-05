@@ -13,7 +13,7 @@ As of modern builds, all bookkeeping is consolidated inside a single **`TempoRun
 **Benefits:**
 - **Reduced Global Footprint** — Consolidation from multiple scatter-slots down to a single root.
 - **Centralized Hardening** — Strict input validation (`Tempo.use`) and hook management operate securely from one nexus.
-- **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for internal test harnesses without `globalThis` manipulation. *Note: This is an internal testing utility. For user-facing configuration and plugin isolation, use the official Sandbox Factory API (`Tempo.create()`).*
+- **Scoped Runtimes (Experimental)** — `TempoRuntime.createScoped()` returns a fresh, isolated runtime for internal test harnesses without `globalThis` manipulation. *Note: This is an internal testing utility. For user-facing configuration and plugin isolation, use the official Sandbox Factory API (`Tempo.derive()`).*
 - **Multi-Bundle / HMR Safety** — Guarantees that two bundle copies of Tempo always share the identical runtime object, resolving complex split-brain states in monorepos.
 
 **User-facing "Global Discovery" slots remain on `globalThis`.** The `Symbol.for('$Tempo')` slot (and custom discovery symbols passed to `Tempo.init`) are intentionally exposed for user-readability, remaining ordinary writable properties. Only sensitive internal bookkeeping was moved into the hardened runtime.
@@ -59,6 +59,25 @@ This objective is achieved through two primary architectural pillars:
 2. **Master Guard ([Section 3](#3-master-guard-fast-fail-sync-point))**: Implementing a high-speed "fast-fail" gatekeeper to instantly reject invalid inputs before parsing logic is engaged.
 
 Together, these pillars help ensure that `new Tempo()` maintains an extremely fast constructor execution time by completely deferring standard parsing workloads. However, note that these costs can depend on input scanning length and registry-mutation-driven wordlist rebuilds, meaning performance is not universally input- or registry-independent.
+
+---
+
+## 🚪 The Dual Gateway Pattern (`Tempo.from` vs. `new Tempo` vs. `Tempo.now`)
+
+Tempo bridges functional programming and traditional object-oriented architectures through complementary instantiation gateways powered by a single shared parsing pipeline:
+
+1. **`Tempo.from(input?, options?)` — Functional & Pipeline Gateway**  
+   * **Operator Precedence**: Eliminates the parenthetical friction of the `new` keyword in method chains (e.g. `Tempo.from(val).format(...)` vs. `(new Tempo(val)).format(...)`).
+   * **Functional Pipeline Usage**: Natural fit for functional transformations and callback pipelines (e.g. `items.map(d => Tempo.from(d))`).
+   * **Polymorphic Parity**: Delegates directly to `new this(...)`, ensuring functional developers get the exact same Master Guard and multi-type parsing power as class instantiation.
+
+2. **`new Tempo(input?, options?)` — Object-Oriented Gateway**  
+   * **Direct Class Semantics**: Standard ES6/TypeScript constructor for object-oriented systems, class extension, and dependency injection.
+   * **Zero Code Duplication**: Shares identical private state initialization (`#swap`, `#resolve`, and lazy evaluation).
+
+3. **`Tempo.now(options?)` — Clock-Sampling Gateway**  
+   * **Disambiguated Intent**: Separates reading the system clock from ingesting or converting existing data payloads.
+   * **Zero Argument Sniffing**: The sole argument is unambiguously configuration options (`{ timeZone, locale }`).
 
 ---
 

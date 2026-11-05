@@ -201,51 +201,25 @@ type SafeCount<T, Acc extends any[] = [], Last = LastInUnion<T>> =
 /** Own properties of an Array, Object, Map or Enum */
 export type WellKnownSymbols = { [K in keyof SymbolConstructor]: SymbolConstructor[K] extends symbol ? SymbolConstructor[K] : never }[keyof SymbolConstructor]
 
-/** Standard methods attached to enumify / EnumifyType proxies */
-export type EnumMethodKeys =
-	| 'count'
-	| 'keys'
-	| 'values'
-	| 'entries'
-	| 'invert'
-	| 'has'
-	| 'hasOwn'
-	| 'get'
-	| 'includes'
-	| 'keyOf'
-	| 'forEach'
-	| 'filter'
-	| 'map'
-	| 'extend';
-
-/** Augmentable map of method/property names to exclude from KeyOf/ValueOf/OwnOf */
-export interface IgnoreOfMap { }
-
-/** Exclusions specific to Enumify proxy objects */
-export type EnumMethodExclusions = WellKnownSymbols | EnumMethodKeys | keyof IgnoreOfMap;
-
 /** Detects if T is an Enumify proxy object or contains Enumify type branding */
 type IsEnumProxy<T> =
 	[T] extends [{ readonly [Symbol.toStringTag]: 'Enumify' }] ? true :
 	[T] extends [{ [Symbol.toStringTag]: 'Enumify' }] ? true :
 	false;
 
-/** Dynamic ignore type: strips Enum methods for enum proxies, but only symbols for ordinary objects */
-export type IgnoreOf<T = any> = IsEnumProxy<T> extends true ? EnumMethodExclusions : WellKnownSymbols;
-
 /** Computes the union-member cardinality of type T, with numeric fallback for non-unions or deep recursion */
 export type CountOf<T> = SafeCount<T>
 /** Extracts own properties of an object, excluding well-known symbols and ignored keys */
-export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, IgnoreOf<T>>
+export type OwnOf<T extends Obj> = T extends Array<any> ? { [K in number]: T[number] } : Omit<T, WellKnownSymbols>
 /** Extracts the keys of an object type, returning numeric indices for array types or string/symbol keys excluding ignored keys for objects */
 export type KeyOf<T extends Obj> =
 	IsEnumProxy<T> extends true
 	? (T extends { [Symbol.iterator](): IterableIterator<readonly [infer K extends PropertyKey, any]> }
 		? K
-		: Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>)
+		: Exclude<Extract<keyof T, string | symbol>, WellKnownSymbols>)
 	: T extends Array<any>
 	? number
-	: Exclude<Extract<keyof T, string | symbol>, IgnoreOf<T>>;
+	: Exclude<Extract<keyof T, string | symbol>, WellKnownSymbols>;
 
 /** Extracts the value types from an object or array (including readonly arrays) */
 export type ValueOf<T extends Obj | readonly any[]> =
@@ -263,8 +237,13 @@ export type EntryOf<T extends Obj | readonly any[]> =
 	? [number, T[number]]
 	: { [K in KeyOf<T> & PropertyKey]-?: [K, T[K & keyof T]] }[KeyOf<T> & PropertyKey];
 
+/** Removes generic index signatures (string, number, symbol) from an object type, preserving known literal properties */
+export type RemoveIndex<T> = {
+	[K in keyof T as string extends K ? never : number extends K ? never : symbol extends K ? never : K]: T[K];
+};
+
 /** extracts only the Literal string keys (not index signatures) from an object/interface */
-export type LiteralKey<T> = { [K in keyof T]: string extends K ? never : K }[keyof T] & string
+export type LiteralKey<T> = keyof RemoveIndex<T> & string;
 /** remove readonly from all keys */
 export type MutableObject<T> = { -readonly [K in keyof T]: T[K]; }
 
@@ -400,8 +379,7 @@ export interface TypeValueMap<T = any> {
 	'Temporal.PlainMonthDayLike': { type: 'Temporal.PlainMonthDayLike', value: Temporal.PlainMonthDayLike };
 }
 
-/** add Special Type placeholders to the keyof TypeValueMap */
-export type Type = keyof TypeValueMap<any> | 'Enumify' | 'Pledge' | 'Tempo';
+export type Type = keyof TypeValueMap<any>;
 export type TypeValue<T> = { [K in Type]: { type: K, value: GetType<K, T> } }[Type];
 
 /** late-binding Type utility for augmented modules */
@@ -530,9 +508,8 @@ export type IntRange<Lower extends number, Upper extends number> = Exclude<Enume
 
 // branded object
 declare const __brand: unique symbol
-type Brand<B> = { [__brand]: B }
 /** Type utility for creating branded types that are nominally distinct from their base type */
-export type Branded<T, B> = T & Brand<B>
+export type Brand<T, B> = T & { [__brand]: B };
 
 /** Type representing a JSON object with no own properties */
 export type EmptyObject = { [__brand]?: never }

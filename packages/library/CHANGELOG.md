@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.0.0] - Unreleased
 
 ### Added & Architecture
+- **Unforgeable Brand Verification & `@Branded` Class Decorator (`decorator.library`, `assertion.library`, `string.library`)**:
+  - Implemented `@Branded` class decorator in `#library/decorator.library.js` that stamps an unforgeable brand Symbol onto `Target.prototype` (non-enumerable, non-writable, non-configurable).
+  - Automatically defines `[Symbol.toStringTag]` on `Target.prototype` if not already defined, eliminating redundant `@StringTag` annotations.
+  - Automatically attaches a static `is<ClassName>()` predicate method (e.g. `Pledge.isPledge(val)`) and wires `[Symbol.hasInstance]` for runtime brand validation via `val instanceof Target`.
+  - Supports direct usage (`@Branded`), configured string tag (`@Branded('CustomName')`), or custom symbol (`@Branded(mySymbol, 'CustomName')`), with minification safety.
+  - Exported `isBranded<T>(val, brand)` in `#library/assertion.library.js` providing a unified, cross-realm safe type guard for branded objects and functions.
+  - Exported `capitalize<T>(str)` in `#library/string.library.js` preserving camelCase, PascalCase, and acronym casing for method name generation.
+  - Hardened `Pledge`, `Finalizer`, `WeakCache`, `BoundedCache`, `Reactive`, `ReactiveSubscription`, `Interval`, `ScopedSet`, `Logger`, and `WebStore` with `@Branded` and exported standalone `isPledge`, `isFinalizer`, `isWeakCache`, `isBoundedCache`, `isReactive`, `isInterval`, `isScopedSet`, `isLogger`, and `isWebStore` type guards.
+
 - **TC39 Signals Core Reactive Engine (`Signify`)**:
   - Implemented zero-dependency, memory-safe reactive primitives conforming to the TC39 Signals proposal in `#library/signify.library.js`.
   - Added `Signify.state(initialValue, options?)` (`Signify.State`) supporting custom `equals` comparators, `.get()`, `.set()`, `.value`, and epoch tracking.
@@ -25,8 +34,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Locale Calendar Preference Metadata (`international.library`)**:
   - Added `calendar: string` property to the `ResolvedLocaleInfo` interface.
   - Implemented preferred and locale-specified calendar resolution via `Intl.Locale.prototype.getCalendars()` (defaulting to cultural regional calendar when no `-u-ca-*` extension is present), allowing runtime inspection of a locale's resolved calendar (e.g. `'gregory'`, `'buddhist'`, `'hebrew'`) via `resolveLocaleInfo(locale).calendar`.
+- **Julian Day Calculation (`calendar.library`)**:
+  - Exported `toJulianDay()` in `#library/calendar.library.js` with overloads accepting discrete `(year, month, day)` integers, a native JavaScript `Date` (UTC), or an object with `{ year, month, day }` components (including Temporal date objects).
+  - Exported `EPOCH_JULIAN_DAY` constant (`2_440_588` for Unix epoch 1970-01-01), computing the astronomical integer Julian Day Number using pure civil integer arithmetic.
+- **High-Performance Numeric Index Array Conversion (`primitive.library`)**:
+  - Exported `toArray()` in `#library/primitive.library.js` for zero-overhead numeric-index array conversions (`ArrayLike<T> -> T[]`).
+  - Bypasses custom `[Symbol.iterator]` overrides to safeguard array serialization against iterator pollution, avoids per-element closure allocations and `mapFn` overhead, and resolves multi-module circular dependencies between runtime reflection and coercion.
+
+### Breaking Changes
+- **Enumify Static Reflection Architecture & Prototype Removal (`enumerate.library`, `type.library`)**:
+  - Removed all prototype methods (`.has()`, `.get()`, `.keys()`, `.values()`, `.entries()`, `.invert()`, `.keyOf()`, `.includes()`, `.count()`, `.extend()`, `.forEach()`, `.filter()`, `.map()`) from `enumify` instances.
+  - Introduced static `Enum` reflection utility suite (`Enum.has()`, `Enum.hasOwn()`, `Enum.get()`, `Enum.keys()`, `Enum.values()`, `Enum.entries()`, `Enum.invert()`, `Enum.keyOf()`, `Enum.includes()`, `Enum.count()`, `Enum.derive()`).
+  - Enum instances now only retain `[Symbol.iterator]` and `[Symbol.toStringTag]`, making them pure data structures immune to member property shadowing (e.g. enum members named `has`, `get`, `keys`, `values`, `entries`, or `derive` no longer collide with reflection methods).
+  - Replaced prototype `memoizeMethod` with dedicated, module-scoped `WeakMap` caches (`keysCache`, `valuesCache`, `entriesCache`, `invertCache`) for O(1) performance with zero string serialization overhead and leak-free GC cleanup.
+  - Added custom `Enum[Symbol.hasInstance]` supporting `val instanceof Enum` type/runtime brand checking.
+  - Strongly-typed `Enum.derive()` overloads using `Omit<T, keyof E> & E` so shadowed keys overwrite types correctly without resolving to `never`.
+  - Removed obsolete v4 prototype exclusion types (`EnumMethodKeys`, `IgnoreOfMap`, `EnumMethodExclusions`, and `IgnoreOf`), simplifying `KeyOf<T>` and `OwnOf<T>` to directly exclude `WellKnownSymbols`.
+  - Updated `Enumify` class constructor to accept `Property<any> | readonly any[]`.
 
 ### Changed & Hardened
+- **Civil Days to Calendar Overload & Integer Validation (`calendar.library`)**:
+  - Enhanced `civilToDays()` with flexible input overloads matching `toJulianDay()`: accepts discrete `(year, month, day)` numbers, a JavaScript `Date` (UTC), or an object with `{ year, month, day }` properties.
+  - Added strict integer assertions (`Number.isInteger`) ensuring non-integer inputs throw a `RangeError` early rather than propagating corrupted fractional day calculations.
 - **Pure Integer Calendar Arithmetic (`calendar.library`, `rrule.library`)**:
   - Eliminated legacy `Date` object instantiations across calendar calculation algorithms, migrating fully to pure integer arithmetic for leap year, day-of-year, and ISO week date resolution.
   - Hardened pre-1970 calculations and negative astronomical years across RRULE recurrence expansions and calendar operations.

@@ -1,5 +1,5 @@
 import { isFunction, isString, isUndefined, isCallable, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
-import { hasKey, hasOwn } from '#library/primitive.library.js';
+import { hasKey, hasOwn, ownEntries } from '#library/primitive.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
 import { cast } from '#library/type.library.js';
 
@@ -357,6 +357,292 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 	registerPlugin(result);
 	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
 }
+
+export type PropertyResolver<T = any> = (tempo: Tempo) => T;
+
+export type MethodDictionary = Record<string | symbol, Function>;
+
+export type PropertyDescriptorDefinition<T = any> =
+	| {
+		configurable?: boolean;
+		enumerable?: boolean;
+		get(this: any, instance?: any, ...args: any[]): T;
+		set?: never;
+		value?: never;
+		writable?: never;
+		memo?: boolean;
+	}
+	| {
+		configurable?: boolean;
+		enumerable?: boolean;
+		get?: never;
+		value?: any;
+		writable?: boolean;
+		memo?: never;
+	};
+
+export type PropertyDefinition =
+	| PropertyResolver
+	| Function
+	| PropertyDescriptorDefinition;
+
+export type PropertiesConfig = {
+	methods?: MethodDictionary;
+	[key: string | symbol]: PropertyDefinition | MethodDictionary | undefined;
+};
+
+const UNNAMED_PROPERTIES_COUNTER = Symbol.for('Tempo.unnamedPropertiesCounter');
+function nextUnnamedPropertiesId(): number {
+	const g = globalThis as any;
+	g[UNNAMED_PROPERTIES_COUNTER] = (g[UNNAMED_PROPERTIES_COUNTER] ?? 0) + 1;
+	return g[UNNAMED_PROPERTIES_COUNTER];
+}
+
+/**
+ * ## defineProperties
+ * Defines custom instance properties (getters, methods, or descriptors) on Tempo instances.
+ * Getter functions are automatically lazy and memoized per instance.
+ *
+ * @param properties - Dictionary of property definitions, methods, or getter resolvers
+ * @param name - Optional plugin name identifier
+ * @returns A properties plugin factory
+ */
+export function defineProperties<Opts = any>(
+	properties: PropertiesConfig,
+	name?: string,
+): PluginFactory<Plugin<TempoType>, Opts> {
+	const weakCache = new WeakMap<object, Record<string | symbol, any>>();
+	const bundleHolders = new WeakMap<object, Set<PropertyKey>>();
+	if (name && /^PropertiesPlugin#\d+$/i.test(name))
+		throw new TempoError(`Tempo Security: Plugin name '${name}' is reserved for generated properties bundles.`);
+
+	const pluginName = name ?? `PropertiesPlugin#${nextUnnamedPropertiesId()}`;
+
+	function findPropertyHolder(target: any, propKey: PropertyKey): any {
+		let curr = target;
+		while (curr) {
+			if (Object.prototype.hasOwnProperty.call(curr, propKey)) return curr;
+			curr = Object.getPrototypeOf(curr);
+		}
+		return null;
+	}
+
+	function isKeyOwnedByBundle(target: any, propKey: PropertyKey): boolean {
+		const holder = findPropertyHolder(target, propKey);
+		return holder ? Boolean(bundleHolders.get(holder)?.has(propKey)) : false;
+	}
+
+	const plugin = cast<Plugin<TempoType>>({
+		name: pluginName,
+		version: TEMPO_VERSION,
+		[sym.$PluginType]: 'properties',
+		install(this: TempoType, TempoClass: TempoType) {
+			const proto = TempoClass.prototype;
+			const entries = ownEntries(properties);
+
+			const seen = new Set<PropertyKey>();
+
+			type NormalizedDef =
+				| { type: 'method'; key: PropertyKey; value: Function }
+				| { type: 'fn'; key: PropertyKey; fn: Function }
+				| { type: 'memo'; key: PropertyKey; getter: Function; configurable: boolean; enumerable: boolean }
+				| { type: 'raw'; key: PropertyKey; desc: PropertyDescriptor };
+
+			const normalizedDefs: NormalizedDef[] = [];
+
+			// First pass: Validate and snapshot every entry before defining any properties on prototype
+			for (const [key, value] of entries) {
+				if (key === 'methods' && isObject(value)) {
+					for (const [mKey, mVal] of ownEntries(value)) {
+						if (seen.has(mKey))
+							throw new TempoError(`Tempo Security: Duplicate property definition '${String(mKey)}' in defineProperties bundle.`);
+						seen.add(mKey);
+						if (mKey in proto && !isKeyOwnedByBundle(proto, mKey))
+							throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(mKey)}' on Tempo.prototype.`);
+						if (!isFunction(mVal))
+							throw new TempoError(`Tempo Security: Invalid method definition for '${String(mKey)}'. Expected a function.`);
+						normalizedDefs.push({ type: 'method', key: mKey, value: mVal });
+					}
+					continue;
+				}
+
+				if (seen.has(key))
+					throw new TempoError(`Tempo Security: Duplicate property definition '${String(key)}' in defineProperties bundle.`);
+				seen.add(key);
+
+				if (key in proto && !isKeyOwnedByBundle(proto, key))
+					throw new TempoError(`Tempo Security: Cannot overwrite existing core property '${String(key)}' on Tempo.prototype.`);
+
+				if (hasKey(value, 'set'))
+					throw new TempoError(`Tempo Security: Setters are not permitted on immutable Tempo instances ('${String(key)}').`);
+
+				if (hasKey(value, 'get') && (hasKey(value, 'value') || hasKey(value, 'writable')))
+					throw new TempoError(`Tempo Security: Descriptor for '${String(key)}' cannot define 'get' with 'value' or 'writable'.`);
+
+				if (hasKey(value, 'get') && value.get !== undefined && !isFunction(value.get))
+					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
+
+				if (!isFunction(value) && !hasKey(value, 'get') && !hasKey(value, 'value')) {
+					throw new TempoError(`Tempo Security: Invalid property definition for '${String(key)}'. Expected a getter function or descriptor with 'get' or 'value'.`);
+				}
+
+				if (isFunction(value)) {
+					normalizedDefs.push({ type: 'fn', key, fn: value });
+				} else if (hasKey(value, 'get') || hasKey(value, 'value')) {
+					const desc = value as PropertyDescriptor & { memo?: boolean };
+					const configurable = desc.configurable ?? true;
+					const enumerable = desc.enumerable ?? false;
+					if (isFunction(desc.get) && desc.memo !== false) {
+						normalizedDefs.push({ type: 'memo', key, getter: desc.get, configurable, enumerable });
+					} else {
+						const def: PropertyDescriptor = { configurable, enumerable };
+						if ('value' in desc) {
+							def.value = desc.value;
+							def.writable = desc.writable ?? true;
+						}
+						if ('get' in desc) {
+							if (isFunction(desc.get)) {
+								const getter = desc.get;
+								def.get = function (this: any) {
+									return (getter as any).call(this, this);
+								};
+							} else {
+								def.get = desc.get;
+							}
+						}
+						if ('set' in desc) def.set = desc.set;
+						normalizedDefs.push({ type: 'raw', key, desc: def });
+					}
+				}
+			}
+
+			// Second pass: Define validated properties
+			let holderKeys = bundleHolders.get(proto);
+			if (!holderKeys) {
+				holderKeys = new Set<PropertyKey>();
+				bundleHolders.set(proto, holderKeys);
+			}
+
+			for (const def of normalizedDefs) {
+				const existingDesc = Object.getOwnPropertyDescriptor(proto, def.key);
+				if (existingDesc && existingDesc.configurable === false)
+					continue;
+
+				holderKeys.add(def.key);
+
+				if (def.type === 'method') {
+					Object.defineProperty(proto, def.key, {
+						value: def.value,
+						writable: true,
+						configurable: true,
+						enumerable: false,
+					});
+				} else if (def.type === 'fn') {
+					const fn = def.fn;
+					const key = def.key;
+					Object.defineProperty(proto, key, {
+						get(this: any) {
+							let cache = weakCache.get(this);
+							if (cache && key in cache)
+								return cache[key];
+
+							const result = (fn as any).call(this, this);
+
+							if (!cache) {
+								cache = Object.create(null);
+								weakCache.set(this, cache!);
+							}
+							cache![key] = result;
+
+							if (this !== proto && Reflect.isExtensible(this)) {
+								Object.defineProperty(this, key, {
+									value: result,
+									writable: false,
+									enumerable: false,
+									configurable: true,
+								});
+							}
+
+							return result;
+						},
+						configurable: true,
+						enumerable: false,
+					});
+				} else if (def.type === 'memo') {
+					const getter = def.getter;
+					const key = def.key;
+					Object.defineProperty(proto, key, {
+						configurable: def.configurable,
+						enumerable: def.enumerable,
+						get(this: any) {
+							let cache = weakCache.get(this);
+							if (cache && key in cache)
+								return cache[key];
+
+							const result = (getter as any).call(this, this);
+
+							if (!cache) {
+								cache = Object.create(null);
+								weakCache.set(this, cache!);
+							}
+							cache![key] = result;
+
+							if (this !== proto && Reflect.isExtensible(this)) {
+								Object.defineProperty(this, key, {
+									value: result,
+									writable: false,
+									enumerable: def.enumerable,
+									configurable: def.configurable,
+								});
+							}
+
+							return result;
+						},
+					});
+				} else if (def.type === 'raw') {
+					Object.defineProperty(proto, def.key, def.desc);
+				}
+			}
+		},
+	});
+
+	const factory = function (options?: Opts) {
+		return {
+			...plugin,
+			options,
+			[sym.$PluginType]: 'properties',
+		};
+	};
+
+	const { name: pName, ...rest } = plugin;
+	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'properties' });
+	Object.defineProperty(result, 'name', { value: pName ?? '', configurable: true });
+
+	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
+}
+
+/**
+ * Single-property overload or alias for defineProperties.
+ *
+ * @param propOrProps - Property name or dictionary of properties
+ * @param definition - Property resolver or descriptor when using single property signature
+ * @param name - Optional plugin name
+ * @returns A registered properties plugin factory
+ */
+export function defineProperty<Opts = any>(
+	propOrProps: string | symbol | PropertiesConfig,
+	definition?: PropertyDefinition,
+	name?: string,
+): PluginFactory<Plugin<TempoType>, Opts> {
+	if (isString(propOrProps) || isSymbol(propOrProps)) {
+		if (!isDefined(definition))
+			throw new TempoError(`Property definition is required when calling defineProperty for '${String(propOrProps)}'.`);
+
+		return defineProperties({ [propOrProps]: definition }, name ?? String(propOrProps));
+	}
+	return defineProperties(propOrProps, name);
+}
+
 
 /**
  * Automatically registers a plugin onto the active Tempo constructor or global ambient instance.

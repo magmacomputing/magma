@@ -6,7 +6,7 @@ import { ScopedSet } from '#library/scopedset.class.js';
 /**
  * Sandbox Plugin Isolation (ScopedSet)
  *
- * Validates that plugins extended into a sandboxed Tempo class (via Tempo.create())
+ * Validates that plugins extended into a sandboxed Tempo class (via Tempo.derive())
  * are isolated from the global scope via a `ScopedSet` whose `has()` delegates
  * to the global `rt.installed`, but whose `add()` writes only to own-local storage.
  *
@@ -23,7 +23,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 	});
 
 	it('sandbox state carries a ScopedSet for its installed tracker', () => {
-		const X = Tempo.create({});
+		const X = Tempo.derive({});
 		const state = (X as any)[$Internal]();
 		expect(state.installed.constructor.name).toBe('ScopedSet');
 	});
@@ -37,7 +37,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 	it('sandbox plugin does NOT bleed into the global rt.installed', () => {
 		const sandboxPlugin = (T: any) => { (T as any).sandboxOnly = true; };
 
-		const X = Tempo.create({});
+		const X = Tempo.derive({});
 		X.use([sandboxPlugin]);
 
 		// Global rt.installed should be unaffected
@@ -50,7 +50,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		let calls = 0;
 		const plugin = (_T: any) => { calls++; };
 
-		const X = Tempo.create({});
+		const X = Tempo.derive({});
 		X.use([plugin]);
 		expect(calls).toBe(1);			// sandbox installed it
 
@@ -65,7 +65,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		Tempo.use([plugin]);
 		expect(calls).toBe(1);			// global installed it
 
-		const X = Tempo.create({});
+		const X = Tempo.derive({});
 		X.use([plugin]);
 		expect(calls).toBe(1);			// ScopedSet.has() found it in parent → skipped ✓
 	});
@@ -74,7 +74,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		const globalPlugin = (T: any) => { (T as any).fromGlobal = 42; };
 		Tempo.use([globalPlugin]);
 
-		const X = Tempo.create({});
+		const X = Tempo.derive({});
 		// The sandbox class extends from Tempo, so static properties attached
 		// to Tempo are accessible through the prototype chain on X
 		expect((X as any).fromGlobal).toBe(42);
@@ -85,8 +85,8 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		const pluginA = (_T: any) => { callsA++; };
 		const pluginB = (_T: any) => { callsB++; };
 
-		const A = Tempo.create({});
-		const B = Tempo.create({});
+		const A = Tempo.derive({});
+		const B = Tempo.derive({});
 
 		A.use([pluginA]);
 		expect(callsA).toBe(1);
@@ -125,7 +125,7 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 
 	it('disposes sandbox cleanly and clears discovery slot and state', () => {
 		const discoveryKey = 'test-disposable-sandbox';
-		const X = Tempo.create({ discovery: discoveryKey });
+		const X = Tempo.derive({ discovery: discoveryKey });
 		const slot = Symbol.for(discoveryKey);
 
 		expect((globalThis as any)[slot]).toBeDefined();
@@ -146,12 +146,12 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		const slot = Symbol.for(sharedKey);
 
 		// Sandbox 1 created
-		const sb1 = Tempo.create({ discovery: sharedKey, timeZone: 'Pacific/Auckland' });
+		const sb1 = Tempo.derive({ discovery: sharedKey, timeZone: 'Pacific/Auckland' });
 		const data1 = (globalThis as any)[slot];
 		expect(data1).toBeDefined();
 
 		// Sandbox 2 created with same shared key, replacing slot
-		const sb2 = Tempo.create({ discovery: sharedKey, timeZone: 'Asia/Tokyo' });
+		const sb2 = Tempo.derive({ discovery: sharedKey, timeZone: 'Asia/Tokyo' });
 		const data2 = (globalThis as any)[slot];
 		expect(data2).toBeDefined();
 		expect(data2).not.toBe(data1);
@@ -169,12 +169,12 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect((globalThis as any)[slot]).toBeUndefined();
 	});
 
-	it('Tempo.create with callback executes synchronous block and automatically disposes sandbox', () => {
+	it('Tempo.derive with callback executes synchronous block and automatically disposes sandbox', () => {
 		const discoveryKey = 'test-auto-sandbox-sync';
 		const slot = Symbol.for(discoveryKey);
 		let leakedSandbox: any = null;
 
-		const result = Tempo.create({ discovery: discoveryKey }, (sb) => {
+		const result = Tempo.derive({ discovery: discoveryKey }, (sb) => {
 			leakedSandbox = sb;
 			expect((globalThis as any)[slot]).toBeDefined();
 			expect((sb as any).isDisposed).toBe(false);
@@ -186,9 +186,9 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect((globalThis as any)[slot]).toBeUndefined();
 	});
 
-	it('Tempo.create with callback handles default options when only callback is passed', () => {
+	it('Tempo.derive with callback handles default options when only callback is passed', () => {
 		let leakedSandbox: any = null;
-		const result = Tempo.create((sb) => {
+		const result = Tempo.derive((sb) => {
 			leakedSandbox = sb;
 			expect((sb as any).isDisposed).toBe(false);
 			return 42;
@@ -198,12 +198,12 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect((leakedSandbox as any).isDisposed).toBe(true);
 	});
 
-	it('Tempo.create with callback handles async block and disposes sandbox after settlement', async () => {
+	it('Tempo.derive with callback handles async block and disposes sandbox after settlement', async () => {
 		const discoveryKey = 'test-auto-sandbox-async';
 		const slot = Symbol.for(discoveryKey);
 		let leakedSandbox: any = null;
 
-		const result = await Tempo.create({ discovery: discoveryKey }, async (sb) => {
+		const result = await Tempo.derive({ discovery: discoveryKey }, async (sb) => {
 			leakedSandbox = sb;
 			await new Promise(resolve => setTimeout(resolve, 10));
 			expect((globalThis as any)[slot]).toBeDefined();
@@ -215,13 +215,13 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect((globalThis as any)[slot]).toBeUndefined();
 	});
 
-	it('Tempo.create with callback disposes sandbox even if callback throws', () => {
+	it('Tempo.derive with callback disposes sandbox even if callback throws', () => {
 		const discoveryKey = 'test-auto-sandbox-err';
 		const slot = Symbol.for(discoveryKey);
 		let leakedSandbox: any = null;
 
 		expect(() => {
-			Tempo.create({ discovery: discoveryKey }, (sb) => {
+			Tempo.derive({ discovery: discoveryKey }, (sb) => {
 				leakedSandbox = sb;
 				throw new Error('Sandbox error');
 			});
@@ -231,13 +231,13 @@ describe('Sandbox Plugin Isolation (ScopedSet)', () => {
 		expect((globalThis as any)[slot]).toBeUndefined();
 	});
 
-	it('Tempo.create supports native using keyword for block-scoped disposal', () => {
+	it('Tempo.derive supports native using keyword for block-scoped disposal', () => {
 		const discoveryKey = 'test-using-sandbox';
 		const slot = Symbol.for(discoveryKey);
 		let leakedSandbox: any = null;
 
 		{
-			using sb = Tempo.create({ discovery: discoveryKey });
+			using sb = Tempo.derive({ discovery: discoveryKey });
 			leakedSandbox = sb;
 			expect((globalThis as any)[slot]).toBeDefined();
 			expect((sb as any).isDisposed).toBe(false);

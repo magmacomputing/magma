@@ -9,40 +9,52 @@ beforeEach(() => { Tempo.init() });
 // Enum Getters – return frozen Enumify objects with known keys/values
 // ─────────────────────────────────────────────────────────────────────────────
 describe(`${label} WEEKDAY / WEEKDAYS`, () => {
-  test('WEEKDAY has 7 short-form entries, plus 1 for All', () => {
-    expect(Tempo.WEEKDAY.keys().length).toBe(8);
+  test('WEEKDAY has 7 short-form entries (1-based)', () => {
+    expect(Tempo.Enum.keys(Tempo.WEEKDAY).length).toBe(7);
+    expect(Tempo.WEEKDAY.Mon).toBe(1);
+    expect(Tempo.WEEKDAY.Sun).toBe(7);
+    expect(Tempo.Enum.keys(Tempo.WEEKDAY)).not.toContain('All');
   })
 
-  test('WEEKDAYS has 7 long-form entries, plus 1 for All', () => {
-    expect(Tempo.WEEKDAYS.keys().length).toBe(8);
+  test('WEEKDAYS has 7 long-form entries (1-based)', () => {
+    expect(Tempo.Enum.keys(Tempo.WEEKDAYS).length).toBe(7);
+    expect(Tempo.WEEKDAYS.Monday).toBe(1);
+    expect(Tempo.WEEKDAYS.Sunday).toBe(7);
+    expect(Tempo.Enum.keys(Tempo.WEEKDAYS)).not.toContain('Everyday');
   })
 
   test('WEEKDAY keys are abbreviations (3 chars)', () => {
-    Tempo.WEEKDAY.keys().forEach((k: any) => expect(k.length).toBeLessThanOrEqual(3));
+    Tempo.Enum.keys(Tempo.WEEKDAY).forEach((k: any) => expect(k.length).toBeLessThanOrEqual(3));
   })
 
   test('WEEKDAYS keys are full names', () => {
-    expect(Tempo.WEEKDAYS.keys()).toContain('Monday');
+    expect(Tempo.Enum.keys(Tempo.WEEKDAYS)).toContain('Monday');
   })
 
 })
 
 describe(`${label} MONTH / MONTHS`, () => {
 
-  test('MONTH has 12 short-form entries, plus 1 for All', () => {
-    expect(Tempo.MONTH.keys().length).toBe(13);
+  test('MONTH has 12 short-form entries (1-based)', () => {
+    expect(Tempo.Enum.keys(Tempo.MONTH).length).toBe(12);
+    expect(Tempo.MONTH.Jan).toBe(1);
+    expect(Tempo.MONTH.Dec).toBe(12);
+    expect(Tempo.Enum.keys(Tempo.MONTH)).not.toContain('All');
   })
 
-  test('MONTHS has 12 long-form entries, plus 1 for All', () => {
-    expect(Tempo.MONTHS.keys().length).toBe(13);
+  test('MONTHS has 12 long-form entries (1-based)', () => {
+    expect(Tempo.Enum.keys(Tempo.MONTHS).length).toBe(12);
+    expect(Tempo.MONTHS.January).toBe(1);
+    expect(Tempo.MONTHS.December).toBe(12);
+    expect(Tempo.Enum.keys(Tempo.MONTHS)).not.toContain('Every');
   })
 
   test('MONTH includes expected abbreviation', () => {
-    expect(Tempo.MONTH.keys()).toContain('Jan');
+    expect(Tempo.Enum.keys(Tempo.MONTH)).toContain('Jan');
   })
 
   test('MONTHS includes expected full name', () => {
-    expect(Tempo.MONTHS.keys()).toContain('January');
+    expect(Tempo.Enum.keys(Tempo.MONTHS)).toContain('January');
   })
 
 })
@@ -50,23 +62,23 @@ describe(`${label} MONTH / MONTHS`, () => {
 describe(`${label} DURATION / DURATIONS`, () => {
 
   test('DURATION has 10 singular time unit keys', () => {
-    expect(Tempo.DURATION.keys().length).toBe(10);
+    expect(Tempo.Enum.keys(Tempo.DURATION).length).toBe(10);
   })
 
   test('DURATIONS has 10 plural time unit keys', () => {
-    expect(Tempo.DURATIONS.keys().length).toBe(10);
+    expect(Tempo.Enum.keys(Tempo.DURATIONS).length).toBe(10);
   })
 
   test('DURATION includes "year"', () => {
-    expect(Tempo.DURATION.keys()).toContain('year');
+    expect(Tempo.Enum.keys(Tempo.DURATION)).toContain('year');
   })
 
   test('DURATIONS includes "years"', () => {
-    expect(Tempo.DURATIONS.keys()).toContain('years');
+    expect(Tempo.Enum.keys(Tempo.DURATIONS)).toContain('years');
   })
 
   test('DURATION values are numbers (seconds)', () => {
-    Tempo.DURATION.keys().forEach((k: any) => expect(typeof (Tempo.DURATION as any)[k]).toBe('number'));
+    Tempo.Enum.keys(Tempo.DURATION).forEach((k: any) => expect(typeof (Tempo.DURATION as any)[k]).toBe('number'));
   })
 
   test('year in DURATIONS is larger than month', () => {
@@ -81,7 +93,7 @@ describe(`${label} SEASON`, () => {
   })
 
   test('SEASON has quarterly entries', () => {
-    expect(Tempo.SEASON.keys().length).toBeGreaterThan(0);
+    expect(Tempo.Enum.keys(Tempo.SEASON).length).toBeGreaterThan(0);
   })
 
 })
@@ -89,7 +101,7 @@ describe(`${label} SEASON`, () => {
 describe(`${label} COMPASS`, () => {
 
   test('COMPASS has North, South, East, West', () => {
-    const keys = Tempo.COMPASS.keys();
+    const keys = Tempo.Enum.keys(Tempo.COMPASS);
     expect(keys).toContain('North');
     expect(keys).toContain('South');
     expect(keys).toContain('East');
@@ -97,7 +109,7 @@ describe(`${label} COMPASS`, () => {
   })
 
   test('COMPASS values are lowercase strings', () => {
-    Tempo.COMPASS.keys().forEach((k: string) => {
+    Tempo.Enum.keys(Tempo.COMPASS).forEach((k: string) => {
       const val = String((Tempo.COMPASS as any)[k]);
       expect(typeof val).toBe('string');
       expect(val).toBe(val.toLowerCase());
@@ -128,15 +140,15 @@ describe(`${label} enums`, () => {
 describe(`${label} ELEMENT (via Tempo.enums)`, () => {
 
   test('ELEMENT keys has entries for standard datetime units', () => {
-    expect(Tempo.enums.ELEMENT.keys()).toContain('yy');
-    expect(Tempo.enums.ELEMENT.keys()).toContain('mm');
-    expect(Tempo.enums.ELEMENT.keys()).toContain('dd');
+    expect(Tempo.Enum.keys(Tempo.enums.ELEMENT)).toContain('yy');
+    expect(Tempo.Enum.keys(Tempo.enums.ELEMENT)).toContain('mm');
+    expect(Tempo.Enum.keys(Tempo.enums.ELEMENT)).toContain('dd');
   })
 
   test('ELEMENT values has entries for standard datetime units', () => {
-    expect(Tempo.enums.ELEMENT.values()).toContain('year');
-    expect(Tempo.enums.ELEMENT.values()).toContain('month');
-    expect(Tempo.enums.ELEMENT.values()).toContain('day');
+    expect(Tempo.Enum.values(Tempo.enums.ELEMENT)).toContain('year');
+    expect(Tempo.Enum.values(Tempo.enums.ELEMENT)).toContain('month');
+    expect(Tempo.Enum.values(Tempo.enums.ELEMENT)).toContain('day');
   })
 
 })
@@ -145,11 +157,11 @@ describe(`${label} FORMAT (via Tempo.enums)`, () => {
 
   test('FORMAT is defined and has named format strings', () => {
     expect(Tempo.enums.FORMAT).toBeDefined();
-    expect(Tempo.enums.FORMAT.keys().length).toBeGreaterThan(0);
+    expect(Tempo.Enum.keys(Tempo.enums.FORMAT).length).toBeGreaterThan(0);
   })
 
   test('FORMAT values are strings', () => {
-    Tempo.enums.FORMAT.keys().forEach((k: string) => {
+    Tempo.Enum.keys(Tempo.enums.FORMAT).forEach((k: string) => {
       expect(typeof (Tempo.enums.FORMAT as any)[k]).toBe('string');
     })
   })

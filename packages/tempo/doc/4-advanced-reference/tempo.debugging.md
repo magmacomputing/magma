@@ -57,7 +57,7 @@ Returns a collection containing the pre-calculated string outputs for all curren
 If you simply need to see the value represented in different primitive formats, `Tempo` implements `[Symbol.toPrimitive]`:
 *   `${tempo}` (String coercion) outputs the ISO8601 string via `this.toString()`.
 *   `+tempo` (Number coercion) outputs the Unix epoch in milliseconds.
-*   `tempo.nano` outputs the Unix epoch in nanoseconds formatted as a `BigInt`.
+*   `tempo.epoch.ns` outputs the Unix epoch in nanoseconds formatted as a `BigInt`.
 
 ---
 

@@ -1,4 +1,4 @@
-import { Pledge } from '#library/pledge.class.js';
+import { Pledge, isPledge } from '#library/pledge.class.js';
 
 describe('Pledge', () => {
 
@@ -169,5 +169,26 @@ describe('Pledge', () => {
 		const sig3 = p3.toSignal();
 		p3.reject(new Error('async failed'));
 		expect(() => sig3()).toThrow('async failed');
+	});
+
+	test('@Branded decorator and isPledge type-guard', () => {
+		const p = new Pledge<string>();
+		const spoofed = { [Symbol.toStringTag]: 'Pledge' };
+
+		expect(Pledge.isPledge(p)).toBe(true);
+		expect(isPledge(p)).toBe(true);
+		expect(p instanceof Pledge).toBe(true);
+		expect(Object.prototype.toString.call(p)).toBe('[object Pledge]');
+		expect(Pledge.name).toBe('Pledge');
+
+		expect(Pledge.isPledge(spoofed)).toBe(false);
+		expect(isPledge(spoofed)).toBe(false);
+		expect(spoofed instanceof Pledge).toBe(false);
+
+		expect(Pledge.isPledge(new Date())).toBe(false);
+		expect(Pledge.isPledge({})).toBe(false);
+		expect(Pledge.isPledge(null)).toBe(false);
+		expect(Pledge.isPledge(undefined)).toBe(false);
+		expect(Pledge.isPledge('string')).toBe(false);
 	});
 });

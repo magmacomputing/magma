@@ -25,7 +25,7 @@ describe('extend.recurrence', () => {
 	});
 
 	test('Tempo.prototype.nextOccurrence preserves sandbox subclass and respects non-ms timeStamp configurations', () => {
-		const Sandbox = Tempo.create({ timeZone: 'UTC', timeStamp: 'ss' });
+		const Sandbox = Tempo.derive({ timeZone: 'UTC', timeStamp: 'ss' });
 		const start = new Sandbox('2026-08-07T00:00:00.000Z');
 		const next = start.nextOccurrence('FREQ=DAILY;INTERVAL=1');
 		expect(next).toBeInstanceOf(Sandbox);

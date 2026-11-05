@@ -1,8 +1,17 @@
 import { isObject, isEmpty, isNumber, isError, isString } from '#library/assertion.library.js';
 import { enumify } from '#library/enumerate.library.js';
 import { sym } from '#library/symbol.library.js';
-import { StringTag } from '#library/decorator.library.js';
+import { Branded } from '#library/decorator.library.js';
 import type { KeyOf, ValueOf } from '#library/type.library.js';
+
+declare module '#library/type.library.js' {
+	interface TypeValueMap<T> {
+		Logger: { type: 'Logger'; value: Logger };
+	}
+}
+
+/** Type guard predicate checking if a value is an authentic Logger instance */
+type LoggerTypeGuard = (val: unknown) => val is Logger;
 
 /**
  * Enumeration of available log levels from lowest to highest verbosity.
@@ -70,8 +79,11 @@ export function parseLogLevel(level?: DebugLevel, fallback: LOG = LOG.Info): LOG
  * log.info('Started'); // [App] Started
  * ```
  */
-@StringTag('Logger')
+@Branded('Logger')
 export class Logger {
+	/** Type guard to check if a value is an authentic Logger instance */
+	declare static isLogger: LoggerTypeGuard;
+
 	#namespace: string;
 
 	/** The current verbosity level */
@@ -137,3 +149,7 @@ export class Logger {
 	/** console.trace */	trace = (...msg: any[]) => this.#emit(Method.Trace, ...msg);
 	/** console.error */	error = (...msg: any[]) => this.#emit(Method.Error, ...msg);
 }
+
+/** Type guard to check if a value is an authentic Logger instance */
+export const isLogger = Logger.isLogger;
+

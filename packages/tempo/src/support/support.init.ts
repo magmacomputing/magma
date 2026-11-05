@@ -12,7 +12,7 @@ import { ownEntries, hasOwn, hasNoneOf } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { coerceGeo } from '#library/mapper.library.js';
-import { BoundedCache } from '#library/cache.class.js';
+import { BoundedCache, isBoundedCache } from '#library/cache.class.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 import { getRuntime } from './support.runtime.js';
@@ -34,16 +34,32 @@ import { registryUpdate } from './support.register.js';
  * @internal
  */
 function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedCache {
-	const isBoundedCacheOpt = Boolean(optionsCache?.isBoundedCache || optionsCache instanceof BoundedCache);
+	const isBounded = (val: any): val is BoundedCache =>
+		isBoundedCache(val) || (
+			isObject(val) &&
+			(val as any)[Symbol.toStringTag] === 'BoundedCache' &&
+			isFunction((val as any).evictExpired) &&
+			isFunction((val as any).isStatic) &&
+			isFunction((val as any).get) &&
+			isFunction((val as any).set) &&
+			isFunction((val as any).setStatic) &&
+			isFunction((val as any).has) &&
+			isFunction((val as any).delete) &&
+			isFunction((val as any).clear) &&
+			isFunction((val as any).entries) &&
+			isFunction((val as any).deletePrefix)
+		);
+
+	const isBoundedCacheOpt = isBounded(optionsCache);
 	if (isBoundedCacheOpt) {
 		return optionsCache as BoundedCache;
 	} else if (optionsCache instanceof Map || (optionsCache && isFunction((optionsCache as any).entries))) {
-		const targetCache = existingCache ?? new BoundedCache();
+		const targetCache = existingCache && isFunction(existingCache.setStatic) ? existingCache : new BoundedCache();
 		for (const [k, v] of (optionsCache as any).entries())
 			targetCache.setStatic(String(k).trim().toLowerCase(), String(v));
 		return targetCache;
 	} else {
-		if (existingCache && (existingCache.isBoundedCache || existingCache instanceof BoundedCache)) {
+		if (isBounded(existingCache)) {
 			if (isDefined(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
 			if (isDefined(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
 			return existingCache;
@@ -147,7 +163,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 	state.parse = markConfig(parseState);
 
 	// 2. Establish the base configuration options
-	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => enums.CONFIG.has(key)));
+	const configDefaults = Object.fromEntries(Object.entries(Default).filter(([key]) => Enum.has(enums.CONFIG, key)));
 	if (isGlobal) {
 		markConfig(Object.assign(state.config, configDefaults));
 		// Unfreeze the registry sub-object so that extendState can write into it at runtime.
@@ -342,11 +358,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						modifiers: { ...(state.config.registry?.modifiers ?? {}) }
 					};
 					if (arg.value.formats) {
-						const extended = state.config.registry.formats ? Enum.extend(state.config.registry.formats, arg.value.formats) : arg.value.formats;
+						const extended = state.config.registry.formats ? Enum.derive(state.config.registry.formats, arg.value.formats) : arg.value.formats;
 						setProperty(state.config.registry, 'formats', extended);
 					}
 					if (arg.value.locales) {
-						const extended = state.config.registry.locales ? Enum.extend(state.config.registry.locales, arg.value.locales) : arg.value.locales;
+						const extended = state.config.registry.locales ? Enum.derive(state.config.registry.locales, arg.value.locales) : arg.value.locales;
 						setProperty(state.config.registry, 'locales', extended);
 					}
 					if (arg.value.modifiers) {

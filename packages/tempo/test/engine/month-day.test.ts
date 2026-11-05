@@ -35,7 +35,7 @@ describe('Tempo: Month-Day Parsing (Ambiguity Support)', () => {
 	});
 
 	it('should respect registry augmentation via Discovery', () => {
-		const Sandbox = Tempo.create({
+		const Sandbox = Tempo.derive({
 			discovery: {
 				monthDay: {
 					timezones: {

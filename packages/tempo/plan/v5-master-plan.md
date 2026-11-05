@@ -12,7 +12,7 @@ This Master Plan consolidates all prior RFCs, breaking change analyses, and arch
 
 ```mermaid
 graph TD
-  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 — In Progress)</i>"] --> P2["Phase 2: Scope & Namespace Defense<br><i>(@tempo-js & @tempojs)</i>"]
+  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 Merged — now() factory pending)</i>"] --> P2["Phase 2: Scope & Namespace Defense<br><i>(@tempo-js & @tempojs)</i>"]
   P2 --> P3["Phase 3: Plugin Ecosystem Modularization<br><i>(Dialects Standalone, Core Superpowers)</i>"]
   P3 --> P4["Phase 4: Library & Code Standards<br><i>(isNonNull, Strict isDefined, Semicolons)</i>"]
   P4 --> P5["Phase 5: Multi-Version Docs & AI Context<br><i>(VitePress /v4/ & llms.txt)</i>"]
@@ -21,13 +21,14 @@ graph TD
 
 ---
 
-### Phase 1: Core Modernization, Deprecations & Signals (PR #110)
-*Status: Nearly Complete (Uncommitted working tree / PR review stage)*
+### Phase 1: Core Modernization, Deprecations & Signals (PR #110 & Phase 1 Complete)
+*Status: Nearly Completed *
 
 - [x] **`Tempo.now()` Transition to Instance Factory**:
   - `Tempo.now()` returns an immutable `Tempo` instance (supports options like `{ timeZone, sphere }`) instead of primitive `bigint` nanoseconds.
   - Raw epoch numbers cleanly moved to `Tempo.epoch.ns`, `Tempo.epoch.ms`, `Tempo.epoch.us`, and `Tempo.epoch.ss`.
-- [x] **Format Token Rationalization**:
+  - Static `Tempo.instant` returns native `Temporal.Instant`. Static tests updated in `static.methods.test.ts`.
+- [ ] **Format Token Rationalization**:
   - Deprecate legacy `{ww}` and `{wy}` in favor of canonical ISO `{yow}` and `{woy}`.
   - Canonicalize orthogonal `:compact` modifier across parser, format, and explain, completely eliminating legacy fused modifiers (e.g. `{tz:offsetcompact}`).
   - Standardize offset sub-components on canonical `:hh`, `:mi`, `:ss`.
@@ -39,6 +40,9 @@ graph TD
   - Split `getRuntime` import in `@magmacomputing/tempo-plugin-dialects` to preserve dual `^4.7.0 || ^5.0.0` peer dependency support.
 - [x] **Review Remediation**:
   - Resolve all 7 CodeRabbit review findings on PR #110 with localized unit test and monorepo build verification.
+- [x] **`Tempo.derive()` Prototypal Sandbox Architecture**:
+  - Transitioned legacy `Tempo.create()` to `Tempo.derive()` (Option A: clean break) aligning conceptual parity with `Enum.derive()`.
+  - Non-destructive prototypal sandbox inheritance with full `[Symbol.dispose]` explicit resource management (`using`) and scoped callbacks (`Tempo.derive(fn)` / `Tempo.derive(options, fn)`).
 
 ---
 
@@ -47,17 +51,20 @@ graph TD
 
 Following the industry precedent established by Vite (`@vitejs/*`), Svelte (`@sveltejs/*`), and Discord (`@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing JavaScript/TypeScript scope:
 
-- [ ] **Step 1: Claim `@tempo-js` Organization on npm**:
-  - Claim and initialize the **`@tempo-js`** organization on npm under organization admin.
-  - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`NPM_TOKEN`).
-- [ ] **Step 2: File npm Name Dispute for `@tempojs` (Defensive Anti-Squatting)**:
-  - File a formal npm Name Dispute / transfer request with npm Support for the dormant `@tempojs` scope (abandoned by the Bebop RPC project).
-  - Once secured, maintain `@tempojs` defensively alongside `@tempo-js` to eliminate typosquatting and supply-chain confusion.
+- [x] **Step 1: Claim `@tempo-js` Organization and Unscoped Packages on npm**:
+  - Claim and initialize the **`@tempo-js`** (and defensive **`@tempo-fns`**) organization on npm under organization admin.
+  - Claimed unscoped companion packages **`tempo-fns`** and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
+  - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
+- [x] **Step 2: File npm Name Disputes (Defensive Anti-Squatting)**:
+  - **`@tempojs` Scope Dispute**: Formal transfer request submitted to `support@npmjs.com` following 30-day unanswered outreach to Andrew Sampson (Oct 02 – Nov 03).
+  - **`tempojs` / `tempo-js` Unscoped Inquiry**: Direct outreach sent to Brendon Ribeiro (`brendondominic@gmail.com`) on Nov 03 requesting ownership/maintainer transfer for the dormant (2018) `tempojs` package (which will also unlock publishing `tempo-js`). Grace period active through early December 2026.
+  - Once secured, maintain defensively alongside `@tempo-js` to eliminate typosquatting and supply-chain confusion.
 - [ ] **Step 3: Establish Canonical Package Mapping**:
   | Current v4 Scope (`@magmacomputing/*`) | Target v5 Scope (`@tempo-js/*`) | Role / Exports |
   | :--- | :--- | :--- |
-  | `@magmacomputing/tempo` | **`@tempo-js/core`** | Fluent engine with subpath exports (`./parse`, `./format`, `./mutate`, `./duration`, `./library`, `./plugin/sdk`) |
-  | `@magmacomputing/tempo-fns` | **`@tempo-js/fns`** | Standalone functional date math & algorithms |
+  | `@magmacomputing/tempo` | **`@tempo-js/core`** | Fluent engine with subpath exports (`./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`, and **`./base`** for the minimal tree-shakeable kernel, migrated from v4 `./core`) |
+  | `@magmacomputing/tempo-fns` | **`tempo-fns`** / **`@tempo-js/fns`** | Standalone functional date math & algorithms for Temporal |
+  | `@magmacomputing/library` | **`tempo-lib`** / **`@tempo-js/lib`** | Modularized core primitives, assertions, type-guards, and reflection |
   | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-js/plugin-dialects`** | Moment / Day.js / Luxon / SQL format compatibility |
   | `@magmacomputing/tempo-plugin-ticker` | **`@tempo-js/plugin-ticker`** | High-precision reactive scheduler & pulse engine |
   | `@magmacomputing/tempo-plugin-ntp` | **`@tempo-js/plugin-ntp`** | Network Time Protocol clock drift synchronization |
@@ -100,13 +107,24 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 ---
 
 ### Phase 4: Library & Code Standards Harmonization
-*Status: Planned*
+*Status: In Progress*
 
+- [x] **Enumify Static Reflection Architecture & Prototype Removal (`@magmacomputing/library`)**:
+  - Migrate `enumify` instances from prototype methods (`.has()`, `.get()`, `.keys()`, `.values()`, `.entries()`, `.invert()`, `.keyOf()`, `.includes()`, `.count()`, `.extend()`, `.forEach()`, `.filter()`, `.map()`) to static `Enum.*` reflection suite.
+  - Eliminate member property shadowing risks on Enum instances, retaining only `[Symbol.iterator]` and `[Symbol.toStringTag]`.
+  - Migrate prototype memoization to dedicated module-scoped `WeakMap`s (`keysCache`, `valuesCache`, `entriesCache`, `invertCache`) for O(1) lookups without serialization overhead.
+  - Add `Enum[Symbol.hasInstance]` and strongly-typed `Enum.derive` overloads with `Omit<T, keyof E> & E`.
+  - Clean up obsolete prototype exclusion types (`EnumMethodKeys`, `IgnoreOfMap`, `EnumMethodExclusions`, `IgnoreOf`) in favor of direct `WellKnownSymbols`.
 - [ ] **Type-Guard Semantics Correction (`isNonNull` vs. Strict `isDefined`)**:
   - *Problem*: In v4, `isDefined(null)` returned `false`, trapping `null` in a semantic void where it was neither defined nor undefined.
   - *Step 1*: Introduce `isNonNull<T>(val): val is NonNullable<T>` in `@magmacomputing/library`.
   - *Step 2*: Perform monorepo sweep migrating existing call sites from `isDefined` to `isNonNull` to ensure 100% behavioral preservation.
   - *Step 3*: Redefine `isDefined<T>(val): val is Exclude<T, undefined>` (`val !== undefined`), creating strict logical symmetry: `!isDefined(x) <=> isUndefined(x)`.
+- [ ] **Type-Guard Semantics Correction (`isInteger` vs. `isBigInt`)**:
+  - *Problem*: In `@magmacomputing/library`, `isInteger(obj)` is defined as `typeof obj === 'bigint'`, creating an unexpected semantic trap where standard JS integer numbers (`Number.isInteger(2026)`) return `false`.
+  - *Step 1*: Introduce canonical `isBigInt(obj): obj is bigint => typeof obj === 'bigint'` in `@magmacomputing/library`.
+  - *Step 2*: Migrate existing call sites checking for `bigint` (e.g. In `coercion.library`, `interval.class`, `serialize.library`) from `isInteger` to `isBigInt`.
+  - *Step 3*: Re-align `isInteger` with standard ECMAScript semantics: `isInteger(obj): obj is number => Number.isInteger(obj)`.
 - [ ] **ECMAScript Standards Compliance: Repository-Wide Semicolon Policy**:
   - Adopt explicit statement termination across all monorepo TypeScript files (`semi: true`) per ECMA-262 § 16.2.2.
   - Add standard semicolons to VitePress theme files to eliminate one-off style anomalies.

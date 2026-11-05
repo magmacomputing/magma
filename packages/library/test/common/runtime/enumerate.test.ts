@@ -1,9 +1,9 @@
-import { enumify, Enum } from '#library/enumerate.library.js';
+import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
 
 describe('Enum (Static Reflection & v5 Architecture)', () => {
 	it('should enumerate keys, values, and entries across prototypal extension via Enum.*', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
 		expect(Enum.values(EXTENDED)).toEqual([1, 2, 3]);
@@ -13,7 +13,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should correctly handle JSON.stringify() for extended enums', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		const json = JSON.parse(JSON.stringify(EXTENDED));
 		expect(json).toEqual({ A: 1, B: 2, C: 3 });
@@ -21,7 +21,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should distinguish own vs inherited properties via Enum.hasOwn() and Enum.has()', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		expect(Enum.has(EXTENDED, 'A')).toBe(true);
 		expect(Enum.hasOwn(EXTENDED, 'A')).toBe(false);
@@ -31,8 +31,8 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should handle multiple levels of extension', () => {
 		const BASE = enumify({ A: 1 });
-		const MID = Enum.extend(BASE, { B: 2 });
-		const TOP = Enum.extend(MID, { C: 3 });
+		const MID = Enum.derive(BASE, { B: 2 });
+		const TOP = Enum.derive(MID, { C: 3 });
 
 		expect(Enum.keys(TOP)).toEqual(['A', 'B', 'C']);
 		expect(Enum.count(TOP)).toBe(3);
@@ -41,7 +41,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should allow shadowing of inherited keys', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { B: 20, C: 3 });
+		const EXTENDED = Enum.derive(BASE, { B: 20, C: 3 });
 
 		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
 		expect(EXTENDED.B).toBe(20);
@@ -83,7 +83,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should support Enum.get() on extended enums across prototype chain', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.extend(BASE, { C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
 		expect(Enum.get(EXTENDED, 'A')).toBe(1);
 		expect(Enum.get(EXTENDED, 'B')).toBe(2);
@@ -145,25 +145,82 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 });
 
-describe('Legacy v4.x Prototype Methods (Deprecated - To be removed in v5.0.0)', () => {
-	it('should support legacy prototype methods on base and extended enums', () => {
+describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
+	it('should confirm prototype methods are removed from enum instances', () => {
 		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = BASE.extend({ C: 3 });
+		const EXTENDED = Enum.derive(BASE, { C: 3 });
 
-		expect(EXTENDED.keys()).toEqual(['A', 'B', 'C']);
-		expect(EXTENDED.values()).toEqual([1, 2, 3]);
-		expect(EXTENDED.entries()).toEqual([['A', 1], ['B', 2], ['C', 3]]);
-		expect(EXTENDED.count()).toBe(3);
-		expect(EXTENDED.has('A')).toBe(true);
-		expect(EXTENDED.has('C')).toBe(true);
-		expect(EXTENDED.get('A')).toBe(1);
-		expect(EXTENDED.get('C')).toBe(3);
-		expect(EXTENDED.get('D')).toBeUndefined();
-		expect(EXTENDED.invert()).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
-		expect(typeof EXTENDED.extend).toBe('function');
+		// Prototype methods are no longer attached to instances
+		expect((BASE as any).keys).toBeUndefined();
+		expect((BASE as any).values).toBeUndefined();
+		expect((BASE as any).entries).toBeUndefined();
+		expect((BASE as any).has).toBeUndefined();
+		expect((BASE as any).get).toBeUndefined();
+		expect((BASE as any).extend).toBeUndefined();
+		expect((BASE as any).derive).toBeUndefined();
+		expect((BASE as any).count).toBeUndefined();
+		expect((BASE as any).invert).toBeUndefined();
+
+		expect((EXTENDED as any).keys).toBeUndefined();
+		expect((EXTENDED as any).values).toBeUndefined();
+		expect((EXTENDED as any).entries).toBeUndefined();
+		expect((EXTENDED as any).has).toBeUndefined();
+		expect((EXTENDED as any).get).toBeUndefined();
+		expect((EXTENDED as any).extend).toBeUndefined();
+		expect((EXTENDED as any).derive).toBeUndefined();
+		expect((EXTENDED as any).count).toBeUndefined();
+		expect((EXTENDED as any).invert).toBeUndefined();
+
+		// All operations must be performed via static Enum.* helpers
+		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
+		expect(Enum.values(EXTENDED)).toEqual([1, 2, 3]);
+		expect(Enum.entries(EXTENDED)).toEqual([['A', 1], ['B', 2], ['C', 3]]);
+		expect(Enum.count(EXTENDED)).toBe(3);
+		expect(Enum.has(EXTENDED, 'A')).toBe(true);
+		expect(Enum.has(EXTENDED, 'C')).toBe(true);
+		expect(Enum.get(EXTENDED, 'A')).toBe(1);
+		expect(Enum.get(EXTENDED, 'C')).toBe(3);
+		expect(Enum.get(EXTENDED, 'D')).toBeUndefined();
+		expect(Enum.invert(EXTENDED)).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
 	});
 
-	it('should support legacy prototype methods with caller-context branching', () => {
+	it('should support Enum.derive with a plain object base retaining base members', () => {
+		const plainBase = { Alpha: 10, Beta: 20 };
+		const derived = Enum.derive(plainBase, { Gamma: 30 });
+
+		expect(derived.Alpha).toBe(10);
+		expect(derived.Beta).toBe(20);
+		expect(derived.Gamma).toBe(30);
+		expect(Enum.keys(derived)).toEqual(['Alpha', 'Beta', 'Gamma']);
+		expect(Enum.values(derived)).toEqual([10, 20, 30]);
+		expect(Enum.has(derived, 'Alpha')).toBe(true);
+		expect(Enum.has(derived, 'Gamma')).toBe(true);
+		expect(Enum.has(derived, 'Delta')).toBe(false);
+	});
+
+	it('should convert spoofed Enumify tag objects through enumify preserving iteration', () => {
+		const spoofed = {
+			[Symbol.toStringTag]: 'Enumify',
+			Alpha: 10,
+		};
+		const derived = Enum.derive(spoofed, { Beta: 20 });
+		expect(derived.Alpha).toBe(10);
+		expect(derived.Beta).toBe(20);
+		expect(Enum.keys(derived)).toEqual(['Alpha', Symbol.toStringTag, 'Beta']);
+		expect(Enum.entries(derived)).toEqual([['Alpha', 10], [Symbol.toStringTag, 'Enumify'], ['Beta', 20]]);
+		expect([...derived]).toEqual(Enum.entries(derived));
+		expect(derived instanceof Enum).toBe(true);
+		expect(spoofed instanceof Enum).toBe(false);
+		expect(Enum.isEnum(derived)).toBe(true);
+		expect(Enum.isEnum(spoofed)).toBe(false);
+		expect(isEnum(derived)).toBe(true);
+		expect(isEnum(spoofed)).toBe(false);
+		expect(Enum.isEnum({})).toBe(false);
+		expect(Enum.isEnum(null)).toBe(false);
+		expect(Enum.isEnum('string')).toBe(false);
+	});
+
+	it('should support enumify across Module caller contexts without prototype leakage', () => {
 		const invalidModuleContext = Object.create(null, {
 			[Symbol.toStringTag]: { value: 'Module' },
 			has: { value: () => true }
@@ -173,10 +230,24 @@ describe('Legacy v4.x Prototype Methods (Deprecated - To be removed in v5.0.0)',
 
 		expect(result.A).toBe(1);
 		expect(result.B).toBe(2);
-		expect(result.keys()).toEqual(['A', 'B']);
-		expect(result.values()).toEqual([1, 2]);
-		expect(result.has('A')).toBe(true);
-		expect(result.count()).toBe(2);
+		expect((result as any).keys).toBeUndefined();
+		expect((result as any).values).toBeUndefined();
+		expect((result as any).has).toBeUndefined();
+		expect(Enum.keys(result)).toEqual(['A', 'B']);
+		expect(Enum.values(result)).toEqual([1, 2]);
+		expect(Enum.has(result, 'A')).toBe(true);
+		expect(Enum.count(result)).toBe(2);
 		expect(Object.getPrototypeOf(result)).not.toBe(invalidModuleContext);
+	});
+
+	it('should not cache member lists if any prototype level in the chain is not frozen', () => {
+		const base = { A: 1 };
+		const derived = Object.freeze(Object.create(base, {
+			B: { value: 2, enumerable: true }
+		}));
+
+		expect(Enum.keys(derived)).toEqual(['A', 'B']);
+		(base as any).C = 3;
+		expect(Enum.keys(derived)).toEqual(['A', 'C', 'B']);
 	});
 });

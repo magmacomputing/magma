@@ -204,13 +204,26 @@ export const isPlainMonthDay = (obj: unknown): obj is Temporal.PlainMonthDay => 
 export const isLocale = (obj: unknown): obj is Intl.Locale =>
 	typeof Intl !== 'undefined' && typeof Intl.Locale === 'function' && obj instanceof Intl.Locale;
 
-// non-standard Objects
-export const isEnum = <E extends Property<any>>(obj: unknown): obj is GetType<'Enumify', E> => isType<GetType<'Enumify', E>>(obj, 'Enumify');
-export const isPledge = <P = any>(obj: unknown): obj is GetType<'Pledge', P> => isType<GetType<'Pledge', P>>(obj, 'Pledge');
-
 /** assert value for secure() */
 export const isExtensible = (obj: any): obj is any => isDefined(obj?.[sym.$Extensible]);
 export const isTarget = (obj: any): obj is any => isDefined(obj?.[sym.$Target]);
+
+/**
+ * Type guard to check if a value has been stamped with a specific brand Symbol.
+ * Cross-realm safe and safe against primitives / nullish values.
+ * 
+ * @param val - The value to check
+ * @param brand - The brand Symbol
+ * @returns True if val is an object or function stamped with the brand
+ */
+export const isBranded = <T = any>(val: unknown, brand: symbol): val is T => {
+	if (!val || (typeof val !== 'object' && typeof val !== 'function')) return false;
+	try {
+		return (val as any)[brand] === true;
+	} catch {
+		return false;
+	}
+};
 
 /** Type guard to check if a value is an AbortSignal (cross-realm safe) */
 export const isAbortSignal = (obj: unknown): obj is AbortSignal =>

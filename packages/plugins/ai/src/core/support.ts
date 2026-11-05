@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber, isDefined, isFunction, isNumber, evaluate } from '@magmacomputing/tempo/library';
+import { asText, asNumber, isDefined, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
 import type { Evaluable } from '@magmacomputing/tempo/library';
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
@@ -256,7 +256,7 @@ export function attachAiMeta(instance: Tempo, meta: TempoParseAiMeta): Tempo {
 				if (meta.confidence === 0.0 || meta.rawIso === 'INVALID' || meta.ambiguous === true || !target.isValid)
 					return false;
 			}
-			if (prop === 'constructor')
+			if (!isSafeKey(prop))
 				return Reflect.get(target, prop, target);
 
 			if (boundMethodCache.has(prop))

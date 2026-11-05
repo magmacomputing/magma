@@ -1,6 +1,6 @@
 import {
 	isString, isNumber, isNumeric, isText, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
-	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid,
+	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid, isBranded,
 	RE_DIGITS, RE_WHITESPACE, RE_WHITESPACES, RE_COMBINING_MARKS, RE_HEX_8, RE_BASE64URL
 } from '#library/assertion.library.js';
 import { hasOwn, hasKeys, hasKey, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
@@ -613,6 +613,45 @@ describe('Assertion Library', () => {
 			const child = Object.create(proto);
 			expect(hasNoneOf(child, 'inherited')).toBe(false);
 			expect(hasNoneOf(child, 'other')).toBe(true);
+		});
+	});
+
+	describe('isBranded', () => {
+		const testBrand = Symbol('Brand.Test');
+
+		it('should return true for objects carrying the brand symbol as true', () => {
+			const obj = { [testBrand]: true };
+			expect(isBranded(obj, testBrand)).toBe(true);
+		});
+
+		it('should return false for objects without the brand symbol or with falsy values', () => {
+			expect(isBranded({}, testBrand)).toBe(false);
+			expect(isBranded({ [testBrand]: false }, testBrand)).toBe(false);
+			expect(isBranded({ [testBrand]: 'true' }, testBrand)).toBe(false);
+		});
+
+		it('should return false for primitives and nullish values', () => {
+			expect(isBranded(null, testBrand)).toBe(false);
+			expect(isBranded(undefined, testBrand)).toBe(false);
+			expect(isBranded('test', testBrand)).toBe(false);
+			expect(isBranded(123, testBrand)).toBe(false);
+			expect(isBranded(true, testBrand)).toBe(false);
+		});
+
+		it('should return false when brand property access throws', () => {
+			const throwingObj = {
+				get [testBrand]() {
+					throw new Error('Access denied');
+				}
+			};
+			expect(isBranded(throwingObj, testBrand)).toBe(false);
+
+			const throwingProxy = new Proxy({}, {
+				get() {
+					throw new Error('Proxy trapped and threw');
+				}
+			});
+			expect(isBranded(throwingProxy, testBrand)).toBe(false);
 		});
 	});
 });

@@ -44,11 +44,28 @@ Use **Standalone Parse** for server-side processing or background tasks where bu
 
 ## 🏗️ Class-Based Parsing
 
-When using the `Tempo` class, parsing is handled automatically by the constructor.
+Tempo provides three clean instantiation idioms powered by a single unified polymorphic engine:
+
+| Factory / Constructor | Primary Role | Example |
+| :--- | :--- | :--- |
+| **`Tempo.now(opts?)`** | **Clock Sampling**: Captures the current system time with optional configuration. | `Tempo.now({ timeZone: 'Asia/Tokyo' })` |
+| **`Tempo.from(input, opts?)`** | **Functional Factory**: Polymorphic ingestion for chaining, callbacks, and pipelines. | `Tempo.from('2026-10-30').format('{yyyy}')`<br>`dates.map(d => Tempo.from(d))` |
+| **`new Tempo(input?, opts?)`** | **Class Constructor**: Traditional OOP instantiation sharing the exact same parser. | `new Tempo('May 20, 2026')` |
+
+> [!TIP]
+> **Preferred Pattern: `Tempo.from()` and `Tempo.now()`**  
+> While `new Tempo(...)` and `Tempo.from(...)` share identical polymorphic parsing capabilities, `Tempo.from()` eliminates the `new` keyword operator-precedence friction for method chaining and enables smooth integration in array transformations (e.g. `items.map(d => Tempo.from(d))`). Whenever sampling the current clock, use `Tempo.now()` for unambiguous, self-documenting intent.
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
 
+// 1. Clock Sampling
+const current = Tempo.now({ timeZone: 'Australia/Sydney' });
+
+// 2. Functional & Pipeline Ingestion
+const parsed = Tempo.from('May 20, 2026');
+
+// 3. Class Constructor
 const t = new Tempo('May 20, 2026');
 ```
 
@@ -91,7 +108,7 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 new Tempo('last day of the month');           // Last day of anchor/current month
 ```
 
-Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })` (or `Enum.extend(Tempo.enums.ORDINAL, ...)`) or per-instance via `new Tempo(date, { registry: { ordinals: { eleventh: 11 } } })`.
+Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })` (or `Enum.derive(Tempo.enums.ORDINAL, ...)`) or per-instance via `new Tempo(date, { registry: { ordinals: { eleventh: 11 } } })`.
 
 #### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)
 
@@ -381,8 +398,8 @@ const t = new Tempo('2026-10-24 15:30', {
   }
 });
 
-console.log(t.geo?.latitude);  // -33.869 (rounded to 3 decimals)
-console.log(t.geo?.longitude); // 151.209
+console.log(t.geo.latitude);   // -33.869 (rounded to 3 decimals)
+console.log(t.geo.longitude);  // 151.209
 console.log(t.sphere);         // 'south'
 ```
 

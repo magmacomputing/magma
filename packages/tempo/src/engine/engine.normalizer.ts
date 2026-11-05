@@ -1,4 +1,5 @@
-import { isDefined, isEmpty, isZonedDateTime, isNumeric, isString } from '#library/assertion.library.js';
+import { isDefined, isEmpty, isZonedDateTime, isNumeric, isString, isObject, isFunction } from '#library/assertion.library.js';
+
 import { getTemporalIds, instant } from '#library/temporal.library.js';
 import { ownKeys } from '#library/primitive.library.js';
 import type { TypeValue } from '#library/type.library.js';
@@ -246,7 +247,11 @@ export function resolveAliases(
 
 					accumulateResult(state, { type, value: res.key as any, match: pat, source: res.source, groups: { [key]: res.value } });
 
-					if (!isEmpty(res.value) && res.value !== String(groups[key])) {
+					if (isZonedDateTime(res.raw)) {
+						dateTime = res.raw;
+					} else if (res.raw && typeof (res.raw as any).toDateTime === 'function') {
+						dateTime = (res.raw as any).toDateTime();
+					} else if (!isEmpty(res.value) && res.value !== String(groups[key])) {
 						const resolving = new Set(resolvingKeys);
 						resolving.add(res.key);
 
@@ -258,6 +263,7 @@ export function resolveAliases(
 						if (resMatch.type === 'Temporal.ZonedDateTime')
 							dateTime = resMatch.value;
 					}
+
 				} finally {
 					state.zdt = dateTime;
 					delete groups[key];

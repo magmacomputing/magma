@@ -167,5 +167,26 @@ describe('Tempo Core Caching Architecture', () => {
 			expect(Tempo.weakCache.delete('custom_ast')).toBe(true);
 			expect(Tempo.cache.weak.has('custom_ast')).toBe(false);
 		});
+
+		it('should create new BoundedCache if provided cache object lacks setStatic when configuring entries', () => {
+			const fakeCache = {
+				[Symbol.toStringTag]: 'BoundedCache',
+				evictExpired: () => {},
+				isStatic: () => false,
+				get: () => undefined,
+				set: () => {},
+				// lacks setStatic
+			};
+
+			const S = Tempo.derive({
+				cache: fakeCache as any
+			});
+			const S2 = S.derive({
+				cache: new Map([['custom_key', 'custom_val']]) as any
+			});
+			const rawCache = (S2 as any)[Symbol.for('magmacomputing/tempo/internal')]().cache;
+			expect(rawCache).toBeInstanceOf(BoundedCache);
+			expect(rawCache.has('custom_key')).toBe(true);
+		});
 	});
 });
