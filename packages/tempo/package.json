@@ -250,7 +250,7 @@
     "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:dist": "tsx -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
-    "repl:bare": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
+    "repl:lite": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
     "repl:core": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/core.ts",
     "parse": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/parse.ts",
     "build": "npm run clean && node ../../node_modules/typescript-7/bin/tsc -b src --force && npm run build:bundle && npm run build:resolve",
