@@ -1,5 +1,5 @@
 import { secure } from '#library/proxy.library.js';
-import { isBigInt, isFunction, isReference, isMap, isSet, isLocale, isUndefined } from '#library/assertion.library.js';
+import { isBigInt, isFunction, isReference, isMap, isSet, isLocale, isUndefined, isDefined } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
@@ -94,7 +94,7 @@ export function memoizeFunction<F extends (...args: any[]) => any>(fn: F): F {
 	const cache = new Map<string, ReturnType<F>>();						// using a Map for better key handling than plain objects
 
 	return function (this: any, ...args: Parameters<F>): ReturnType<F> {
-		const key = (this !== undefined && this !== globalThis)
+		const key = (isDefined(this) && this !== globalThis)
 			? serialize([this, ...args])
 			: serialize(args);
 		if (!cache.has(key)) {

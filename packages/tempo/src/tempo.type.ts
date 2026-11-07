@@ -246,7 +246,9 @@ export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
 	yyyy: true; yy: true; yow: true;
 	// ── week-of-year ─────────────────────────────────
-	woy: true; ww: true;
+	woy: true;
+	/** Calendar week of year, starting January 1. */
+	ww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
 	// ── month ─────────────────────────────────────────

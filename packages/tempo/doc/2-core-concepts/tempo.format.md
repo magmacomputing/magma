@@ -111,6 +111,7 @@ Tempo.use(FormatModule);
 | `{era}` | Era Designator (e.g., AD/BC, CE/BCE) | `AD` |
 | `{yow}` | ISO Year of Week | `2026` |
 | `{woy}` | Zero-padded ISO Week of Year | `43` |
+| `{ww}` | Zero-padded Calendar Week of Year (Jan 1 basis) | `43` |
 | `{mon}` | Full Month Name | `October` |
 | `{mmm}` | Short Month Name | `Oct` |
 | `{mm}` | Zero-padded Month | `10` |
@@ -197,7 +198,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 > * **Days in Month (`{dim}`)**: Total count of days in the current month (`28`–`31`, matching PHP `t`). (Convenience alias for `.zdt.daysInMonth`).
 > * **Century (`{cen}`, `{century}`)**: 2-digit century number (`20` for `2026`, matching POSIX `%C`).
 > * **Week of Month (`{wom}`)**: 1-based week counter within the month (`1`–`5`, matching Oracle `W` and Unicode LDML `W`). Semantic aliases: `{ww:month}`, `{woy:month}`.
-> * **Calendar Week (`{woy:cal}`) & v5 Roadmap**: Week of year starting on January 1st (`01`–`53`, matching Oracle `WW`). Marked `@deprecated Will be superseded by {ww} in v5.0.0`.
+> * **Calendar Week (`{ww}`)**: Week of year starting on January 1st (`01`–`53`, matching Oracle `WW`, with `{woy:cal}` and `{ww:cal}` as aliases). For ISO 8601 week of year, use `{woy}`.
 > * **Dimensional Time-Scope Modifiers**: Compose time units over a specified duration scope:
 >   * `{ss:day}`: Seconds past midnight (`0`–`86399`, matching Oracle `SSSSS`).
 >   * `{mi:day}`: Minute of the day (`0`–`1439`).

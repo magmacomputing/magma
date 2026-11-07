@@ -153,10 +153,10 @@ export const isSafeKey = (key: PropertyKey): key is Exclude<PropertyKey, UnsafeK
 	!UNSAFE_KEYS.includes(key as any);
 
 export const isNull = (obj: unknown): obj is null => obj === null;
-export const isNullish = (obj: unknown): obj is Nullish => obj === null || obj === undefined || isType<Nullish>(obj, 'Void', 'Empty');
-export const isNotNullish = <T>(obj: T): obj is NonNullable<T> => obj !== null && obj !== undefined && !isNullish(obj);
-export const isUndefined = (obj: unknown): obj is undefined => obj === undefined || isType<undefined>(obj, 'Void', 'Empty');
-export const isDefined = <T>(obj: T): obj is Exclude<T, undefined> => obj !== undefined && !isUndefined(obj);
+export const isNullish = (obj: unknown): obj is Nullish => obj === null || obj === undefined;
+export const isNotNullish = <T>(obj: T): obj is NonNullable<T> => obj !== null && obj !== undefined;
+export const isUndefined = (obj: unknown): obj is undefined => obj === undefined;
+export const isDefined = <T>(obj: T): obj is Exclude<T, undefined> => obj !== undefined;
 
 export const isClass = (obj: unknown): obj is Function => isType<Function>(obj, 'Class');
 type NarrowFunction<T = Function> = T extends (...args: any[]) => any

@@ -1,4 +1,4 @@
-import { asText, isNumber, isString, isNotNullish, secure, when } from '@magmacomputing/tempo/library';
+import { asText, isNumber, isString, isNullish, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -45,7 +45,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 			if (isString(parsedCache.timeZone)) {
 				Intl.DateTimeFormat(undefined, { timeZone: parsedCache.timeZone });
 				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 1.0);
-				if (isNotNullish(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+				if (!isNullish(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:context', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					logDebug('tempo-plugin-ai:context', `Cache hit: "${text}" -> ${cachedVal}`, undefined, { debug: isDebug });
