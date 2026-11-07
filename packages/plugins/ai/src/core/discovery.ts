@@ -189,7 +189,7 @@ export function getActiveTempoConfigAi(): AiConfig | undefined {
 		if (stateConfig?.ai)
 			return stateConfig.ai;
 
-		const tempoClassConfig = rt?.modules?.['Tempo']?.config || (Tempo as any)?.config;
+		const tempoClassConfig = rt?.modules?.['Tempo']?.config || Tempo?.config;
 		if (tempoClassConfig?.pluginOptions?.ai)
 			return tempoClassConfig.pluginOptions.ai;
 		if (tempoClassConfig?.plugins?.ai)
