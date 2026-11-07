@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze, hasKey, isDefined } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKey, isNullish } from '@magmacomputing/tempo/library';
 import { normalizeDialect } from '../constants.js';
 import { explain } from './explain.js';
 import { exportDialect } from './export.js';
@@ -28,7 +28,7 @@ export function convertDialect(
 	if (hasKey(fromOrToOrOptions, 'to')) {
 		fromInput = fromOrToOrOptions.from;
 		toInput = fromOrToOrOptions.to;
-	} else if (isDefined(maybeToDialect)) {
+	} else if (!isNullish(maybeToDialect)) {
 		fromInput = fromOrToOrOptions;
 		toInput = maybeToDialect;
 	} else {

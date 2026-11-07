@@ -2,7 +2,7 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isSafeKey } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isNotNullish, isNumber, isObject, isSafeKey } from '#library/assertion.library.js';
 import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
@@ -75,7 +75,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 					pending.add(k);
 					try {
 						const value = onGet(k, t);
-						if (isDefined(value)) return { enumerable: true, configurable: true, value };
+						if (isNotNullish(value)) return { enumerable: true, configurable: true, value };
 					} finally {
 						pending.delete(k);
 					}
@@ -137,7 +137,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 				pending.add(k);
 				try {
 					const val = onGet(k, t);
-					if (isDefined(val)) return val;
+					if (isNotNullish(val)) return val;
 				} finally {
 					pending.delete(k);
 				}

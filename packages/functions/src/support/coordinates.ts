@@ -3,7 +3,7 @@ import {
 	isString,
 	isBoolean,
 	isNullish,
-	isDefined,
+	isNotNullish,
 	isObject,
 	isReference,
 } from './assert.js';
@@ -52,7 +52,7 @@ export const normalizeLng = (lng: any, round = false): number | undefined => {
 export const normalizeCoords = (lat: any, lng: any, round = false): { lat: number; lng: number } | undefined => {
 	const nLat = normalizeLat(lat, round);
 	const nLng = normalizeLng(lng, round);
-	return (isDefined(nLat) && isDefined(nLng)) ? { lat: nLat, lng: nLng } : undefined;
+	return (isNotNullish(nLat) && isNotNullish(nLng)) ? { lat: nLat, lng: nLng } : undefined;
 };
 
 /**

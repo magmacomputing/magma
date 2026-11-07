@@ -1,4 +1,4 @@
-import { isNumber, isDefined, isFunction, isAbortSignal } from '#library/assertion.library.js';
+import { isNumber, isNotNullish, isFunction, isAbortSignal } from '#library/assertion.library.js';
 import { timeoutSignal, cleanupSignal } from './aborter.library.js';
 import type { ValueOf } from '#library/type.library.js';
 
@@ -128,7 +128,7 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 				const contentType = res.headers?.get?.('Content-Type') || res.headers?.get?.('content-type') || '';
 				const isJson = contentType.includes('application/json');
 
-				if (isDefined(config.maxBytes)) {
+				if (isNotNullish(config.maxBytes)) {
 					const rawText = await readBoundedBody(res, config.maxBytes);
 
 					if (config.rawText)
@@ -182,7 +182,7 @@ export const fetchRequest = <T>(url: string | URL, init = {} as RequestInit, con
 
 			let errorBody: any = null;
 			try {
-				const errorText = isDefined(config.maxBytes)
+				const errorText = isNotNullish(config.maxBytes)
 					? await readBoundedBody(res, config.maxBytes)
 					: (isFunction(res.text) ? await res.text() : '');
 				try { errorBody = JSON.parse(errorText); } catch { errorBody = errorText; }

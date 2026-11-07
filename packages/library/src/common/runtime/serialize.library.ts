@@ -4,7 +4,7 @@ import { cleanify } from '#library/json.library.js';
 import { asObject } from '#library/object.library.js';
 
 import { asType } from '#library/type.library.js';
-import { isType, isEmpty, isDefined, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol, isSafeKey, isNumeric, isReference } from '#library/assertion.library.js';
+import { isType, isEmpty, isNotNullish, isUndefined, isNullish, isString, isObject, isArray, isFunction, isSymbolFor, isSymbol, isSafeKey, isNumeric, isReference } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
 import type { Obj, Type } from '#library/type.library.js';
 
@@ -168,10 +168,10 @@ function toSymbol(value: PropertyKey) {
 	switch (true) {
 		case isSymbol(value):																		// already a Symbol
 		case isNullish(pat):																		// incorrectly encoded Symbol
-		case isDefined(keyFor) && isUndefined(desc):						// incorrectly encoded global Symbol
+		case isNotNullish(keyFor) && isUndefined(desc):						// incorrectly encoded global Symbol
 			return value;
 
-		case isDefined(keyFor):																	// global Symbol
+		case isNotNullish(keyFor):																	// global Symbol
 			return Symbol.for(desc!);
 
 		case isUndefined(keyFor):																// local Symbol

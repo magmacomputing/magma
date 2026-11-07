@@ -5,7 +5,7 @@ import { raise as boundaryRaise } from '#library/boundary.library.js';
 import { sym, Token } from './support.symbol.js';
 import { asType, getType } from '#library/type.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
-import { isSymbol, isUndefined, isDefined, isString, isObject, RE_COMBINING_MARKS, RE_HEX_8 } from '#library/assertion.library.js';
+import { isSymbol, isUndefined, isNotNullish, isString, isObject, RE_COMBINING_MARKS, RE_HEX_8 } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { getDTF, getLC } from '#library/international.library.js';
@@ -85,7 +85,7 @@ export const logDebug = createLogger('debug');
 export const logTrace = createLogger('trace');
 
 /** @internal check if an object is a proxy */
-export const isProxy = (obj: any): boolean => isDefined(obj?.[sym.$Target]);
+export const isProxy = (obj: any): boolean => isNotNullish(obj?.[sym.$Target]);
 
 
 /** @internal get the prototype of an object */
@@ -165,7 +165,7 @@ export function getLargestUnit(list: readonly any[]): string {
  * @param base The base/default value (e.g., enums.MONTH_DAY)
  */
 export function resolveMonthDay(value: t.MonthDay | boolean | Readonly<t.MonthDay> = {}, base: t.MonthDay): t.MonthDay {
-	const isExplicit = isBoolean(value) || isDefined((value as t.MonthDay).active);
+	const isExplicit = isBoolean(value) || isNotNullish((value as t.MonthDay).active);
 	if (isBoolean(value)) value = { active: value } as t.MonthDay;
 	const warned = new Set<string>();
 

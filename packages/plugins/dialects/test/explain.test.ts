@@ -207,11 +207,14 @@ describe('Dialect Explain & Migration Helper', () => {
 	it('translates Phase 4 specialized tokens across Oracle, PHP, Strftime, and LDML', () => {
 		// Oracle J, SSSSS, WW, W
 		const resOracle = Tempo.dialects.explain('J SSSSS WW W', DIALECT.Oracle);
-		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {woy:cal} {wom}');
+		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {ww} {wom}');
 
 		// Oracle unpadded FM
 		const resOracleFm = Tempo.dialects.explain('FMJ SSSSS WW W', DIALECT.Oracle);
-		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {woy:cal:raw} {wom}');
+		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {ww:raw} {wom}');
+
+		// Oracle WW boundary formatting (2024-12-30 is Calendar Week 53, ISO Week 01)
+		expect(new Tempo('2024-12-30T00:00:00Z').dialects.oracle('WW')).toBe('53');
 
 		// PHP z and t
 		const resPhp = Tempo.dialects.explain('z t', DIALECT.Php);

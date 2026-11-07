@@ -1,4 +1,4 @@
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText, isUndefined } from '@magmacomputing/tempo/library';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isNotNullish, isFunction, asText, isUndefined } from '@magmacomputing/tempo/library';
 import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
 
@@ -34,7 +34,7 @@ export function getRuntimeEnv(): Record<string, string | undefined> {
 	if (!isServerRuntime())
 		return {};
 	try {
-		if (isDefined(process?.env))
+		if (isNotNullish(process?.env))
 			return process.env as Record<string, string | undefined>;
 	} catch { }
 	return {};

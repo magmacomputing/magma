@@ -241,13 +241,17 @@ describe('Dialect Export', () => {
 
 	it('exports Phase 4 specialized and scoped tokens to target dialects', () => {
 		// Oracle J, SSSSS, WW, W
-		const resOracle = Tempo.dialects.export('{jj} {ss:day} {ss:day:5} {ss:day:raw} {woy:cal} {wom}', 'oracle');
+		const resOracle = Tempo.dialects.export('{jj} {ss:day} {ss:day:5} {ss:day:raw} {ww} {wom}', 'oracle');
 		expect(resOracle.pattern).toBe('J SSSSS SSSSS FMSSSSSFM WW W');
 		expect(resOracle.unsupported).toHaveLength(0);
 
-		// Aliases julian, ww:cal, ww:month
-		const resOracleAliases = Tempo.dialects.export('{julian} {ww:cal} {ww:month}', 'oracle');
-		expect(resOracleAliases.pattern).toBe('J WW W');
+		const resOracleRawWeek = Tempo.dialects.export('{ww:raw}', 'oracle');
+		expect(resOracleRawWeek.pattern).toBe('FMWWFM');
+		expect(resOracleRawWeek.unsupported).toEqual([]);
+
+		// Aliases julian, woy:cal, ww:cal, ww:month
+		const resOracleAliases = Tempo.dialects.export('{julian} {woy:cal} {ww:cal} {ww:month}', 'oracle');
+		expect(resOracleAliases.pattern).toBe('J WW WW W');
 
 		// PHP t and z
 		const resPhp = Tempo.dialects.export('{dim} {doy:0} {dd:year:raw:0}', 'php');

@@ -1,4 +1,4 @@
-import { isString, isObject, isPlainObject, isUndefined, isDefined, isSymbol, isEmpty, isFunction, isText, isClass } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isSymbol, isEmpty, isFunction, isText, isClass } from '#library/assertion.library.js';
 import { ownKeys, hasKey, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { Enum } from '#library/enumerate.library.js';
@@ -382,7 +382,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 								config.ranges.forEach(r => {
 									if (r.key) {
 										let val: string | undefined;
-										if (isDefined(r.hour)) {
+										if (isNotNullish(r.hour)) {
 											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
 												val = `${r.hour}:${pad(r.minute ?? 0)}`;
 										} else if (r.month) {

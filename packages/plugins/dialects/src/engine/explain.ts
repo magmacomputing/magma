@@ -253,7 +253,7 @@ const ORACLE_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: string; read
 	'a.m.': { tempo: '{mer:dots}', desc: 'a.m./p.m. marker' },
 	'p.m.': { tempo: '{mer:dots}', desc: 'a.m./p.m. marker' },
 	IW: { tempo: '{woy}', desc: 'Zero-padded ISO week of year (01-53)' },
-	WW: { tempo: '{woy:cal}', desc: 'Week of year starting on Jan 1 (01-53)' },
+	WW: { tempo: '{ww}', desc: 'Week of year starting on Jan 1 (01-53)' },
 	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	Q: { tempo: '{#quarter}', desc: 'Quarter number 1-4 (via #quarter Term)' },
 	'TZH:TZM': { tempo: '{tz:offset}', desc: 'Time zone offset (e.g. +08:00)' },
@@ -275,7 +275,7 @@ const ORACLE_UNPADDED_EXPLAIN_MAP: Readonly<Record<string, { readonly tempo: str
 	SS: { tempo: '{ss:raw}', desc: 'Unpadded second (0-59)' },
 	SSSSS: { tempo: '{ss:day:raw}', desc: 'Unpadded seconds past midnight (0-86399)' },
 	IW: { tempo: '{woy:raw}', desc: 'Unpadded ISO week of year (1-53)' },
-	WW: { tempo: '{woy:cal:raw}', desc: 'Unpadded week of year starting Jan 1 (1-53)' },
+	WW: { tempo: '{ww:raw}', desc: 'Unpadded week of year starting Jan 1 (1-53)' },
 	W: { tempo: '{wom}', desc: 'Week of month (1-5)' },
 	J: { tempo: '{jj}', desc: 'Astronomical Julian day number' },
 };

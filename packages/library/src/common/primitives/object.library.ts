@@ -1,5 +1,5 @@
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
-import { isObject, isArray, isFunction, isDefined, isNullish, isMap, isSet, isDate, isRegExp, isSafeKey, isPrimitive } from '#library/assertion.library.js';
+import { isObject, isArray, isFunction, isNotNullish, isNullish, isMap, isSet, isDate, isRegExp, isSafeKey, isPrimitive } from '#library/assertion.library.js';
 import { getType, cast } from '#library/type.library.js';
 import type { UnsafeKey } from '#library/assertion.library.js';
 import type { Extend, Property } from '#library/type.library.js';
@@ -183,7 +183,7 @@ export const getMethods = (obj: any, all = false) => {
 export function ifDefined<T extends Property<any>>(obj: T): Omit<T, UnsafeKey> {
 	return ownEntries(obj)
 		.reduce((acc, [key, val]) => {
-			if (isSafeKey(key) && isDefined<any>(val))
+			if (isSafeKey(key) && isNotNullish<any>(val))
 				(acc as Record<PropertyKey, any>)[key] = val;
 			return acc;
 		}, {} as Record<PropertyKey, any>) as Omit<T, UnsafeKey>;
@@ -302,7 +302,7 @@ export const countProperties = (obj = {}) =>
 export function looseIndex<K extends PropertyKey = string, V = any>(): <const T extends object>(obj: T | (() => T)) => Extend<T, K, V>;
 export function looseIndex<const T extends object>(obj: T | (() => T)): Extend<T, string, any>;
 export function looseIndex(arg?: any): any {
-	if (isDefined(arg)) return isFunction(arg) ? arg() : arg;
+	if (isNotNullish(arg)) return isFunction(arg) ? arg() : arg;
 	return (obj: any) => isFunction(obj) ? obj() : obj;
 }
 

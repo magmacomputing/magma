@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber, isDefined, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
+import { asText, asNumber, isNotNullish, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
 import type { Evaluable } from '@magmacomputing/tempo/library';
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
@@ -115,7 +115,7 @@ export function resolveTzAndLocale(
  */
 export function validateMinConfidence(minConfidence?: number, targetFnName?: string): number | undefined {
 	const effective = minConfidence ?? _state.config.minConfidence;
-	if (isDefined(effective) && (!isNumber(effective) || effective < 0.0 || effective > 1.0)) {
+	if (isNotNullish(effective) && (!isNumber(effective) || effective < 0.0 || effective > 1.0)) {
 		const formattedTarget = targetFnName
 			? (targetFnName.endsWith('AI') ? targetFnName : `${targetFnName}AI`)
 			: '';
@@ -163,7 +163,7 @@ export function resolveAnchorTempo(
 		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400, undefined, { cause: err });
 	}
 
-	if (!instance.isValid && isDefined(evaluatedAnchor)) {
+	if (!instance.isValid && isNotNullish(evaluatedAnchor)) {
 		const op = options?.operationName ? ` to ${options.operationName}` : '';
 		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400);
 	}
@@ -233,7 +233,7 @@ export function assertMinConfidenceThreshold(
 	minConfidence: number | undefined,
 	operationName: string,
 ): void {
-	if (isDefined(minConfidence) && confidence < minConfidence)
+	if (isNotNullish(minConfidence) && confidence < minConfidence)
 		throw new TempoAiError(`${operationName} confidence (${confidence}) is below the required threshold of ${minConfidence}.`, 422);
 }
 

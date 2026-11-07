@@ -1,4 +1,4 @@
-import { isDefined, isNumber, isString } from '#library/assertion.library.js';
+import { isNotNullish, isNumber, isString } from '#library/assertion.library.js';
 import {
 	DAYS_IN_WEEK,
 	DAY_MAP,
@@ -123,9 +123,9 @@ export function parseRRule(rrule: string): ParsedRRule {
 						const year = parseInt(m[1], 10);
 						const month = parseInt(m[2], 10);
 						const day = parseInt(m[3], 10);
-						const hours = isDefined(m[4]) ? parseInt(m[4], 10) : 0;
-						const minutes = isDefined(m[5]) ? parseInt(m[5], 10) : 0;
-						const seconds = isDefined(m[6]) ? parseInt(m[6], 10) : 0;
+						const hours = isNotNullish(m[4]) ? parseInt(m[4], 10) : 0;
+						const minutes = isNotNullish(m[5]) ? parseInt(m[5], 10) : 0;
+						const seconds = isNotNullish(m[6]) ? parseInt(m[6], 10) : 0;
 						if (isValidDate(year, month, day))
 							untilMs = epochMsFromParts(year, month, day, hours, minutes, seconds, 0);
 					}
@@ -143,7 +143,7 @@ export function parseRRule(rrule: string): ParsedRRule {
 					if (isNumber(num) && num >= 1 && num <= 12) return num;
 					const prefix = v.slice(0, 3).toUpperCase();
 					return prefix in MONTH_MAP ? MONTH_MAP[prefix as MonthKey] : undefined;
-				}).filter((v): v is number => isDefined(v));
+				}).filter((v): v is number => isNotNullish(v));
 				if (items.length > 0) byMonth = items;
 				break;
 			}
@@ -199,7 +199,7 @@ export function expandRRuleEpochs(
 	const rule = parseRRule(rruleStr);
 	const anchorDate = new Date(anchorEpochMs);
 	const results: number[] = [];
-	const maxToFetch = isDefined(rule.count) && isDefined(options?.count)
+	const maxToFetch = isNotNullish(rule.count) && isNotNullish(options?.count)
 		? Math.min(rule.count, options.count)
 		: (rule.count ?? options?.count ?? 100);
 
@@ -265,7 +265,7 @@ export function expandRRuleEpochs(
 							}
 						}
 
-						if (isDefined(bd.nth)) {
+						if (isNotNullish(bd.nth)) {
 							if (bd.nth > 0 && bd.nth <= matchingDates.length) {
 								candidateDays.push(matchingDates[bd.nth - 1]);
 							} else if (bd.nth < 0 && Math.abs(bd.nth) <= matchingDates.length) {
@@ -319,7 +319,7 @@ export function expandRRuleEpochs(
 								}
 							}
 
-							if (isDefined(bd.nth)) {
+							if (isNotNullish(bd.nth)) {
 								if (bd.nth > 0 && bd.nth <= matchingDates.length) {
 									candidateDays.push(matchingDates[bd.nth - 1]);
 								} else if (bd.nth < 0 && Math.abs(bd.nth) <= matchingDates.length) {
@@ -398,19 +398,19 @@ export function expandRRuleEpochs(
 			totalGeneratedFromAnchor++;
 			const candMs = cand.getTime();
 
-			if (isDefined(rule.untilMs) && candMs > rule.untilMs) {
+			if (isNotNullish(rule.untilMs) && candMs > rule.untilMs) {
 				stopSeries = true;
 				break;
 			}
-			if (isDefined(rule.count) && totalGeneratedFromAnchor > rule.count) {
+			if (isNotNullish(rule.count) && totalGeneratedFromAnchor > rule.count) {
 				stopSeries = true;
 				break;
 			}
-			if (isDefined(options?.beforeMs) && candMs > options.beforeMs) {
+			if (isNotNullish(options?.beforeMs) && candMs > options.beforeMs) {
 				stopSeries = true;
 				break;
 			}
-			if (isDefined(options?.afterMs) && candMs <= options.afterMs) {
+			if (isNotNullish(options?.afterMs) && candMs <= options.afterMs) {
 				continue;
 			}
 

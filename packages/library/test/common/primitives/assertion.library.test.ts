@@ -1,5 +1,6 @@
 import {
-	isString, isNumber, isNumeric, isText, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
+	isString, isNumber, isInteger, isBigInt, isBigIntLike, isNumeric, isText, isPlainObject, isEmpty, isFunction, isCallable, isSafeKey, isLocale,
+	isNull, isNullish, isNotNullish, isUndefined, isDefined,
 	isDigits, isHttpUrl, isFileUrl, isWhitespace, isHex, isBase64, isBase64Url, isUuid, isBranded,
 	RE_DIGITS, RE_WHITESPACE, RE_WHITESPACES, RE_COMBINING_MARKS, RE_HEX_8, RE_BASE64URL
 } from '#library/assertion.library.js';
@@ -127,6 +128,64 @@ describe('Assertion Library', () => {
 			expect(isNumber([])).toBe(false);
 			expect(isNumber(true)).toBe(false);
 			expect(isNumber(100n)).toBe(false);
+		});
+	});
+
+	describe('isInteger & isBigInt', () => {
+		it('isInteger should return true for finite integer numbers and false for floats, BigInts, or non-numbers', () => {
+			expect(isInteger(0)).toBe(true);
+			expect(isInteger(42)).toBe(true);
+			expect(isInteger(-2026)).toBe(true);
+			expect(isInteger(Number.MAX_SAFE_INTEGER)).toBe(true);
+			expect(isInteger(3.14)).toBe(false);
+			expect(isInteger(NaN)).toBe(false);
+			expect(isInteger(Infinity)).toBe(false);
+			expect(isInteger(42n)).toBe(false);
+			expect(isInteger('42')).toBe(false);
+		});
+
+		it('isBigInt should return true only for bigint values and false for numbers or strings', () => {
+			expect(isBigInt(0n)).toBe(true);
+			expect(isBigInt(42n)).toBe(true);
+			expect(isBigInt(-9007199254740993n)).toBe(true);
+			expect(isBigInt(42)).toBe(false);
+			expect(isBigInt('42n')).toBe(false);
+			expect(isBigInt(null)).toBe(false);
+		});
+
+		it('isBigIntLike should return true for BigInt literal strings', () => {
+			expect(isBigIntLike('123n')).toBe(true);
+			expect(isBigIntLike('-456n')).toBe(true);
+			expect(isBigIntLike('123')).toBe(false);
+			expect(isBigIntLike(123n)).toBe(false);
+		});
+	});
+
+	describe('isNullish, isNotNullish, isUndefined & isDefined', () => {
+		it('enforces strict symmetry between isUndefined and isDefined (null is defined)', () => {
+			expect(isUndefined(undefined)).toBe(true);
+			expect(isDefined(undefined)).toBe(false);
+
+			expect(isUndefined(null)).toBe(false);
+			expect(isDefined(null)).toBe(true);
+
+			expect(isDefined(0)).toBe(true);
+			expect(isDefined('')).toBe(true);
+			expect(isDefined(false)).toBe(true);
+		});
+
+		it('enforces strict symmetry between isNullish and isNotNullish', () => {
+			expect(isNullish(undefined)).toBe(true);
+			expect(isNullish(null)).toBe(true);
+			expect(isNotNullish(undefined)).toBe(false);
+			expect(isNotNullish(null)).toBe(false);
+
+			expect(isNullish(0)).toBe(false);
+			expect(isNotNullish(0)).toBe(true);
+			expect(isNotNullish('')).toBe(true);
+			expect(isNotNullish(false)).toBe(true);
+			expect(isNull(null)).toBe(true);
+			expect(isNull(undefined)).toBe(false);
 		});
 	});
 

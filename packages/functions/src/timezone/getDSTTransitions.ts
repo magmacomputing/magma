@@ -1,4 +1,4 @@
-import { getTemporal, isNumber, isString, isDefined } from '../support/index.js';
+import { getTemporal, isNumber, isString, isNotNullish, isNullish } from '../support/index.js';
 import { isValidTimeZone } from './isValidTimeZone.js';
 import { isDST } from './isDST.js';
 
@@ -102,13 +102,13 @@ export function getDSTTransitions(timeZone: string, year: number): DSTTransition
 			fallBackMs = tr.timestampMs;
 	}
 
-	if (!isDefined(springForwardMs) && !isDefined(fallBackMs))
+	if (isNullish(springForwardMs) && isNullish(fallBackMs))
 		return { hasDST: false };
 
 	return {
 		hasDST: true,
-		...(isDefined(springForwardMs) ? { springForwardMs } : {}),
-		...(isDefined(fallBackMs) ? { fallBackMs } : {}),
+		...(isNotNullish(springForwardMs) ? { springForwardMs } : {}),
+		...(isNotNullish(fallBackMs) ? { fallBackMs } : {}),
 		dstShiftMinutes: Math.round(maxShiftNs / 60_000_000_000),
 	};
 }

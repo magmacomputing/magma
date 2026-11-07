@@ -1,5 +1,5 @@
 import { Branded } from '#library/decorator.library.js';
-import { isCallable, isClass, isDefined, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
+import { isCallable, isClass, isNotNullish, isFunction, isNumber, isObject, isPromise, isString, isAbortSignal } from '#library/assertion.library.js';
 import { Pledge } from './pledge.class.js';
 import { Finalizer } from './finalizer.class.js';
 import { onAbort, NOOP } from './aborter.library.js';
@@ -574,9 +574,9 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 
 		if (isAbortSignal(notifier)) {
 			notifierCleanups.push(onAbort(notifier, stop));
-		} else if (isPromise(notifier) || (isDefined(notifier) && isFunction((notifier as any).then))) {
+		} else if (isPromise(notifier) || (isNotNullish(notifier) && isFunction((notifier as any).then))) {
 			(notifier as Promise<unknown>).then(stop, stop);
-		} else if (isDefined(notifier) && isFunction((notifier as any).on)) {
+		} else if (isNotNullish(notifier) && isFunction((notifier as any).on)) {
 			const trigger = notifier as Reactive<unknown>;
 			const subTriggerData = trigger.on('data', stop, { once: true });
 			const subTriggerEnd = trigger.on('end', stop, { once: true });
@@ -775,7 +775,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 		source: Iterable<V> | AsyncIterable<V> | Promise<V> | { get(): V } | (() => V),
 		options?: Reactive.Options<V>
 	): Reactive<V> {
-		if (isDefined(source) && isFunction((source as any)[Symbol.asyncIterator])) {
+		if (isNotNullish(source) && isFunction((source as any)[Symbol.asyncIterator])) {
 			const stream = new Reactive<V>(options);
 			(async () => {
 				try {
@@ -792,7 +792,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			return stream;
 		}
 
-		if (isDefined(source) && isFunction((source as any)[Symbol.iterator])) {
+		if (isNotNullish(source) && isFunction((source as any)[Symbol.iterator])) {
 			const stream = new Reactive<V>(options);
 			try {
 				for (const item of source as Iterable<V>) {
@@ -807,7 +807,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			return stream;
 		}
 
-		if (isPromise(source) || (isDefined(source) && isFunction((source as any).then))) {
+		if (isPromise(source) || (isNotNullish(source) && isFunction((source as any).then))) {
 			const stream = new Reactive<V>(options);
 			(source as Promise<V>)
 				.then((val) => {
@@ -821,7 +821,7 @@ export class Reactive<T> implements AsyncIterable<T>, AsyncIterator<T, void, unk
 			return stream;
 		}
 
-		const isSignalLike = isDefined(source) && (
+		const isSignalLike = isNotNullish(source) && (
 			(isObject(source) && isFunction((source as any).get) && (source as any).get.length === 0) ||
 			(isCallable(source) && !isClass(source))
 		);

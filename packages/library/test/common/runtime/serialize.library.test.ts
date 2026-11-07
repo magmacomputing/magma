@@ -1,5 +1,5 @@
 import { stringify, objectify, cloneify, registerSerializable, fastDigest } from '#library/serialize.library.js';
-import { isInteger } from '#library/assertion.library.js';
+import { isBigInt } from '#library/assertion.library.js';
 
 describe('serialize.library', () => {
 
@@ -77,7 +77,7 @@ describe('serialize.library', () => {
 		it('should deserialize compact BigInt tagged strings', () => {
 			const val = objectify<bigint>('"~n123"');
 			expect(val).toBe(123n);
-			expect(isInteger(val)).toBe(true);
+			expect(isBigInt(val)).toBe(true);
 		});
 
 		it('should deserialize compact Date epoch tagged strings', () => {
@@ -101,7 +101,7 @@ describe('serialize.library', () => {
 		it('should deserialize legacy BigInt identifier signatures', () => {
 			const val = objectify<bigint>('{"$BigInt":123}');
 			expect(val).toBe(123n);
-			expect(isInteger(val)).toBe(true);
+			expect(isBigInt(val)).toBe(true);
 		});
 
 		it('should deserialize legacy Date identifier signatures', () => {
