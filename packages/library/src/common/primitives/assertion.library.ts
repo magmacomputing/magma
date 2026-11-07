@@ -4,7 +4,7 @@ import type { Type, Primitive, Nullish, Temporals, Property, GetType, ValueOf } 
 
 /**
  * Asserts if a value matches one of the provided types from the Type system.
- * 
+ *
  * @param obj - The value to check
  * @param types - The list of valid Types
  * @returns True if the value matches one of the specified types
@@ -80,7 +80,7 @@ export const isUuid = (obj: unknown): obj is string => typeof obj === 'string' &
 /**
  * Tests if a value can be safely converted to a numeric value.
  * Handles strings, numbers, and BigInts, verifying finite properties and valid formats.
- * 
+ *
  * @param str - The value to test
  * @returns True if the value can be evaluated numerically
  * @example
@@ -140,7 +140,7 @@ export type UnsafeKey = ValueOf<typeof UNSAFE_KEYS>;
 /**
  * Asserts if a property key is safe against prototype pollution and prototype hijacking.
  * Returns false for '__proto__', 'constructor', and 'prototype'.
- * 
+ *
  * @param key - The property key to check
  * @returns True if the key is safe to assign or merge
  * @example
@@ -216,7 +216,7 @@ export const isTarget = (obj: any): obj is any => isNotNullish(obj?.[sym.$Target
 /**
  * Type guard to check if a value has been stamped with a specific brand Symbol.
  * Cross-realm safe and safe against primitives / nullish values.
- * 
+ *
  * @param val - The value to check
  * @param brand - The brand Symbol
  * @returns True if val is an object or function stamped with the brand
@@ -245,7 +245,7 @@ export const isAbortController = (obj: unknown): obj is AbortController =>
  * Checks if a value is effectively empty.
  * Returns true for nullish values, empty objects, empty strings, NaN, empty arrays,
  * empty sets/maps, empty typed arrays/buffers, and invalid dates.
- * 
+ *
  * @param obj - The value to check
  * @returns True if the value is empty
  * @example
@@ -264,11 +264,11 @@ export const isEmpty = <T>(obj?: T) => false
 	|| (isMap(obj) && obj.size === 0)
 	|| (ArrayBuffer.isView(obj) && obj.byteLength === 0)
 	|| (isDate(obj) && Number.isNaN(obj.getTime()))
-	|| isType(obj, 'Empty', 'Void');
+	|| isType(obj, 'Empty', 'Void')
 
 /**
  * Asserts a condition is true, otherwise throws an Error.
- * 
+ *
  * @param condition - The boolean condition that must be true
  * @param message - The error message to throw if the condition is false
  * @throws {Error} If the condition evaluates to false
@@ -284,7 +284,7 @@ export function assertCondition(condition: boolean, message?: string): asserts c
 
 /**
  * Asserts a value is a string, otherwise throws an Error.
- * 
+ *
  * @param str - The value to assert as a string
  * @throws {Error} If the value is not a string
  */
@@ -292,7 +292,7 @@ export function assertString(str: unknown): asserts str is string { assertCondit
 
 /**
  * A TypeScript exhaustiveness check that throws an error if reached at runtime.
- * 
+ *
  * @param val - The value that should never exist
  * @throws {Error} Always throws an error
  */

@@ -1,8 +1,11 @@
 # .coderabbit.yaml
 reviews:
   review_status: false
+  review_status: true
   auto_review:
     enabled: false
+    enabled: true
+    auto_pause_after_reviewed_commits: 0
   auto_title_instructions: "Generate a concise PR title that starts with a conventional commit type (feat, fix, chore, etc.) followed by a short imperative description of the change."
   path_filters:
     # Use "! " at the start of a pattern to EXCLUDE it from the review

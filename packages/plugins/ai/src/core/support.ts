@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber, isNullish, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
+import { asText, asNumber, isDefined, isNullish, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
 import type { Evaluable } from '@magmacomputing/tempo/library';
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
@@ -65,7 +65,7 @@ export function resolveFullContext(
 	const resLoc = evaluate(resolvedOptions.locale);
 	const cfgLoc = evaluate(_state.config.locale);
 
-	const isNonEmptyLocale = (l: any) => l !== undefined && l !== null && (Array.isArray(l) ? l.length > 0 : Boolean(l));
+	const isNonEmptyLocale = (l: any) => !isNullish(l) && (Array.isArray(l) ? l.length > 0 : Boolean(l));
 
 	const rawLoc = isNonEmptyLocale(optLoc)
 		? optLoc
@@ -115,7 +115,7 @@ export function resolveTzAndLocale(
  */
 export function validateMinConfidence(minConfidence?: number, targetFnName?: string): number | undefined {
 	const effective = minConfidence ?? _state.config.minConfidence;
-	if (effective !== undefined && (!isNumber(effective) || effective < 0.0 || effective > 1.0)) {
+	if (isDefined(effective) && (!isNumber(effective) || effective < 0.0 || effective > 1.0)) {
 		const formattedTarget = targetFnName
 			? (targetFnName.endsWith('AI') ? targetFnName : `${targetFnName}AI`)
 			: '';
@@ -163,7 +163,7 @@ export function resolveAnchorTempo(
 		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400, undefined, { cause: err });
 	}
 
-	if (!instance.isValid && evaluatedAnchor !== undefined) {
+	if (!instance.isValid && isDefined(evaluatedAnchor)) {
 		const op = options?.operationName ? ` to ${options.operationName}` : '';
 		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400);
 	}
