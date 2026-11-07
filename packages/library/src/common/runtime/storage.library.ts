@@ -1,6 +1,6 @@
 import { objectify, stringify } from '#library/serialize.library.js';
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNotNullish, isUndefined, isString, isCallable, isNumber } from '#library/assertion.library.js';
+import { isDefined, isUndefined, isString, isCallable, isNumber } from '#library/assertion.library.js';
 import { BoundedCache } from '#library/cache.class.js';
 import { Finalizer } from './finalizer.class.js';
 import { signify, type WritableSignal } from './signify.library.js';
@@ -170,8 +170,8 @@ export interface ServerStorageOptions {
 export function setStorage<T>(key: string, val?: T): void;
 export function setStorage<T>(key: string, val: T | undefined, options: ServerStorageOptions): void;
 export function setStorage<T>(key: string, val?: T, options?: ServerStorageOptions): void {
-	const stash = isNotNullish(val) ? stringify(val) : undefined;
-	const set = isNotNullish(stash);
+	const stash = isDefined(val) ? stringify(val) : undefined;
+	const set = isDefined(stash);
 
 	switch (context.type) {
 		case CONTEXT.Browser:
@@ -317,12 +317,12 @@ export function toSignal<T>(key: string, defaultValue?: T): WritableSignal<T> {
 	ensureStorageListener();
 
 	let initial = getStorage<T>(key);
-	if (isUndefined(initial) && isNotNullish(defaultValue)) {
+	if (isUndefined(initial) && isDefined(defaultValue)) {
 		setStorage(key, defaultValue);
 		notifyStorageSubscribers(key, defaultValue);
 		initial = defaultValue;
 	}
-	const sig = signify<T>((initial ?? defaultValue) as T);
+	const sig = signify<T>((isDefined(initial) ? initial : defaultValue) as T);
 
 	const binding: StorageSignalBinding = {
 		update: (val: any) => sig.set(val),

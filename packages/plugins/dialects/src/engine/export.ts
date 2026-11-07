@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze, hasKey, isNotNullish } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKey, isNullish } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import type { ExportedToken, ExportResult } from '../types.js';
 
@@ -284,14 +284,14 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 	const raw = hasKey(dialectOrOptions, 'dialect')
 		? dialectOrOptions.dialect
 		: dialectOrOptions;
-	const dialect = isNotNullish(raw) ? normalizeDialect(evaluate(raw)) : DIALECT.Ldml;
+	const dialect = !isNullish(raw) ? normalizeDialect(evaluate(raw)) : DIALECT.Ldml;
 	const tokens: ExportedToken[] = [];
 	const unsupported: string[] = [];
 	let pattern = '';
 
 	for (const match of tempoMask.matchAll(RE_TEMPO_TOKEN)) {
-		if (isNotNullish(match[1]) || isNotNullish(match[3])) {
-			const literal = isNotNullish(match[1]) ? match[1][0] : match[3];
+		if (!isNullish(match[1]) || !isNullish(match[3])) {
+			const literal = !isNullish(match[1]) ? match[1][0] : match[3];
 			if (dialect === DIALECT.Go && RE_GO_CONFLICT.test(literal)) {
 				unsupported.push(literal);
 				tokens.push({
@@ -304,7 +304,7 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 			} else {
 				pattern += quoteLiteral(literal, dialect);
 			}
-		} else if (isNotNullish(match[2])) {
+		} else if (!isNullish(match[2])) {
 			const rawKey = match[2].trim();
 			const fullToken = `{${rawKey}}`;
 			const rawLower = rawKey.toLowerCase();
@@ -331,7 +331,7 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 			}
 
 			const targetToken = info?.[dialect as keyof DialectTarget];
-			if (isNotNullish(info) && isNotNullish(targetToken)) {
+			if (!isNullish(info) && !isNullish(targetToken)) {
 				if (targetToken.startsWith('.')) {
 					if (pattern.endsWith('.')) {
 						pattern = pattern.slice(0, -1);

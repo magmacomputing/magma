@@ -245,6 +245,10 @@ describe('Dialect Export', () => {
 		expect(resOracle.pattern).toBe('J SSSSS SSSSS FMSSSSSFM WW W');
 		expect(resOracle.unsupported).toHaveLength(0);
 
+		const resOracleRawWeek = Tempo.dialects.export('{ww:raw}', 'oracle');
+		expect(resOracleRawWeek.pattern).toBe('FMWWFM');
+		expect(resOracleRawWeek.unsupported).toEqual([]);
+
 		// Aliases julian, woy:cal, ww:cal, ww:month
 		const resOracleAliases = Tempo.dialects.export('{julian} {woy:cal} {ww:cal} {ww:month}', 'oracle');
 		expect(resOracleAliases.pattern).toBe('J WW WW W');

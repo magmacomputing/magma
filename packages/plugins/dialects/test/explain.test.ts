@@ -213,6 +213,9 @@ describe('Dialect Explain & Migration Helper', () => {
 		const resOracleFm = Tempo.dialects.explain('FMJ SSSSS WW W', DIALECT.Oracle);
 		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {ww:raw} {wom}');
 
+		// Oracle WW boundary formatting (2024-12-30 is Calendar Week 53, ISO Week 01)
+		expect(new Tempo('2024-12-30T00:00:00Z').dialects.oracle('WW')).toBe('53');
+
 		// PHP z and t
 		const resPhp = Tempo.dialects.explain('z t', DIALECT.Php);
 		expect(resPhp.pattern).toBe('{doy:raw:0} {dim}');
