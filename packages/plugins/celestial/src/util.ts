@@ -1,7 +1,7 @@
 import { Tempo } from '@magmacomputing/tempo';
 import { getLunarPhase } from '@magmacomputing/tempo-fns';
 
-import { isNumber, isReference, isArray, isDefined } from '@magmacomputing/tempo/library';
+import { isNumber, isReference, isArray } from '@magmacomputing/tempo/library';
 import { WeakCache, logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { LunarPhaseResult } from './index.js';
 

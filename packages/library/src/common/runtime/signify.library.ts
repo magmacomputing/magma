@@ -1,5 +1,5 @@
 import { Immutable, StringTag } from '#library/decorator.library.js';
-import { isFunction, isCallable, isDefined } from '#library/assertion.library.js';
+import { isFunction, isCallable } from '#library/assertion.library.js';
 import { enumify } from './enumerate.library.js';
 import { Finalizer } from './finalizer.class.js';
 import type { ValueOf } from '#library/type.library.js';

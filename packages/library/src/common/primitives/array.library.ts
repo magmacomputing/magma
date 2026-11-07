@@ -1,7 +1,7 @@
 import { asString, nullishToValue } from '#library/coercion.library.js';
 import { extract, ownEntries } from '#library/primitive.library.js';
 import { stringify } from '#library/serialize.library.js';
-import { isNumber, isDate, isObject, isDefined, isUndefined, isFunction, isCallable } from '#library/assertion.library.js';
+import { isNumber, isDate, isObject, isNotNullish, isUndefined, isFunction, isCallable } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // adapted from https://jsbin.com/insert/4/edit?js,output
@@ -19,7 +19,7 @@ import type { Property } from '#library/type.library.js';
  * ```
  */
 export const sortInsert = <T, K extends keyof T>(arr: T[] = [], val: T, key?: K) => {
-	const obj = isObject(val) && isDefined(key);							// array of Objects
+	const obj = isObject(val) && isNotNullish(key);							// array of Objects
 	let low = 0, high = arr.length;
 
 	while (low < high) {
@@ -70,7 +70,7 @@ export function sortBy<T extends Property<T>>(...keys: (PropertyKey | SortBy)[])
 		sortOptions.forEach(key => {
 			if (result === 0) {																		// no need to look further if result !== 0
 				const dir = key.dir === 'desc' ? -1 : 1;
-				const field = key.field + (isDefined(key.index) ? `[${key.index}]` : '');
+				const field = key.field + (isNotNullish(key.index) ? `[${key.index}]` : '');
 				const valueA = extract(left, field, nullishToValue(key.default, 0));
 				const valueB = extract(right, field, nullishToValue(key.default, 0));
 

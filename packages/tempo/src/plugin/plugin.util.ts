@@ -1,4 +1,4 @@
-import { isFunction, isString, isUndefined, isCallable, isObject, isDefined, isSymbol } from '#library/assertion.library.js';
+import { isFunction, isString, isUndefined, isCallable, isObject, isNotNullish, isNullish, isSymbol } from '#library/assertion.library.js';
 import { hasKey, hasOwn, ownEntries } from '#library/primitive.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
 import { cast } from '#library/type.library.js';
@@ -48,10 +48,10 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 
 	// terms fallback only applies when the canonical module entry actually exists in the discovery database
 	const isTermsLoaded = (mod === 'TermsModule') && state &&
-		(isDefined(hostLogic) || rt.installed.has('TermsModule') || state.pluginsDb.plugins.some((p: any) => p.name === 'TermsModule')) &&
+		(isNotNullish(hostLogic) || rt.installed.has('TermsModule') || state.pluginsDb.plugins.some((p: any) => p.name === 'TermsModule')) &&
 		state.pluginsDb.terms.length > 0;
 
-	if (!isDefined(hostLogic) && !isTermsLoaded) {
+	if (isNullish(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
 		const importPath = baseName === 'Terms' ? 'term' : baseName.toLowerCase();
 		const msg = `${mod} not loaded. (Did you forget to Tempo.use(${mod}) or import '#tempo/${importPath}' / '@magmacomputing/tempo/${importPath}'?)`;
@@ -135,9 +135,9 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 		const isDescriptor = isObject(val) && (
 			(val as any)[sym.$Descriptor] === true ||
 			(
-				(isDefined(val.get) || isDefined(val.set) || isDefined(val.value) || isDefined(val.writable) || isDefined(val.configurable) || isDefined(val.enumerable)) &&
-				(!isDefined(val.get) || isFunction(val.get)) &&
-				(!isDefined(val.set) || isFunction(val.set))
+				(isNotNullish(val.get) || isNotNullish(val.set) || isNotNullish(val.value) || isNotNullish(val.writable) || isNotNullish(val.configurable) || isNotNullish(val.enumerable)) &&
+				(isNullish(val.get) || isFunction(val.get)) &&
+				(isNullish(val.set) || isFunction(val.set))
 			)
 		);
 
@@ -210,14 +210,14 @@ export function defineInterpreterModule(name: string, logic: any, statics?: Reco
 				});
 			}
 
-			if (isDefined((TempoClass as any)[sym.$Interpreter][name])) {
+			if (isNotNullish((TempoClass as any)[sym.$Interpreter][name])) {
 				if ((TempoClass as any)[sym.$Interpreter][name] !== logic) throw new TempoError(`Tempo Interpreter Module clash: '${name}' logic is already defined.`);
 			} else {
 				(TempoClass as any)[sym.$Interpreter][name] = logic;
 			}
 
 			// 3. Attach static methods if provided
-			if (isDefined(statics)) attachStatics(TempoClass, statics);
+			if (isNotNullish(statics)) attachStatics(TempoClass, statics);
 		},
 	});
 }
@@ -635,7 +635,7 @@ export function defineProperty<Opts = any>(
 	name?: string,
 ): PluginFactory<Plugin<TempoType>, Opts> {
 	if (isString(propOrProps) || isSymbol(propOrProps)) {
-		if (!isDefined(definition))
+		if (isNullish(definition))
 			throw new TempoError(`Property definition is required when calling defineProperty for '${String(propOrProps)}'.`);
 
 		return defineProperties({ [propOrProps]: definition }, name ?? String(propOrProps));

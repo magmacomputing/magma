@@ -1,6 +1,6 @@
 import type { SolarOffsetOptions } from './types.js';
 import { coerceGeo, extractEpochMs } from './support.js';
-import { isNumber, isReference, isFunction, isText, isDefined } from '../support/index.js';
+import { isNumber, isReference, isFunction, isText, isNotNullish } from '../support/index.js';
 
 const RE_GMT_OFFSET = /GMT([+-])(\d{2}):(\d{2})/;
 
@@ -67,7 +67,7 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 		geo.timezone;
 
 	const dateVal = options?.date ?? (isReference(coords) ? extractEpochMs(coords) : undefined);
-	const epochMs = isDefined(dateVal) ? extractEpochMs(dateVal) : Date.now();
+	const epochMs = isNotNullish(dateVal) ? extractEpochMs(dateVal) : Date.now();
 
 	if (!isNumber(epochMs)) return NaN;
 
@@ -75,7 +75,7 @@ export function solarOffset(coords: any, options?: SolarOffsetOptions): number {
 
 	// If no civil timezone, use natural solar timezone meridian (round(lng / 15) * 15)
 	const refMeridian =
-		isDefined(offsetMinutes)
+		isNotNullish(offsetMinutes)
 			? (offsetMinutes / 60) * 15
 			: Math.round(lng / 15) * 15;
 

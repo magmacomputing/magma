@@ -246,7 +246,7 @@ export interface TempoFormatTokens {
 	// ── year / week ───────────────────────────────────
 	yyyy: true; yy: true; yow: true;
 	// ── week-of-year ─────────────────────────────────
-	woy: true;
+	woy: true; ww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
 	// ── month ─────────────────────────────────────────

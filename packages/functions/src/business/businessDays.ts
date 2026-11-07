@@ -3,7 +3,7 @@ import {
 	extractDateParts,
 	coerceZonedDateTime,
 	getTemporal,
-	isDefined,
+	isNotNullish,
 	isNumber,
 	isUndefined,
 	hasOwn,
@@ -40,7 +40,7 @@ function buildHolidaySet(holidays?: readonly (string | number | Date | Temporal.
 
 	for (const h of holidays) {
 		const parts = extractDateParts(h);
-		if (isDefined(parts.year) && isDefined(parts.month) && isDefined(parts.day))
+		if (isNotNullish(parts.year) && isNotNullish(parts.month) && isNotNullish(parts.day))
 			set.add(toDateKey(parts.year, parts.month, parts.day));
 	}
 

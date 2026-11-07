@@ -1,5 +1,5 @@
 import { evaluate } from '#library/evaluation.library.js';
-import { isDefined, isNumber, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isNotNullish, isNumber, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { asArray, ifNumeric } from '#library/coercion.library.js';
 import { singular } from '#library/string.library.js';
 import { normaliseFractionalDurations } from '#library/temporal.library.js';
@@ -58,18 +58,18 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 
 	if (type === 'set' && isObject(args) && args.constructor === Object) {
 		const { timeZone, calendar, sphere } = args as Record<string, any>;
-		if (isDefined(timeZone)) explicitTz = timeZone;
-		if (isDefined(calendar)) explicitCal = calendar;
-		if (isDefined(sphere)) explicitSphere = sphere;
+		if (isNotNullish(timeZone)) explicitTz = timeZone;
+		if (isNotNullish(calendar)) explicitCal = calendar;
+		if (isNotNullish(sphere)) explicitSphere = sphere;
 	}
 
 	const targetTz = explicitTz ?? this.tz;
-	const isChangingTz = isDefined(targetTz) && evaluate(targetTz) !== this.tz;
+	const isChangingTz = isNotNullish(targetTz) && evaluate(targetTz) !== this.tz;
 
 	const overrides: t.Options = {
 		timeZone: targetTz,
 		calendar: explicitCal ?? this.cal,
-		sphere: isDefined(explicitSphere) ? explicitSphere : (isChangingTz ? undefined : state.options?.sphere)
+		sphere: isNotNullish(explicitSphere) ? explicitSphere : (isChangingTz ? undefined : state.options?.sphere)
 	};
 
 	// Shift the current instance to the target timezone first
@@ -80,7 +80,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 	const matches = Array.isArray(this.parse?.result) ? Array.from(this.parse.result) : [];
 
 	try {
-		if (isDefined(args)) {
+		if (isNotNullish(args)) {
 			// 1. Shorthand String
 			if (isString(args) && args.startsWith('#')) {
 				const sub = args.slice(1).split('.')[1];
@@ -193,7 +193,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 							const { mutate: op, offset, single, term } = ((key, adjust, type) => {
 								const isTerm = key.startsWith('#');
 								if (type === 'add' || type === 'subtract') {
-									const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
+									const isTermPlugin = !isTerm && isNotNullish(findTermPlugin(key as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 									const isTermUnit = isTerm || (isTermPlugin && !isStandard);
 									const val = ifNumeric(adjust);
@@ -212,7 +212,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									const isIsoWeek = key === 'isoWeek' || key === 'isoweek' || key === 'wy' || key === 'woy';
 									const unitKey = isIsoYear ? 'yw' : (isIsoWeek ? 'isoweek' : (Enum.has(enums.ELEMENT, key) ? enums.ELEMENT[key as keyof typeof enums.ELEMENT] : key));
 									const isTermVal = (unitKey as string).startsWith('#');
-									const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitKey as string, state));
+									const isTermPlugin = !isTermVal && isNotNullish(findTermPlugin(unitKey as string, state));
 									const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitKey as string);
 									return {
 										mutate: adjust as any,
@@ -231,7 +231,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 										const isIsoWeek = val === 'isoWeek' || val === 'isoweek' || val === 'wy' || val === 'woy';
 										const unitVal = isIsoYear ? 'yw' : (isIsoWeek ? 'isoweek' : (Enum.has(enums.ELEMENT, val) ? enums.ELEMENT[val as keyof typeof enums.ELEMENT] : val));
 										const isTermVal = (unitVal as string).startsWith('#');
-										const isTermPlugin = !isTermVal && isDefined(findTermPlugin(unitVal as string, state));
+										const isTermPlugin = !isTermVal && isNotNullish(findTermPlugin(unitVal as string, state));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(unitVal as string);
 										return {
 											mutate: key as any,
@@ -241,7 +241,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 										};
 									}
 									default: {
-										const isTermPlugin = !isTerm && isDefined(findTermPlugin(key as string, state));
+										const isTermPlugin = !isTerm && isNotNullish(findTermPlugin(key as string, state));
 										const isStandard = ['period', 'event', 'time', 'date', 'dow', 'wkd'].includes(key as string);
 										const isIsoYear = key === 'isoYear' || key === 'isoyear' || key === 'yw' || key === 'yow';
 										const isIsoWeek = key === 'isoWeek' || key === 'isoweek' || key === 'wy' || key === 'woy';

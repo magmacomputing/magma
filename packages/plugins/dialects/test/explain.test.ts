@@ -207,11 +207,11 @@ describe('Dialect Explain & Migration Helper', () => {
 	it('translates Phase 4 specialized tokens across Oracle, PHP, Strftime, and LDML', () => {
 		// Oracle J, SSSSS, WW, W
 		const resOracle = Tempo.dialects.explain('J SSSSS WW W', DIALECT.Oracle);
-		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {woy:cal} {wom}');
+		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {ww} {wom}');
 
 		// Oracle unpadded FM
 		const resOracleFm = Tempo.dialects.explain('FMJ SSSSS WW W', DIALECT.Oracle);
-		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {woy:cal:raw} {wom}');
+		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {ww:raw} {wom}');
 
 		// PHP z and t
 		const resPhp = Tempo.dialects.explain('z t', DIALECT.Php);

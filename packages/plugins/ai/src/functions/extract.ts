@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asNumber, asText, isDefined, isObject, isString, isText, secure, when } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isNotNullish, isObject, isString, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -97,7 +97,7 @@ async function extractSingleInput(
 			if (Array.isArray(parsedCache?.events)) {
 				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 1.0);
 
-				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+				if (isNotNullish(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:extract', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					const rehydratedEvents: TempoExtractedEvent[] = [];

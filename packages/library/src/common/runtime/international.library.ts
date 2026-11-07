@@ -1,6 +1,6 @@
 import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isDefined, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { isFunction, isNotNullish, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { cast } from '#library/type.library.js';
@@ -729,14 +729,14 @@ type result = { weekOfYear: number, yearOfWeek: number };
  */
 export function getISOWeekOfYear(zdt: input): result {
 	const calId = (zdt as any).calendarId ?? (zdt as any).calendar?.id;
-	if (calId === 'iso8601' && isDefined(zdt.weekOfYear) && isDefined(zdt.yearOfWeek))
+	if (calId === 'iso8601' && isNotNullish(zdt.weekOfYear) && isNotNullish(zdt.yearOfWeek))
 		return { weekOfYear: zdt.weekOfYear, yearOfWeek: zdt.yearOfWeek };
 
 	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
 	// to avoid crossing daylight saving boundaries when adding/subtracting days.
 	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
 	const pd = (hasKey(zdt, 'toPlainDate', isFunction<Temporal.PlainDate>) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
-	if (isDefined(pd.weekOfYear) && isDefined(pd.yearOfWeek))
+	if (isNotNullish(pd.weekOfYear) && isNotNullish(pd.yearOfWeek))
 		return { weekOfYear: pd.weekOfYear, yearOfWeek: pd.yearOfWeek };
 
 	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.

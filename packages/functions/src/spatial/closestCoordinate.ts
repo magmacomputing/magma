@@ -1,6 +1,6 @@
 import { haversineDistance } from './haversineDistance.js';
 import { extractRawCoords } from './support.js';
-import { isDefined, isNumber } from '../support/index.js';
+import { isNullish, isNumber } from '../support/index.js';
 import type { CoordinateInput, DistanceUnit } from './types.js';
 
 /**
@@ -59,7 +59,7 @@ export function closestCoordinate<T extends CoordinateInput = CoordinateInput>(
 		}
 	}
 
-	if (minIndex === -1 || !isDefined(minCandidate))
+	if (minIndex === -1 || isNullish(minCandidate))
 		return null;
 
 	return {

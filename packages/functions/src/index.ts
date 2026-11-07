@@ -131,6 +131,7 @@ export {
 	isBoolean,
 	isFunction,
 	isNullish,
+	isNotNullish,
 	isUndefined,
 	isDefined,
 	isDate,

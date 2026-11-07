@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze, hasKey, isDefined } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKey, isNotNullish } from '@magmacomputing/tempo/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import type { ExportedToken, ExportResult } from '../types.js';
 
@@ -134,8 +134,8 @@ const TEMPO_TO_DIALECT_MAP: Readonly<Record<string, DialectTarget>> = {
 	'ss:day': { oracle: 'SSSSS', desc: 'Seconds past midnight (0-86399)' },
 	'ss:day:5': { oracle: 'SSSSS', desc: 'Zero-padded 5-digit seconds past midnight (00000-86399)' },
 	'ss:day:raw': { oracle: 'FMSSSSSFM', desc: 'Unpadded seconds past midnight (0-86399)' },
-	'woy:cal': { oracle: 'WW', desc: 'Week of year starting on Jan 1 (01-53)' },
-	'woy:cal:raw': { oracle: 'FMWWFM', desc: 'Unpadded week of year starting on Jan 1 (1-53)' },
+	ww: { oracle: 'WW', desc: 'Week of year starting on Jan 1 (01-53)' },
+	'ww:raw': { oracle: 'FMWWFM', desc: 'Unpadded week of year starting on Jan 1 (1-53)' },
 	wom: { ldml: 'W', oracle: 'W', desc: 'Week of month (1-5)' },
 	'wom:raw': { oracle: 'FMWFM', desc: 'Unpadded week of month (1-5)' },
 	dim: { php: 't', desc: 'Days in the given month (28-31)' },
@@ -172,10 +172,12 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	'woy:month': 'wom',
 	'ww:month:raw': 'wom:raw',
 	'woy:month:raw': 'wom:raw',
-	'ww:cal': 'woy:cal',
-	'ww:cal:raw': 'woy:cal:raw',
-	'woy:jan1': 'woy:cal',
-	'woy:jan1:raw': 'woy:cal:raw',
+	'ww:cal': 'ww',
+	'ww:cal:raw': 'ww:raw',
+	'woy:cal': 'ww',
+	'woy:cal:raw': 'ww:raw',
+	'woy:jan1': 'ww',
+	'woy:jan1:raw': 'ww:raw',
 	yw: 'yow',
 	'yow:locale': 'yow:locale',
 	'yow:locale:short': 'yow:locale:short',
@@ -185,7 +187,6 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	month: 'mm:raw',
 	day: 'dd:raw',
 	wy: 'woy',
-	ww: 'woy',
 	'wy:raw': 'woy:raw',
 	'wy:ord': 'woy:ord',
 	h24: 'hh',
@@ -283,14 +284,14 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 	const raw = hasKey(dialectOrOptions, 'dialect')
 		? dialectOrOptions.dialect
 		: dialectOrOptions;
-	const dialect = isDefined(raw) ? normalizeDialect(evaluate(raw)) : DIALECT.Ldml;
+	const dialect = isNotNullish(raw) ? normalizeDialect(evaluate(raw)) : DIALECT.Ldml;
 	const tokens: ExportedToken[] = [];
 	const unsupported: string[] = [];
 	let pattern = '';
 
 	for (const match of tempoMask.matchAll(RE_TEMPO_TOKEN)) {
-		if (isDefined(match[1]) || isDefined(match[3])) {
-			const literal = isDefined(match[1]) ? match[1][0] : match[3];
+		if (isNotNullish(match[1]) || isNotNullish(match[3])) {
+			const literal = isNotNullish(match[1]) ? match[1][0] : match[3];
 			if (dialect === DIALECT.Go && RE_GO_CONFLICT.test(literal)) {
 				unsupported.push(literal);
 				tokens.push({
@@ -303,7 +304,7 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 			} else {
 				pattern += quoteLiteral(literal, dialect);
 			}
-		} else if (isDefined(match[2])) {
+		} else if (isNotNullish(match[2])) {
 			const rawKey = match[2].trim();
 			const fullToken = `{${rawKey}}`;
 			const rawLower = rawKey.toLowerCase();
@@ -330,7 +331,7 @@ export function exportDialect(tempoMask: string, dialectOrOptions?: any): Export
 			}
 
 			const targetToken = info?.[dialect as keyof DialectTarget];
-			if (isDefined(info) && isDefined(targetToken)) {
+			if (isNotNullish(info) && isNotNullish(targetToken)) {
 				if (targetToken.startsWith('.')) {
 					if (pattern.endsWith('.')) {
 						pattern = pattern.slice(0, -1);

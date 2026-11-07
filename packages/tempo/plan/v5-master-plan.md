@@ -22,13 +22,13 @@ graph TD
 ---
 
 ### Phase 1: Core Modernization, Deprecations & Signals (PR #110 & Phase 1 Complete)
-*Status: Nearly Completed *
+*Status: Completed*
 
 - [x] **`Tempo.now()` Transition to Instance Factory**:
   - `Tempo.now()` returns an immutable `Tempo` instance (supports options like `{ timeZone, sphere }`) instead of primitive `bigint` nanoseconds.
   - Raw epoch numbers cleanly moved to `Tempo.epoch.ns`, `Tempo.epoch.ms`, `Tempo.epoch.us`, and `Tempo.epoch.ss`.
   - Static `Tempo.instant` returns native `Temporal.Instant`. Static tests updated in `static.methods.test.ts`.
-- [ ] **Format Token Rationalization**:
+- [x] **Format Token Rationalization**:
   - Deprecate legacy `{ww}` and `{wy}` in favor of canonical ISO `{yow}` and `{woy}`.
   - Canonicalize orthogonal `:compact` modifier across parser, format, and explain, completely eliminating legacy fused modifiers (e.g. `{tz:offsetcompact}`).
   - Standardize offset sub-components on canonical `:hh`, `:mi`, `:ss`.
@@ -58,14 +58,14 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
 - [x] **Step 2: File npm Name Disputes (Unscoped Primary & Defensive Anti-Squatting)**:
   - **`tempojs` / `tempo-js` Unscoped Packages**: Brendon Ribeiro (`brendondominic@gmail.com`) granted maintainer/owner permissions for `tempojs` to `magmacomputing` on Nov 04, 2026 (`npm owner ls tempojs`). Because npm's automated moniker-similarity filter blocks initial creation of `tempo-js` (`E403`), a support ticket via [npmjs.com/support](https://www.npmjs.com/support) has been filed to manually provision `tempo-js` for `magmacomputing` (as verified owner of `tempojs`).
   - **`@tempojs` Scope Dispute**: Formal transfer request submitted via [npmjs.com/support](https://www.npmjs.com/support) following 30-day unanswered outreach to Andrew Sampson (Oct 02 – Nov 03).
-  - Once provisioned, **`tempo-js`** serves as the primary canonical package (`import { Tempo } from 'tempo-js'`), while **`@tempo-js/core`** and **`tempojs`** serve as thin re-export aliases that depend on `tempo-js` (preserving singleton identity).
+  - Once provisioned, **`tempo-js`** serves as the primary canonical package (`import { Tempo } from 'tempo-js'`), while **`@tempo-js/core`** (and optionally **`tempojs`**, subject to Brendon Ribeiro's confirmation) serves as a thin re-export alias that depends on `tempo-js` (preserving singleton identity).
 - [ ] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
   - **Core (`tempo-js` / `@tempo-js/core`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
   - **Lite (`tempo-js/lite` / `tempo-lite`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (migrated from v4 `./core`).
 
   | Current v4 Scope (`@magmacomputing/*`) | Target v5 Primary Package | Scoped / Defensive Aliases | Role / Exports |
   | :--- | :--- | :--- | :--- |
-  | `@magmacomputing/tempo` | **`tempo-js`** | `@tempo-js/core`, `tempojs`, `tempo-lite` (`./lite`) | Core engine with built-in modules, plus subpath exports (`./lite` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
+  | `@magmacomputing/tempo` | **`tempo-js`** | `@tempo-js/core`, `tempo-lite` (`./lite`) | Core engine with built-in modules, plus subpath exports (`./lite` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
   | `@magmacomputing/tempo-fns` | **`tempo-fns`** | `@tempo-js/fns` | Standalone functional date math & algorithms for Temporal |
   | `@magmacomputing/library` | **`tempo-lib`** | `@tempo-js/lib` | Modularized core primitives, assertions, type-guards, and reflection |
   | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-js/plugin-dialects`** | — | Moment / Day.js / Luxon / SQL format compatibility |
@@ -104,7 +104,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
     2. Explicit registration: `Tempo.use(DialectsPlugin);`
     3. Granular single-dialect imports: `import '@tempo-js/plugin-dialects/luxon';`
     4. Migration AST introspection: `import { explain, convert } from '@tempo-js/plugin-dialects/migrate';`
-- [ ] **Reclaim `{ww}` for Calendar Week**:
+- [x] **Reclaim `{ww}` for Calendar Week**:
   - Free `{ww}` from being an ISO week alias; reassign it to represent calendar week of year (Jan 1 basis, matching Oracle SQL `WW`).
   - Add `{wom}` (week of month, `1`–`5`).
 
@@ -119,12 +119,12 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
   - Migrate prototype memoization to dedicated module-scoped `WeakMap`s (`keysCache`, `valuesCache`, `entriesCache`, `invertCache`) for O(1) lookups without serialization overhead.
   - Add `Enum[Symbol.hasInstance]` and strongly-typed `Enum.derive` overloads with `Omit<T, keyof E> & E`.
   - Clean up obsolete prototype exclusion types (`EnumMethodKeys`, `IgnoreOfMap`, `EnumMethodExclusions`, `IgnoreOf`) in favor of direct `WellKnownSymbols`.
-- [ ] **Type-Guard Semantics Correction (`isNonNull` vs. Strict `isDefined`)**:
+- [x] **Type-Guard Semantics Correction (`isNotNullish` vs. Strict `isDefined`)**:
   - *Problem*: In v4, `isDefined(null)` returned `false`, trapping `null` in a semantic void where it was neither defined nor undefined.
-  - *Step 1*: Introduce `isNonNull<T>(val): val is NonNullable<T>` in `@magmacomputing/library`.
-  - *Step 2*: Perform monorepo sweep migrating existing call sites from `isDefined` to `isNonNull` to ensure 100% behavioral preservation.
+  - *Step 1*: Introduce `isNotNullish<T>(val): val is NonNullable<T>` in `@magmacomputing/library` (and `@magmacomputing/tempo-fns`).
+  - *Step 2*: Perform monorepo sweep migrating existing call sites from `isDefined` to `isNotNullish` (and `!isDefined` to `isNullish`) to ensure 100% behavioral preservation.
   - *Step 3*: Redefine `isDefined<T>(val): val is Exclude<T, undefined>` (`val !== undefined`), creating strict logical symmetry: `!isDefined(x) <=> isUndefined(x)`.
-- [ ] **Type-Guard Semantics Correction (`isInteger` vs. `isBigInt`)**:
+- [x] **Type-Guard Semantics Correction (`isInteger` vs. `isBigInt`)**:
   - *Problem*: In `@magmacomputing/library`, `isInteger(obj)` is defined as `typeof obj === 'bigint'`, creating an unexpected semantic trap where standard JS integer numbers (`Number.isInteger(2026)`) return `false`.
   - *Step 1*: Introduce canonical `isBigInt(obj): obj is bigint => typeof obj === 'bigint'` in `@magmacomputing/library`.
   - *Step 2*: Migrate existing call sites checking for `bigint` (e.g. In `coercion.library`, `interval.class`, `serialize.library`) from `isInteger` to `isBigInt`.
@@ -172,13 +172,13 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 
 - [ ] **Automated Multi-Target Publishing Pipeline (`publish.yml`)**:
   - Build and publish canonical core (`tempo-js`, `tempo-fns`, `tempo-lib`) and scoped ecosystem plugins (`@tempo-js/plugin-*`).
-  - Publish thin, 1-line re-export wrapper packages for `tempo-lite`, `@tempo-js/core`, `tempojs`, `@tempo-js/fns`, `@tempo-js/lib`, and backward-compatibility `@magmacomputing/*` stubs that declare the canonical package in their `dependencies` (ensuring a single shared `Tempo` class singleton in memory across all import paths).
+  - Publish thin, 1-line re-export wrapper packages for `tempo-lite`, `@tempo-js/core`, `@tempo-js/fns`, `@tempo-js/lib` (and `tempojs` if approved by Brendon Ribeiro), plus backward-compatibility `@magmacomputing/*` stubs that declare the canonical package in their `dependencies` (ensuring a single shared `Tempo` class singleton in memory across all import paths).
 - [ ] **npm Distribution Tag Architecture**:
   | Package Name | Target Version | npm dist-tag | Target Audience |
   | :--- | :--- | :--- | :--- |
   | `tempo-js` | `v5.0.0-rc.x` | `next` | Early adopters & release candidate testing |
   | `tempo-js` | `v5.0.0` (GA) | `latest` | Primary canonical package for all v5 installations (`import { Tempo } from 'tempo-js'`) |
-  | `tempo-lite`, `@tempo-js/core` & `tempojs` | `v5.0.0` (GA) | `latest` | Thin re-export aliases pointing to `tempo-js@5.0.0` (`tempo-lite` $\rightarrow$ `tempo-js/lite`) |
+  | `tempo-lite` & `@tempo-js/core` | `v5.0.0` (GA) | `latest` | Thin re-export aliases pointing to `tempo-js@5.0.0` (`tempo-lite` $\rightarrow$ `tempo-js/lite`) |
   | `@magmacomputing/tempo` | `v4.7.x` | `latest-v4` (or `legacy`) | Long-term support for existing v4 codebases |
   | `@magmacomputing/tempo` | `v5.0.0` | `latest` | Dual-published bridge re-exporting `tempo-js` with deprecation notice |
 - [ ] **Release Milestones**:

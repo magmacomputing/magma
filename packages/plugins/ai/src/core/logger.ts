@@ -1,4 +1,4 @@
-import { isDefined, isUndefined, isString, isObject, isArray, isFunction, isNullish, isPrimitive } from '@magmacomputing/tempo/library';
+import { isNotNullish, isUndefined, isString, isObject, isArray, isFunction, isNullish, isPrimitive } from '@magmacomputing/tempo/library';
 import { _state } from './init.js';
 
 export const CUSTOM_INSPECT_SYMBOL = Symbol.for('nodejs.util.inspect.custom');
@@ -239,12 +239,12 @@ export function sanitizeInspectAiMeta(
 		provider: ai.provider,
 		cached: ai.cached,
 		confidence: ai.confidence,
-		...(isDefined(ai.ambiguous) ? { ambiguous: ai.ambiguous } : {}),
-		...(isDefined(ai.granularity) ? { granularity: ai.granularity } : {}),
-		...(isDefined(ai.rawIso) ? { rawIso: ai.rawIso } : {}),
-		...(isDefined(ai.rawPrompt) ? { rawPrompt: maskPii(ai.rawPrompt, isProd) } : {}),
-		...(isDefined(ai.normalizedPrompt) ? { normalizedPrompt: maskPii(ai.normalizedPrompt, isProd) } : {}),
-		...(isDefined(ai.reasoning) ? { reasoning: maskPii(ai.reasoning, isProd) } : {}),
+		...(isNotNullish(ai.ambiguous) ? { ambiguous: ai.ambiguous } : {}),
+		...(isNotNullish(ai.granularity) ? { granularity: ai.granularity } : {}),
+		...(isNotNullish(ai.rawIso) ? { rawIso: ai.rawIso } : {}),
+		...(isNotNullish(ai.rawPrompt) ? { rawPrompt: maskPii(ai.rawPrompt, isProd) } : {}),
+		...(isNotNullish(ai.normalizedPrompt) ? { normalizedPrompt: maskPii(ai.normalizedPrompt, isProd) } : {}),
+		...(isNotNullish(ai.reasoning) ? { reasoning: maskPii(ai.reasoning, isProd) } : {}),
 		...(ai.limits ? {
 			limits: {
 				remainingRequests: ai.limits.remainingRequests,

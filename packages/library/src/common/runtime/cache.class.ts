@@ -1,4 +1,4 @@
-import { isDefined, isEmpty, isString } from '#library/assertion.library.js';
+import { isNotNullish, isEmpty, isString } from '#library/assertion.library.js';
 import { Branded } from '#library/decorator.library.js';
 
 declare module '#library/type.library.js' {
@@ -158,7 +158,7 @@ export class BoundedCache<K = string, V = string> extends Map<K, V> {
 		super.set(key, value);
 		this.#staticKeys.delete(key);
 
-		if (isDefined(ttl)) {
+		if (isNotNullish(ttl)) {
 			if (ttl !== Infinity) {
 				this.#expires.set(key, Date.now() + ttl);
 				this.#ttls.set(key, ttl);

@@ -1,4 +1,4 @@
-import { isString, isObject, isPlainObject, isUndefined, isDefined, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
 import { ownKeys, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
@@ -173,7 +173,7 @@ export function createSandbox<R>(
 			const rt = getRuntime();
 			const mod = name === 'term' ? 'TermsModule' : name;
 			const internal = (this as any)[$Internal]?.();
-			return isDefined(rt.modules[mod]) || rt.installed.has(mod) || (internal?.pluginsDb?.plugins?.some((p: any) => p?.name === mod) ?? false);
+			return isNotNullish(rt.modules[mod]) || rt.installed.has(mod) || (internal?.pluginsDb?.plugins?.some((p: any) => p?.name === mod) ?? false);
 		}
 		static use(...args: any[]): any {
 			if (this === SandboxTempo ? disposed : Boolean((this as any)?.isDisposed)) return this;

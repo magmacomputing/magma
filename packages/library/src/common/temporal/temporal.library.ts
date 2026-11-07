@@ -4,7 +4,7 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isObject, isString, isText, isDefined, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isNumber, isObject, isString, isText, isNotNullish, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 const offsetCache = new Map<string, { jan: number; jul: number }>();
@@ -201,7 +201,7 @@ export function getTemporalIds(tzOrZdt?: Temporal.ZonedDateTime | Temporal.TimeZ
 		// If first arg is ZonedDateTime, use its IDs as source
 		rawTz = raw.timeZoneId ?? raw.timeZone?.id ?? raw.timeZone;
 		// If a second argument is provided, it explicitly overrides the ZonedDateTime's calendar
-		rawCal = isDefined(cal) ? cal : (raw.calendarId ?? raw.calendar?.id ?? raw.calendar);
+		rawCal = isNotNullish(cal) ? cal : (raw.calendarId ?? raw.calendar?.id ?? raw.calendar);
 	} else {
 		rawTz = tzOrZdt;
 		rawCal = cal;

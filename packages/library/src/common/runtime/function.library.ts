@@ -1,5 +1,5 @@
 import { secure } from '#library/proxy.library.js';
-import { isInteger, isFunction, isReference, isMap, isSet, isLocale } from '#library/assertion.library.js';
+import { isBigInt, isFunction, isReference, isMap, isSet, isLocale, isUndefined } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
@@ -45,8 +45,8 @@ type Curry<Args extends any[], Res> =
  */
 function serialize(val: any, seen = new WeakSet()): string {
 	return JSON.stringify(val, function (this: any, key: string, value: any) {
-		if (value === undefined) return '\u0000__undefined__\u0000';
-		if (isInteger(value)) return `\u0000__bigint:${value}__\u0000`;
+		if (isUndefined(value)) return '\u0000__undefined__\u0000';
+		if (isBigInt(value)) return `\u0000__bigint:${value}__\u0000`;
 		if (isFunction(value)) return `function:${value.name || 'anonymous'}`;
 
 		if (isReference(value)) {
@@ -63,7 +63,7 @@ function serialize(val: any, seen = new WeakSet()): string {
 
 /**
  * Curries a function to allow partial application of its arguments.
- * 
+ *
  * @param fn - The original function to curry
  * @returns A curried version of the function
  * @example
@@ -82,7 +82,7 @@ export function curry<Args extends any[], Res>(fn: (...args: Args) => Res): Curr
 
 /**
  * Memoizes a function, caching its return values based on serialized arguments.
- * 
+ *
  * @param fn - The function to memoize
  * @returns A memoized version of the function
  * @example
@@ -110,7 +110,7 @@ const wm = new WeakMap<object, Map<string, any>>();
 
 /**
  * Manually clears the memoization cache for an object instance.
- * 
+ *
  * @param obj - The object whose cache should be cleared
  * @example
  * ```ts
@@ -124,7 +124,7 @@ export function clearCache(obj: object) {
 /**
  * Defines a PropertyDescriptor for an object's memoized method.
  * Caches the results of method calls on a per-instance basis.
- * 
+ *
  * @param name - The name of the method
  * @param fn - The method implementation
  * @returns A PropertyDescriptor containing the memoization logic

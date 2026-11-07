@@ -1,6 +1,6 @@
 import { clearCache } from '#library/function.library.js';
 import { isEqual } from '#library/object.library.js';
-import { isDefined, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
+import { isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys, unwrap, hasOwn } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
@@ -83,7 +83,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 	const state = STATE[name] as Property<any>;
 	const target = (unwrap(registry) ?? registry) as Property<any>;
 
-	if (!isDefined(target))
+	if (isNullish(target))
 		return;
 
 	const merge = (tgt: any, src: any, st?: any) => {
@@ -92,7 +92,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 
 			if (isUndefined(current)) {														// only add if key does not exist
 				setProperty(tgt, key, val);
-				if (isDefined(st)) st[key] = val;
+				if (isNotNullish(st)) st[key] = val;
 				return;
 			}
 
@@ -101,7 +101,7 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 				val.forEach(v => {
 					if (!arr.some((existing: any) => isEqual(existing, v))) {
 						arr.push(v);
-						if (isDefined(st)) {
+						if (isNotNullish(st)) {
 							if (!Array.isArray(st[key])) setProperty(st, key, []);
 							if (!st[key].some((existing: any) => isEqual(existing, v))) st[key].push(v);
 						}
@@ -111,8 +111,8 @@ export function registryUpdate(name: keyof typeof STATE, data: Record<string, an
 			}
 
 			if (isPlainObject(current) && isPlainObject(val)) {		// deep merge for objects (e.g. MONTH_DAY.timezones)
-				if (isDefined(st) && !isPlainObject(st[key])) setProperty(st, key, {});
-				merge(current, val, isDefined(st) ? st[key] : undefined);
+				if (isNotNullish(st) && !isPlainObject(st[key])) setProperty(st, key, {});
+				merge(current, val, isNotNullish(st) ? st[key] : undefined);
 				return;
 			}
 		});

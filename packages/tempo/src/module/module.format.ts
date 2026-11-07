@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix, toRoman } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isDefined, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isNotNullish, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { formatDayPeriod, getDTF, getPR, getISOWeekOfYear, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
 import { delegator } from '#library/proxy.library.js';
@@ -301,14 +301,24 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy': res = pad(zdt.year % 100); break;
-			case 'yw': case 'yow': {
+			case 'yow': {
 				const yow = normMods.includes('locale')
 					? getLocaleWeekOfYear(zdt, li).yearOfWeek
 					: getISOWeekOfYear(zdt).yearOfWeek;
 				res = normMods.includes('short') ? pad(Math.abs(yow) % 100) : pad(yow, 4);
 				break;
 			}
-			case 'ww': case 'wy': case 'woy': {
+			case 'ww': {
+				if (normMods.includes('month')) {
+					const w = Math.ceil(zdt.day / 7);
+					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
+				} else {
+					const w = Math.ceil(zdt.dayOfYear / 7);
+					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
+				}
+				break;
+			}
+			case 'woy': {
 				if (normMods.includes('cal')) {
 					const w = Math.ceil(zdt.dayOfYear / 7);
 					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
@@ -509,12 +519,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					if (isFunction(pluginHook))
 						hookRes = pluginHook.call(plugin, token, cast<Tempo>(obj));
 
-					if (!isDefined(hookRes)) {
+					if (isNullish(hookRes)) {
 						const instanceHook = ((obj as any)?.term?.[termName] as any)?.[TermHook.format];
 						if (isFunction(instanceHook))
 							hookRes = instanceHook.call(((obj as any)?.term?.[termName]), token, cast<Tempo>(obj));
 					}
-					if (isDefined(hookRes)) {
+					if (isNotNullish(hookRes)) {
 						res = hookRes;
 						break;
 					}
@@ -533,7 +543,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				} else if (isTempo(obj) && isSafeKey(token) && token in obj) {
 					try {
 						const val = (obj as any)[token];
-						if (isDefined(val) && !isFunction(val)) {
+						if (isNotNullish(val) && !isFunction(val)) {
 							res = isObject(val)
 								? String(val.label ?? val.key ?? val.name ?? val.value ?? val)
 								: String(val);
@@ -557,7 +567,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			const termVal = cast<Tempo>(obj).term[token.slice(1)];
 			if (isObject(termVal)) {
 				canonicalTerm = String(termVal.key ?? termVal.id ?? res);
-			} else if (isDefined(termVal)) {
+			} else if (isNotNullish(termVal)) {
 				canonicalTerm = String(termVal);
 			}
 		}
@@ -615,10 +625,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 						// 1. Check user-defined registry.locales (hierarchical, leaf, or flat)
 						let registered = resolveLocaleFromDictionary(dict, tokenPath, valStr, config?.locale);
-						if (!isDefined(registered) && canonicalTerm && canonicalTerm !== String(res))
+						if (isNullish(registered) && canonicalTerm && canonicalTerm !== String(res))
 							registered = resolveLocaleFromDictionary(dict, tokenPath, String(res), config?.locale);
 
-						if (isDefined(registered)) {
+						if (isNotNullish(registered)) {
 							res = registered;
 						} else if (token.startsWith('#') && isTempo(obj)) {
 							// 2. Fall back to Term Plugin bundled dictionary
@@ -633,7 +643,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 								if (group && isObject(group.locale))
 									locRes = group.locale[lang] ?? group.locale.en;
 
-								if (isDefined(locRes))
+								if (isNotNullish(locRes))
 									res = evaluateString(locRes, config?.locale);
 							}
 						} else {

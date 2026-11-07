@@ -1,5 +1,5 @@
 import { CONTEXT, getContext } from '#library/utility.library.js';
-import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isText, isFunction, isDefined, isCallable, isBoolean } from '#library/assertion.library.js';
+import { isNullish, isNumber, isString, isSafeKey, isObject, isEmpty, isReference, isPrimitive, isText, isFunction, isNotNullish, isCallable, isBoolean } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { getStorage, setStorage } from '#library/storage.library.js';
 import { evaluate } from '#library/evaluation.library.js';
@@ -148,7 +148,7 @@ export const GEO_PROPERTIES = [
  * @internal
  */
 const parseCoordNumber = (val: any): number => {
-	if (!isDefined(val) || isBoolean(val)) return NaN;
+	if (isNullish(val) || isBoolean(val)) return NaN;
 	if (isString(val)) {
 		const trimmed = val.trim();
 		return trimmed.length > 0 ? Number(trimmed) : NaN;
@@ -183,7 +183,7 @@ const normalizeLng = (lng: any, round = true): number | undefined => {
 const normalizeCoords = (lat: any, lng: any, round = true): { lat: number; lng: number } | undefined => {
 	const nLat = normalizeLat(lat, round);
 	const nLng = normalizeLng(lng, round);
-	return (isDefined(nLat) && isDefined(nLng)) ? { lat: nLat, lng: nLng } : undefined;
+	return (isNotNullish(nLat) && isNotNullish(nLng)) ? { lat: nLat, lng: nLng } : undefined;
 };
 
 /**

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asNumber, asText, isDefined, isObject, isReference, isText, secure, when } from '@magmacomputing/tempo/library';
+import { asNumber, asText, isNotNullish, isObject, isReference, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -131,7 +131,7 @@ async function formatSingleInput(
 			if (isText(parsedCache?.formatted)) {
 				const cachedConfidence = sanitizeConfidence(parsedCache?.confidence, 1.0);
 
-				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+				if (isNotNullish(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:format', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					const reasoning = asText(parsedCache?.reasoning);
