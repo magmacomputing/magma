@@ -115,7 +115,7 @@ export function resolveTzAndLocale(
  */
 export function validateMinConfidence(minConfidence?: number, targetFnName?: string): number | undefined {
 	const effective = minConfidence ?? _state.config.minConfidence;
-	if (!isNullish(effective) && (!isNumber(effective) || effective < 0.0 || effective > 1.0)) {
+	if (effective !== undefined && (!isNumber(effective) || effective < 0.0 || effective > 1.0)) {
 		const formattedTarget = targetFnName
 			? (targetFnName.endsWith('AI') ? targetFnName : `${targetFnName}AI`)
 			: '';
@@ -163,7 +163,7 @@ export function resolveAnchorTempo(
 		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400, undefined, { cause: err });
 	}
 
-	if (!instance.isValid && !isNullish(evaluatedAnchor)) {
+	if (!instance.isValid && evaluatedAnchor !== undefined) {
 		const op = options?.operationName ? ` to ${options.operationName}` : '';
 		throw new TempoAiError(`Invalid anchor date provided${op}: "${String(evaluatedAnchor)}"`, 400);
 	}

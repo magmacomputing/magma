@@ -36,10 +36,10 @@ export function isProductionEnvironment(): boolean {
  * - Full fidelity text is preserved for local debugging.
  */
 export function maskPii(input: any, isProd: boolean = isProductionEnvironment()): string {
-	if (!isString(input)) return String(input);
-	if (!isProd) return input;
+	const text = isString(input) ? input : String(input);
+	if (!isProd) return text;
 
-	return input
+	return text
 		.replace(RE_BEARER, match => {
 			const token = match.replace(/Bearer\s+/i, '');
 			if (token.length <= 8) return 'Bearer [REDACTED]';
@@ -242,8 +242,8 @@ export function sanitizeInspectAiMeta(
 		...(!isNullish(ai.ambiguous) ? { ambiguous: ai.ambiguous } : {}),
 		...(!isNullish(ai.granularity) ? { granularity: ai.granularity } : {}),
 		...(!isNullish(ai.rawIso) ? { rawIso: ai.rawIso } : {}),
-		...(!isNullish(ai.rawPrompt) ? { rawPrompt: maskPii(ai.rawPrompt, isProd) } : {}),
-		...(!isNullish(ai.normalizedPrompt) ? { normalizedPrompt: maskPii(ai.normalizedPrompt, isProd) } : {}),
+		...(!isNullish(ai.rawPrompt) ? { rawPrompt: maskPii(String(ai.rawPrompt), isProd) } : {}),
+		...(!isNullish(ai.normalizedPrompt) ? { normalizedPrompt: maskPii(String(ai.normalizedPrompt), isProd) } : {}),
 		...(!isNullish(ai.reasoning) ? { reasoning: maskPii(ai.reasoning, isProd) } : {}),
 		...(ai.limits ? {
 			limits: {

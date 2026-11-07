@@ -31,6 +31,7 @@ describe('Tempo.format() refinements', () => {
     expect(t3.woy).toBe(1);
     expect(t3.format('{yow}{woy}')).toBe('202501');
     expect(t3.format('{yyyy}-{ww}')).toBe('2024-53');
+    expect(t3.format('{woy:cal}')).toBe('53');
   })
 
   it('accepts an options object as the second argument to override configuration', () => {

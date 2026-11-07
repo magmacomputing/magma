@@ -263,7 +263,8 @@ export const isEmpty = <T>(obj?: T) => false
 	|| (isSet(obj) && obj.size === 0)
 	|| (isMap(obj) && obj.size === 0)
 	|| (ArrayBuffer.isView(obj) && obj.byteLength === 0)
-	|| (isDate(obj) && Number.isNaN(obj.getTime()));
+	|| (isDate(obj) && Number.isNaN(obj.getTime()))
+	|| isType(obj, 'Empty', 'Void');
 
 /**
  * Asserts a condition is true, otherwise throws an Error.
