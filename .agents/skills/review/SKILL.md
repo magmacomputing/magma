@@ -54,8 +54,8 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
      - **`found: true` and `isStale: false`**: The saved review matches `HEAD` and no working-tree files have been modified since the review completed. Proceed directly to **Step 3** using those findings.
      - **`found: false` or `isStale: true`** (e.g., `HEAD` moved, `/pull` modified files, or edits were made after the saved review completed):
        - Do **not** blindly apply outdated findings from a stale review session.
-       - Report the `staleReasons` to the user and ask them to trigger a fresh review in their **VS Code Integrated Terminal** (`npm run review:agent` or `npm run review:uncommitted`) or via the **VS Code CodeRabbit sidebar**, and reply **"done"** once it finishes.
-       - As soon as the user confirms completion, re-run `npm run review:local -- --json` (which will now report `isStale: false`) and continue to **Step 3**.
+       - A stale or missing saved session is not a reason to stop a new `/review`. If the fallback was entered because the user asked to act on an existing review, return to Step 1 and attempt a fresh live review through Step 2A, preserving the requested scope. Follow the normal auth and execution-boundary rules; do not retry an auth status already known to be unavailable.
+       - If Step 2B was entered because `auth status` returned `credentials_unavailable`, explain that saved findings cannot be used and ask the user to run a fresh review in their **VS Code Integrated Terminal** (`npm run review:agent` or `npm run review:uncommitted`) or via the **VS Code CodeRabbit sidebar**. This handoff is due to unavailable CLI credentials, not the stale session itself. After the user confirms completion, re-run `npm run review:local -- --json` and continue to **Step 3** only if the new session is current.
 
 3. **Parse & Collect All Findings**:
    - **From Live NDJSON Stream (Step 2A)**:
