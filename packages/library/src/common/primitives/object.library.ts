@@ -171,10 +171,10 @@ export const getMethods = (obj: any, all = false) => {
 }
 
 /**
- * Extracts a new object containing only the properties with defined (non-undefined) values.
+ * Extracts a new object containing only safe properties with non-nullish values.
  * 
  * @param obj - The object to extract from
- * @returns A new object without undefined values
+ * @returns A new object without nullish values or unsafe keys
  * @example
  * ```ts
  * const clean = ifDefined({ a: 1, b: undefined }); // { a: 1 }

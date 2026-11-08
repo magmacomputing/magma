@@ -248,6 +248,8 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
  * @param date - Date representation to coerce
  * @param fallbackTz - IANA timezone identifier to use if input lacks timezone context (default: 'UTC')
  * @returns A native Temporal.ZonedDateTime instance
+ * @throws TypeError if the input has no supported representation. Temporal conversion errors and errors from
+ * input methods propagate, as does an error if the Temporal API is unavailable.
  */
 export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): TemporalType.ZonedDateTime {
 	const Temporal = getTemporal();
@@ -305,8 +307,9 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 
 /**
  * Extracts a numeric epoch millisecond timestamp from diverse date/time or instance representations.
- * Safely handles numeric timestamps, JS Date instances, Tempo instances, Temporal objects, ISO strings,
- * and duck-typed objects without throwing.
+ * Handles numeric timestamps, JS Date instances, Tempo instances, Temporal objects, ISO strings,
+ * and duck-typed objects. Errors from calling duck-typed `toInstant` or `getTime` methods are ignored; errors from
+ * accessing input properties can propagate.
  *
  * @param input - Date representation or instance to inspect
  * @returns Epoch millisecond timestamp, or undefined if invalid

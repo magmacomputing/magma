@@ -68,7 +68,7 @@ export const isPrimitive = (val?: unknown): boolean =>
 	val === null || (typeof val !== 'object' && !isFunction(val));
 
 /**
- * Validates whether an argument is a non-null object reference (excluding functions).
+ * Validates whether an argument is a non-null object reference (excluding arrays and functions).
  */
 export const isObject = (val: any): val is Record<string | symbol, any> =>
 	isNotNullish(val) && typeof val === 'object' && !Array.isArray(val);

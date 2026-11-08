@@ -21,6 +21,13 @@ import {
 import { logDebug, attachCustomInspect, sanitizeInspectAiMeta } from '../core/logger.js';
 import type { TempoContext, AiContextOptions } from '../types/index.js';
 
+/**
+ * Infers regional and calendar settings for one text, using a qualifying cache entry or an AI provider.
+ * Invalid cached payloads and cached time zones fall through to the provider.
+ * @returns The inferred context and provider metadata.
+ * @throws TempoAiError if the selected result has an invalid time zone or insufficient confidence;
+ * provider execution, configuration, and context callback errors can also propagate.
+ */
 async function contextSingleInput(text: string, options?: AiContextOptions): Promise<TempoContext> {
 	const normalizedStr = normalizeCacheInput(text);
 

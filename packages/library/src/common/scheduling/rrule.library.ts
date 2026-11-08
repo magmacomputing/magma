@@ -185,11 +185,13 @@ export function parseRRule(rrule: string): ParsedRRule {
 /**
  * Expands occurrences of an RFC 5545 RRULE string into epoch millisecond numbers.
  * Pure function operating strictly on primitive timestamps and UTC Date calculations.
+ * At most 1,000 periods are examined; without a rule or option count, up to 100 results are returned.
  *
  * @param rruleStr - The RFC 5545 recurrence rule string to expand
  * @param anchorEpochMs - Anchor timestamp in epoch milliseconds to evaluate occurrences from
- * @param options - Optional bounds and count controls for the evaluation
+ * @param options - Optional count and epoch-millisecond bounds; afterMs is exclusive and beforeMs is inclusive
  * @returns Array of occurrence timestamps in epoch milliseconds
+ * @throws Error if the frequency is unsupported (DAILY, WEEKLY, MONTHLY, and YEARLY are supported).
  */
 export function expandRRuleEpochs(
 	rruleStr: string,

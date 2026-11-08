@@ -18,7 +18,7 @@ type IntervalTypeGuard = <P extends TemporalPoint = TemporalPoint>(val: unknown)
  * @internal
  * @param point - The value containing epoch nanoseconds.
  * @returns The epoch nanoseconds.
- * @throws `TypeError` if the value does not contain an integer epoch nanosecond value.
+ * @throws `TypeError` if the value does not contain a bigint epoch nanosecond value.
  */
 function getNs(point: TemporalPoint | unknown): bigint {
 	const ns = (point as any)?.epoch?.ns ?? (point as any)?.epochNanoseconds;

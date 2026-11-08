@@ -135,6 +135,8 @@ export function format(obj: any, fmt: string | symbol, options?: any): string;
  * Formats a supported date-time value using a named format, template, or internationalization options.
  * Scoped day/week time fields count wall-clock units from local midnight or Monday, independent of offset transitions.
  * The roman modifier converts integers 1-3999 and leaves other values unchanged.
+ * `{ww}` counts seven-day groups from the first day of the resolved date's calendar year, padded to two digits;
+ * `{ww:raw}` removes padding.
  *
  * @param obj - The value to format; omitted values use the current date and time.
  * @param fmt - A registered format name or literal format template.

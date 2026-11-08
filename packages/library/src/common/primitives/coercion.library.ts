@@ -6,10 +6,11 @@ import { trimAll } from '#library/string.library.js';
 
 /**
  * Coerces a value into an array. If the value is already an array-like or iterable,
- * it is converted to an array. An optional `fill` value can be provided to map over the elements.
+ * it is converted to an array, except that strings are treated as single values.
+ * An optional `fill` replaces nullish elements in arrays and other array-like or iterable inputs.
  * 
  * @param arr - The value to coerce into an array
- * @param fill - Optional value to map over the elements
+ * @param fill - Optional value cloned for each nullish element
  * @returns An array containing the coerced values
  * @example
  * ```ts
@@ -114,6 +115,7 @@ export function when<T, U = undefined>(value: unknown, guard: (v: unknown) => bo
 /**
  * Coerces a value to a finite number.
  * Returns the finite number if valid, otherwise returns undefined (or an optional fallback).
+ * Converting a bigint can lose precision when it exceeds the safe integer range.
  * 
  * @param val - The value to coerce
  * @param fallback - Optional fallback if val is not a finite number

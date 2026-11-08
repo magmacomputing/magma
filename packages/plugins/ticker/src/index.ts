@@ -395,6 +395,11 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 	}
 
+	/**
+	 * Advances one tick, publishes it to listeners and pending pulls, and stops at the configured limit or end.
+	 * Returns the tick, or a Tempo constructed from null if already stopped. An invalid next tick stops the ticker
+	 * and is returned after notifying catch listeners. Errors from advancing or notifying listeners may propagate.
+	 */
 	pulse(): Tempo {
 		if (this.#stopped) return new (this.#TempoClass as any)(null, this.#next.config);
 
