@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed & Fixed
 - **Nullish & Defined Guard Alignment (`v5.0.0`)**:
-  - Migrated nullish checks across `discovery`, `logger`, `support`, `context`, `diff`, `extract`, and `format` to `!isNullish(...)` and strict `isDefined(...)` (`!== undefined`), ensuring explicit `null` `anchor` and `minConfidence` inputs are validated and rejected with `TempoAiError(400)`.
+  - Migrated nullish checks across `discovery`, `logger`, `support`, `context`, `diff`, `extract`, and `format` to `!isNullish(...)` and strict `isDefined(...)` (`!== undefined`), ensuring explicit `null` `anchor` inputs are validated and rejected with `TempoAiError(400)` while explicit `null` `minConfidence` arguments fall back to the configured threshold (or `undefined` when no threshold is configured).
 - **PII Redaction Hardening (`maskPii`)**:
   - Normalized non-string prompt metadata (`rawPrompt`, `normalizedPrompt`) via `String(...)` prior to `maskPii` redaction during inspection formatting.
 - **Peer Dependency Alignment**:

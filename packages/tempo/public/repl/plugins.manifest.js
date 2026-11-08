@@ -31,13 +31,13 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	},
 	"ai": {
 		name: "@magmacomputing/tempo-plugin-ai",
-		version: "2.3.3",
-		loader: () => import("@magmacomputing/tempo-plugin-ai").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ai" + "@2.3.3"))
+		version: "2.3.2",
+		loader: () => import("@magmacomputing/tempo-plugin-ai").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ai" + "@2.3.2"))
 	},
 	"ticker": {
 		name: "@magmacomputing/tempo-plugin-ticker",
-		version: "2.7.1",
-		loader: () => import("@magmacomputing/tempo-plugin-ticker").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ticker" + "@2.7.1"))
+		version: "2.7.0",
+		loader: () => import("@magmacomputing/tempo-plugin-ticker").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-ticker" + "@2.7.0"))
 	},
 	"geo": {
 		name: "@magmacomputing/tempo-plugin-geo",

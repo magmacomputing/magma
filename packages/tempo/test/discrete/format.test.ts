@@ -32,6 +32,10 @@ describe('Tempo.format() refinements', () => {
     expect(t3.format('{yow}{woy}')).toBe('202501');
     expect(t3.format('{yyyy}-{ww}')).toBe('2024-53');
     expect(t3.format('{woy:cal}')).toBe('53');
+
+    const tHebrew = new Tempo('2024-10-02');
+    expect(tHebrew.format('{ww}', { calendar: 'hebrew' })).toBe('55');
+    expect(tHebrew.format('{woy:cal}', { calendar: 'hebrew' })).toBe('55');
   })
 
   it('accepts an options object as the second argument to override configuration', () => {
