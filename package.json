@@ -21,6 +21,7 @@
     "test:leaks": "cross-env NODE_OPTIONS=\"--expose-gc\" vitest run",
     "review:agent": "coderabbit review --agent",
     "review:uncommitted": "coderabbit review --agent --uncommitted",
+    "review:local": "tempo-cli review-local",
     "review:pr": "tempo-cli review-pr",
     "review:cli": "coderabbit review",
     "review:findings": "coderabbit review findings",
