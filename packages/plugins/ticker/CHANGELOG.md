@@ -2,14 +2,18 @@
 
 All notable changes to the `@magmacomputing/tempo-plugin-ticker` project will be documented in this file.
 
-## [2.7.0] - 2026-10-29
+## [2.7.0] - Unreleased
 
 ### Added
 - **TC39 Signal Reactivity (`ticker.signal`, `ticker.toSignal()`)**:
   - Added `ticker.signal` getter returning a `ReadonlySignal<Tempo>` bound to the ticker cadence.
   - Added `ticker.toSignal(fallback?)` method returning an explicit reactive signal initialized to seed or custom fallback value.
   - Added auto-disposable static constructor `Tempo.ticker.signal(interval)` returning a `ReadonlySignal<Tempo> & Disposable` that stops and tears down the underlying ticker when disposed or garbage collected.
-
+### Fixed & Changed
+- **Null Schedule Option Handling**:
+  - Updated `options.interval` fallback guard to check `isNullish` on `seconds`, `cron`, and `rrule` so explicit `null` schedule options (e.g. `{ interval: 60, cron: null }`) do not bypass the configured `interval`.
+- **Tempo v5.0.0 Guard & Enum Alignment**:
+  - Migrated internal presence checks to `isNotNullish` / `isNullish` and updated duration/element key lookups to static `Enum.has(...)`.
 ### Fixed & Memory Safety
 - **Signal Lifecycle & Retained Ticker Ownership**:
   - Managed mutual lifetime ownership between ticker proxies and derived signal wrappers (`ticker.signal`, `ticker.toSignal()`) ensuring the underlying ticker remains active and updates reactive consumers (e.g. `Signify.computed`) even when the temporary ticker proxy is dropped and only the signal wrapper is retained.

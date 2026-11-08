@@ -4,7 +4,7 @@ import {
 	isObject, isFunction, isNotNullish, isEmpty, isNumeric, isString, isNumber,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
-	isUndefined, Finalizer, Reactive, cast, logError, hasKey,
+	isUndefined, isNullish, Finalizer, Reactive, cast, logError, hasKey,
 	type ReadonlySignal,
 } from '@magmacomputing/tempo/plugin/sdk';
 
@@ -204,7 +204,7 @@ class TickerInstance implements Ticker.Descriptor {
 				else if (isOptions(arg2)) Object.assign(rawOptions, arg2);
 		}
 
-		if (isNotNullish(rawOptions.interval) && isUndefined(rawOptions.seconds) && isUndefined(rawOptions.cron) && isUndefined(rawOptions.rrule)) {
+		if (isNotNullish(rawOptions.interval) && isNullish(rawOptions.seconds) && isNullish(rawOptions.cron) && isNullish(rawOptions.rrule)) {
 			const intVal = rawOptions.interval;
 			if (isCronString(intVal)) rawOptions.cron = intVal;
 			else if (isRRuleString(intVal)) rawOptions.rrule = intVal;

@@ -156,15 +156,18 @@ describe('Dialect Export', () => {
 		expect(resLdml.unsupported).toContain('{#quarter:ord}');
 
 		// Go unsupported ISO week-year and week tokens
-		const resGo = Tempo.dialects.export('{yow} {yw} {woy} {wy}', 'go');
+		const resGo = Tempo.dialects.export('{yow} {woy}', 'go');
 		expect(resGo.unsupported).toContain('{yow}');
-		expect(resGo.unsupported).toContain('{yw}');
 		expect(resGo.unsupported).toContain('{woy}');
-		expect(resGo.unsupported).toContain('{wy}');
 
 		// Supported week-year and week-of-year in other dialects
-		const resOracleWeek = Tempo.dialects.export('{yow}-{woy} {yw}-{wy}', 'oracle');
-		expect(resOracleWeek.pattern).toBe('IYYY-IW IYYY-IW');
+		const resOracleWeek = Tempo.dialects.export('{yow}-{woy}', 'oracle');
+		expect(resOracleWeek.pattern).toBe('IYYY-IW');
+
+		// Removed legacy yw/wy aliases are flagged as unsupported
+		const resLegacyWeek = Tempo.dialects.export('{yw} {wy}', 'oracle');
+		expect(resLegacyWeek.unsupported).toContain('{yw}');
+		expect(resLegacyWeek.unsupported).toContain('{wy}');
 
 		// PHP unsupported day-of-year tokens
 		const resPhp = Tempo.dialects.export('{doy} {doy:raw} {doy:ord}', 'php');

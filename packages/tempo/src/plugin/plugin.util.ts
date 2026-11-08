@@ -135,7 +135,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 		const isDescriptor = isObject(val) && (
 			(val as any)[sym.$Descriptor] === true ||
 			(
-				(isNotNullish(val.get) || isNotNullish(val.set) || isNotNullish(val.value) || isNotNullish(val.writable) || isNotNullish(val.configurable) || isNotNullish(val.enumerable)) &&
+				(isNotNullish(val.get) || isNotNullish(val.set) || 'value' in val || isNotNullish(val.writable) || isNotNullish(val.configurable) || isNotNullish(val.enumerable)) &&
 				(isNullish(val.get) || isFunction(val.get)) &&
 				(isNullish(val.set) || isFunction(val.set))
 			)

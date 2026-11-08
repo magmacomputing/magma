@@ -104,7 +104,7 @@ export function isNumeric(str?: any): boolean {
 }
 /** Type guard to check if a value is a BigInt */
 export const isBigInt = (obj: unknown): obj is bigint => typeof obj === 'bigint';
-/** Type guard to check if a value is a safe integer number */
+/** Type guard to check if a value is an integer number */
 export const isInteger = (obj: unknown): obj is number => Number.isInteger(obj);
 /** Type guard to check if a value is a BigInt literal string (e.g. '123n') */
 export const isBigIntLike = (obj: unknown): obj is string => typeof obj === 'string' && RE_BIGINT_LITERAL.test(obj.trim());
@@ -254,7 +254,7 @@ export const isAbortController = (obj: unknown): obj is AbortController =>
  * isEmpty({ a: 1 }); // false
  * ```
  */
-export const isEmpty = <T>(obj?: T) => false
+export const isEmpty = <T>(obj?: T): boolean => false
 	|| isNullish(obj)
 	|| (isObject(obj) && Reflect.ownKeys(obj).length === 0)
 	|| (isString(obj) && obj.trim().length === 0)
