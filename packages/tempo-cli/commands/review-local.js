@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,7 +58,7 @@ function normalizeFinding(raw, fallbackFile = '') {
 function getWorkingTreeDirtyFiles(repoRoot) {
 	let raw = '';
 	try {
-		raw = execFileSync('git', ['status', '--porcelain'], {
+		raw = execFileSync('git', ['status', '--porcelain', '-uall', '-z'], {
 			encoding: 'utf8',
 			stdio: ['ignore', 'pipe', 'ignore'],
 		});
@@ -66,10 +67,29 @@ function getWorkingTreeDirtyFiles(repoRoot) {
 	}
 	if (!raw) return [];
 
+	const parts = raw.split('\0');
 	const files = [];
-	for (const line of raw.split(/\r?\n/)) {
-		if (!line || line.length < 4) continue;
-		const relPath = line.slice(3).trim().replace(/^"(.*)"$/, '$1');
+	for (let i = 0; i < parts.length; i++) {
+		const entry = parts[i];
+		if (!entry || entry.length < 4) continue;
+		const code = entry.slice(0, 2);
+		const relPath = entry.slice(3);
+
+		// In porcelain -z, rename/copy outputs: XY <destPath>\0<origPath>\0
+		if (code.includes('R') || code.includes('C')) {
+			i++; // skip origPath
+		}
+
+		const isDeleted = code.includes('D');
+		if (isDeleted) {
+			files.push({
+				fileName: relPath,
+				isDeleted: true,
+				mtimeMs: Infinity,
+			});
+			continue;
+		}
+
 		const absPath = path.resolve(repoRoot, relPath);
 		try {
 			if (fs.existsSync(absPath)) {
@@ -77,6 +97,7 @@ function getWorkingTreeDirtyFiles(repoRoot) {
 				if (stat.isFile()) {
 					files.push({
 						fileName: relPath,
+						isDeleted: false,
 						mtimeMs: Math.round(stat.mtimeMs),
 					});
 				}
@@ -95,20 +116,29 @@ function evaluateStaleness(session, currentHead, dirtyFiles) {
 	const staleReasons = [];
 	const isHeadMatch = Boolean(currentHead && session.headCommitId === currentHead);
 
-	if (currentHead && session.headCommitId && !isHeadMatch) {
+	if (!session.headCommitId && !session.timestamp) {
+		staleReasons.push('Session lacks commit ID and timestamp (unknown freshness)');
+	} else if (currentHead && session.headCommitId && !isHeadMatch) {
 		staleReasons.push(`HEAD commit changed since review (${session.headCommitId.slice(0, 8)} -> ${currentHead.slice(0, 8)})`);
 	}
 
 	const modifiedSinceReview = [];
-	if (session.timestamp) {
-		for (const df of dirtyFiles) {
-			if (df.mtimeMs > session.timestamp) {
-				modifiedSinceReview.push(df.fileName);
-			}
+	const deletedFiles = [];
+	for (const df of dirtyFiles) {
+		if (df.isDeleted) {
+			deletedFiles.push(df.fileName);
+			modifiedSinceReview.push(`${df.fileName} (deleted)`);
+		} else if (session.timestamp && df.mtimeMs > session.timestamp) {
+			modifiedSinceReview.push(df.fileName);
 		}
-		if (modifiedSinceReview.length > 0) {
-			staleReasons.push(`${modifiedSinceReview.length} working-tree file(s) modified after this review completed`);
-		}
+	}
+
+	if (deletedFiles.length > 0) {
+		staleReasons.push(`${deletedFiles.length} tracked file(s) deleted in working tree`);
+	}
+	const editedCount = modifiedSinceReview.length - deletedFiles.length;
+	if (editedCount > 0) {
+		staleReasons.push(`${editedCount} working-tree file(s) modified after this review completed`);
 	}
 
 	return {
@@ -160,20 +190,20 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 						continue;
 					}
 
-					if (repoRoot && gitMeta.workingDirectory && path.resolve(gitMeta.workingDirectory) !== path.resolve(repoRoot)) {
+					if (repoRoot && (!gitMeta.workingDirectory || path.resolve(gitMeta.workingDirectory) !== path.resolve(repoRoot))) {
 						continue;
 					}
 					if (!allBranches && currentBranch && gitMeta.currentBranch && gitMeta.currentBranch !== currentBranch) {
 						continue;
 					}
 
-					let isComplete = true;
+					let isComplete = false;
 					if (fs.existsSync(completeFile)) {
 						try {
 							const comp = JSON.parse(fs.readFileSync(completeFile, 'utf8'));
 							isComplete = comp.state === 'complete';
 						} catch {
-							// Keep default true if unreadable
+							isComplete = false;
 						}
 					}
 					if (!isComplete) continue;
@@ -265,7 +295,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 			if (!fs.existsSync(crDir)) continue;
 
 			const categoriesFile = path.join(crDir, 'categories.json');
-			let branchPrefix = '';
+			const fileToBranch = new Map();
 			if (fs.existsSync(categoriesFile) && repoRoot) {
 				try {
 					const cats = JSON.parse(fs.readFileSync(categoriesFile, 'utf8'));
@@ -273,7 +303,9 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 					const suffix = '-reviews';
 					for (const key of Object.keys(cats)) {
 						if (key.startsWith(prefix) && key.endsWith(suffix)) {
-							branchPrefix = key.slice(prefix.length, -suffix.length);
+							const branch = key.slice(prefix.length, -suffix.length);
+							const hash = crypto.createHash('sha256').update(key).digest('hex') + '.json';
+							fileToBranch.set(hash, branch);
 						}
 					}
 				} catch {
@@ -311,14 +343,14 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 				for (const entry of parsed) {
 					if (!entry || typeof entry !== 'object') continue;
 					const wsRoot = entry.checkpoint?.workspaceRoot;
-					if (repoRoot && wsRoot && path.resolve(wsRoot) !== path.resolve(repoRoot)) {
+					if (repoRoot && (!wsRoot || path.resolve(wsRoot) !== path.resolve(repoRoot))) {
 						continue;
 					}
 					if (entry.status !== 'completed' && entry.completion?.outcome !== 'completed') {
 						continue;
 					}
 
-					const inferredBranch = entry.branch || branchPrefix || currentBranch || '';
+					const inferredBranch = entry.branch || fileToBranch.get(f.name) || currentBranch || '';
 					if (!allBranches && currentBranch && inferredBranch && inferredBranch !== currentBranch) {
 						continue;
 					}
@@ -330,6 +362,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						for (const [filePath, fileData] of Object.entries(entry.fileReviewMap)) {
 							if (!fileData || !Array.isArray(fileData.comments)) continue;
 							for (const c of fileData.comments) {
+								if (!c || typeof c !== 'object') continue;
 								const norm = normalizeFinding(c, filePath);
 								if (norm.id) seenIds.add(norm.id);
 								findings.push(norm);
@@ -342,6 +375,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						for (const [filePath, comments] of Object.entries(assertiveMap)) {
 							if (!Array.isArray(comments)) continue;
 							for (const c of comments) {
+								if (!c || typeof c !== 'object') continue;
 								if (c.id && seenIds.has(c.id)) continue;
 								const norm = normalizeFinding(c, filePath);
 								if (norm.id) seenIds.add(norm.id);
@@ -350,9 +384,16 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						}
 					}
 
-					const timestamp = entry.timestamp
-						|| (entry.endedAt ? Date.parse(entry.endedAt) : 0)
-						|| (entry.startedAt ? Date.parse(entry.startedAt) : 0);
+					let timestamp = 0;
+					if (typeof entry.timestamp === 'number') {
+						timestamp = entry.timestamp < 1e11 ? entry.timestamp * 1000 : entry.timestamp;
+					} else if (typeof entry.timestamp === 'string') {
+						timestamp = Date.parse(entry.timestamp) || 0;
+					} else if (entry.endedAt) {
+						timestamp = Date.parse(entry.endedAt) || 0;
+					} else if (entry.startedAt) {
+						timestamp = Date.parse(entry.startedAt) || 0;
+					}
 
 					sessions.push({
 						source: 'vscode',

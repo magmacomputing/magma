@@ -138,7 +138,7 @@ export function attachStatics(TempoClass: any, props: Record<string, any>) {
 				(isNotNullish(val.get) || isNotNullish(val.set) || 'value' in val || isNotNullish(val.writable) || isNotNullish(val.configurable) || isNotNullish(val.enumerable)) &&
 				(isUndefined(val.get) || isFunction(val.get)) &&
 				(isUndefined(val.set) || isFunction(val.set)) &&
-				!((isFunction(val.get) || isFunction(val.set)) && ('value' in val || 'writable' in val))
+				!(('get' in val || 'set' in val) && ('value' in val || 'writable' in val))
 			)
 		);
 
