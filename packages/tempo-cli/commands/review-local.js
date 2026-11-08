@@ -80,7 +80,7 @@ function getWorkingTreeDirtyFiles(repoRoot) {
 			i++; // skip origPath
 		}
 
-		const isDeleted = code.includes('D');
+		const isDeleted = code.includes('D') && code !== 'AD';
 		if (isDeleted) {
 			files.push({
 				fileName: relPath,
@@ -116,9 +116,12 @@ function evaluateStaleness(session, currentHead, dirtyFiles) {
 	const staleReasons = [];
 	const isHeadMatch = Boolean(currentHead && session.headCommitId === currentHead);
 
-	if (!session.headCommitId && !session.timestamp) {
-		staleReasons.push('Session lacks commit ID and timestamp (unknown freshness)');
-	} else if (currentHead && session.headCommitId && !isHeadMatch) {
+	if (!session.timestamp || typeof session.timestamp !== 'number' || isNaN(session.timestamp) || session.timestamp <= 0) {
+		staleReasons.push('Session lacks a valid completion timestamp (unknown freshness)');
+	}
+	if (!session.headCommitId) {
+		staleReasons.push('Session lacks reviewed commit ID');
+	} else if (currentHead && !isHeadMatch) {
 		staleReasons.push(`HEAD commit changed since review (${session.headCommitId.slice(0, 8)} -> ${currentHead.slice(0, 8)})`);
 	}
 
@@ -343,8 +346,13 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 				for (const entry of parsed) {
 					if (!entry || typeof entry !== 'object') continue;
 					const wsRoot = entry.checkpoint?.workspaceRoot;
-					if (repoRoot && (!wsRoot || path.resolve(wsRoot) !== path.resolve(repoRoot))) {
-						continue;
+					const matchesCategory = fileToBranch.has(f.name);
+					if (repoRoot) {
+						if (wsRoot) {
+							if (path.resolve(wsRoot) !== path.resolve(repoRoot)) continue;
+						} else if (!matchesCategory) {
+							continue;
+						}
 					}
 					if (entry.status !== 'completed' && entry.completion?.outcome !== 'completed') {
 						continue;
@@ -385,13 +393,16 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 					}
 
 					let timestamp = 0;
-					if (typeof entry.timestamp === 'number') {
+					if (typeof entry.timestamp === 'number' && entry.timestamp > 0) {
 						timestamp = entry.timestamp < 1e11 ? entry.timestamp * 1000 : entry.timestamp;
-					} else if (typeof entry.timestamp === 'string') {
+					} else if (typeof entry.timestamp === 'string' && entry.timestamp.trim() !== '' && entry.timestamp !== '0') {
 						timestamp = Date.parse(entry.timestamp) || 0;
-					} else if (entry.endedAt) {
+					}
+
+					if (!timestamp && entry.endedAt) {
 						timestamp = Date.parse(entry.endedAt) || 0;
-					} else if (entry.startedAt) {
+					}
+					if (!timestamp && entry.startedAt) {
 						timestamp = Date.parse(entry.startedAt) || 0;
 					}
 

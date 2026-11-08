@@ -45,7 +45,7 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
    - `"/absolute/path/to/coderabbit" review --agent --dir <path>`: Review a specific directory inside the Git working tree.
 
    ### Step 2B: Hybrid Fallback — Saved Local Review Reader (`credentials_unavailable` or Existing Review)
-   First, verify whether the sandbox environment has filesystem access to the host review storage directories (`~/.coderabbit/reviews` for CLI runs and `~/.config/Code/User/workspaceStorage` for VS Code runs). If the sandbox cannot access either host store, ask the user to run the reader in their host terminal and share its JSON output before treating any review session as missing or initiating an unnecessary fresh review.
+   First, verify whether the sandbox environment has filesystem access to the store corresponding to the requested review source (`~/.coderabbit/reviews` for CLI runs via `--cli`, or `~/.config/Code/User/workspaceStorage` for VS Code extension runs via `--vscode`). When the requested store is inaccessible, or when the source is unspecified and either store is inaccessible, ask the user to run the reader in their host terminal and share its JSON output before treating any review session as missing or starting an unnecessary fresh review.
 
    To read the latest completed local review, execute the command with npm banner suppression to ensure clean JSON parsing (keeping the execution boundary intact):
    ```bash
@@ -53,12 +53,12 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
    ```
    *(Optional flags: `--cli` for CLI store only, `--vscode` for VS Code extension store only, `--list` to inspect all saved sessions for the current branch).*
    - **Evaluate Saved Session (`found`, Scope & Freshness Guard)**:
-     - **Verify Scope & Freshness**: Findings may only be reused when `found: true`, the reviewed commit (`headCommitId`) and completion timestamp are present confirming the session is current (`isStale: false`), and the session's reviewed scope and base match the requested branch review. Treat missing freshness metadata as stale. If the reviewed scope or base cannot be verified or does not match the requested review (e.g. only a subdirectory or uncommitted diff was reviewed instead of the full branch), request a fresh review with the requested scope instead of proceeding to Step 3.
+     - **Verify Scope & Freshness**: Findings may only be reused when `found: true`, the reviewed commit (`headCommitId`) and completion timestamp are present confirming the session is current (`isStale: false`), and the session's reviewed scope and base are confirmed from session metadata (e.g., `gitMeta` or `checkpoint` reviewType/baseCommitId) to match the requested branch review. Treat missing freshness or scope metadata as stale/unverified. If the reviewed scope or base cannot be confirmed or does not match the requested review (e.g. only a subdirectory or uncommitted diff was reviewed instead of the full branch), request a fresh review with the requested scope instead of proceeding to Step 3.
      - **`found: true`, Scope Verified & `isStale: false`**: Proceed directly to **Step 3** using those findings.
      - **`found: false` or `isStale: true`** (e.g., `HEAD` moved, `/pull` modified files, edits occurred after review, or scope mismatch):
        - Do **not** blindly apply outdated findings from a stale review session.
        - If Step 2B was entered because the user asked to act on an existing review, ask the user for authorization before starting a fresh live review through Step 2A. Only continue if authorized, preserving the requested scope, and following standard auth and host-execution boundary rules without retrying an auth status already known to be unavailable.
-       - If Step 2B was entered because `auth status` returned `credentials_unavailable`, explain that saved findings cannot be used and ask the user to run a fresh review in their **VS Code Integrated Terminal** (`npm run review:agent` or `npm run review:uncommitted`) or via the **VS Code CodeRabbit sidebar**. This handoff is due to unavailable CLI credentials, not the stale session itself. After the user confirms completion, re-run `npm run --silent review:local -- --json` and continue to **Step 3** only if the new session is current.
+       - If Step 2B was entered because `auth status` returned `credentials_unavailable`, explain that saved findings cannot be used and ask the user to run a fresh review in their **VS Code Integrated Terminal** or via the **VS Code CodeRabbit sidebar** using the exact requested scope and base (e.g., full branch review `npm run review:agent`, avoiding `review:uncommitted` when committed changes need review). This handoff is due to unavailable CLI credentials, not the stale session itself. After the user confirms completion, re-run `npm run --silent review:local -- --json` and continue to **Step 3** only if the replacement session is confirmed current.
 
 3. **Parse & Collect All Findings**:
    - **From Live NDJSON Stream (Step 2A)**:
@@ -87,7 +87,7 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
      ```
    - **When using Step 2A (`authenticated: true`)**:
      - Only after local tests pass completely, apply the shared host-execution boundary and execute a confirmation re-review using the validated executable.
-     - **Scope Authorization for Uncommitted Fixes**: If the initial review was run using `--committed`, do not repeat `--committed` for confirmation (which would exclude the new fixes); ask the user to authorize a re-review scope that includes the uncommitted fixes (e.g., `--uncommitted` or full working tree). If the user does not authorize that scope, report that the fixes remain unconfirmed by a re-review.
+     - **Scope Authorization for Uncommitted Fixes**: If the initial review was run using `--committed`, do not repeat `--committed` for confirmation (which would exclude the new fixes); ask the user to authorize a re-review scope that includes the uncommitted fixes (e.g., `--uncommitted` or full working tree). In the confirmation report, accurately describe the re-review scope (e.g., an `--uncommitted` re-review covers only uncommitted changes), and require full-scope confirmation before reporting the entire branch review as clean. If the user does not authorize that scope, report that the fixes remain unconfirmed by a re-review.
      ```bash
      "/absolute/path/to/coderabbit" review --agent [scope-flags]
      ```
@@ -96,7 +96,7 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
      - If fixes were made after the saved review and no confirmation review completed cleanly, explicitly state in the final report that the fixes have not been re-reviewed. Do not claim a clean review or PR-ready result based only on saved findings and local checks.
 
 7. **Final Verification**:
-   - When a live re-review ran, evaluate and report any remaining findings before claiming the review is clean; proceed with a clean-review result only when `status` is `"review_completed"` and `findings: 0`. If no confirmation review was run (e.g. under Hybrid Fallback or unauthorized scope), explicitly state that working-tree fixes remain unconfirmed by CodeRabbit.
+   - When a live re-review ran, evaluate and report any remaining findings before claiming the review is clean; proceed with a clean-review result only when `status` is `"review_completed"` and `findings: 0`. If working-tree fixes were made and no confirmation review ran (e.g. under Hybrid Fallback or unauthorized scope), explicitly state in the final report that those fixes remain unconfirmed by CodeRabbit.
    - Run the full monorepo build and test suites:
      ```bash
      npm run build:all && npm test
