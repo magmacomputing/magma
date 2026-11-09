@@ -52,6 +52,14 @@ Let the trusted CLI access its own credentials. Never retrieve, expose,
 copy, store, hash, or pass credentials through arguments, environment variables,
 files, tool output, or model context. Never request pasted tokens.
 
+### Snap environment isolation on Linux
+When running inside an IDE or tool environment packaged via Ubuntu Snap (such as VS Code Snap at `/snap/code`), child processes inherit `SNAP_NAME=code` and `SNAP=/snap/code/...`. On Linux, GNOME `libsecret` checks `SNAP_NAME` to determine whether it is running inside a confined snap package; when set, it directs secret queries to the snap secret portal (`org.freedesktop.portal.Secret`) rather than the host desktop keyring (`org.freedesktop.secrets` over `/run/user/<uid>/bus`), resulting in `credentials_unavailable`.
+To allow `libsecret` to communicate directly with the host keyring daemon over the user's D-Bus session bus, strip `SNAP_NAME` and `SNAP` from the command environment:
+```sh
+env -u SNAP_NAME -u SNAP "/absolute/path/to/coderabbit" auth status --agent
+```
+Do not expose, log, or transfer tokens; unsetting these variables simply prevents `libsecret` from misidentifying the process as a confined snap application.
+
 ## Confirmed missing CLI
 
 When the user confirms the CLI is not installed on macOS/Linux, give this command

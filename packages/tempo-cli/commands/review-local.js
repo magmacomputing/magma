@@ -257,9 +257,10 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 					}
 
 					const dirTs = Number(rev.name);
+					const metaTs = Number(gitMeta.timestamp) || 0;
 					const timestamp = !Number.isNaN(dirTs) && dirTs > 1e12
 						? dirTs
-						: (gitMeta.timestamp ? gitMeta.timestamp * 1000 : 0);
+						: (metaTs && metaTs < 1e11 ? metaTs * 1000 : metaTs);
 
 					sessions.push({
 						source: 'cli',
@@ -495,7 +496,10 @@ export async function reviewLocal(args = []) {
 				timestamp: s.timestamp,
 				isoTime: s.isoTime,
 				branch: s.branch,
+				baseBranch: s.baseBranch,
+				reviewType: s.reviewType,
 				headCommitId: s.headCommitId,
+				baseCommitId: s.baseCommitId,
 				isHeadMatch: staleness.isHeadMatch,
 				isStale: staleness.isStale,
 				staleReasons: staleness.staleReasons,
@@ -559,6 +563,8 @@ export async function reviewLocal(args = []) {
 			isoTime: latest.isoTime,
 			ageMinutes,
 			branch: latest.branch,
+			baseBranch: latest.baseBranch,
+			reviewType: latest.reviewType,
 			headCommitId: latest.headCommitId,
 			baseCommitId: latest.baseCommitId,
 			currentHead,
@@ -572,6 +578,8 @@ export async function reviewLocal(args = []) {
 				source: s.source,
 				reviewId: s.reviewId,
 				isoTime: s.isoTime,
+				baseBranch: s.baseBranch,
+				reviewType: s.reviewType,
 				findingsCount: s.findings.length,
 			})),
 		}, null, 2));
