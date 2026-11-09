@@ -214,6 +214,8 @@ describe('Dialect Explain & Migration Helper', () => {
 		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {ww:raw} {wom}');
 
 		// Oracle WW boundary formatting (2024-12-30 is Calendar Week 53, ISO Week 01)
+		const resOracleWw = Tempo.dialects.explain('WW', DIALECT.Oracle);
+		expect(new Tempo('2024-12-30T00:00:00Z').format(resOracleWw.pattern)).toBe('53');
 		expect(new Tempo('2024-12-30T00:00:00Z').dialects.oracle('WW')).toBe('53');
 
 		// PHP z and t

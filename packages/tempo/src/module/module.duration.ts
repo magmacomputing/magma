@@ -176,7 +176,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			({ unit, ...opts } = until as any);
 			value = arg;
 			break;
-		case isObject(arg) && isNotNullish((arg as any).unit):
+		case isObject(arg) && hasKey(arg, 'unit'):
 			({ unit, value, ...opts } = arg as any);
 			break;
 		default:

@@ -16,6 +16,12 @@ describe('Tempo overloads', () => {
 
     const d4 = t.until('2024-01-01', { timeZone: 'UTC' });
     expect(d4).toHaveProperty('iso');
+
+    const customFormat = vi.fn(() => 'custom formatted duration');
+    const d5 = t.until({ unit: null, intl: { durationFormat: customFormat } });
+    expect(d5).toHaveProperty('iso');
+    expect(d5.format()).toBe('custom formatted duration');
+    expect(customFormat).toHaveBeenCalled();
   });
 
   test('until() returns number when unit is specified', () => {
