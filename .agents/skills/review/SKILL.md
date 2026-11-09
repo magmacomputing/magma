@@ -20,23 +20,31 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
 1. **Pre-Flight Check & Hybrid Fallback Selection**:
    - **If the user explicitly asks to action an already-completed local review** (from the VS Code CodeRabbit extension or a terminal run), skip directly to **Step 2B (Hybrid Fallback: Saved Local Review Reader)**.
    - Otherwise, apply the shared host-execution boundary and follow [references/auth-recovery.md](references/auth-recovery.md): resolve `coderabbit` on `PATH` (`command -v coderabbit`) so it is not inside the current Git working tree before invoking `"/absolute/path/to/coderabbit"`.
-   - **Snap Environment Variable Cleanup (Linux / VS Code Snap)**: When running from an IDE extension host installed via Ubuntu Snap (`/snap/code`), child processes inherit `SNAP_NAME` and `SNAP`, causing Linux `libsecret` to misroute keyring calls to snap portals rather than the host Secret Service daemon. Prefix `coderabbit` invocations with `env -u SNAP_NAME -u SNAP` to restore direct host GNOME Keyring access.
+   - **Snap Environment Variable Cleanup (Linux / VS Code Snap)**: When running from an IDE extension host installed via Ubuntu Snap (`/snap/code`), child processes inherit `SNAP_NAME` and `SNAP`, causing Linux `libsecret` to misroute keyring calls to snap portals rather than the host Secret Service daemon. In Snap environments (when `SNAP_NAME` is set in the environment), invoke CodeRabbit with the Snap variables stripped (e.g., using a harness environment override or `/usr/bin/env -u SNAP_NAME -u SNAP`). Outside Snap environments (e.g., Windows, macOS, or native Linux packages), invoke `"/absolute/path/to/coderabbit"` directly without `env` so commands remain portable without requiring `env` on `PATH`.
    - Verify authentication status using the validated executable:
      ```bash
-     env -u SNAP_NAME -u SNAP "/absolute/path/to/coderabbit" auth status --agent
+     # When running inside Snap (Linux):
+     /usr/bin/env -u SNAP_NAME -u SNAP "/absolute/path/to/coderabbit" auth status --agent
+
+     # When running outside Snap (default / Windows / macOS):
+     "/absolute/path/to/coderabbit" auth status --agent
      ```
    - **Route by Status**:
      - **`authenticated: true` (Primary Autonomous Path)**: Proceed to **Step 2A (Execute Live CLI Review)**.
      - **`status: "credentials_unavailable"` (Hybrid Fallback Path — e.g., when host keyring is isolated or inaccessible)**: Do **not** stop dead. Proceed immediately to **Step 2B (Hybrid Fallback: Saved Local Review Reader)**.
      - **`authenticated: false`**: Stop and ask the user to run `coderabbit auth login` in their terminal (do not start interactive browser login automatically).
-   - *(Optional)* To inspect actual account review allowance, billing status, or cooldown windows when `authenticated: true`, run `env -u SNAP_NAME -u SNAP "/absolute/path/to/coderabbit" usage --agent`. The repository helper `npm run review:limit` estimates the standard-tier 3 reviews/hour sliding window from local review history. See [references/auth-recovery.md](references/auth-recovery.md) and [references/cli-workflows.md](references/cli-workflows.md) for details.
+   - *(Optional)* To inspect actual account review allowance, billing status, or cooldown windows when `authenticated: true`, run `"/absolute/path/to/coderabbit" usage --agent` (prefixed with `/usr/bin/env -u SNAP_NAME -u SNAP` in Snap environments). The repository helper `npm run review:limit` estimates the standard-tier 3 reviews/hour sliding window from local review history. See [references/auth-recovery.md](references/auth-recovery.md) and [references/cli-workflows.md](references/cli-workflows.md) for details.
 
 2. **Acquire Review Findings (Primary CLI vs. Hybrid Fallback)**:
 
    ### Step 2A: Execute Live CLI Review (`authenticated: true`)
    Apply the shared host-execution boundary ([references/auth-recovery.md](references/auth-recovery.md)), resolve the host checkout root from the harness or user (`git rev-parse --show-toplevel` when host and workspace paths match, rather than assuming a sandbox path exists on the host), and run the validated CodeRabbit executable (unsetting Snap variables when in a Snap environment) from that resolved repository root:
    ```bash
-   env -u SNAP_NAME -u SNAP "/absolute/path/to/coderabbit" review --agent
+   # When running inside Snap (Linux):
+   /usr/bin/env -u SNAP_NAME -u SNAP "/absolute/path/to/coderabbit" review --agent
+
+   # When running outside Snap (default / Windows / macOS):
+   "/absolute/path/to/coderabbit" review --agent
    ```
    **Common Scope Options** (when requested by the user):
    - `"/absolute/path/to/coderabbit" review --agent --uncommitted`: Staged changes and unstaged edits to tracked files.
@@ -52,9 +60,9 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
    ```bash
    npm run --silent review:local -- --json
    ```
-   *(Optional flags: `--cli` for CLI store only, `--vscode` for VS Code extension store only, `--list` to inspect all saved sessions for the current branch).*
+   *(Optional flags: `--cli` for CLI store only, `--vscode` for VS Code extension store only, `--id <reviewId>` to select a specific session by ID, `--list` to inspect all saved sessions for the current branch).*
    - **Evaluate Saved Session (`found`, Scope & Freshness Guard)**:
-     - **Verify Source, ID, Scope & Freshness**: Findings may only be reused when `found: true`, the reader's returned `source` matches the requested source (if specified), the returned `reviewId` matches the requested ID (if specified, not accepting a newer session from another store as a substitute), the reviewed commit (`headCommitId`) and completion timestamp are present confirming the session is current (`isStale: false`), and the session's reviewed scope and base are confirmed from session metadata emitted by `review-local --json` (e.g. `baseBranch`, `baseCommitId`, and `reviewType`) to match the requested branch review. (Note: for VS Code sessions, `reviewType: 'all'` indicates a full review; for CLI sessions, `reviewType` is recorded as `'cli'` and does not record fine-grained CLI scope flags, so base confirmation relies on `baseBranch` and `baseCommitId`). Treat missing freshness or scope metadata as stale/unverified. If the reviewed scope or base cannot be confirmed or does not match the requested review (e.g. only a subdirectory or uncommitted diff was reviewed instead of the full branch), request a fresh review with the requested scope instead of proceeding to Step 3.
+     - **Verify Source, ID, Scope & Freshness**: Findings may only be reused when `found: true`, the reader's returned `source` matches the requested source (if specified), the returned `reviewId` matches the requested ID (when a specific review ID is requested, pass `--id <reviewId>` to the reader and confirm the returned `reviewId` matches before using findings; do not substitute another session if not found), the reviewed commit (`headCommitId`) and completion timestamp are present confirming the session is current (`isStale: false`), and the session's reviewed scope and base are confirmed from session metadata emitted by `review-local --json` (e.g. `baseBranch`, `baseCommitId`, and `reviewType`) to match the requested branch review. (Note: for VS Code sessions, `reviewType: 'all'` indicates a full review; for CLI sessions, `reviewType` is recorded as `'cli'` and does not record fine-grained CLI scope flags, so base confirmation relies on `baseBranch` and `baseCommitId`). Treat missing freshness or scope metadata as stale/unverified. If the reviewed scope or base cannot be confirmed or does not match the requested review (e.g. only a subdirectory or uncommitted diff was reviewed instead of the full branch), request a fresh review with the requested scope instead of proceeding to Step 3.
      - **`found: true`, Scope Verified & `isStale: false`**: Proceed directly to **Step 3** using those findings.
      - **`found: false` or `isStale: true`** (e.g., `HEAD` moved, `/pull` modified files, edits occurred after review, or scope mismatch):
        - Do **not** blindly apply outdated findings from a stale review session.
@@ -97,7 +105,9 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
      - If fixes were made after the saved review and no confirmation review completed cleanly, explicitly state in the final report that the fixes have not been re-reviewed. Do not claim a clean review or PR-ready result based only on saved findings and local checks.
 
 7. **Final Verification**:
-   - When a live re-review ran, evaluate and report any remaining findings before claiming the review is clean; proceed with a clean-review result only when `status` is `"review_completed"`, `findings: 0`, and the confirmation review covered the full original review scope and base (an `--uncommitted` confirmation review confirms only uncommitted changes and cannot confirm a full-branch review as clean). If no confirmation review or only a partial/uncommitted review was run, explicitly report that working-tree fixes or full-branch confirmation remain unverified by CodeRabbit.
+   - **Clean Review Reporting**:
+     - An initial review may establish a clean result when it completed cleanly with zero findings (`status: "review_completed"` or `findingsCount: 0`), covered the full original review scope and base, and remains current with no subsequent working-tree changes.
+     - When changes follow the initial review (e.g. fixes applied locally), require a qualifying confirmation review covering the full original scope and base before claiming the branch is clean; an `--uncommitted` confirmation review confirms only uncommitted changes and cannot confirm a full-branch review as clean. If no confirmation review or only a partial/uncommitted review was run after changes, explicitly report that working-tree fixes or full-branch confirmation remain unverified by CodeRabbit.
    - Run the full monorepo build and test suites:
      ```bash
      npm run build:all && npm test
@@ -108,7 +118,7 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
 ---
 
 ## Related CLI Workflows & References
-- **Unified local findings reader (CLI + VS Code Extension)**: `npm run review:local` (`tempo-cli review-local [--json] [--cli] [--vscode] [--list]`) reads the latest saved findings from `~/.coderabbit/reviews` and `coderabbit.coderabbit-vscode`.
+- **Unified local findings reader (CLI + VS Code Extension)**: `npm run review:local` (`tempo-cli review-local [--json] [--cli] [--vscode] [--list] [--id <id>]`) reads saved findings from `~/.coderabbit/reviews` and `coderabbit.coderabbit-vscode`.
 - **Saved CLI findings**: `"/absolute/path/to/coderabbit" review findings` displays stored human-readable findings from the most recent CLI run with findings (retaining the shared host-execution boundary).
 - **GitHub PR findings & prompts**: `npm run review:pr` displays unresolved inline findings and top-level review comments from a GitHub PR, while `"/absolute/path/to/coderabbit" pullrequest <number-or-url> --show-prompts --agent` retrieves consolidated PR prompts.
 - Additional CLI & auth reference docs:

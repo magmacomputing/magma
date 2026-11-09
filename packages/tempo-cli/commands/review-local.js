@@ -224,8 +224,9 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 							const inc = JSON.parse(fs.readFileSync(incDiffFile, 'utf8'));
 							if (Array.isArray(inc)) {
 								for (const item of inc) {
+									if (!item || typeof item !== 'object') continue;
 									const fn = item.filename || item.fileName;
-									if (fn && item.diff && item.diff.includes('deleted file mode')) {
+									if (fn && typeof item.diff === 'string' && item.diff.includes('deleted file mode')) {
 										reviewedDeletions.add(fn);
 									}
 								}
@@ -258,15 +259,27 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 
 					const dirTs = Number(rev.name);
 					const metaTs = Number(gitMeta.timestamp) || 0;
-					const timestamp = !Number.isNaN(dirTs) && dirTs > 1e12
+					let timestamp = !Number.isNaN(dirTs) && dirTs > 1e12
 						? dirTs
 						: (metaTs && metaTs < 1e11 ? metaTs * 1000 : metaTs);
+
+					let isoTime = null;
+					if (timestamp && !Number.isNaN(new Date(timestamp).getTime())) {
+						try {
+							isoTime = new Date(timestamp).toISOString();
+						} catch {
+							isoTime = null;
+							timestamp = 0;
+						}
+					} else {
+						timestamp = 0;
+					}
 
 					sessions.push({
 						source: 'cli',
 						reviewId: rev.name,
 						timestamp,
-						isoTime: timestamp ? new Date(timestamp).toISOString() : null,
+						isoTime,
 						branch: gitMeta.currentBranch || currentBranch || '',
 						baseBranch: gitMeta.baseBranch || '',
 						headCommitId: gitMeta.head || '',
@@ -449,7 +462,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						baseBranch: '',
 						headCommitId: entry.headCommitId || '',
 						baseCommitId: entry.baseCommitId || '',
-						reviewType: entry.checkpoint?.reviewType || 'all',
+						reviewType: entry.checkpoint?.reviewType || '',
 						storagePath: fullPath,
 						reviewedDeletions,
 						findings,
@@ -467,7 +480,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
  * and the VS Code CodeRabbit extension store (~/.config/Code/User/workspaceStorage/.../coderabbit.coderabbit-vscode).
  *
  * Usage:
- *   tempo-cli review-local [--json] [--cli] [--vscode] [--list] [--all-branches]
+ *   tempo-cli review-local [--json] [--cli] [--vscode] [--list] [--all-branches] [--id <reviewId>]
  */
 export async function reviewLocal(args = []) {
 	const jsonOutput = args.includes('--json');
@@ -475,6 +488,17 @@ export async function reviewLocal(args = []) {
 	const vscodeOnly = args.includes('--vscode');
 	const listAll = args.includes('--list');
 	const allBranches = args.includes('--all-branches');
+
+	let requestedId = null;
+	const idIndex = args.indexOf('--id');
+	if (idIndex !== -1 && idIndex + 1 < args.length) {
+		requestedId = args[idIndex + 1];
+	} else {
+		const idArg = args.find(a => typeof a === 'string' && a.startsWith('--id='));
+		if (idArg) {
+			requestedId = idArg.slice(5);
+		}
+	}
 
 	const homeDir = os.homedir();
 	const repoRoot = runGit(['rev-parse', '--show-toplevel']) || process.cwd();
@@ -529,9 +553,42 @@ export async function reviewLocal(args = []) {
 		return;
 	}
 
-	const latest = allSessions[0] || null;
+	let targetSession = null;
+	if (requestedId) {
+		targetSession = allSessions.find(s => s.reviewId === requestedId) || null;
+		if (!targetSession) {
+			if (jsonOutput) {
+				console.log(JSON.stringify({
+					found: false,
+					requestedId,
+					repoRoot,
+					currentBranch,
+					currentHead,
+					findingsCount: 0,
+					findings: [],
+					availableSessions: allSessions.map(s => ({
+						source: s.source,
+						reviewId: s.reviewId,
+						isoTime: s.isoTime,
+						baseBranch: s.baseBranch,
+						reviewType: s.reviewType,
+						findingsCount: s.findings.length,
+					})),
+				}, null, 2));
+				return;
+			}
+			console.log(`\n======================================================`);
+			console.log(`Local CodeRabbit Review Findings`);
+			console.log(`======================================================\n`);
+			console.log(`⚠️  Review session "${requestedId}" not found for this repository/branch.`);
+			console.log(`Run "npm run review:local -- --list" to view available review sessions.\n`);
+			return;
+		}
+	} else {
+		targetSession = allSessions[0] || null;
+	}
 
-	if (!latest) {
+	if (!targetSession) {
 		if (jsonOutput) {
 			console.log(JSON.stringify({
 				found: false,
@@ -551,29 +608,29 @@ export async function reviewLocal(args = []) {
 		return;
 	}
 
-	const ageMinutes = latest.timestamp ? Math.round((Date.now() - latest.timestamp) / 60000) : null;
-	const staleness = evaluateStaleness(latest, currentHead, dirtyFiles);
+	const ageMinutes = targetSession.timestamp ? Math.round((Date.now() - targetSession.timestamp) / 60000) : null;
+	const staleness = evaluateStaleness(targetSession, currentHead, dirtyFiles);
 
 	if (jsonOutput) {
 		console.log(JSON.stringify({
 			found: true,
-			source: latest.source,
-			reviewId: latest.reviewId,
-			timestamp: latest.timestamp,
-			isoTime: latest.isoTime,
+			source: targetSession.source,
+			reviewId: targetSession.reviewId,
+			timestamp: targetSession.timestamp,
+			isoTime: targetSession.isoTime,
 			ageMinutes,
-			branch: latest.branch,
-			baseBranch: latest.baseBranch,
-			reviewType: latest.reviewType,
-			headCommitId: latest.headCommitId,
-			baseCommitId: latest.baseCommitId,
+			branch: targetSession.branch,
+			baseBranch: targetSession.baseBranch,
+			reviewType: targetSession.reviewType,
+			headCommitId: targetSession.headCommitId,
+			baseCommitId: targetSession.baseCommitId,
 			currentHead,
 			isHeadMatch: staleness.isHeadMatch,
 			isStale: staleness.isStale,
 			staleReasons: staleness.staleReasons,
 			modifiedFilesSinceReview: staleness.modifiedFilesSinceReview,
-			findingsCount: latest.findings.length,
-			findings: latest.findings,
+			findingsCount: targetSession.findings.length,
+			findings: targetSession.findings,
 			availableSessions: allSessions.map(s => ({
 				source: s.source,
 				reviewId: s.reviewId,
@@ -587,24 +644,24 @@ export async function reviewLocal(args = []) {
 	}
 
 	console.log(`\n======================================================`);
-	console.log(`Local CodeRabbit Review Findings [${latest.source.toUpperCase()}]`);
-	console.log(`Review ID: ${latest.reviewId} | Time: ${latest.isoTime || 'unknown'} (${ageMinutes !== null ? `${ageMinutes}m ago` : 'n/a'})`);
-	console.log(`Branch: ${latest.branch || currentBranch} | Head: ${latest.headCommitId ? latest.headCommitId.slice(0, 8) : 'n/a'}${staleness.isHeadMatch ? ' (matches HEAD)' : ` (current HEAD: ${currentHead.slice(0, 8)})`}`);
+	console.log(`Local CodeRabbit Review Findings [${targetSession.source.toUpperCase()}]`);
+	console.log(`Review ID: ${targetSession.reviewId} | Time: ${targetSession.isoTime || 'unknown'} (${ageMinutes !== null ? `${ageMinutes}m ago` : 'n/a'})`);
+	console.log(`Branch: ${targetSession.branch || currentBranch} | Head: ${targetSession.headCommitId ? targetSession.headCommitId.slice(0, 8) : 'n/a'}${staleness.isHeadMatch ? ' (matches HEAD)' : ` (current HEAD: ${currentHead.slice(0, 8)})`}`);
 	console.log(`Status: ${staleness.isStale ? `⚠️  STALE (${staleness.staleReasons.join('; ')})` : '✅ CURRENT'}`);
-	console.log(`Findings Summary: ${latest.findings.length} finding(s)`);
+	console.log(`Findings Summary: ${targetSession.findings.length} finding(s)`);
 	console.log(`======================================================\n`);
 
-	if (latest.findings.length === 0) {
-		console.log('✅ No findings reported in the latest local CodeRabbit review.\n');
+	if (targetSession.findings.length === 0) {
+		console.log('✅ No findings reported in the selected local CodeRabbit review.\n');
 		return;
 	}
 
-	for (let i = 0; i < latest.findings.length; i++) {
-		const f = latest.findings[i];
+	for (let i = 0; i < targetSession.findings.length; i++) {
+		const f = targetSession.findings[i];
 		const lineRange = f.startLine
 			? (f.endLine && f.endLine !== f.startLine ? `:${f.startLine}-${f.endLine}` : `:${f.startLine}`)
 			: '';
-		console.log(`--- [Finding ${i + 1}/${latest.findings.length}] [${f.severity.toUpperCase()}] ---`);
+		console.log(`--- [Finding ${i + 1}/${targetSession.findings.length}] [${f.severity.toUpperCase()}] ---`);
 		console.log(`File: ${f.fileName}${lineRange}`);
 		if (f.title) console.log(`Title: ${f.title}`);
 		console.log(`\n${f.comment.trim()}\n`);

@@ -81,7 +81,7 @@ Tempo.use(FormatModule);
 ## 🔠 Supported Tokens
 
 > [!NOTE]
-> **Tempo is heavily opinionated.** To provide maximum predictability and eliminate common timezone or regional bugs, Tempo strictly defaults to **ISO-8601 standards**. This means ISO weeks always start on Monday (`1`), and mathematical bounds (like ISO week-of-year `{woy}` and year-of-week `{yow}` calculations) adhere to the rigorous ISO specification (with the exception of `{ww}`, which represents calendar weeks counting 7-day groups from January 1st regardless of weekday).
+> **Tempo is heavily opinionated.** To provide maximum predictability and eliminate common timezone or regional bugs, Tempo strictly defaults to **ISO-8601 standards**. This means ISO weeks always start on Monday (`1`), and mathematical bounds (like ISO week-of-year `{woy}` and year-of-week `{yow}` calculations) adhere to the rigorous ISO specification (with the exception of `{ww}`, which counts 7-day groups from the first day of the configured calendar year, regardless of weekday).
 
 > [!TIP]
 > **Format Dialects & Migration**
