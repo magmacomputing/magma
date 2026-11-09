@@ -80,7 +80,7 @@ function getWorkingTreeDirtyFiles(repoRoot) {
 			i++; // skip origPath
 		}
 
-		const isDeleted = code.includes('D') && code !== 'AD';
+		const isDeleted = code.includes('D');
 		if (isDeleted) {
 			files.push({
 				fileName: relPath,
@@ -119,9 +119,11 @@ function evaluateStaleness(session, currentHead, dirtyFiles) {
 	if (!session.timestamp || typeof session.timestamp !== 'number' || isNaN(session.timestamp) || session.timestamp <= 0) {
 		staleReasons.push('Session lacks a valid completion timestamp (unknown freshness)');
 	}
-	if (!session.headCommitId) {
+	if (!currentHead) {
+		staleReasons.push('Current HEAD commit is unavailable (unknown freshness)');
+	} else if (!session.headCommitId) {
 		staleReasons.push('Session lacks reviewed commit ID');
-	} else if (currentHead && !isHeadMatch) {
+	} else if (!isHeadMatch) {
 		staleReasons.push(`HEAD commit changed since review (${session.headCommitId.slice(0, 8)} -> ${currentHead.slice(0, 8)})`);
 	}
 
@@ -129,6 +131,9 @@ function evaluateStaleness(session, currentHead, dirtyFiles) {
 	const deletedFiles = [];
 	for (const df of dirtyFiles) {
 		if (df.isDeleted) {
+			if (session.reviewedDeletions && session.reviewedDeletions.has(df.fileName)) {
+				continue;
+			}
 			deletedFiles.push(df.fileName);
 			modifiedSinceReview.push(`${df.fileName} (deleted)`);
 		} else if (session.timestamp && df.mtimeMs > session.timestamp) {
@@ -212,6 +217,24 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 					if (!isComplete) continue;
 
 					const findings = [];
+					const reviewedDeletions = new Set();
+					const incDiffFile = path.join(sessionDir, 'incrementalDiff.v2.json');
+					if (fs.existsSync(incDiffFile)) {
+						try {
+							const inc = JSON.parse(fs.readFileSync(incDiffFile, 'utf8'));
+							if (Array.isArray(inc)) {
+								for (const item of inc) {
+									const fn = item.filename || item.fileName;
+									if (fn && item.diff && item.diff.includes('deleted file mode')) {
+										reviewedDeletions.add(fn);
+									}
+								}
+							}
+						} catch {
+							// Ignore diff parse error
+						}
+					}
+
 					let files;
 					try {
 						files = fs.readdirSync(sessionDir, { withFileTypes: true });
@@ -249,6 +272,7 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 						baseCommitId: gitMeta.baseCommitId || '',
 						reviewType: 'cli',
 						storagePath: sessionDir,
+						reviewedDeletions,
 						findings,
 					});
 				}
@@ -365,9 +389,13 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 
 					const seenIds = new Set();
 					const findings = [];
+					const reviewedDeletions = new Set();
 
 					if (entry.fileReviewMap && typeof entry.fileReviewMap === 'object') {
 						for (const [filePath, fileData] of Object.entries(entry.fileReviewMap)) {
+							if (fileData?.status === 'deleted' || fileData?.isDeleted) {
+								reviewedDeletions.add(filePath);
+							}
 							if (!fileData || !Array.isArray(fileData.comments)) continue;
 							for (const c of fileData.comments) {
 								if (!c || typeof c !== 'object') continue;
@@ -395,6 +423,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 					let timestamp = 0;
 					if (typeof entry.timestamp === 'number' && entry.timestamp > 0) {
 						timestamp = entry.timestamp < 1e11 ? entry.timestamp * 1000 : entry.timestamp;
+						if (Number.isNaN(new Date(timestamp).getTime())) continue;
 					} else if (typeof entry.timestamp === 'string' && entry.timestamp.trim() !== '' && entry.timestamp !== '0') {
 						timestamp = Date.parse(entry.timestamp) || 0;
 					}
@@ -404,6 +433,10 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 					}
 					if (!timestamp && entry.startedAt) {
 						timestamp = Date.parse(entry.startedAt) || 0;
+					}
+
+					if (timestamp && Number.isNaN(new Date(timestamp).getTime())) {
+						continue;
 					}
 
 					sessions.push({
@@ -417,6 +450,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						baseCommitId: entry.baseCommitId || '',
 						reviewType: entry.checkpoint?.reviewType || 'all',
 						storagePath: fullPath,
+						reviewedDeletions,
 						findings,
 					});
 				}

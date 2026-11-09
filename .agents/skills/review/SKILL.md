@@ -47,13 +47,13 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
    ### Step 2B: Hybrid Fallback — Saved Local Review Reader (`credentials_unavailable` or Existing Review)
    First, verify whether the sandbox environment has filesystem access to the store corresponding to the requested review source (`~/.coderabbit/reviews` for CLI runs via `--cli`, or `~/.config/Code/User/workspaceStorage` for VS Code extension runs via `--vscode`). When the requested store is inaccessible, or when the source is unspecified and either store is inaccessible, ask the user to run the reader in their host terminal and share its JSON output before treating any review session as missing or starting an unnecessary fresh review.
 
-   To read the latest completed local review, execute the command with npm banner suppression to ensure clean JSON parsing (keeping the execution boundary intact):
+   To read the latest completed local review, execute the command with npm banner suppression to ensure clean JSON parsing (keeping the execution boundary intact). When a CLI review is requested, pass `--cli`; when a VS Code review is requested, pass `--vscode`:
    ```bash
    npm run --silent review:local -- --json
    ```
    *(Optional flags: `--cli` for CLI store only, `--vscode` for VS Code extension store only, `--list` to inspect all saved sessions for the current branch).*
    - **Evaluate Saved Session (`found`, Scope & Freshness Guard)**:
-     - **Verify Scope & Freshness**: Findings may only be reused when `found: true`, the reviewed commit (`headCommitId`) and completion timestamp are present confirming the session is current (`isStale: false`), and the session's reviewed scope and base are confirmed from session metadata (e.g., `gitMeta` or `checkpoint` reviewType/baseCommitId) to match the requested branch review. Treat missing freshness or scope metadata as stale/unverified. If the reviewed scope or base cannot be confirmed or does not match the requested review (e.g. only a subdirectory or uncommitted diff was reviewed instead of the full branch), request a fresh review with the requested scope instead of proceeding to Step 3.
+     - **Verify Source, ID, Scope & Freshness**: Findings may only be reused when `found: true`, the reader's returned `source` matches the requested source (if specified), the returned `reviewId` matches the requested ID (if specified, not accepting a newer session from another store as a substitute), the reviewed commit (`headCommitId`) and completion timestamp are present confirming the session is current (`isStale: false`), and the session's reviewed scope and base are confirmed from session metadata (e.g., `gitMeta` or `checkpoint` reviewType/baseCommitId) to match the requested branch review. Treat missing freshness or scope metadata as stale/unverified. If the reviewed scope or base cannot be confirmed or does not match the requested review (e.g. only a subdirectory or uncommitted diff was reviewed instead of the full branch), request a fresh review with the requested scope instead of proceeding to Step 3.
      - **`found: true`, Scope Verified & `isStale: false`**: Proceed directly to **Step 3** using those findings.
      - **`found: false` or `isStale: true`** (e.g., `HEAD` moved, `/pull` modified files, edits occurred after review, or scope mismatch):
        - Do **not** blindly apply outdated findings from a stale review session.
@@ -96,7 +96,7 @@ Prepares a clean, PR-ready branch by running CodeRabbit agent-mode reviews (or r
      - If fixes were made after the saved review and no confirmation review completed cleanly, explicitly state in the final report that the fixes have not been re-reviewed. Do not claim a clean review or PR-ready result based only on saved findings and local checks.
 
 7. **Final Verification**:
-   - When a live re-review ran, evaluate and report any remaining findings before claiming the review is clean; proceed with a clean-review result only when `status` is `"review_completed"` and `findings: 0`. If working-tree fixes were made and no confirmation review ran (e.g. under Hybrid Fallback or unauthorized scope), explicitly state in the final report that those fixes remain unconfirmed by CodeRabbit.
+   - When a live re-review ran, evaluate and report any remaining findings before claiming the review is clean; proceed with a clean-review result only when `status` is `"review_completed"`, `findings: 0`, and the confirmation review covered the full original review scope and base (an `--uncommitted` confirmation review confirms only uncommitted changes and cannot confirm a full-branch review as clean). If no confirmation review or only a partial/uncommitted review was run, explicitly report that working-tree fixes or full-branch confirmation remain unverified by CodeRabbit.
    - Run the full monorepo build and test suites:
      ```bash
      npm run build:all && npm test
