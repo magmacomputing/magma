@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Maintenance
 - **Tempo v5.0.0 Alignment**:
   - Removed unused `isDefined` import in `src/util.ts`.
-  - Updated `@magmacomputing/tempo` peer and dev dependencies to `^5.0.0`.
+  - Expanded `@magmacomputing/tempo` peer and dev dependencies to support `^4.6.0 || ^5.0.0`.
 
 ## [1.3.0] - 2026-10-10
 

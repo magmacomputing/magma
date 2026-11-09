@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed deprecated `{yw}` and `{wy}` (`wy:raw`, `wy:ord`) ISO-week aliases from `export.ts` to match the Tempo v5 core formatter.
 - **Tempo v5.0.0 Guard & Peer Dependency Alignment**:
   - Migrated internal nullish checks in `convert.ts` and `export.ts` to `!isNullish(...)`.
-  - Updated `@magmacomputing/tempo` peer and dev dependencies to `^5.0.0`.
+  - Expanded `@magmacomputing/tempo` peer and dev dependencies to support `^4.7.0 || ^5.0.0`.
 
 ## [1.1.1] - 2026-10-29
 

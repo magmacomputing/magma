@@ -1,5 +1,5 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isString, isObject, isNotNullish, isUndefined, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isNotNullish, isNullish, isUndefined, isFunction } from '#library/assertion.library.js';
 import { hasKey } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
@@ -213,7 +213,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	if (isNotNullish(unit))
 		unit = temporalUnit;
 
-	if (isUndefined(unit) || since) {
+	if (isNullish(unit) || since) {
 		const locale = (this as any)?.config?.locale;
 		const numberFormat = opts['intl']?.numberFormat || (this as any)?.config?.intl?.numberFormat;
 		const durationFormat = opts['intl']?.durationFormat || (this as any)?.config?.intl?.durationFormat;

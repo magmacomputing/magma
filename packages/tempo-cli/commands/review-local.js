@@ -226,6 +226,10 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 								for (const item of inc) {
 									if (!item || typeof item !== 'object') continue;
 									const fn = item.filename || item.fileName;
+									// Retain filenames of deletions verified during review.
+									// Note: In Git, deleted files lack working-tree filesystem timestamps (mtime).
+									// Without HEAD movement or git index changes, restore-and-delete cycles cannot
+									// be tracked; preserving reviewed deletions avoids false-positive staleness.
 									if (fn && typeof item.diff === 'string' && item.diff.includes('deleted file mode')) {
 										reviewedDeletions.add(fn);
 									}
@@ -259,9 +263,12 @@ function scanCliReviews(homeDir, repoRoot, currentBranch, allBranches = false) {
 
 					const dirTs = Number(rev.name);
 					const metaTs = Number(gitMeta.timestamp) || 0;
-					let timestamp = !Number.isNaN(dirTs) && dirTs > 1e12
-						? dirTs
-						: (metaTs && metaTs < 1e11 ? metaTs * 1000 : metaTs);
+					const normalizedMetaTs = metaTs ? (metaTs < 1e11 ? metaTs * 1000 : metaTs) : 0;
+					const normalizedDirTs = !Number.isNaN(dirTs) && dirTs > 1e12 ? dirTs : 0;
+					// Use gitMeta.timestamp (the exact reviewed diff snapshot time) for freshness checks,
+					// ensuring edits made after the snapshot was captured are detected as stale;
+					// fall back to the numeric directory timestamp only when gitMeta.timestamp is missing.
+					let timestamp = normalizedMetaTs > 0 ? normalizedMetaTs : normalizedDirTs;
 
 					let isoTime = null;
 					if (timestamp && !Number.isNaN(new Date(timestamp).getTime())) {
@@ -396,8 +403,10 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						continue;
 					}
 
-					const inferredBranch = entry.branch || fileToBranch.get(f.name) || currentBranch || '';
-					if (!allBranches && currentBranch && inferredBranch && inferredBranch !== currentBranch) {
+					// Do not assume currentBranch when an entry has neither entry.branch, category mapping, nor checkpoint branch;
+					// admitting a branchless entry on workspace-root match alone risks admitting a review from another branch.
+					const inferredBranch = entry.branch || fileToBranch.get(f.name) || entry.checkpoint?.branch || '';
+					if (!allBranches && currentBranch && inferredBranch !== currentBranch) {
 						continue;
 					}
 
@@ -459,7 +468,7 @@ function scanVsCodeReviews(homeDir, repoRoot, currentBranch, allBranches = false
 						timestamp,
 						isoTime: timestamp ? new Date(timestamp).toISOString() : null,
 						branch: inferredBranch,
-						baseBranch: '',
+						baseBranch: entry.baseBranch || entry.checkpoint?.baseBranch || '',
 						headCommitId: entry.headCommitId || '',
 						baseCommitId: entry.baseCommitId || '',
 						reviewType: entry.checkpoint?.reviewType || '',

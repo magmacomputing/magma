@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PII Redaction Hardening (`maskPii`)**:
   - Normalized non-string prompt metadata (`rawPrompt`, `normalizedPrompt`) via `String(...)` prior to `maskPii` redaction during inspection formatting.
 - **Peer Dependency Alignment**:
-  - Updated `@magmacomputing/tempo` peer and dev dependencies to `^5.0.0`.
+  - Expanded `@magmacomputing/tempo` peer and dev dependencies to support `^4.5.0 || ^5.0.0`.
 ### Maintenance
 - **Internal SDK Imports**: Streamlined primitive guard imports (`isObject`, `hasOwn`) to source directly from `@magmacomputing/tempo/plugin/sdk` instead of reaching into internal subpaths.
 
