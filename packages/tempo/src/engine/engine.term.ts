@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant, getTemporalIds } from '#library/temporal.library.js';
-import { isDefined, isString, isZonedDateTime, isNumeric, isFunction } from '#library/assertion.library.js';
+import { isNotNullish, isString, isZonedDateTime, isNumeric, isFunction } from '#library/assertion.library.js';
 import { asArray } from '#library/coercion.library.js';
 import type { LooseUnion, ValueOf } from '#library/type.library.js';
 
@@ -38,7 +38,7 @@ type RelativeMutation = typeof RELATIVE_MUTATIONS extends Set<infer T> ? T : str
 type ModifierSymbol = LooseUnion<ShifterModifier | FutureModifier | PastModifier>;
 type MutationSymbol = LooseUnion<ApiMutation | AbsoluteMutation | BoundaryMutation>;
 
-const isBackwardShift = (mod?: ModifierSymbol): boolean => isDefined(mod) && (mod.includes('<') || mod.includes('-') || PAST_MODIFIERS.has(mod as any));
+const isBackwardShift = (mod?: ModifierSymbol): boolean => isNotNullish(mod) && (mod.includes('<') || mod.includes('-') || PAST_MODIFIERS.has(mod as any));
 
 const DAYS_IN_WEEK = 7;
 
@@ -161,7 +161,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 		const slick = slickStr.match(matchSlick) || (isString(offset) ? offset.match(matchSlickValue) : null);
 		const { groups } = (slick || {}) as any;
 		if (groups) {
-			const hasMod = isDefined(groups.sh_mod);
+			const hasMod = isNotNullish(groups.sh_mod);
 			hasNbr = isNumeric(groups.sh_nbr);
 			mod = hasMod ? groups.sh_mod : undefined;
 
@@ -205,7 +205,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			: (isNumeric(offset) ? Number(offset) : 1);
 		const stepCount = (SUB_MUTATIONS.has(mutate as SubMutation) ? -1 : 1) * baseCount;
 		const hookRes = (termObj as any)[TermHook.step](unit, stepCount, instance);
-		if (isDefined(hookRes)) {
+		if (isNotNullish(hookRes)) {
 			const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
 			if (hookZdt) return hookZdt.withTimeZone(tz).withCalendar(cal);
 		}
@@ -218,7 +218,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			: (ABSOLUTE_MUTATIONS.has(mutate as AbsoluteMutation) ? mutate : undefined);
 		if (boundTarget && isFunction((termObj as any)[TermHook.bound])) {
 			const hookRes = (termObj as any)[TermHook.bound](boundTarget as 'start' | 'mid' | 'end', unit, instance);
-			if (isDefined(hookRes)) {
+			if (isNotNullish(hookRes)) {
 				const hookZdt = isTempo(hookRes) ? (hookRes as any).toDateTime() : (isZonedDateTime(hookRes) ? hookRes : undefined);
 				if (hookZdt) return hookZdt.withTimeZone(tz).withCalendar(cal);
 			}
@@ -227,7 +227,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 	// 0. Handle relative .add() or .subtract() — preserving position within the target range
 	if (RELATIVE_MUTATIONS.has(mutate as RelativeMutation)) {
-		const slickParsed = isDefined(slickStr);
+		const slickParsed = isNotNullish(slickStr);
 		const directional = mod && !['this', '>=', '<='].includes(mod);
 		const numericOffset = !directional && isNumeric(offset);
 
@@ -460,7 +460,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			// Treat explicit modifiers and + / - as shifters. Numeric repeat counts
 			// without an explicit modifier (e.g. `2q2`) are handled as inclusive
 			// searches and should not be treated as shifters.
-			const isShifter = isDefined(mod) && SHIFTER_MODIFIERS.has(mod as ShifterModifier);
+			const isShifter = isNotNullish(mod) && SHIFTER_MODIFIERS.has(mod as ShifterModifier);
 
 			const compare = (r: any) => {
 				const startZdt = isZonedDateTime(r.start) ? r.start : toZdt(r.start);
@@ -640,7 +640,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			}
 
 			const res = resolveTermShift(new (getHost(instance))(jump, instance.config), list, unit, direction);
-			if (isDefined(res)) {
+			if (isNotNullish(res)) {
 				jump = toZdt(res);
 				remaining--;
 			} else {

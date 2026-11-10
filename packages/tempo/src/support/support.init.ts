@@ -6,7 +6,7 @@ import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig, markExtensible } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { asType } from '#library/type.library.js';
-import { isString, isObject, isPlainObject, isUndefined, isDefined, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isRegExp, isEmpty, isFunction } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries, hasOwn, hasNoneOf } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
@@ -60,8 +60,8 @@ function resolveCache(optionsCache: any, existingCache?: BoundedCache): BoundedC
 		return targetCache;
 	} else {
 		if (isBounded(existingCache)) {
-			if (isDefined(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
-			if (isDefined(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
+			if (isNotNullish(optionsCache?.maxSize)) existingCache.maxSize = optionsCache.maxSize;
+			if (isNotNullish(optionsCache?.ttl)) existingCache.ttl = optionsCache.ttl;
 			return existingCache;
 		} else {
 			const maxSize = optionsCache?.maxSize ?? 1000;
@@ -142,7 +142,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		} : resolveMonthDay({}, Default.monthDay as any),
 		planner: baseState ? {
 			...(baseState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string | symbol>(baseState.parse.planner.layoutOrder)] } : {}),
-			...(isDefined(baseState.parse.planner.preFilter) ? { preFilter: Boolean(baseState.parse.planner.preFilter) } : {}),
+			...(isNotNullish(baseState.parse.planner.preFilter) ? { preFilter: Boolean(baseState.parse.planner.preFilter) } : {}),
 		} : {
 			layoutOrder: [...asArray<string | symbol>(Default.planner?.layoutOrder ?? (Default as any).layoutOrder)],
 			preFilter: Boolean(Default.planner?.preFilter ?? (Default as any).preFilter),
@@ -152,11 +152,11 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 		lazy: false,
 		pattern: new Map(baseState?.parse.pattern),
 		...(baseState ? {
-			...(isDefined(baseState.parse.isAnchored) ? { isAnchored: baseState.parse.isAnchored } : {}),
-			...(isDefined(baseState.parse.anchor) ? { anchor: baseState.parse.anchor } : {}),
-			...(isDefined(baseState.parse.format) ? { format: baseState.parse.format } : {}),
-			...(isDefined(baseState.parse.term) ? { term: baseState.parse.term } : {}),
-			...(isDefined(baseState.parse.guard) ? { guard: baseState.parse.guard } : {}),
+			...(isNotNullish(baseState.parse.isAnchored) ? { isAnchored: baseState.parse.isAnchored } : {}),
+			...(isNotNullish(baseState.parse.anchor) ? { anchor: baseState.parse.anchor } : {}),
+			...(isNotNullish(baseState.parse.format) ? { format: baseState.parse.format } : {}),
+			...(isNotNullish(baseState.parse.term) ? { term: baseState.parse.term } : {}),
+			...(isNotNullish(baseState.parse.guard) ? { guard: baseState.parse.guard } : {}),
 		} : {})
 	};
 
@@ -221,9 +221,9 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			intl: {},
 		});
 		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
-		if (isDefined(options.catch))
+		if (isNotNullish(options.catch))
 			setProperty(state.config, 'catch', options.catch);
-		if (isDefined(options.silent))
+		if (isNotNullish(options.silent))
 			setProperty(state.config, 'silent', options.silent);
 	}
 
@@ -320,7 +320,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				const zone = String(arg.value).toLowerCase();
 				const resolvedZone = options.timeZones?.[zone] ?? state.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(String(arg.value));
 				setProperty(state.config, 'timeZone', preserveSupplier ? optVal : resolvedZone);
-				const hasSuppliedSphere = isDefined(options.sphere) || (state.userProvidedKeys?.has('sphere') && isDefined(state.config.sphere));
+				const hasSuppliedSphere = isNotNullish(options.sphere) || (state.userProvidedKeys?.has('sphere') && isNotNullish(state.config.sphere));
 				if (!hasSuppliedSphere)
 					setProperty(state.config, 'sphere', getHemisphere(resolvedZone));
 				break;
@@ -458,7 +458,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			case 'sphere':
 				if (preserveSupplier) {
 					setProperty(state.config, 'sphere', optVal);
-				} else if (isDefined(arg.value)) {
+				} else if (isNotNullish(arg.value)) {
 					setProperty(state.config, 'sphere', arg.value);
 				}
 				break;
@@ -500,8 +500,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 				break;
 
 			case 'planner':
-				if (isDefined(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
-				if (isDefined(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);
+				if (isNotNullish(arg.value.layoutOrder)) state.parse.planner.layoutOrder = normalizeLayoutOrder(arg.value.layoutOrder);
+				if (isNotNullish(arg.value.preFilter)) state.parse.planner.preFilter = Boolean(arg.value.preFilter);
 				break;
 
 			case 'layoutOrder':

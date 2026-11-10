@@ -229,5 +229,12 @@ describe('Storage Tombstone & BoundedCache Integration (NodeJS)', () => {
       // Safe to call multiple times
       expect(() => (sig as any).dispose()).not.toThrow();
     });
+
+    it('should preserve an explicitly stored null value instead of falling back to defaultValue', () => {
+      setStorage('nullable.key', null);
+      const sig = toSignal<string | null>('nullable.key', 'fallback');
+      expect(sig()).toBeNull();
+      expect(getStorage('nullable.key')).toBeNull();
+    });
   });
 });

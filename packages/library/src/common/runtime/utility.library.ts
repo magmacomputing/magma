@@ -1,5 +1,5 @@
 import { ownEntries } from '#library/primitive.library.js';
-import { isDefined, isFunction, isPrimitive, isSafeKey } from '#library/assertion.library.js';
+import { isNotNullish, isFunction, isPrimitive, isSafeKey } from '#library/assertion.library.js';
 import { sym } from '#library/symbol.library.js';
 import type { Secure, ValueOf } from '#library/type.library.js';
 
@@ -96,19 +96,19 @@ export const getContext = (): Context => {
 	const global = globalThis as any;
 
 	try {
-		if (isDefined(global.SpreadsheetApp))
+		if (isNotNullish(global.SpreadsheetApp))
 			return { global, type: CONTEXT.GoogleAppsScript };
 
-		if (isDefined(global.window?.document))
+		if (isNotNullish(global.window?.document))
 			return { global, type: CONTEXT.Browser };
 
-		if (isFunction(global.importScripts) || (isDefined(global.WorkerGlobalScope) && global instanceof global.WorkerGlobalScope))
+		if (isFunction(global.importScripts) || (isNotNullish(global.WorkerGlobalScope) && global instanceof global.WorkerGlobalScope))
 			return { global, type: CONTEXT.WebWorker };
 
-		if (isDefined(global.Deno))
+		if (isNotNullish(global.Deno))
 			return { global, type: CONTEXT.Deno };
 
-		if (isDefined(global.process?.versions?.node) && global.process?.release?.name === 'node')
+		if (isNotNullish(global.process?.versions?.node) && global.process?.release?.name === 'node')
 			return { global, type: CONTEXT.NodeJS };
 	} catch { }
 

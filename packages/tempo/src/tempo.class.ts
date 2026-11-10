@@ -11,7 +11,7 @@ import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isDefined, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isNotNullish, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset } from '#library/temporal.library.js';
 import { toJulianDay } from '#library/calendar.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getISOWeekOfYear, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
@@ -228,20 +228,20 @@ export class Tempo {
 	 */
 	static #setSphere = (shape: Internal.State, options: t.Options): t.COMPASS | undefined => {
 		const rawSphere = options.sphere ?? options.geo?.sphere;
-		if (isDefined(rawSphere)) {
+		if (isNotNullish(rawSphere)) {
 			const evaluatedSphere = evaluate(rawSphere);
-			if (isDefined(evaluatedSphere)) return evaluatedSphere as t.COMPASS;
+			if (isNotNullish(evaluatedSphere)) return evaluatedSphere as t.COMPASS;
 		}
 
 		const geo = coerceGeo(options) ?? shape.config.geo ?? getStashedGeo();
-		if (isDefined(geo?.sphere)) return geo.sphere as t.COMPASS;
+		if (isNotNullish(geo?.sphere)) return geo.sphere as t.COMPASS;
 		if (isNumber(geo?.latitude))
 			return (geo.latitude > 0.001 ? 'north' : (geo.latitude < -0.001 ? 'south' : 'equator')) as t.COMPASS;
 
 		const resolvedTz = options.timeZone ?? shape.config.timeZone;
-		if (isDefined(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
+		if (isNotNullish(resolvedTz) && String(resolvedTz).toLowerCase() !== 'utc') {
 			const sphere = getHemisphere(String(resolvedTz));
-			if (isDefined(sphere)) return sphere;
+			if (isNotNullish(sphere)) return sphere;
 		}
 
 		return undefined;
@@ -349,20 +349,20 @@ export class Tempo {
 		}
 
 		// Side-effects
-		if ((isDefined(mergedOptions.sphere) || isDefined((mergedOptions as any).latitude) || isDefined((mergedOptions as any).lat) || isDefined(mergedOptions.geo)) && !isFunction(mergedOptions.sphere)) {
+		if ((isNotNullish(mergedOptions.sphere) || isNotNullish((mergedOptions as any).latitude) || isNotNullish((mergedOptions as any).lat) || isNotNullish(mergedOptions.geo)) && !isFunction(mergedOptions.sphere)) {
 			const newSphere = Tempo.#setSphere(shape, mergedOptions);
-			if (isDefined(newSphere)) shape.config.sphere = newSphere;
+			if (isNotNullish(newSphere)) shape.config.sphere = newSphere;
 		}
 
 		const oldLayout = shape.parse.layout;
 		Tempo.#swapLayout(shape);
 		if (oldLayout !== shape.parse.layout) needsRebuild = true;
 
-		if (isDefined(shape.parse.event)) {
+		if (isNotNullish(shape.parse.event)) {
 			this[$setEvents](shape, undefined, false);
 			needsRebuild = true;
 		}
-		if (isDefined(shape.parse.period)) {
+		if (isNotNullish(shape.parse.period)) {
 			this[$setPeriods](shape, undefined, false);
 			needsRebuild = true;
 		}
@@ -774,7 +774,7 @@ export class Tempo {
 	static hasModule(name: string): boolean {
 		const rt = getRuntime();
 		const mod = name === 'term' ? 'TermsModule' : name;
-		return isDefined(rt.modules[mod]) || rt.installed.has(mod) || this[$Internal]().pluginsDb.plugins.some(p => p.name === mod);
+		return isNotNullish(rt.modules[mod]) || rt.installed.has(mod) || this[$Internal]().pluginsDb.plugins.some(p => p.name === mod);
 	}
 
 	/** @internal Reads options from persistent storage (e.g., localStorage). */
@@ -1189,7 +1189,7 @@ export class Tempo {
 		if (!this.#zdt) {
 			try {
 				const skip = [this.#local.parse.format, this.#local.parse.term, this.#local.parse.result]
-					.filter(isDefined);
+					.filter(isNotNullish);
 				this.#zdt = this.#parse(this.#tempo as t.DateTime, this.#anchor);
 				if (isUndefined(this.#zdt)) {
 					this.#errored = true;
@@ -1219,7 +1219,7 @@ export class Tempo {
 	}
 
 	#setLazy(target: any, name: PropertyKey | undefined, define: (keyOnly: boolean) => any, isKeyOnly = false) {
-		if (isDefined(name) && isDefined(define)) {
+		if (isNotNullish(name) && isNotNullish(define)) {
 			const desc = Object.getOwnPropertyDescriptor(target, name);
 			if (desc) return ('value' in desc) ? () => desc.value : desc.get;
 			let guard = false;
@@ -1273,7 +1273,7 @@ export class Tempo {
 				case 'fmt': {
 					if (!ensureModule(this, 'FormatModule')) return undefined;
 					const allFormats = Object.assign({}, enums.FORMAT, this.#local.config.registry?.formats);
-					if (isDefined(allFormats[key]))
+					if (isNotNullish(allFormats[key]))
 						return this.#setLazy(target, key, () => this.format(key as t.Format))?.();
 					return undefined;
 				}
@@ -1404,7 +1404,7 @@ export class Tempo {
 		if (hasOwn(this.#memo, 'sphere')) return this.#memo.sphere;
 
 		const globalTz = (this as any)[$Internal]().config.timeZone;
-		const hasInstanceTzOverride = isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
+		const hasInstanceTzOverride = isNotNullish(this.tz) && String(this.tz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(this.tz).toLowerCase() !== String(globalTz).toLowerCase());
 		const rawGeo = this.#getRawGeo();
 		const lat = rawGeo?.latitude;
 		const geoSphere = rawGeo?.sphere;
@@ -1415,7 +1415,7 @@ export class Tempo {
 			isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
 			hasInstanceTzOverride ? () => getHemisphere(String(this.tz)) : undefined,
 			hasOwn(this.#local.config, 'sphere') ? this.#local.config.sphere : undefined,
-			() => (isDefined(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),
+			() => (isNotNullish(this.tz) && String(this.tz).toLowerCase() !== 'utc' ? getHemisphere(String(this.tz)) : undefined),
 			(this as any)[$Internal]().config.sphere,
 			Default.sphere
 		);
@@ -1587,7 +1587,7 @@ export class Tempo {
 		const explicitTz = evaluate<Temporal.TimeZoneLike>(rawTz);
 		const evaluatedTz = explicitTz ?? evaluate<Temporal.TimeZoneLike>(classState.config.timeZone);
 		let resolvedZone: string | undefined;
-		if (isDefined(evaluatedTz)) {
+		if (isNotNullish(evaluatedTz)) {
 			const tzString = isObject(evaluatedTz) ? getTemporalIds(evaluatedTz)[0] : String(evaluatedTz);
 			const zone = tzString.toLowerCase();
 			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(tzString);
@@ -1597,14 +1597,14 @@ export class Tempo {
 		const rawCal = options.calendar ?? (options as any).Calendar;
 		const explicitCal = evaluate<Temporal.CalendarLike>(rawCal);
 		const evaluatedCal = explicitCal ?? evaluate<Temporal.CalendarLike>(classState.config.calendar);
-		if (isDefined(evaluatedCal))
+		if (isNotNullish(evaluatedCal))
 			setProperty(this.#local.config, 'calendar', String(evaluatedCal));
 
 		let finalLocale: string | readonly string[] | undefined;
 		const rawLoc = options.locale ?? (options as any).Locale;
 		const explicitLoc = evaluate(rawLoc);
 		const evaluatedLoc = explicitLoc ?? evaluate(classState.config.locale);
-		if (isDefined(evaluatedLoc)) {
+		if (isNotNullish(evaluatedLoc)) {
 			finalLocale = resolveLocale(evaluatedLoc);
 			if (finalLocale) setProperty(this.#local.config, 'locale', finalLocale);
 		}
@@ -1614,7 +1614,7 @@ export class Tempo {
 		let explicitSphere: t.COMPASS | undefined;
 		let evalSphere: t.COMPASS | undefined;
 		const rawSphere = options.sphere ?? (options as any).Sphere ?? options.geo?.sphere;
-		if (isDefined(rawSphere)) {
+		if (isNotNullish(rawSphere)) {
 			explicitSphere = evaluate(rawSphere) as t.COMPASS;
 			evalSphere = explicitSphere;
 			setProperty(this.#local.config, 'sphere', evalSphere);
@@ -1625,10 +1625,10 @@ export class Tempo {
 		}
 
 		const explicitGeo = coerceGeo(options);
-		if (isDefined(explicitGeo)) {
+		if (isNotNullish(explicitGeo)) {
 			setProperty(this.#local.config, 'geo', explicitGeo);
 			this.#local.userProvidedKeys.add('geo');
-			if (isUndefined(evalSphere) && isDefined(explicitGeo.sphere)) {
+			if (isUndefined(evalSphere) && isNotNullish(explicitGeo.sphere)) {
 				evalSphere = explicitGeo.sphere as t.COMPASS;
 				setProperty(this.#local.config, 'sphere', evalSphere);
 			}
@@ -1638,11 +1638,11 @@ export class Tempo {
 
 		const optionsSnapshot = {
 			...options,
-			...(isDefined(explicitTz) ? { timeZone: resolvedZone } : {}),
-			...(isDefined(explicitCal) ? { calendar: String(evaluatedCal) } : {}),
-			...(isDefined(explicitLoc) ? { locale: finalLocale } : {}),
-			...(isDefined(explicitSphere) ? { sphere: explicitSphere } : {}),
-			...(isDefined(explicitGeo) ? { geo: explicitGeo } : {}),
+			...(isNotNullish(explicitTz) ? { timeZone: resolvedZone } : {}),
+			...(isNotNullish(explicitCal) ? { calendar: String(evaluatedCal) } : {}),
+			...(isNotNullish(explicitLoc) ? { locale: finalLocale } : {}),
+			...(isNotNullish(explicitSphere) ? { sphere: explicitSphere } : {}),
+			...(isNotNullish(explicitGeo) ? { geo: explicitGeo } : {}),
 		};
 
 		this.#local.options = optionsSnapshot;
@@ -1654,7 +1654,7 @@ export class Tempo {
 		this.#local.userProvidedKeys = new Set(classState.userProvidedKeys);
 		this.#local.parse.planner = {
 			...(classState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string | symbol>(classState.parse.planner.layoutOrder)] } : {}),
-			...(isDefined(classState.parse.planner.preFilter) ? { preFilter: Boolean(classState.parse.planner.preFilter) } : {}),
+			...(isNotNullish(classState.parse.planner.preFilter) ? { preFilter: Boolean(classState.parse.planner.preFilter) } : {}),
 		};
 		this.#local.parse.monthDay = {
 			...classState.parse.monthDay,
@@ -1714,7 +1714,7 @@ export class Tempo {
 	#resolveAnchorBasis(anchor: unknown): Temporal.ZonedDateTime {
 		if (isTempo(anchor)) return anchor.toDateTime();
 		if (isZonedDateTime(anchor)) return anchor;
-		if (isDefined(anchor)) return new (this.constructor as typeof Tempo)(anchor as any, this.#options).toDateTime();
+		if (isNotNullish(anchor)) return new (this.constructor as typeof Tempo)(anchor as any, this.#options).toDateTime();
 		return this.#now.toZonedDateTimeISO(this.#local.config.timeZone);
 	}
 

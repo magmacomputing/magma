@@ -12,8 +12,9 @@ All public support utilities and type guards are exported directly from the `@ma
 - `isBoolean(val)`: Asserts boolean primitive.
 - `isFunction(val)`: Asserts callable function.
 - `isNullish(val)`: Asserts `null` or `undefined`.
+- `isNotNullish(val)`: Asserts neither `null` nor `undefined`.
 - `isUndefined(val)`: Asserts `undefined`.
-- `isDefined(val)`: Asserts non-null and non-undefined.
+- `isDefined(val)`: Asserts not `undefined`.
 - `isDate(val)`: Asserts valid JS `Date` instance with valid numeric time.
 - `isObject(val)`: Asserts non-null record object (excluding arrays).
 - `isTempo(val)`: Asserts `Tempo` instance via branded symbol tag.

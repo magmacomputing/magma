@@ -1,4 +1,4 @@
-import { isInteger } from '../primitives/assertion.library.js';
+import { isBigInt } from '../primitives/assertion.library.js';
 import { Immutable, Branded } from '../runtime/decorator.library.js';
 
 export type TemporalPoint = { epoch?: { ns: bigint } } | { epochNanoseconds: bigint } | any;
@@ -18,11 +18,11 @@ type IntervalTypeGuard = <P extends TemporalPoint = TemporalPoint>(val: unknown)
  * @internal
  * @param point - The value containing epoch nanoseconds.
  * @returns The epoch nanoseconds.
- * @throws `TypeError` if the value does not contain an integer epoch nanosecond value.
+ * @throws `TypeError` if the value does not contain a bigint epoch nanosecond value.
  */
 function getNs(point: TemporalPoint | unknown): bigint {
 	const ns = (point as any)?.epoch?.ns ?? (point as any)?.epochNanoseconds;
-	if (isInteger(ns)) return ns;
+	if (isBigInt(ns)) return ns;
 	throw new TypeError('Invalid TemporalPoint: missing epoch.ns or epochNanoseconds');
 }
 

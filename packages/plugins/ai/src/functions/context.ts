@@ -1,4 +1,4 @@
-import { asText, isNumber, isString, isDefined, secure, when } from '@magmacomputing/tempo/library';
+import { asText, isNumber, isString, isNullish, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -21,6 +21,13 @@ import {
 import { logDebug, attachCustomInspect, sanitizeInspectAiMeta } from '../core/logger.js';
 import type { TempoContext, AiContextOptions } from '../types/index.js';
 
+/**
+ * Infers regional and calendar settings for one text, using a qualifying cache entry or an AI provider.
+ * Invalid cached payloads and cached time zones fall through to the provider.
+ * @returns The inferred context and provider metadata.
+ * @throws TempoAiError if the selected result has an invalid time zone or insufficient confidence;
+ * provider execution, configuration, and context callback errors can also propagate.
+ */
 async function contextSingleInput(text: string, options?: AiContextOptions): Promise<TempoContext> {
 	const normalizedStr = normalizeCacheInput(text);
 
@@ -45,7 +52,7 @@ async function contextSingleInput(text: string, options?: AiContextOptions): Pro
 			if (isString(parsedCache.timeZone)) {
 				Intl.DateTimeFormat(undefined, { timeZone: parsedCache.timeZone });
 				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 1.0);
-				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+				if (!isNullish(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:context', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					logDebug('tempo-plugin-ai:context', `Cache hit: "${text}" -> ${cachedVal}`, undefined, { debug: isDebug });

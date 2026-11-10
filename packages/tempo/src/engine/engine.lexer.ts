@@ -1,4 +1,4 @@
-import { isString, isEmpty, isUndefined, isDefined, isNullish, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
+import { isString, isEmpty, isUndefined, isNotNullish, isNullish, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
 import { ownKeys, ownEntries } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
@@ -287,9 +287,9 @@ export function parseWeekday(groups: t.Groups, dateTime: Temporal.ZonedDateTime,
 	if (isUndefined(wkd)) return dateTime;
 
 	const nthStr = groups["ord"] ?? groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"]) ? 'last' : undefined);
-	if (isDefined(nthStr)) {
+	if (isNotNullish(nthStr)) {
 		const res = parseOrdinalWeekday(groups, wkd, nthStr, dateTime, config);
-		if (isDefined(res)) return res;
+		if (isNotNullish(res)) return res;
 	}
 
 	const time = ['hh', 'mi', 'ss', 'ms', 'us', 'ns', 'ff', 'mer'] as ReadonlyArray<string>;
@@ -350,19 +350,19 @@ export function parseOrdinalDate(
 	const untStr = unt ? singular(unt).toLowerCase() : 'day';
 
 	let targetYear = year;
-	let targetMonth = isDefined(groups.mm) ? month : undefined;
+	let targetMonth = isNotNullish(groups.mm) ? month : undefined;
 	let targetDate: Temporal.PlainDate | undefined;
 
 	if (untStr === 'day') {
-		const maxDays = isDefined(targetMonth) ? 31 : 366;
+		const maxDays = isNotNullish(targetMonth) ? 31 : 366;
 		if (nthVal === 0 || Math.abs(nthVal) > maxDays) {
-			logError(`Ordinal date day ${nthVal} out of bounds for ${isDefined(targetMonth) ? `month ${targetMonth}` : `year ${targetYear}`}`, config);
+			logError(`Ordinal date day ${nthVal} out of bounds for ${isNotNullish(targetMonth) ? `month ${targetMonth}` : `year ${targetYear}`}`, config);
 			return undefined;
 		}
 
 		if (nthVal < 0) {
 			const offsetFromEnd = Math.abs(nthVal) - 1;
-			if (isDefined(targetMonth)) {
+			if (isNotNullish(targetMonth)) {
 				const firstDay = Temporal.PlainDate.from({ year: targetYear, month: targetMonth, day: 1 });
 				const lastDay = firstDay.add({ months: 1 }).subtract({ days: 1 });
 				targetDate = lastDay.subtract({ days: offsetFromEnd });
@@ -371,7 +371,7 @@ export function parseOrdinalDate(
 				targetDate = lastDay.subtract({ days: offsetFromEnd });
 			}
 		} else if (nthVal > 0) {
-			if (isDefined(targetMonth)) {
+			if (isNotNullish(targetMonth)) {
 				const firstDay = Temporal.PlainDate.from({ year: targetYear, month: targetMonth, day: 1 });
 				targetDate = firstDay.add({ days: nthVal - 1 });
 			} else {
@@ -382,7 +382,7 @@ export function parseOrdinalDate(
 	}
 
 	if (targetDate) {
-		if (isDefined(targetMonth) && targetDate.month !== targetMonth) {
+		if (isNotNullish(targetMonth) && targetDate.month !== targetMonth) {
 			logError(`Ordinal date day ${nthVal} out of bounds for month ${targetMonth}`, config);
 			return undefined;
 		}
@@ -441,7 +441,7 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	}
 
 	let yy = groups.yy || undefined;
-	if (isUndefined(yy) && isDefined(groups.yy2)) {
+	if (isUndefined(yy) && isNotNullish(groups.yy2)) {
 		let yy2Num = parseInt(groups.yy2, 10);
 		if (Number.isFinite(yy2Num)) {
 			if (yy2Num < 100)
@@ -482,9 +482,9 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 	if (isInstant(anchor)) anchor = anchor.toZonedDateTimeISO(config?.timeZone || 'UTC');
 	if (!isTemporal(anchor)) anchor = undefined;
 
-	const fallbackYear: number = isDefined(anchor?.year) ? anchor.year : dateTime.year;
-	const fallbackMonth: number = isDefined(anchor?.month) ? anchor.month : dateTime.month;
-	const fallbackDay: number = isDefined(anchor?.day) ? anchor.day : dateTime.day;
+	const fallbackYear: number = isNotNullish(anchor?.year) ? anchor.year : dateTime.year;
+	const fallbackMonth: number = isNotNullish(anchor?.month) ? anchor.month : dateTime.month;
+	const fallbackDay: number = isNotNullish(anchor?.day) ? anchor.day : dateTime.day;
 
 	let { year, month, day } = num({
 		year: yy ?? fallbackYear,
@@ -492,11 +492,11 @@ export function parseDate(groups: t.Groups, dateTime: Temporal.ZonedDateTime, co
 		day: dd ?? fallbackDay,
 	} as any, config);
 
-	const isExplicitNth = isDefined(groups["ord"] ?? groups["nth"]);
+	const isExplicitNth = isNotNullish(groups["ord"] ?? groups["nth"]);
 	const nthStr = groups["ord"] ?? groups["nth"] ?? (groups["mod"]?.toLowerCase() === 'last' && (groups["mm"] || groups["yy"] || unt) ? 'last' : undefined);
-	if (isDefined(nthStr)) {
+	if (isNotNullish(nthStr)) {
 		const res = parseOrdinalDate(groups, unt, nthStr, dateTime, config, year, month);
-		if (isDefined(res)) return res;
+		if (isNotNullish(res)) return res;
 		if (isExplicitNth) return dateTime;
 	}
 
@@ -554,7 +554,7 @@ export function parseTime(groups: t.Groups = {}, dateTime: Temporal.ZonedDateTim
 		hh %= 24;
 	}
 
-	if (isDefined(groups["ff"])) {
+	if (isNotNullish(groups["ff"])) {
 		const sub = resolveFractionalSeconds(groups["ff"]);
 		ms = sub.millisecond;
 		us = sub.microsecond;

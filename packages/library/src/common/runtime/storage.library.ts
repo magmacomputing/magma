@@ -322,7 +322,7 @@ export function toSignal<T>(key: string, defaultValue?: T): WritableSignal<T> {
 		notifyStorageSubscribers(key, defaultValue);
 		initial = defaultValue;
 	}
-	const sig = signify<T>((initial ?? defaultValue) as T);
+	const sig = signify<T>((isDefined(initial) ? initial : defaultValue) as T);
 
 	const binding: StorageSignalBinding = {
 		update: (val: any) => sig.set(val),

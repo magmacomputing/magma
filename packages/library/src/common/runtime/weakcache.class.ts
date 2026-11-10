@@ -1,5 +1,5 @@
 import { Branded } from '#library/decorator.library.js';
-import { isDefined, isUndefined } from '#library/assertion.library.js';
+import { isNotNullish, isUndefined } from '#library/assertion.library.js';
 import { Finalizer } from './finalizer.class.js';
 
 declare module '#library/type.library.js' {
@@ -90,7 +90,7 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 	 * @returns True if the key exists and its value has not been collected
 	 */
 	has(key: K): boolean {
-		return isDefined(this.get(key));
+		return isNotNullish(this.get(key));
 	}
 
 	/**
@@ -102,7 +102,7 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 	 */
 	getOrSet(key: K, factory: (key: K) => V): V {
 		const existing = this.get(key);
-		if (isDefined(existing)) return existing;
+		if (isNotNullish(existing)) return existing;
 
 		const value = factory(key);
 		this.set(key, value);
@@ -117,7 +117,7 @@ export class WeakCache<K extends keyof any = string, V extends WeakKey = WeakKey
 	 */
 	delete(key: K): boolean {
 		const entry = this.#cache.get(key);
-		if (isDefined(entry)) {
+		if (isNotNullish(entry)) {
 			this.#cache.delete(key);
 			this.#finalizer.unregister(entry.token);
 			return true;

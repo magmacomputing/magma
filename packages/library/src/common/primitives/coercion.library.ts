@@ -1,15 +1,16 @@
 import { clone, stringify } from '#library/serialize.library.js';
 import { asType } from '#library/type.library.js';
-import { isIntegerLike, isArrayLike, isDefined, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject, RE_INTEGER } from '#library/assertion.library.js';
+import { isIntegerLike, isArrayLike, isNotNullish, isBigInt, isInteger, isIterable, isNullish, isString, isUndefined, isNumber, isNumeric, isError, isObject, RE_INTEGER } from '#library/assertion.library.js';
 import { hasKey, toArray } from '#library/primitive.library.js';
 import { trimAll } from '#library/string.library.js';
 
 /**
  * Coerces a value into an array. If the value is already an array-like or iterable,
- * it is converted to an array. An optional `fill` value can be provided to map over the elements.
+ * it is converted to an array, except that strings are treated as single values.
+ * An optional `fill` replaces nullish elements in arrays and other array-like or iterable inputs.
  * 
  * @param arr - The value to coerce into an array
- * @param fill - Optional value to map over the elements
+ * @param fill - Optional value cloned for each nullish element
  * @returns An array containing the coerced values
  * @example
  * ```ts
@@ -29,7 +30,7 @@ export function asArray<T, K>(arr: T | Iterable<T> | ArrayLike<T> = [], fill?: K
 			: [arr] as (T | K)[];
 	}
 
-	const mapFn = (val: unknown) => isDefined(val) ? val as unknown as K : clone(fill);
+	const mapFn = (val: unknown) => isNotNullish(val) ? val as unknown as K : clone(fill);
 
 	if (Array.isArray(arr))
 		return Array.from<T, K>({ length: arr.length }, (_, i) => mapFn(arr[i]));
@@ -52,7 +53,7 @@ export function asArray<T, K>(arr: T | Iterable<T> | ArrayLike<T> = [], fill?: K
 export function asString<T>(str?: T) {
 	return isNullish(str)
 		? ''
-		: isInteger(str)
+		: isBigInt(str)
 			? str.toString() + 'n'
 			: stringify(str);
 }
@@ -114,6 +115,7 @@ export function when<T, U = undefined>(value: unknown, guard: (v: unknown) => bo
 /**
  * Coerces a value to a finite number.
  * Returns the finite number if valid, otherwise returns undefined (or an optional fallback).
+ * Converting a bigint can lose precision when it exceeds the safe integer range.
  * 
  * @param val - The value to coerce
  * @param fallback - Optional fallback if val is not a finite number
@@ -134,7 +136,7 @@ export function asNumber<T extends number>(val: unknown, fallback: T): number;
 export function asNumber<T>(val: unknown, fallback: T): number | T;
 export function asNumber<T = undefined>(val: unknown, fallback?: T): number | T {
 	if (isNumber(val)) return val;
-	if (isInteger(val)) {
+	if (isBigInt(val)) {
 		const num = Number(val);
 		if (isNumber(num)) return num;
 		return fallback as T;
@@ -174,7 +176,7 @@ function removeSign(str: string | number | bigint) {
  * @internal
  */
 function parseBigInt(str: string | number | bigint): bigint {
-	if (isInteger(str)) return str;														// already a bigint
+	if (isBigInt(str)) return str;														// already a bigint
 	if (isNumber(str)) return BigInt(Math.trunc(str));				// truncate float, no string round-trip
 
 	const raw = String(str).trim();
@@ -235,9 +237,9 @@ export function asInteger<T extends string | number | bigint>(str?: T) {
  * ```
  */
 export const ifNumeric = (str: string | number | bigint, stripZero = false) => {
-	if (isInteger(str)) return toBounded(str);
+	if (isBigInt(str)) return toBounded(str);
 	if (isNumber(str)) {
-		if (!Number.isInteger(str)) return str;
+		if (!isInteger(str)) return str;
 		return toBounded(BigInt(str));
 	}
 

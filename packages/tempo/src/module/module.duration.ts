@@ -1,5 +1,5 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isString, isObject, isDefined, isUndefined, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isDefined, isNotNullish, isNullish, isUndefined, isFunction } from '#library/assertion.library.js';
 import { hasKey } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
@@ -197,23 +197,23 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		if (termObj && isFunction((termObj as any)[TermHook.diff])) {
 			const targetTempo = isTempo(offset) ? offset : new (this.constructor as any)(offsetZdt, (this as any).config);
 			const diffRes = (termObj as any)[TermHook.diff](targetTempo, unit, this);
-			if (isDefined(diffRes))
+			if (isNotNullish(diffRes))
 				return since ? `${diffRes} ${unit}` : diffRes;
 		}
 	}
 
 	let temporalUnit = unit;
-	if (isDefined(temporalUnit)) {
+	if (isNotNullish(temporalUnit)) {
 		temporalUnit = resolveElementUnit(temporalUnit as string) ?? `${singular(temporalUnit)}s`;
 	}
 
 	const diffZone = selfTz !== offsetTz;
 	const dur = selfZdt.until(offsetZdt.withCalendar(selfCal), { largestUnit: diffZone ? 'hours' : (temporalUnit ?? 'years') });
 
-	if (isDefined(unit))
+	if (isNotNullish(unit))
 		unit = temporalUnit;
 
-	if (isUndefined(unit) || since) {
+	if (isNullish(unit) || since) {
 		const locale = (this as any)?.config?.locale;
 		const numberFormat = opts['intl']?.numberFormat || (this as any)?.config?.intl?.numberFormat;
 		const durationFormat = opts['intl']?.durationFormat || (this as any)?.config?.intl?.durationFormat;

@@ -2,7 +2,7 @@ import '#library/temporal.polyfill.js';
 import { fromRoman } from '#library/number.library.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isDefined, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isNotNullish, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
@@ -342,7 +342,7 @@ const _ParseEngine = {
 			let basis: Temporal.ZonedDateTime;
 			if (isTempo(val)) basis = (val as any).toDateTime();
 			else if (isZonedDateTime(val)) basis = val;
-			else if (isDefined(val)) {
+			else if (isNotNullish(val)) {
 				const safeConfig = { ...state.config };
 				delete safeConfig.anchor;
 				if (TempoClass) {
@@ -355,7 +355,7 @@ const _ParseEngine = {
 				basis = instant().toZonedDateTimeISO(tz).withCalendar(cal);
 			}
 
-			const isAnchored = isDefined(val);
+			const isAnchored = isNotNullish(val);
 			if (isRoot) {
 				state.parse.anchor = basis;
 				state.parse.isAnchored = isAnchored;
@@ -377,7 +377,7 @@ const _ParseEngine = {
 					const current = (getTermRange(state as any, list, false, today) as any);
 					if (!current) throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 
-					const isMultiCycle = isDefined(termObj.resolve) && list.some(r => r.year !== undefined);
+					const isMultiCycle = isNotNullish(termObj.resolve) && list.some(r => r.year !== undefined);
 					const itemsPerCycle = isMultiCycle ? list.length / 3 : list.length;
 					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === current.year : true));
 
@@ -553,7 +553,7 @@ const _ParseEngine = {
 							const resolvedVal = localOrdinals[ordRaw] ?? (ordRaw ? (enums.ORDINAL as any)?.[ordRaw] : undefined) ?? numericVal;
 							const matchGroups: Record<string, any> = {
 								...ordMatch.groups,
-								...(isDefined(resolvedVal) ? { value: resolvedVal } : {})
+								...(isNotNullish(resolvedVal) ? { value: resolvedVal } : {})
 							};
 							const hooked = (termObj as any)[TermHook.ordinal](matchGroups, anchorTempo, ctx);
 							if (hooked) {
@@ -599,7 +599,7 @@ const _ParseEngine = {
 			}
 
 			// 3. Explicit Format Mask Check (Native Braced or Dialect)
-			if (isDefined(formatOpt)) {
+			if (isNotNullish(formatOpt)) {
 				const formats = asArray(formatOpt);
 				const [tz, cal] = getTemporalIds(state.config.timeZone, state.config.calendar);
 				const dialect = dialectOpt ?? evaluate(state.options?.dialect ?? state.config?.dialect);

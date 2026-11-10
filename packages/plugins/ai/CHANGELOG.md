@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.3.2] - Unreleased
 
+### Changed & Fixed
+- **Nullish & Defined Guard Alignment (`v5.0.0`)**:
+  - Migrated nullish checks across `discovery`, `logger`, `support`, `context`, `diff`, `extract`, and `format` to `!isNullish(...)` and strict `isDefined(...)` (`!== undefined`), ensuring explicit `null` `anchor` inputs are validated and rejected with `TempoAiError(400)` while explicit `null` `minConfidence` arguments fall back to the configured threshold (or `undefined` when no threshold is configured).
+- **PII Redaction Hardening (`maskPii`)**:
+  - Normalized non-string prompt metadata (`rawPrompt`, `normalizedPrompt`) via `String(...)` prior to `maskPii` redaction during inspection formatting.
+- **Peer Dependency Alignment**:
+  - Expanded `@magmacomputing/tempo` peer and dev dependencies to support `^4.5.0 || ^5.0.0`.
 ### Maintenance
 - **Internal SDK Imports**: Streamlined primitive guard imports (`isObject`, `hasOwn`) to source directly from `@magmacomputing/tempo/plugin/sdk` instead of reaching into internal subpaths.
 

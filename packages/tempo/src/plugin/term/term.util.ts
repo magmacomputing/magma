@@ -1,5 +1,5 @@
 import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/temporal.library.js';
-import { isDefined, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
+import { isNotNullish, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
@@ -237,7 +237,7 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): re
 	let res: any;
 
 	try {
-		if (isDefined(anchor)) {
+		if (isNotNullish(anchor)) {
 			const host = new (getHost(t))(anchor, (t as any).config);
 			res = isFunction(term.resolve) ? term.resolve.call(host, anchor) : term.define.call(host, false, anchor);
 		} else {
@@ -377,12 +377,12 @@ type resolveOptions = {
  */
 export function resolveCycleWindow(source: Tempo | any, template: Range[] | readonly Range[] | Record<string, Range[] | readonly Range[]> | Record<PropertyKey, any>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
 	// ensure we have a valid Tempo instance to work with
-	const t = (isTempo(source) ? source : (isDefined(source) ? new (getHost(source))(source) : source)) as Tempo;
+	const t = (isTempo(source) ? source : (isNotNullish(source) ? new (getHost(source))(source) : source)) as Tempo;
 	if (!isTempo(t)) return [];
 
 	// 1. Resolve Template (supporting optional dynamic grouping)
 	let list: Range[] = [];
-	if (!isDefined(template)) {
+	if (isNullish(template)) {
 		(t.constructor as any)[TermError]?.(t.config, 'template');
 		return [];
 	}
@@ -526,7 +526,7 @@ export function resolveRangeOrdinal(
 	const subKey = parts[1];
 
 	let range: any;
-	if (isDefined(subKey) && subKey !== '') {
+	if (isNotNullish(subKey) && subKey !== '') {
 		const cycleNum = parseInt(subKey, 10);
 		if (Number.isInteger(cycleNum) && cycleNum > 0) {
 			range = isFunction(termObj.define) ? termObj.define.call(anchor, cycleNum, anchor) : undefined;
@@ -582,7 +582,7 @@ export function resolveRangeDiff(
 	// Invert for past target
 	if (startBNs < startANs) {
 		const positiveDiff = resolveRangeDiff(termObj, tempo, _unit, other);
-		return isDefined(positiveDiff) ? -positiveDiff : undefined;
+		return isNotNullish(positiveDiff) ? -positiveDiff : undefined;
 	}
 
 	let count = 0;
@@ -634,7 +634,7 @@ export function resolveRangeFormat(
 		const val = isObject(range)
 			? (isScope ? (range.label ?? range.key) : (range.key ?? range.label))
 			: range;
-		return isDefined(val) ? String(val) : undefined;
+		return isNotNullish(val) ? String(val) : undefined;
 	}
 
 	// Traverse sub-keys (e.g. "{#qtr.label}", "{#szn.symbol}")

@@ -1,6 +1,6 @@
 import { haversineDistance } from './haversineDistance.js';
 import { extractRawCoords } from './support.js';
-import { isDefined, isNumber } from '../support/index.js';
+import { isNullish, isNumber } from '../support/index.js';
 import type { CoordinateInput, DistanceUnit } from './types.js';
 
 /**
@@ -22,7 +22,8 @@ export interface ClosestCoordinateResult<T = CoordinateInput> {
  * @param target - Reference coordinate, object, tuple, or instance
  * @param candidates - Array of candidate coordinates to evaluate
  * @param unit - Distance unit ('km', 'miles', or 'm'; default: 'km')
- * @returns Object with the nearest coordinate, distance, and index, or null if candidates is empty or target is invalid
+ * @returns Object with the nearest coordinate, distance, and index, or null if the target is invalid
+ * or no candidate has a valid distance
  *
  * @example
  * ```ts
@@ -59,7 +60,7 @@ export function closestCoordinate<T extends CoordinateInput = CoordinateInput>(
 		}
 	}
 
-	if (minIndex === -1 || !isDefined(minCandidate))
+	if (minIndex === -1 || isNullish(minCandidate))
 		return null;
 
 	return {

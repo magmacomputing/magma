@@ -1,10 +1,10 @@
 import { Tempo } from '@magmacomputing/tempo';
 import {
 	enums, Enum, definePlugin, attachStatics,
-	isObject, isFunction, isDefined, isEmpty, isNumeric, isString, isNumber,
+	isObject, isFunction, isNotNullish, isEmpty, isNumeric, isString, isNumber,
 	instant, normaliseFractionalDurations,
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
-	isUndefined, Finalizer, Reactive, cast, logError, hasKey,
+	isUndefined, isNullish, Finalizer, Reactive, cast, logError, hasKey,
 	type ReadonlySignal,
 } from '@magmacomputing/tempo/plugin/sdk';
 
@@ -189,7 +189,7 @@ class TickerInstance implements Ticker.Descriptor {
 				else if (isOptions(arg2)) Object.assign(rawOptions, arg2);
 				break;
 			default:
-				if (isDefined(arg1)) {
+				if (isNotNullish(arg1)) {
 					if (isCronString(arg1)) {
 						rawOptions.cron = arg1;
 					} else if (isRRuleString(arg1)) {
@@ -204,7 +204,7 @@ class TickerInstance implements Ticker.Descriptor {
 				else if (isOptions(arg2)) Object.assign(rawOptions, arg2);
 		}
 
-		if (isDefined(rawOptions.interval) && isUndefined(rawOptions.seconds) && isUndefined(rawOptions.cron) && isUndefined(rawOptions.rrule)) {
+		if (isNotNullish(rawOptions.interval) && isNullish(rawOptions.seconds) && isNullish(rawOptions.cron) && isNullish(rawOptions.rrule)) {
 			const intVal = rawOptions.interval;
 			if (isCronString(intVal)) rawOptions.cron = intVal;
 			else if (isRRuleString(intVal)) rawOptions.rrule = intVal;
@@ -228,7 +228,7 @@ class TickerInstance implements Ticker.Descriptor {
 			catch: this.#isCatch,
 		});
 
-		if (isDefined(cronOption)) {
+		if (isNotNullish(cronOption)) {
 			if (!isCronString(cronOption)) {
 				this.#hasInvalidSchedule = true;
 				logError(new Error(`Invalid Ticker cron schedule: ${String(cronOption)}`), { ...this.#options, catch: this.#isCatch });
@@ -240,28 +240,28 @@ class TickerInstance implements Ticker.Descriptor {
 		if (cb) this.#reactive.on('data', (t) => cb(t, () => this.stop()));
 
 		for (const [key, val] of Object.entries(rest))
-			if (isDefined(val) && (key.startsWith('#') || Enum.has(enums.DURATIONS, key) || Enum.has(enums.ELEMENT, key)))
+			if (isNotNullish(val) && (key.startsWith('#') || Enum.has(enums.DURATIONS, key) || Enum.has(enums.ELEMENT, key)))
 				this.#payload[key] = val;
 
-		const isSeed = isDefined(rawOptions.seed);
-		const isRRule = isDefined(this.#rrule);
-		const isCron = isDefined(this.#cron);
-		const isInterval = !isEmpty(this.#payload) || (isDefined(rawOptions.seconds) && isNumber(rawOptions.seconds));
+		const isSeed = isNotNullish(rawOptions.seed);
+		const isRRule = isNotNullish(this.#rrule);
+		const isCron = isNotNullish(this.#cron);
+		const isInterval = !isEmpty(this.#payload) || (isNotNullish(rawOptions.seconds) && isNumber(rawOptions.seconds));
 
-		if (isDefined(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb)
+		if (isNotNullish(arg1) && !isOptions(arg1) && !isInterval && !isSeed && !isRRule && !isCron && !cb)
 			logError(new Error(`Invalid Ticker interval, seed, cron, or rrule: ${String(arg1)}`), { ...this.#options, catch: this.#isCatch });
 
 		this.#until = stopAt ? new this.#TempoClass(isOptions(stopAt) ? undefined : stopAt, isOptions(stopAt) ? { ...rest, ...stopAt } : rest) : undefined;
 
 		if (isEmpty(this.#payload) && !isRRule && !isCron && !this.#hasInvalidSchedule) {
-			if (isDefined(startAt)) this.#limit ??= 1;
+			if (isNotNullish(startAt)) this.#limit ??= 1;
 			else this.#payload.seconds = 1;
 		}
 
 		normaliseFractionalDurations(this.#payload);
-		if (isDefined(startAt)) {
+		if (isNotNullish(startAt)) {
 			this.#next = new this.#TempoClass(isOptions(startAt) ? undefined : startAt, isOptions(startAt) ? { ...rest, ...startAt } : rest);
-			this.#hasExplicitFutureSeed = (!isOptions(startAt) || isDefined((startAt as any).epoch)) && this.#next.epoch.ms > instant().epochMilliseconds;
+			this.#hasExplicitFutureSeed = (!isOptions(startAt) || isNotNullish((startAt as any).epoch)) && this.#next.epoch.ms > instant().epochMilliseconds;
 		} else if (this.#useNtp && isFunction((this.#TempoClass as any).ntp?.now)) {
 			this.#next = (this.#TempoClass as any).ntp.now(rest);
 		} else {
@@ -395,6 +395,11 @@ class TickerInstance implements Ticker.Descriptor {
 		}
 	}
 
+	/**
+	 * Advances one tick, publishes it to listeners and pending pulls, and stops at the configured limit or end.
+	 * Returns the tick, or a Tempo constructed from null if already stopped. An invalid next tick stops the ticker
+	 * and is returned after notifying catch listeners. Errors from advancing or notifying listeners may propagate.
+	 */
 	pulse(): Tempo {
 		if (this.#stopped) return new (this.#TempoClass as any)(null, this.#next.config);
 
@@ -419,7 +424,7 @@ class TickerInstance implements Ticker.Descriptor {
 		this.#ticks++;
 
 		const willStop = (this.#limit !== undefined && this.#ticks >= this.#limit) ||
-			(isDefined(this.#until) && ((this.#isForward && this.#TempoClass.compare(t, this.#until) >= 0) || (!this.#isForward && this.#TempoClass.compare(t, this.#until) <= 0)));
+			(isNotNullish(this.#until) && ((this.#isForward && this.#TempoClass.compare(t, this.#until) >= 0) || (!this.#isForward && this.#TempoClass.compare(t, this.#until) <= 0)));
 
 		if (this.#stopped && this.#limit === 0) return t;
 

@@ -5,6 +5,17 @@ All notable changes to `@magmacomputing/tempo-plugin-dialects` will be documente
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-11-08
+
+### Changed
+- **Calendar Week Token Alignment (`{ww}`, `{ww:raw}`)**:
+  - Updated Oracle `WW` and `FMWW` explain and export mappings (`explain.ts`, `export.ts`) to target Tempo v5's canonical `{ww}` and `{ww:raw}` calendar week tokens.
+  - Preserved `woy:cal`, `woy:cal:raw`, `ww:cal`, `ww:cal:raw`, `woy:jan1`, and `woy:jan1:raw` in `V4_EXPORT_ALIASES` for backward-compatible dialect export.
+  - Removed deprecated `{yw}` and `{wy}` (`wy:raw`, `wy:ord`) ISO-week aliases from `export.ts` to match the Tempo v5 core formatter.
+- **Tempo v5.0.0 Guard & Peer Dependency Alignment**:
+  - Migrated internal nullish checks in `convert.ts` and `export.ts` to `!isNullish(...)`.
+  - Expanded `@magmacomputing/tempo` peer and dev dependencies to support `^4.7.0 || ^5.0.0`.
+
 ## [1.1.1] - 2026-10-29
 
 ### Changed

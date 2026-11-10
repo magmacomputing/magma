@@ -1,5 +1,5 @@
 import { getOffsets } from './getOffsets.js';
-import { getTemporal, isDefined, coerceZonedDateTime, type DateInput } from '../support/index.js';
+import { getTemporal, isNotNullish, coerceZonedDateTime, type DateInput } from '../support/index.js';
 
 /**
  * Determines whether the given date is in Daylight Saving Time (DST).
@@ -16,7 +16,7 @@ import { getTemporal, isDefined, coerceZonedDateTime, type DateInput } from '../
  */
 export function isDST(date?: DateInput, timeZone: string = Intl.DateTimeFormat().resolvedOptions().timeZone): boolean {
 	const TemporalAPI = getTemporal();
-	const zdt = isDefined(date) ? coerceZonedDateTime(date, timeZone) : TemporalAPI.Now.zonedDateTimeISO(timeZone);
+	const zdt = isNotNullish(date) ? coerceZonedDateTime(date, timeZone) : TemporalAPI.Now.zonedDateTimeISO(timeZone);
 	const { jan, jul } = getOffsets(zdt.timeZoneId, zdt.year);
 
 	return zdt.offsetNanoseconds !== Math.min(jan, jul);

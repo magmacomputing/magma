@@ -1,4 +1,4 @@
-import { isDefined, isEmpty, isZonedDateTime, isNumeric, isString, isObject, isFunction } from '#library/assertion.library.js';
+import { isNotNullish, isNullish, isEmpty, isZonedDateTime, isNumeric, isString, isObject, isFunction } from '#library/assertion.library.js';
 
 import { getTemporalIds, instant } from '#library/temporal.library.js';
 import { ownKeys } from '#library/primitive.library.js';
@@ -117,8 +117,8 @@ export function normalizeMatch(
 	if (groups) {
 		for (const key of ownKeys(groups)) {
 			const baseKey = key.replace(RE_ALT_SUFFIX, '');
-			if (baseKey !== key && isDefined(groups[key])) {
-				if (!isDefined(groups[baseKey]) || groups[baseKey] === '')
+			if (baseKey !== key && isNotNullish(groups[key])) {
+				if (isNullish(groups[baseKey]) || groups[baseKey] === '')
 					groups[baseKey] = groups[key];
 				delete groups[key];
 			}
@@ -135,10 +135,10 @@ export function normalizeMatch(
 	if (state.errored) return dateTime;
 
 	// 3. Weekday, Date
-	if (isDefined(groups["wkd"]) && !isNumeric(groups["wkd"])) {
+	if (isNotNullish(groups["wkd"]) && !isNumeric(groups["wkd"])) {
 		const rawWkd = String(groups["wkd"]).replace(/\.$/, '').toLowerCase();
 		const mappedWkd = state.parse.weekdayMap?.[rawWkd];
-		if (isDefined(mappedWkd)) {
+		if (isNotNullish(mappedWkd)) {
 			const engWkd = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][mappedWkd.value - 1];
 			groups["wkd"] = engWkd;
 			logDebug(`[Normalizer] Normalized localized weekday string '${rawWkd}' to '${engWkd}'`, state.config);
@@ -273,19 +273,19 @@ export function resolveAliases(
 			}
 		}
 	} finally {
-		if (isDefined(prevAnchor)) state.anchor = prevAnchor;
+		if (isNotNullish(prevAnchor)) state.anchor = prevAnchor;
 		else delete state.anchor;
-		if (isDefined(prevZdt)) state.zdt = prevZdt;
+		if (isNotNullish(prevZdt)) state.zdt = prevZdt;
 		else delete state.zdt;
 		state.parseDepth--;
 		if (state.parseDepth === 0) delete state.matches;
 	}
 
-	if (isDefined(groups["mm"]) && !isNumeric(groups["mm"])) {
+	if (isNotNullish(groups["mm"]) && !isNumeric(groups["mm"])) {
 		const rawMm = String(groups["mm"]).replace(/\.$/, '').toLowerCase();
 		const mappedMm = state.parse.monthMap?.[rawMm];
 
-		if (isDefined(mappedMm)) {
+		if (isNotNullish(mappedMm)) {
 			groups["mm"] = mappedMm.value.toString().padStart(2, '0');
 			logDebug(`[Normalizer] Normalized localized month string '${groups["mm"]}'`, state.config);
 			accumulateResult(state, { type: 'Month' as any, value: mappedMm.value as any, match: rawMm, locale: mappedMm.locale });
@@ -293,7 +293,7 @@ export function resolveAliases(
 			const mm = prefix(groups["mm"] as t.MONTH);
 			const monthVal = enums.MONTH[mm];
 
-			if (isDefined(monthVal)) {
+			if (isNotNullish(monthVal)) {
 				groups["mm"] = monthVal.toString().padStart(2, '0');
 				logDebug(`[Normalizer] Normalized month string '${mm}' to ${groups["mm"]}`, state.config);
 			}
@@ -309,14 +309,14 @@ export function resolveAliases(
 export function accumulateResult(state: t.Internal.State, ...rest: Partial<t.Internal.Match>[]) {
 	const match = Object.assign({}, ...rest) as t.Internal.Match;
 
-	if (isDefined(state.parse.anchor))
+	if (isNotNullish(state.parse.anchor))
 		match.anchor = state.parse.anchor;
 
-	if (!isDefined(match.isAnchored) && isDefined(state.parse.isAnchored))
+	if (isNullish(match.isAnchored) && isNotNullish(state.parse.isAnchored))
 		match.isAnchored = state.parse.isAnchored;
 
 	const res = state.parse.result;
-	if (isDefined(res) && !Object.isFrozen(res)) {
+	if (isNotNullish(res) && !Object.isFrozen(res)) {
 		const isDuplicate = res.some(existing =>
 			existing.match === match.match &&
 			existing.source === match.source &&

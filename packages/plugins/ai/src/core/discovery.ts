@@ -1,6 +1,6 @@
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isDefined, isFunction, asText, isUndefined } from '@magmacomputing/tempo/library';
-import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
 import { Tempo } from '@magmacomputing/tempo';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isNullish, isFunction, asText, isUndefined } from '@magmacomputing/tempo/library';
+import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
 
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiConfig, AiProvider } from '../types/index.js';
@@ -34,7 +34,7 @@ export function getRuntimeEnv(): Record<string, string | undefined> {
 	if (!isServerRuntime())
 		return {};
 	try {
-		if (isDefined(process?.env))
+		if (!isNullish(process?.env))
 			return process.env as Record<string, string | undefined>;
 	} catch { }
 	return {};
@@ -189,7 +189,7 @@ export function getActiveTempoConfigAi(): AiConfig | undefined {
 		if (stateConfig?.ai)
 			return stateConfig.ai;
 
-		const tempoClassConfig = rt?.modules?.['Tempo']?.config || (Tempo as any)?.config;
+		const tempoClassConfig = rt?.modules?.['Tempo']?.config || Tempo?.config;
 		if (tempoClassConfig?.pluginOptions?.ai)
 			return tempoClassConfig.pluginOptions.ai;
 		if (tempoClassConfig?.plugins?.ai)

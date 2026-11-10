@@ -108,6 +108,12 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
 * **Composite Week-Year Tokens (`{yyww}`, `{yywy}`, `{yywoy}`):**
   * Composite week-and-year tokens have been removed in favor of composable standard tokens.
   * Replace `{yywoy}` or `{yyww}` with `{yow}{woy}` (or localized `{yow:locale}{woy:locale}`).
+* **Week & Week-Year Token Aliases (`{yw}` → `{yow}`, `{wy}` → `{woy}`):**
+  * The legacy shorthand aliases `{yw}` (week-numbering year) and `{wy}` (week of year) have been removed.
+  * Replace `{yw}` with `{yow}` (and `{yw:locale}` with `{yow:locale}`), and replace `{wy}` with `{woy}` (and `{wy:locale}` with `{woy:locale}`).
+* **Calendar Week vs. ISO / Locale Week Token (`{ww}` vs. `{woy}`):**
+  * In v5.0.0, `{ww}` formats the **Calendar Week of Year** starting on the first day of the calendar year (e.g., January 1st with range `01`–`53` in ISO calendars; lunisolar calendars may exceed `53`, matching Oracle `WW`), replacing the v4.7 transitional `{woy:cal}` modifier (which remains supported as an alias).
+  * Callers formatting **ISO 8601 Week of Year** or **Locale Week of Year** should use `{woy}` or `{woy:locale}` (replacing `{ww}` / `{ww:locale}`).
 * **Year Modifier Aliases (`:yy` and `:year`):**
   * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
   * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).

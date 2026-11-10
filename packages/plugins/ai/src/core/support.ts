@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber, isDefined, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
+import { asText, asNumber, isDefined, isNullish, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
 import type { Evaluable } from '@magmacomputing/tempo/library';
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
@@ -65,7 +65,7 @@ export function resolveFullContext(
 	const resLoc = evaluate(resolvedOptions.locale);
 	const cfgLoc = evaluate(_state.config.locale);
 
-	const isNonEmptyLocale = (l: any) => l !== undefined && l !== null && (Array.isArray(l) ? l.length > 0 : Boolean(l));
+	const isNonEmptyLocale = (l: any) => !isNullish(l) && (Array.isArray(l) ? l.length > 0 : Boolean(l));
 
 	const rawLoc = isNonEmptyLocale(optLoc)
 		? optLoc
@@ -233,7 +233,7 @@ export function assertMinConfidenceThreshold(
 	minConfidence: number | undefined,
 	operationName: string,
 ): void {
-	if (isDefined(minConfidence) && confidence < minConfidence)
+	if (!isNullish(minConfidence) && confidence < minConfidence)
 		throw new TempoAiError(`${operationName} confidence (${confidence}) is below the required threshold of ${minConfidence}.`, 422);
 }
 

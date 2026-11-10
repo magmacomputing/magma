@@ -25,13 +25,17 @@ describe('Tempo.format() refinements', () => {
     expect(typeof t2.format('{dd}')).toBe('string');
   })
 
-  it('should handle yow for ISO year, and woy for ISO week', () => {
-    const t3 = new Tempo('2024-12-30');										// Monday, Week 1 of 2025
+  it('should handle yow for ISO year, woy for ISO week, and ww for calendar week', () => {
+    const t3 = new Tempo('2024-12-30');										// Monday, ISO Week 1 of 2025, Calendar Week 53 of 2024
     expect(t3.yow).toBe(2025);
     expect(t3.woy).toBe(1);
-    expect(t3.format('{yw}{ww}')).toBe('202501');
     expect(t3.format('{yow}{woy}')).toBe('202501');
-    expect(typeof t3.format('{yw}{ww}')).toBe('string');
+    expect(t3.format('{yyyy}-{ww}')).toBe('2024-53');
+    expect(t3.format('{woy:cal}')).toBe('53');
+
+    const tHebrew = new Tempo('2024-10-02');
+    expect(tHebrew.format('{ww}', { calendar: 'hebrew' })).toBe('55');
+    expect(tHebrew.format('{woy:cal}', { calendar: 'hebrew' })).toBe('55');
   })
 
   it('accepts an options object as the second argument to override configuration', () => {
@@ -443,7 +447,7 @@ describe('Tempo.format() refinements', () => {
       expect(new Tempo('-000050-01-01').format('{cen}')).toBe('01');
     });
 
-    it('formats week of month ({wom}) and calendar week ({woy:cal})', () => {
+    it('formats week of month ({wom}) and calendar week ({ww} / {woy:cal})', () => {
       // October 1 is Day 1 -> Week 1 of month
       const tOct1 = new Tempo('2026-10-01T00:00:00');
       expect(tOct1.format('{wom}')).toBe('1');
@@ -459,9 +463,12 @@ describe('Tempo.format() refinements', () => {
 
       // Jan 1 to Jan 7 is Week 1 of year (Jan 1 basis)
       const tJan1 = new Tempo('2026-01-01T00:00:00');
+      expect(tJan1.format('{ww}')).toBe('01');
+      expect(tJan1.format('{ww:raw}')).toBe('1');
       expect(tJan1.format('{woy:cal}')).toBe('01');
 
       const tJan8 = new Tempo('2026-01-08T00:00:00');
+      expect(tJan8.format('{ww}')).toBe('02');
       expect(tJan8.format('{woy:cal}')).toBe('02');
     });
 

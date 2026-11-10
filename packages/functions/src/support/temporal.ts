@@ -1,5 +1,5 @@
 import type { Temporal as TemporalType } from '@js-temporal/polyfill';
-import { isObject, isNumber, isString, isDate, isTempo, isTemporal, isDefined, isFunction } from './assert.js';
+import { isObject, isNumber, isString, isDate, isTempo, isTemporal, isNotNullish, isNullish, isFunction } from './assert.js';
 export type { TemporalType as Temporal };
 
 /**
@@ -162,10 +162,10 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 			const day = match[4] ? parseInt(match[4], 10) : undefined;
 
 			// Validate month (1-12) and day bounds
-			if (isDefined(month) && (month < 1 || month > 12))
+			if (isNotNullish(month) && (month < 1 || month > 12))
 				return { type: 'string', target: input };
 
-			if (isDefined(month) && isDefined(day)) {
+			if (isNotNullish(month) && isNotNullish(day)) {
 				const maxDays = (month === 2)
 					? (isLeapYearNumber(year) ? 29 : 28)
 					: [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month]!;
@@ -174,7 +174,7 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
 			}
 
 			let dayOfWeek: number | undefined;
-			if (isDefined(month) && isDefined(day)) {
+			if (isNotNullish(month) && isNotNullish(day)) {
 				const dt = new Date(Date.UTC(2000, month - 1, day));
 				dt.setUTCFullYear(year);
 				const dow = dt.getUTCDay();
@@ -248,6 +248,8 @@ export function extractDateParts(input: unknown): ResolvedDateParts {
  * @param date - Date representation to coerce
  * @param fallbackTz - IANA timezone identifier to use if input lacks timezone context (default: 'UTC')
  * @returns A native Temporal.ZonedDateTime instance
+ * @throws TypeError if the input has no supported representation. Temporal conversion errors and errors from
+ * input methods propagate, as does an error if the Temporal API is unavailable.
  */
 export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): TemporalType.ZonedDateTime {
 	const Temporal = getTemporal();
@@ -297,7 +299,7 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 	}
 
 	const parts = extractDateParts(date);
-	if (isDefined(parts.year) && isDefined(parts.month) && isDefined(parts.day))
+	if (isNotNullish(parts.year) && isNotNullish(parts.month) && isNotNullish(parts.day))
 		return Temporal.PlainDate.from({ year: parts.year, month: parts.month, day: parts.day }).toZonedDateTime(fallbackTz);
 
 	throw new TypeError(`[functions] Unable to coerce value into Temporal.ZonedDateTime: ${String(date)}`);
@@ -305,14 +307,15 @@ export function coerceZonedDateTime(date: DateInput, fallbackTz = 'UTC'): Tempor
 
 /**
  * Extracts a numeric epoch millisecond timestamp from diverse date/time or instance representations.
- * Safely handles numeric timestamps, JS Date instances, Tempo instances, Temporal objects, ISO strings,
- * and duck-typed objects without throwing.
+ * Handles numeric timestamps, JS Date instances, Tempo instances, Temporal objects, ISO strings,
+ * and duck-typed objects. Errors from calling duck-typed `toInstant` or `getTime` methods are ignored; errors from
+ * accessing input properties can propagate.
  *
  * @param input - Date representation or instance to inspect
  * @returns Epoch millisecond timestamp, or undefined if invalid
  */
 export function extractEpochMs(input: unknown): number | undefined {
-	if (!isDefined(input))
+	if (isNullish(input))
 		return undefined;
 	if (isNumber(input))
 		return input;
@@ -362,6 +365,6 @@ export function extractEpochMs(input: unknown): number | undefined {
  */
 export function toEpochMs(dateInput: unknown, fallbackMs = 0): number {
 	const ms = extractEpochMs(dateInput);
-	return isDefined(ms) ? ms : fallbackMs;
+	return isNotNullish(ms) ? ms : fallbackMs;
 }
 

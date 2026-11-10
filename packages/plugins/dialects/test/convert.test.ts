@@ -62,9 +62,9 @@ describe('Dialects Cross-Dialect Converter (.convert)', () => {
 		const res = Tempo.dialects.convert('%Y-%m-%d %s', DIALECT.Strftime, DIALECT.Oracle);
 		expect(res.unsupported).toContain('{ts}');
 
-		// Oracle WW translates to Tempo {woy:cal:raw}, which has no direct POSIX strftime token
+		// Oracle WW translates to Tempo {ww:raw}, which has no direct POSIX strftime token
 		const resOracle = Tempo.dialects.convert('FM"Week "WW', DIALECT.Oracle, DIALECT.Strftime);
-		expect(resOracle.unsupported).toContain('{woy:cal:raw}');
+		expect(resOracle.unsupported).toContain('{ww:raw}');
 		expect(resOracle.unsupported).not.toContain('FM');
 
 		// Standalone PHP S has no tempo mapping (tempo: '') -> tracked as unsupported

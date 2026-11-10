@@ -38,16 +38,22 @@ export const isNullish = (val: any): val is null | undefined =>
 	val === null || val === undefined;
 
 /**
+ * Validates whether an argument is neither null nor undefined.
+ */
+export const isNotNullish = <T>(val: T): val is NonNullable<T> =>
+	!isNullish(val);
+
+/**
  * Validates whether an argument is undefined.
  */
 export const isUndefined = (val: any): val is undefined =>
 	val === undefined;
 
 /**
- * Validates whether an argument is defined (neither null nor undefined).
+ * Validates whether an argument is defined (not undefined).
  */
-export const isDefined = <T>(val: T | null | undefined): val is T =>
-	!isNullish(val);
+export const isDefined = <T>(val: T): val is Exclude<T, undefined> =>
+	val !== undefined;
 
 /**
  * Validates whether an argument is a valid Date instance.
@@ -62,10 +68,10 @@ export const isPrimitive = (val?: unknown): boolean =>
 	val === null || (typeof val !== 'object' && !isFunction(val));
 
 /**
- * Validates whether an argument is a non-null object reference (excluding functions).
+ * Validates whether an argument is a non-null object reference (excluding arrays and functions).
  */
 export const isObject = (val: any): val is Record<string | symbol, any> =>
-	isDefined(val) && typeof val === 'object' && !Array.isArray(val);
+	isNotNullish(val) && typeof val === 'object' && !Array.isArray(val);
 
 /**
  * Validates whether an argument is a non-null object or function reference.
@@ -87,7 +93,7 @@ export function hasOwn<K extends PropertyKey>(obj: unknown, key: K): obj is Reco
  * @internal
  */
 const isTagged = (arg: any): arg is Record<string | symbol, any> =>
-	isDefined(arg) && typeof arg === 'object' && Symbol.toStringTag in arg;
+	isNotNullish(arg) && typeof arg === 'object' && Symbol.toStringTag in arg;
 
 /**
  * Checks if the given argument is a Tempo instance.

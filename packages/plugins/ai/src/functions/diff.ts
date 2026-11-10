@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { asText, isDefined, isObject, isText, secure, when } from '@magmacomputing/tempo/library';
+import { asText, isNullish, isObject, isText, secure, when } from '@magmacomputing/tempo/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {
@@ -130,7 +130,7 @@ async function diffSingleInput(
 			const parsedCache = JSON.parse(cachedVal);
 			if (isText(parsedCache?.formatted)) {
 				const cachedConfidence = sanitizeConfidence(parsedCache.confidence, 0.9);
-				if (isDefined(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
+				if (!isNullish(effectiveMinConfidence) && cachedConfidence < effectiveMinConfidence) {
 					logDebug('tempo-plugin-ai:diff', `Cached confidence (${cachedConfidence}) is below minConfidence (${effectiveMinConfidence}), ignoring cache.`, undefined, { debug: isDebug });
 				} else {
 					const cachedResult: TempoAiDiffResult = {

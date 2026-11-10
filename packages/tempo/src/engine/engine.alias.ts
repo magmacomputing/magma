@@ -15,7 +15,7 @@
  */
 
 import type { Nullable } from '#library/type.library.js';
-import { isDefined, isFunction } from '#library/assertion.library.js';
+import { isNotNullish, isFunction } from '#library/assertion.library.js';
 import { Match, logError, logWarn } from '#tempo/support';
 import { ownEntries } from '#library/primitive.library.js';
 import * as t from '../tempo.type.js';
@@ -145,7 +145,7 @@ export class AliasEngine {
 				target,																							// string, number, or function
 				type,																								// 'evt' or 'per'
 				baseWord,																						// used for collision detection
-				collision: isDefined(existingKey),
+				collision: isNotNullish(existingKey),
 				depth: this.#depth,
 			}
 		}
@@ -220,7 +220,7 @@ export class AliasEngine {
 
 		if (isFunction(register.target)) {
 			raw = register.target.call(thisArg);
-			value = isDefined(raw) ? raw.toString() : '';
+			value = isNotNullish(raw) ? raw.toString() : '';
 		} else {
 			value = register.target.toString();
 		}
