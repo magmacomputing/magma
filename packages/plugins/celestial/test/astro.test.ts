@@ -60,25 +60,31 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 
 	it('refuses to guess hemisphere for undefined, equator, or non-polar sphere', () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			const tEquator = new Tempo('2026-06-21T12:00:00Z', { sphere: 'equator' });
+			expect(tEquator.term.astro).toBeUndefined();
+			expect(tEquator.term.astronomy).toBeUndefined();
 
-		const tEquator = new Tempo('2026-06-21T12:00:00Z', { sphere: 'equator' });
-		expect(tEquator.term.astro).toBeUndefined();
-		expect(tEquator.term.astronomy).toBeUndefined();
+			const tEast = new Tempo('2026-06-21T12:00:00Z', { sphere: 'east' });
+			expect(tEast.term.astro).toBeUndefined();
+			expect(tEast.term.astronomy).toBeUndefined();
 
-		const tEast = new Tempo('2026-06-21T12:00:00Z', { sphere: 'east' });
-		expect(tEast.term.astro).toBeUndefined();
-		expect(tEast.term.astronomy).toBeUndefined();
+			const tBoth = new Tempo('2026-06-21T12:00:00Z', { sphere: 'north-south' });
+			expect(tBoth.term.astro).toBeUndefined();
+			expect(tBoth.term.astronomy).toBeUndefined();
 
-		// [TermHook.parse] refusing to guess without explicit north/south
-		expect(AstroTerm[TermHook.parse]('#equinox.vernal', { anchor: tEquator })).toBeUndefined();
-		expect(AstroTerm[TermHook.parse]('#solstice.summer', { anchor: tEast })).toBeUndefined();
+			// [TermHook.parse] refusing to guess without explicit north/south
+			expect(AstroTerm[TermHook.parse]('#equinox.vernal', { anchor: tEquator })).toBeUndefined();
+			expect(AstroTerm[TermHook.parse]('#solstice.summer', { anchor: tEast })).toBeUndefined();
+			expect(AstroTerm[TermHook.parse]('#solstice.summer', { anchor: tBoth })).toBeUndefined();
 
-		// Ambient non-polar configuration
-		Tempo.init({ sphere: 'equator' });
-		const tAmbient = new Tempo('2026-06-21T12:00:00Z');
-		expect(tAmbient.term.astro).toBeUndefined();
-		expect(AstroTerm[TermHook.parse]('#equinox.vernal')).toBeUndefined();
-
-		warnSpy.mockRestore();
+			// Ambient non-polar configuration
+			Tempo.init({ sphere: 'equator' });
+			const tAmbient = new Tempo('2026-06-21T12:00:00Z');
+			expect(tAmbient.term.astro).toBeUndefined();
+			expect(AstroTerm[TermHook.parse]('#equinox.vernal')).toBeUndefined();
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 });

@@ -118,16 +118,21 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 
 	it('refuses to guess hemisphere for undefined, equator, or non-polar sphere', () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			const tEquator = new Tempo(testDate, { catch: true, sphere: 'equator' });
+			expect(tEquator.term.quarter).toBeUndefined();
+			expect(tEquator.term.season).toBeUndefined();
 
-		const tEquator = new Tempo(testDate, { catch: true, sphere: 'equator' });
-		expect(tEquator.term.quarter).toBeUndefined();
-		expect(tEquator.term.season).toBeUndefined();
+			const tEast = new Tempo(testDate, { catch: true, sphere: 'east' });
+			expect(tEast.term.quarter).toBeUndefined();
+			expect(tEast.term.season).toBeUndefined();
 
-		const tEast = new Tempo(testDate, { catch: true, sphere: 'east' });
-		expect(tEast.term.quarter).toBeUndefined();
-		expect(tEast.term.season).toBeUndefined();
-
-		warnSpy.mockRestore();
+			const tBoth = new Tempo(testDate, { catch: true, sphere: 'north-south' });
+			expect(tBoth.term.quarter).toBeUndefined();
+			expect(tBoth.term.season).toBeUndefined();
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 
 	describe('Term Range Boundaries (Fluent & Immutable)', () => {

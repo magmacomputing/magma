@@ -677,7 +677,7 @@ export function resolveTermSphere(
 	const isSouth = s.includes('south');
 	const isNorth = s.includes('north');
 
-	if (!isSouth && !isNorth) {
+	if (isSouth === isNorth) {
 		if (termName)
 			logWarn(`[tempo] ${termName} requires an explicit hemisphere of 'north' or 'south' (received: ${JSON.stringify(raw)}).`, config);
 
