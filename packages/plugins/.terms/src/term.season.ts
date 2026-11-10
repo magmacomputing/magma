@@ -1,4 +1,4 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, logWarn, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
 export const SEASON_KEYS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter'] as const);
@@ -28,10 +28,8 @@ const groups = defineRange([
  * @internal
  */
 function resolve(t: Tempo, anchor?: any) {
-	if (t.sphere === undefined && anchor?.sphere === undefined) {
-		logWarn(`[tempo] SeasonTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);
-		return [];
-	}
+	const sphere = resolveTermSphere(anchor?.sphere ?? t.sphere, 'SeasonTerm', t.config);
+	if (!sphere) return [];
 
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
 

@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, COMPASS, TermHook, logWarn } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import { isNumber, asArray } from '@magmacomputing/library';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -27,10 +27,8 @@ const groups = defineRange([
  * @internal
  */
 function resolve(t: Tempo, anchor?: any): any[] {
-	if (t.sphere === undefined && anchor?.sphere === undefined) {
-		logWarn(`[tempo] QuarterTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);
-		return [];
-	}
+	const sphere = resolveTermSphere(anchor?.sphere ?? t.sphere, 'QuarterTerm', t.config);
+	if (!sphere) return [];
 
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['sphere'] });
 

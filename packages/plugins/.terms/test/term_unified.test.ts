@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { Tempo } from '#tempo';
 import {
 	QuarterTerm,
@@ -113,6 +114,20 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		const t2 = new Tempo(testDate, { catch: true, sphere: 'SOUTHSOUTHWEST' });
 		expect(t2.format('{#qtr}')).toBe('Q4');
 		expect(t2.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+	});
+
+	it('refuses to guess hemisphere for undefined, equator, or non-polar sphere', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		const tEquator = new Tempo(testDate, { catch: true, sphere: 'equator' });
+		expect(tEquator.term.quarter).toBeUndefined();
+		expect(tEquator.term.season).toBeUndefined();
+
+		const tEast = new Tempo(testDate, { catch: true, sphere: 'east' });
+		expect(tEast.term.quarter).toBeUndefined();
+		expect(tEast.term.season).toBeUndefined();
+
+		warnSpy.mockRestore();
 	});
 
 	describe('Term Range Boundaries (Fluent & Immutable)', () => {

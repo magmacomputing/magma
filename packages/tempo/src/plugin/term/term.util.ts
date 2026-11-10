@@ -10,7 +10,7 @@ import { TEMPO_VERSION } from '../../tempo.version.js';
 import { getHost } from '../plugin.util.js';
 import { sym, TermError, isTempo } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
-import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
+import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, TermFactory } from './term.type.js';
 
@@ -517,7 +517,7 @@ export function registerTerm(term: TermPlugin, state?: any) {
 export function resolveRangeOrdinal(
 	termObj: any,
 	groups: Record<string, any>,
-	anchor: Tempo
+	anchor: Tempo,
 ): Tempo | undefined {
 	const rawDayOffset = groups.value ?? (isString(groups.ord) ? parseInt(groups.ord, 10) : undefined);
 	if (!Number.isFinite(rawDayOffset) || rawDayOffset === 0) return undefined;
@@ -566,7 +566,7 @@ export function resolveRangeDiff(
 	termObj: any,
 	other: Tempo,
 	_unit: string,
-	tempo: Tempo
+	tempo: Tempo,
 ): number | undefined {
 	if (!isFunction(termObj?.define)) return undefined;
 
@@ -617,7 +617,7 @@ export function resolveRangeDiff(
 export function resolveRangeFormat(
 	termObj: any,
 	token: string,
-	tempo: Tempo
+	tempo: Tempo,
 ): string | undefined {
 	if (!isFunction(termObj?.define)) return undefined;
 
@@ -653,4 +653,38 @@ export function resolveRangeFormat(
 		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)
 		: String(curr);
 }
+
+/**
+ * Resolves a normalized hemisphere ('north' | 'south') for terms requiring a polar sphere.
+ * Enforces the "refuse-to-guess" policy: if the sphere is missing, non-polar (e.g. 'equator', 'east'),
+ * or unresolvable, emits a diagnostic warning and returns undefined.
+ *
+ * @param source - The raw sphere string, or an object containing sphere (e.g. Tempo instance, anchor, or context)
+ * @param termName - Optional name of the calling term plugin for the diagnostic warning
+ * @param config - Optional configuration object passed to logWarn
+ * @returns 'north' | 'south' | undefined
+ */
+export function resolveTermSphere(
+	source?: any,
+	termName?: string,
+	config?: any,
+): 'north' | 'south' | undefined {
+	const raw = isObject(source)
+		? (source.sphere ?? (source as any).anchor?.sphere ?? (source as any).config?.sphere)
+		: source;
+
+	const s = isString(raw) ? raw.toLowerCase() : '';
+	const isSouth = s.includes('south');
+	const isNorth = s.includes('north');
+
+	if (!isSouth && !isNorth) {
+		if (termName)
+			logWarn(`[tempo] ${termName} requires an explicit hemisphere of 'north' or 'south' (received: ${JSON.stringify(raw)}).`, config);
+
+		return undefined;
+	}
+
+	return isSouth ? 'south' : 'north';
+}
+
 

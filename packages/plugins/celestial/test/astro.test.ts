@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo, TermHook } from '@magmacomputing/tempo';
 import { CelestialPlugin, AstroTerm } from '../src/index.js';
 
 describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => {
@@ -56,5 +56,29 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 		expect(tempo.term.astronomy.keys).toBe(AstroTerm.keys);
 		expect(Object.isFrozen(tempo.term.astronomy.keys)).toBe(true);
 		expect(tempo.term.astronomy.keys).toEqual(['Vernal', 'Summer', 'Autumnal', 'Winter']);
+	});
+
+	it('refuses to guess hemisphere for undefined, equator, or non-polar sphere', () => {
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		const tEquator = new Tempo('2026-06-21T12:00:00Z', { sphere: 'equator' });
+		expect(tEquator.term.astro).toBeUndefined();
+		expect(tEquator.term.astronomy).toBeUndefined();
+
+		const tEast = new Tempo('2026-06-21T12:00:00Z', { sphere: 'east' });
+		expect(tEast.term.astro).toBeUndefined();
+		expect(tEast.term.astronomy).toBeUndefined();
+
+		// [TermHook.parse] refusing to guess without explicit north/south
+		expect(AstroTerm[TermHook.parse]('#equinox.vernal', { anchor: tEquator })).toBeUndefined();
+		expect(AstroTerm[TermHook.parse]('#solstice.summer', { anchor: tEast })).toBeUndefined();
+
+		// Ambient non-polar configuration
+		Tempo.init({ sphere: 'equator' });
+		const tAmbient = new Tempo('2026-06-21T12:00:00Z');
+		expect(tAmbient.term.astro).toBeUndefined();
+		expect(AstroTerm[TermHook.parse]('#equinox.vernal')).toBeUndefined();
+
+		warnSpy.mockRestore();
 	});
 });
