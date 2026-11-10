@@ -52,9 +52,6 @@ export const CulturalTerms = [
  * Combined array of all built-in Civic and Cultural terms.
  */
 export const StandardTerms = [
-	QuarterTerm,
-	SeasonTerm,
-	TimelineTerm,
-	ZodiacTerm,
-	EasternTerm,
+	...CivicTerms,
+	...CulturalTerms,
 ];

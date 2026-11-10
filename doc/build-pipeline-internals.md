@@ -14,7 +14,7 @@ We utilize TypeScript Project References (`tsconfig.json`) to compile the `.ts` 
 ### Phase 2: Rollup Bundling (`rollup -c`)
 After `tsc` finishes, Rollup sweeps through the `dist/` folder to generate the `tempo.bundle.js` and `tempo.bundle.min.js` files.
 - **Target Audience**: These bundles are specifically for users operating via `<script>` tags on CDNs (e.g., unpkg, jsdelivr) who require the entire engine in a single network request.
-- **Alias Resolution**: Rollup resolves all internal `#library` and `#tempo/std` aliases, stitching them directly into the final IIFE/ESM bundle.
+- **Alias Resolution**: Rollup resolves all internal `#library` and `#tempo/terms` aliases, stitching them directly into the final IIFE/ESM bundle.
 
 ## Managing Circular Dependencies: The "Type Stub" Pattern
 

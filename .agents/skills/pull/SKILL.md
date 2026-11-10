@@ -46,12 +46,15 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      ```
 
 6. **Automated Thread Resolution & Reply Strategy**:
-   For each evaluated finding, determine its automated resolution path:
+   For each evaluated finding, check whether it is associated with an inline review thread (`threadId` present) or a top-level review comment (`threadId` absent):
 
-   - **Category A: Outdated Threads (`isOutdated: true`)**:
+   - **Top-Level Findings (No `threadId`)**:
+     Top-level PR comments do not have a thread ID and cannot be replied to or resolved via `--reply` or `--resolve`. Review and evaluate their suggestions, apply valid fixes locally, and report them in the Step 7 summary or **Manual Review Fallback** table for the user to review on GitHub.
+
+   - **Category A: Outdated Threads (`isOutdated: true`, `threadId` Present)**:
      CodeRabbit does **not** auto-resolve outdated threads when diff hunks have shifted or code lines were refactored in subsequent commits.
-     - Inspect git history (`git log -S` / `git diff origin/main...HEAD`) and perform a concrete verification check: confirm that the specifically flagged code or pattern is no longer present at the cited location in the current working tree/branch.
-     - If concretely verified as addressed, post a brief resolution note and execute automated thread resolution:
+     - Inspect git history on the pushed PR branch (e.g. `git log -S` / `git diff origin/main...origin/<branch>`) to verify whether the specifically flagged code or pattern was already modified, removed, or addressed in prior pushed commits on the branch. (Do not rely solely on uncommitted local working-tree edits; if the fix is only in local files, keep the thread open under Category B until the commit is pushed).
+     - If concretely verified as addressed in pushed history, post a brief resolution note and execute automated thread resolution:
        ```bash
        npm run review:pr -- --reply "<THREAD_ID>" "Addressed in prior commit on branch."
        npm run review:pr -- --resolve "<THREAD_ID>"

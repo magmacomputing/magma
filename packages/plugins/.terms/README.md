@@ -6,7 +6,7 @@
 ## Why does this exist?
 This package acts as a canonical "showcase" implementation of the Tempo Terms engine. By co-locating the standard Terms alongside other standalone plugins (like Astro or Finance), contributors and plugin authors have a clear reference for how to build their own Terms.
 
-At build time, the Rollup pipeline inlines these files directly into `@magmacomputing/tempo/dist/term/`, meaning end-users get them automatically without needing to install a separate NPM package.
+At build time, the Rollup pipeline inlines these terms directly into the Tempo bundle, and build tasks route them to `@magmacomputing/tempo/dist/term/` to power the `@magmacomputing/tempo/terms` subpath exports, meaning end-users get them automatically without needing to install a separate NPM package.
 
 ## Standard Built-in Terms
 
@@ -26,12 +26,15 @@ import { Tempo } from '@magmacomputing/tempo';
 ```
 Or to import cultural or standard terms manually via the explicit `./terms` sub-path:
 ```ts
-// Import cultural or standard terms collectively
-import { CulturalTerms, StandardTerms } from '@magmacomputing/tempo/terms';
+import { Tempo } from '@magmacomputing/tempo';
+
+// Import cultural terms collectively
+import { CulturalTerms } from '@magmacomputing/tempo/terms';
 Tempo.use(CulturalTerms);
 
 // Or import a specific term individually
 import { ZodiacTerm } from '@magmacomputing/tempo/terms/zodiac';
+Tempo.use(ZodiacTerm);
 ```
 
 ## Contributing
