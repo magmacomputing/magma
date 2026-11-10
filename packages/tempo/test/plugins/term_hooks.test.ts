@@ -1,6 +1,6 @@
 import { Tempo, TermHook } from '#tempo';
 import { defineTerm } from '#tempo/plugin/term/term.util.js';
-import { EasternTerm, TimelineTerm } from '#tempo/std';
+import { ZodiacTerm, EasternTerm, TimelineTerm } from '#tempo/terms';
 
 describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	beforeEach(() => {
@@ -217,6 +217,7 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	});
 
 	it('should resolve natural ordinals via [TermHook.ordinal] on standard ZodiacTerm (#zdc)', () => {
+		Tempo.use(ZodiacTerm);
 		const anchor = new Tempo('2026-01-15T00:00:00Z');
 
 		// 1st day of #zdc.aries -> 2026-03-21 (Aries: Mar 21 - Apr 19)
@@ -256,7 +257,7 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	});
 
 	it('should format tokens with subkeys via [TermHook.format] on standard terms', () => {
-		Tempo.use([EasternTerm, TimelineTerm]);
+		Tempo.use([ZodiacTerm, EasternTerm, TimelineTerm]);
 
 		// QuarterTerm format
 		const tQ1 = new Tempo('2026-02-15T00:00:00Z', { sphere: 'north' });

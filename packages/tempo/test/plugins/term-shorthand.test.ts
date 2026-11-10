@@ -1,8 +1,10 @@
 import { Tempo } from '#tempo'
+import { ZodiacTerm } from '#tempo/terms'
 
 describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 	beforeEach(() => {
 		Tempo.init();
+		Tempo.use(ZodiacTerm);
 	});
 
 	describe('.set() shorthand', () => {

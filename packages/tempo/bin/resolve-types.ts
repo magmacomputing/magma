@@ -132,10 +132,14 @@ function findTempoTarget(importPath: string): string {
 		'#tempo/mutate': 'module/module.mutate.js',
 		'#tempo/duration': 'module/module.duration.js',
 		'#tempo/term': 'plugin/term/term.index.js',
+		'#tempo/terms': 'term/index.js',
 		'#tempo/std': 'term/index.js',
 	};
 
 	if (mappings[importPath]) return mappings[importPath];
+	if (importPath.startsWith('#tempo/terms/')) {
+		return `term/term.${importPath.slice(13)}.js`;
+	}
 	if (importPath.startsWith('#tempo/')) {
 		return importPath.slice(7);
 	}
@@ -213,15 +217,15 @@ function rewrite(filePath: string) {
 	}
 }
 
-// 5. Copy .std types to dist/term/
-const STD_SRC_DIR = path.resolve('../plugins/.std/dist');
-const STD_DEST_DIR = path.resolve(DIST_DIR, 'term');
+// 5. Copy .terms types to dist/term/
+const TERMS_SRC_DIR = path.resolve('../plugins/.terms/dist');
+const TERMS_DEST_DIR = path.resolve(DIST_DIR, 'term');
 
-if (fs.existsSync(STD_SRC_DIR)) {
-	if (!fs.existsSync(STD_DEST_DIR)) fs.mkdirSync(STD_DEST_DIR, { recursive: true });
-	const stdFiles = fs.readdirSync(STD_SRC_DIR).filter(f => f.endsWith('.d.ts'));
-	stdFiles.forEach(f => {
-		fs.copyFileSync(path.join(STD_SRC_DIR, f), path.join(STD_DEST_DIR, f));
+if (fs.existsSync(TERMS_SRC_DIR)) {
+	if (!fs.existsSync(TERMS_DEST_DIR)) fs.mkdirSync(TERMS_DEST_DIR, { recursive: true });
+	const termFiles = fs.readdirSync(TERMS_SRC_DIR).filter(f => f.endsWith('.d.ts'));
+	termFiles.forEach(f => {
+		fs.copyFileSync(path.join(TERMS_SRC_DIR, f), path.join(TERMS_DEST_DIR, f));
 	});
 }
 

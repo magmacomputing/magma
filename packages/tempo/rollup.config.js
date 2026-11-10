@@ -53,17 +53,19 @@ const entryPoints = Object.fromEntries(
 		.map(file => [path.relative(distPath, file).replace(/\.js$/, ''), file])
 );
 
-const stdDir = path.resolve(__dirname, '../plugins/.std/dist');
-if (fs.existsSync(stdDir)) {
-	const stdFiles = getFiles(stdDir, '.js');
-	for (const file of stdFiles) {
-		const rel = path.relative(stdDir, file).replace(/\.js$/, '');
+const termsDir = path.resolve(__dirname, '../plugins/.terms/dist');
+if (fs.existsSync(termsDir)) {
+	const termFiles = getFiles(termsDir, '.js');
+	for (const file of termFiles) {
+		const rel = path.relative(termsDir, file).replace(/\.js$/, '');
 		entryPoints[`term/${rel}`] = file;
 	}
 }
 
 const internalAliases = [
-	{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
+	{ find: /^#tempo\/terms\/(.*)$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.$1.js') },
+	{ find: '#tempo/terms', replacement: path.resolve(__dirname, '../plugins/.terms/dist/index.js') },
+	{ find: '#tempo/std', replacement: path.resolve(__dirname, '../plugins/.terms/dist/index.js') },
 	{ find: /^#library\/(browser|server)\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/$1/$2.js') },
 	{ find: /^#library\/([^/]+)\/index\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1/index.js') },
 	{ find: /^#library\/([^/]+)\/(.*)\.js$/, replacement: path.resolve(__dirname, '../library/dist/common/$1/$2.js') },
@@ -90,11 +92,18 @@ const internalAliases = [
 	{ find: /^@magmacomputing\/tempo\/mutate$/, replacement: path.resolve(__dirname, 'dist/module/module.mutate.js') },
 	{ find: /^@magmacomputing\/tempo\/format$/, replacement: path.resolve(__dirname, 'dist/module/module.format.js') },
 	{ find: /^@magmacomputing\/tempo\/parse$/, replacement: path.resolve(__dirname, 'dist/module/module.parse.js') },
-	{ find: /^@magmacomputing\/tempo\/term\/standard$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/index.js') },
-	{ find: /^@magmacomputing\/tempo\/term\/quarter$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.quarter.js') },
-	{ find: /^@magmacomputing\/tempo\/term\/season$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.season.js') },
-	{ find: /^@magmacomputing\/tempo\/term\/zodiac$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.zodiac.js') },
-	{ find: /^@magmacomputing\/tempo\/term\/timeline$/, replacement: path.resolve(__dirname, '../plugins/.std/dist/term.timeline.js') },
+	{ find: /^@magmacomputing\/tempo\/terms$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/index.js') },
+	{ find: /^@magmacomputing\/tempo\/terms\/quarter$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.quarter.js') },
+	{ find: /^@magmacomputing\/tempo\/terms\/season$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.season.js') },
+	{ find: /^@magmacomputing\/tempo\/terms\/zodiac$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.zodiac.js') },
+	{ find: /^@magmacomputing\/tempo\/terms\/eastern$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.eastern.js') },
+	{ find: /^@magmacomputing\/tempo\/terms\/timeline$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.timeline.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/standard$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/index.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/quarter$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.quarter.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/season$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.season.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/zodiac$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.zodiac.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/eastern$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.eastern.js') },
+	{ find: /^@magmacomputing\/tempo\/term\/timeline$/, replacement: path.resolve(__dirname, '../plugins/.terms/dist/term.timeline.js') },
 	{ find: /^@magmacomputing\/tempo\/extend\/(.*)$/, replacement: path.resolve(__dirname, 'dist/plugin/extend/extend.$1.js') },
 	{ find: /^@magmacomputing\/tempo\/module\/(.*)$/, replacement: path.resolve(__dirname, 'dist/module/module.$1.js') },
 	{ find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, 'dist/plugin/term/term.$1.js') },
@@ -204,8 +213,8 @@ export default [
 					return `lib/${dir}${name}.js`;
 				}
 
-				if (id.includes('magma/packages/plugins/.std') || rel.startsWith('../plugins/.std')) {
-					const match = normalizedRel.match(/plugins\/\.std\/(?:src|dist)\/(.*)$/);
+				if (id.includes('magma/packages/plugins/.terms') || rel.startsWith('../plugins/.terms')) {
+					const match = normalizedRel.match(/plugins\/\.terms\/(?:src|dist)\/(.*)$/);
 					const modulePath = match ? path.dirname(match[1]) : '.';
 					const dir = modulePath === '.' ? '' : modulePath + '/';
 					return `term/${dir}${name}.js`;

@@ -9,9 +9,9 @@ const isDist = process.env.TEST_DIST === 'true';
 const polyfill = resolve(__dirname, '../tempo/bin/temporal-polyfill.ts');
 const spy = resolve(__dirname, '../tempo/test/support/setup.console-spy.ts');
 
-const stdDist = resolve(__dirname, '.std/dist/index.js');
-const stdSrc = resolve(__dirname, '.std/src/index.ts');
-const stdDistEntry = existsSync(stdDist) ? stdDist : stdSrc;
+const termsDist = resolve(__dirname, '.terms/dist/index.js');
+const termsSrc = resolve(__dirname, '.terms/src/index.ts');
+const termsDistEntry = existsSync(termsDist) ? termsDist : termsSrc;
 
 export default defineConfig({
 	esbuild: false,
@@ -46,7 +46,9 @@ export default defineConfig({
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, '../tempo/dist/module/module.index.js') },
 			{ find: /^#tempo\/support$/, replacement: resolve(__dirname, '../tempo/dist/support/support.index.js') },
 			{ find: /^#tempo\/tempo\.class\.js$/, replacement: resolve(__dirname, '../tempo/dist/tempo.index.js') },
-			{ find: /^#tempo\/std$/, replacement: stdDistEntry },
+			{ find: /^#tempo\/terms\/(.*)$/, replacement: resolve(__dirname, '.terms/dist/term.$1.js') },
+			{ find: /^#tempo\/terms$/, replacement: termsDistEntry },
+			{ find: /^#tempo\/std$/, replacement: termsDistEntry },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, '../tempo/dist/$1.js') },
 			{ find: /^#tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/dist/$1.js') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, '../tempo/dist/tempo.index.js') },
@@ -86,7 +88,9 @@ export default defineConfig({
 			{ find: /^#tempo\/module$/, replacement: resolve(__dirname, '../tempo/src/module/module.index.ts') },
 			{ find: /^#tempo\/support$/, replacement: resolve(__dirname, '../tempo/src/support/support.index.ts') },
 			{ find: /^#tempo\/tempo\.class\.js$/, replacement: resolve(__dirname, '../tempo/src/tempo.index.ts') },
-			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../plugins/.std/src/index.ts') },
+			{ find: /^#tempo\/terms\/(.*)$/, replacement: resolve(__dirname, '../plugins/.terms/src/term.$1.ts') },
+			{ find: /^#tempo\/terms$/, replacement: resolve(__dirname, '../plugins/.terms/src/index.ts') },
+			{ find: /^#tempo\/std$/, replacement: resolve(__dirname, '../plugins/.terms/src/index.ts') },
 			{ find: /^#tempo\/(.*)\.js$/, replacement: resolve(__dirname, '../tempo/src/$1.ts') },
 			{ find: /^#tempo\/(.*)$/, replacement: resolve(__dirname, '../tempo/src/$1.ts') },
 			{ find: /^#tempo$/, replacement: resolve(__dirname, '../tempo/src/tempo.index.ts') },

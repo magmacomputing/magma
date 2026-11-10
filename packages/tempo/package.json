@@ -58,6 +58,12 @@
     "#tempo": {
       "default": "./dist/tempo.index.js"
     },
+    "#tempo/terms": {
+      "default": "./dist/term/index.js"
+    },
+    "#tempo/terms/*": {
+      "default": "./dist/term/term.*.js"
+    },
     "#tempo/std": {
       "default": "./dist/term/index.js"
     },
@@ -145,6 +151,36 @@
       "import": "./dist/module/module.*.js",
       "default": "./dist/module/module.*.js"
     },
+    "./terms": {
+      "types": "./dist/term/index.d.ts",
+      "import": "./dist/term/index.js",
+      "default": "./dist/term/index.js"
+    },
+    "./terms/quarter": {
+      "types": "./dist/term/term.quarter.d.ts",
+      "import": "./dist/term/term.quarter.js",
+      "default": "./dist/term/term.quarter.js"
+    },
+    "./terms/season": {
+      "types": "./dist/term/term.season.d.ts",
+      "import": "./dist/term/term.season.js",
+      "default": "./dist/term/term.season.js"
+    },
+    "./terms/zodiac": {
+      "types": "./dist/term/term.zodiac.d.ts",
+      "import": "./dist/term/term.zodiac.js",
+      "default": "./dist/term/term.zodiac.js"
+    },
+    "./terms/eastern": {
+      "types": "./dist/term/term.eastern.d.ts",
+      "import": "./dist/term/term.eastern.js",
+      "default": "./dist/term/term.eastern.js"
+    },
+    "./terms/timeline": {
+      "types": "./dist/term/term.timeline.d.ts",
+      "import": "./dist/term/term.timeline.js",
+      "default": "./dist/term/term.timeline.js"
+    },
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",
       "import": "./dist/plugin/term/term.*.js",
@@ -169,6 +205,11 @@
       "types": "./dist/term/term.zodiac.d.ts",
       "import": "./dist/term/term.zodiac.js",
       "default": "./dist/term/term.zodiac.js"
+    },
+    "./term/eastern": {
+      "types": "./dist/term/term.eastern.d.ts",
+      "import": "./dist/term/term.eastern.js",
+      "default": "./dist/term/term.eastern.js"
     },
     "./term/timeline": {
       "types": "./dist/term/term.timeline.d.ts",

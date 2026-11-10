@@ -3,7 +3,7 @@ import '#tempo/parse';
 import '#tempo/term';
 import '#tempo/mutate';
 import { FormatModule } from '#tempo/format';
-import { QuarterTerm } from '#tempo/std';
+import { QuarterTerm } from '#tempo/terms';
 import { TermsModule } from '#tempo';
 
 Tempo.use([FormatModule, TermsModule, QuarterTerm]);

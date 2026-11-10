@@ -52,7 +52,8 @@
       "#tempo/term/*": [ "./plugin/term/term.*.ts" ],
       "#tempo/support": [ "./support/support.index.ts" ],
       "#tempo/support/*": [ "./support/*" ],
-      "#tempo/std": [ "./plugin/term/std.d.ts" ],
+      "#tempo/terms": [ "./plugin/term/terms.d.ts" ],
+      "#tempo/terms/*": [ "./plugin/term/terms.d.ts" ],
       "#tempo/*": [ "./*" ]
     }
   },

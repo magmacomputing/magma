@@ -1,8 +1,10 @@
 import { Tempo } from '#tempo';
+import { ZodiacTerm } from '#tempo/terms';
 
 describe('Tempo Shorthand Suite (Comprehensive)', () => {
 	beforeEach(() => {
 		Tempo.init({ timeZone: 'Australia/Sydney', sphere: 'south' });
+		Tempo.use(ZodiacTerm);
 	});
 
 	describe('Quarter Shorthand (#qtr)', () => {

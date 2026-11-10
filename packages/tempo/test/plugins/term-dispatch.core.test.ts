@@ -3,7 +3,7 @@ import '#tempo/parse';
 import '#tempo/mutate';
 import '#tempo/format';
 import '#tempo/term';
-import { QuarterTerm } from '#tempo/std';
+import { QuarterTerm } from '#tempo/terms';
 
 describe('Term Dispatch Refactor', () => {
 	beforeEach(() => {

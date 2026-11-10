@@ -42,7 +42,9 @@
 			"#tempo/plugin/term/*.js": [ "../src/plugin/term/*.ts" ],
 			"#tempo/plugin/plugin.*.js": [ "../src/plugin/plugin.*.ts" ],
 			"#tempo/term/*": [ "../src/plugin/term/term.*.ts" ],
-			"#tempo/std": [ "../../plugins/.std/src/index.ts" ],
+			"#tempo/terms": [ "../../plugins/.terms/src/index.ts" ],
+			"#tempo/terms/*": [ "../../plugins/.terms/src/term.*.ts" ],
+			"#tempo/std": [ "../../plugins/.terms/src/index.ts" ],
 			"#tempo/*": [ "../src/*" ]
 		}
 	},

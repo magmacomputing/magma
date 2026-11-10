@@ -1,8 +1,10 @@
 import { Tempo } from '#tempo';
+import { ZodiacTerm } from '#tempo/terms';
 
 describe('Slick Shorthand Resolution', () => {
   beforeEach(() => {
     Tempo.init({ timeZone: 'UTC', sphere: 'north', locale: 'en-US' });
+    Tempo.use(ZodiacTerm);
   });
 
   it('move to next specific quarter (#qtr.>q2)', () => {

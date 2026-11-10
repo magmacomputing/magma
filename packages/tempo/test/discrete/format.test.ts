@@ -430,11 +430,15 @@ describe('Tempo.format() refinements', () => {
       expect(tTarget.jj).toBe(2461331);
     });
 
-    it('formats days in month ({dim}) and provides .dim getter', () => {
+    it('formats days in month ({dim}) and days in year ({diy}) and provides .dim / .diy getters', () => {
       expect(tFebLeap.format('{dim}')).toBe('29');
       expect(tFebLeap.dim).toBe(29);
+      expect(tFebLeap.format('{diy}')).toBe('366');
+      expect(tFebLeap.diy).toBe(366);
       expect(tFebNonLeap.format('{dim}')).toBe('28');
       expect(tFebNonLeap.dim).toBe(28);
+      expect(tFebNonLeap.format('{diy}')).toBe('365');
+      expect(tFebNonLeap.diy).toBe(365);
       expect(tTarget.format('{dim}')).toBe('31');
       expect(tTarget.dim).toBe(31);
     });

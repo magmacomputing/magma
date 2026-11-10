@@ -1,10 +1,19 @@
 import { Tempo } from '#tempo';
+import { ZodiacTerm } from '#tempo/terms';
 
 const label = 'discovery.getters:';
 
 describe(`${label} static Tempo.terms`, () => {
   beforeEach(() => {
     Tempo.init();
+  });
+
+  test('auto-loads CivicTerms (qtr, season, timeOfDay) and excludes CulturalTerms (zodiac, eastern) by default', () => {
+    expect(Tempo.terms.qtr).toBeDefined();
+    expect(Tempo.terms.season).toBeDefined();
+    expect(Tempo.terms.timeOfDay).toBeDefined();
+    expect(Tempo.terms.zodiac).toBeUndefined();
+    expect(Tempo.terms.shengxiao).toBeUndefined();
   });
 
   test('supports key-based lookup (e.g. qtr)', () => {
@@ -40,6 +49,7 @@ describe(`${label} instance t.terms`, () => {
   });
 
   test('returns available range keys for zodiac (flattened groups)', () => {
+    Tempo.use(ZodiacTerm);
     const t = new Tempo();
     expect(t.terms.zodiac).toContain('Aries');
     expect(t.terms.zodiac).toContain('Pisces');
@@ -57,6 +67,7 @@ describe(`${label} instance t.ranges`, () => {
 
   test('reports current active ranges for fixed date (North-sphere)', () => {
     Tempo.init({ sphere: 'north' });										// Lock to North for deterministic results
+    Tempo.use(ZodiacTerm);
     const t = new Tempo('2024-04-15');
     const ranges = t.ranges;
 

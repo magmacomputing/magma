@@ -359,6 +359,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'dim':
 				res = zdt.daysInMonth.toString();
 				break;
+			case 'diy':
+				res = zdt.daysInYear.toString();
+				break;
 			case 'jj': case 'julian': {
 				const pd = zdt.toPlainDate().withCalendar('iso8601');
 				const epochDays = Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
