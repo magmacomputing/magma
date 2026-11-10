@@ -2,6 +2,9 @@ import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRange
 import { isNumber, asArray } from '@magmacomputing/library';
 import type { Tempo } from '@magmacomputing/tempo';
 
+export const QUARTER_KEYS = Object.freeze(['Q1', 'Q2', 'Q3', 'Q4'] as const);
+export type QuarterKey = (typeof QUARTER_KEYS)[number];
+
 /** definition of fiscal quarter ranges */
 const groups = defineRange([
 	{ key: 'Q1', day: 1, month: 1, fiscal: 0, sphere: COMPASS.North, label: 'First Quarter' },
@@ -46,6 +49,7 @@ export const QuarterTerm = defineTerm({
 	scope: 'quarter',
 	description: 'Fiscal Quarter',
 	groups,
+	keys: QUARTER_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return resolve(this, anchor);
@@ -54,7 +58,8 @@ export const QuarterTerm = defineTerm({
 	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
 		const res = resolve(this, anchor);
-		return getTermRange(this, asArray(res), keyOnly as any, anchor) as any;
+		const scope = getTermRange(this, asArray(res), keyOnly as any, anchor) as any;
+		return (scope && typeof scope === 'object') ? { ...scope, keys: QUARTER_KEYS } : scope;
 	},
 
 	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {
@@ -72,9 +77,9 @@ export const QuarterTerm = defineTerm({
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
-		qtr: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+		qtr: QuarterKey;
 		quarter: {
-			key: 'Q1' | 'Q2' | 'Q3' | 'Q4';
+			key: QuarterKey;
 			label: 'First Quarter' | 'Second Quarter' | 'Third Quarter' | 'Fourth Quarter';
 			fiscal: number;
 			sphere: COMPASS;
@@ -83,6 +88,7 @@ declare module '@magmacomputing/tempo' {
 			year?: number;
 			start: Tempo;
 			end: Tempo;
+			keys: readonly QuarterKey[];
 		};
 	}
 }

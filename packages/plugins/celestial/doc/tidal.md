@@ -38,6 +38,7 @@ const t = new Tempo('2026-03-03T12:00:00Z', {
 });
 
 console.log(t.term.tide);               // 'spring', 'neap', or 'normal'
+console.log(t.term.tides.keys);         // ['spring', 'neap', 'normal']
 console.log(t.term.tides.alignmentDeg); // Angular separation (0..360°)
 console.log(t.term.tides.isSpringTide); // true during New or Full Moon
 console.log(t.term.tides.isNeapTide);   // true during 1st or 3rd Quarter

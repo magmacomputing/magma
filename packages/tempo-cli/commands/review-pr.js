@@ -373,12 +373,62 @@ export function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 }
 
 /**
- * Fetches and displays unresolved CodeRabbit review findings from the open PR.
+ * Fetches and displays unresolved CodeRabbit review findings from the open PR,
+ * or resolves/replies to specific review threads.
  *
  * Usage:
  *   tempo-cli review-pr [--json]
+ *   tempo-cli review-pr --resolve <threadId>
+ *   tempo-cli review-pr --reply <threadId> "<bodyText>"
  */
 export async function reviewPr(args = []) {
+	const resolveIndex = args.indexOf('--resolve');
+	if (resolveIndex !== -1) {
+		const targetThreadId = args[resolveIndex + 1];
+		if (!targetThreadId || targetThreadId.startsWith('--')) {
+			console.error('Usage: tempo-cli review-pr --resolve <threadId>');
+			process.exit(1);
+		}
+		const mutation = `
+mutation($threadId: ID!) {
+  resolveReviewThread(input: { threadId: $threadId }) {
+    thread { id isResolved }
+  }
+}`;
+		try {
+			runGh(['api', 'graphql', '-f', `query=${mutation}`, '-f', `threadId=${targetThreadId}`]);
+			console.log(`✅ Successfully resolved review thread ${targetThreadId}`);
+			return;
+		} catch (err) {
+			console.error(`Error resolving review thread ${targetThreadId}: ${err.message}`);
+			process.exit(1);
+		}
+	}
+
+	const replyIndex = args.indexOf('--reply');
+	if (replyIndex !== -1) {
+		const targetThreadId = args[replyIndex + 1];
+		const body = args[replyIndex + 2];
+		if (!targetThreadId || !body || targetThreadId.startsWith('--') || body.startsWith('--')) {
+			console.error('Usage: tempo-cli review-pr --reply <threadId> "<bodyText>"');
+			process.exit(1);
+		}
+		const mutation = `
+mutation($threadId: ID!, $body: String!) {
+  addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $threadId, body: $body }) {
+    comment { id }
+  }
+}`;
+		try {
+			runGh(['api', 'graphql', '-f', `query=${mutation}`, '-f', `threadId=${targetThreadId}`, '-f', `body=${body}`]);
+			console.log(`✅ Successfully replied to review thread ${targetThreadId}`);
+			return;
+		} catch (err) {
+			console.error(`Error replying to review thread ${targetThreadId}: ${err.message}`);
+			process.exit(1);
+		}
+	}
+
 	const jsonOutput = args.includes('--json');
 
 	try {
@@ -405,6 +455,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
         nodes {
           id
           isResolved
+          isOutdated
           path
           line
           comments(first: 10) {
@@ -532,6 +583,7 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 					threadId: t.id,
 					path: t.path,
 					line: t.line,
+					isOutdated: Boolean(t.isOutdated),
 					commentId: crComment.id,
 					body: crComment.body,
 					isFollowUp: false,
@@ -584,9 +636,11 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 		for (let i = 0; i < findings.length; i++) {
 			const f = findings[i];
 			const typeTag = f.isFollowUp ? (f.category ? ` (${f.category})` : ' (Top-level Review)') : '';
-			console.log(`--- [Finding ${i + 1}/${findings.length}${typeTag}] ---`);
+			const statusTag = f.isOutdated ? ' [OUTDATED]' : '';
+			console.log(`--- [Finding ${i + 1}/${findings.length}${typeTag}${statusTag}] ---`);
 			console.log(`File: ${f.path}${f.line ? `:${f.line}` : ''}`);
 			if (f.threadId) console.log(`Thread ID: ${f.threadId}`);
+			if (f.isOutdated !== undefined) console.log(`Outdated: ${f.isOutdated}`);
 			if (f.commentId) console.log(`Comment ID: ${f.commentId}`);
 			if (f.title) console.log(`Title: ${f.title}`);
 			console.log(`\n${f.body.trim()}\n`);

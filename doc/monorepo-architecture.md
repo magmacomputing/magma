@@ -21,10 +21,10 @@ The `@magmacomputing/tempo-plugin-*` packages are standalone, publishable module
 - **Role**: Provide opt-in functionality for users without bloating the core engine bundle.
 - **Dependencies**: They depend on `@magmacomputing/tempo/plugin-api` for strict type-checking and structural validation.
 
-### 4. `packages/plugins/.std` (Standard Built-Ins)
-The `@magmacomputing/tempo-std` workspace is a highly specialized, private workspace containing the "standard" built-in plugins (e.g., quarters, seasons).
+### 4. `packages/plugins/.terms` (Standard Built-Ins)
+The `@magmacomputing/tempo-terms` workspace is a highly specialized, private workspace containing the "standard" built-in plugins (e.g., quarters, seasons).
 - **The Circular Dependency Problem**: `tempo` needs these standard plugins to bundle them as batteries-included defaults. But these standard plugins need to import `TermPlugin` types from `tempo` to compile.
-- **The Solution**: `.std` is isolated into its own workspace. `tempo` imports it via a type stub (`std.d.ts`) during TypeScript compilation to break the circular dependency, and Rollup directly bundles the compiled output during the distribution phase.
+- **The Solution**: `.terms` is isolated into its own workspace. `tempo` imports it via a type stub (`terms.d.ts`) during TypeScript compilation to break the circular dependency, and Rollup directly bundles the compiled output during the distribution phase.
 
 ### 5. `packages/functions`
 A standalone workspace providing pure, tree-shakeable functions for specific business logic.

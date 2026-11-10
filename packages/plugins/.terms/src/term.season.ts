@@ -1,6 +1,9 @@
 import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, logWarn, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
+export const SEASON_KEYS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter'] as const);
+export type SeasonKey = (typeof SEASON_KEYS)[number];
+
 /** definition of meteorological season ranges */
 const groups = defineRange([
 	// Meteorological (North)
@@ -44,13 +47,15 @@ export const SeasonTerm = defineTerm({
 	scope: 'season',
 	description: 'Meteorological season',
 	groups,
+	keys: SEASON_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return resolve(this, anchor);
 	},
 
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
-		return getTermRange(this, resolve(this, anchor), keyOnly as any, anchor);
+		const scope = getTermRange(this, resolve(this, anchor), keyOnly as any, anchor) as any;
+		return (scope && typeof scope === 'object') ? { ...scope, keys: SEASON_KEYS } : scope;
 	},
 
 	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {
@@ -68,9 +73,9 @@ export const SeasonTerm = defineTerm({
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
-		szn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+		szn: SeasonKey;
 		season: {
-			key: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+			key: SeasonKey;
 			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake';
 			group: 'meteorological';
 			sphere: COMPASS;
@@ -78,6 +83,7 @@ declare module '@magmacomputing/tempo' {
 			month: number;
 			start: Tempo;
 			end: Tempo;
+			keys: readonly SeasonKey[];
 		};
 	}
 }

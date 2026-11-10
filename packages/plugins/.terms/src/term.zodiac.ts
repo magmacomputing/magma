@@ -30,7 +30,22 @@ function resolve(t: Tempo, anchor?: any) {
 	return resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'western' });
 }
 
-export type WesternZodiacKey = 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+export const ZODIAC_KEYS = Object.freeze([
+	'Aries',
+	'Taurus',
+	'Gemini',
+	'Cancer',
+	'Leo',
+	'Virgo',
+	'Libra',
+	'Scorpio',
+	'Sagittarius',
+	'Capricorn',
+	'Aquarius',
+	'Pisces',
+] as const);
+
+export type WesternZodiacKey = (typeof ZODIAC_KEYS)[number];
 
 export interface WesternZodiacScope {
 	key: WesternZodiacKey;
@@ -43,6 +58,7 @@ export interface WesternZodiacScope {
 	year?: number;
 	start: Tempo;
 	end: Tempo;
+	keys: readonly WesternZodiacKey[];
 }
 
 /**
@@ -55,6 +71,7 @@ export const ZodiacTerm = /*#__PURE__*/ defineTerm({
 	aliases: ['sunSign', 'starSign'],
 	description: 'Astrological Western Tropical Zodiac sign',
 	groups,
+	keys: ZODIAC_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return resolve(this, anchor);
@@ -62,7 +79,8 @@ export const ZodiacTerm = /*#__PURE__*/ defineTerm({
 
 	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
-		return getTermRange(this, resolve(this, anchor), keyOnly as any, anchor);
+		const scope = getTermRange(this, resolve(this, anchor), keyOnly as any, anchor) as any;
+		return (scope && typeof scope === 'object') ? { ...scope, keys: ZODIAC_KEYS } : scope;
 	},
 
 	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin, SolarTerm, LunarTerm, HALF_DAY_MS } from '../src/index.js';
+import { CelestialPlugin, SolarTerm, LunarTerm, TidalTerm, HALF_DAY_MS } from '../src/index.js';
 
 describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 	beforeEach(() => {
@@ -15,7 +15,9 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(Array.isArray(t.term.lunar.phases)).toBe(true);
 		expect(t.term.lunar.phases.length).toBe(8);
 		expect(t.term.lunar.phases).toBe(LunarTerm.phases);
+		expect(t.term.lunar.keys).toBe(LunarTerm.keys);
 		expect(Object.isFrozen(t.term.lunar.phases)).toBe(true);
+		expect(Object.isFrozen(t.term.lunar.keys)).toBe(true);
 		expect(typeof t.term.lunar.illumination).toBe('number');
 		expect(t.term.lunar.start).toBeInstanceOf(Tempo);
 		expect(t.term.lunar.end).toBeInstanceOf(Tempo);
@@ -39,7 +41,9 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(Array.isArray(t.term.solar.phases)).toBe(true);
 		expect(t.term.solar.phases.length).toBe(5);
 		expect(t.term.solar.phases).toBe(SolarTerm.phases);
+		expect(t.term.solar.keys).toBe(SolarTerm.keys);
 		expect(Object.isFrozen(t.term.solar.phases)).toBe(true);
+		expect(Object.isFrozen(t.term.solar.keys)).toBe(true);
 		expect(t.term.solar.sunrise).toBeInstanceOf(Tempo);
 		expect(t.term.solar.noon).toBeInstanceOf(Tempo);
 		expect(t.term.solar.nadir).toBeInstanceOf(Tempo);
@@ -93,6 +97,12 @@ describe('CelestialPlugin (Solar & Lunar Terms)', () => {
 		expect(typeof t.term.tide).toBe('string');
 		expect(t.term.tides).toBeDefined();
 		expect(t.term.tides.state).toBe(t.term.tide);
+		expect(Array.isArray(t.term.tides.keys)).toBe(true);
+		expect(t.term.tides.keys.length).toBe(3);
+		expect(t.term.tides.keys).toBe(TidalTerm.keys);
+		expect(t.term.tides.phases).toBe(TidalTerm.phases);
+		expect(t.term.tides.states).toBe(TidalTerm.states);
+		expect(Object.isFrozen(t.term.tides.keys)).toBe(true);
 		expect(typeof t.term.tides.alignmentDeg).toBe('number');
 		expect(typeof t.term.tides.isSpringTide).toBe('boolean');
 		expect(typeof t.term.tides.isNeapTide).toBe('boolean');

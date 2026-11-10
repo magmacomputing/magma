@@ -66,6 +66,7 @@ export function getSolarScopeRange(t: Tempo, anchor?: any) {
 			key: null,
 			phase: null,
 			phases: SOLAR_PHASE_STATES,
+			keys: SOLAR_PHASE_STATES,
 			index: null,
 			group: 'solar' as const,
 			geo: null,
@@ -179,6 +180,7 @@ export function getSolarScopeRange(t: Tempo, anchor?: any) {
 		key: res.solarPhaseState,
 		phase: SOLAR_PHASE_NAMES[res.solarPhaseState],
 		phases: SOLAR_PHASE_STATES,
+		keys: SOLAR_PHASE_STATES,
 		index: res.index,
 		group: 'solar' as const,
 		geo,
@@ -219,6 +221,7 @@ export const SolarTerm = defineTerm({
 	scope: 'solar',
 	description: 'Local solar day cycle and twilight range resolution',
 	phases: SOLAR_PHASE_STATES,
+	keys: SOLAR_PHASE_STATES,
 	...createCelestialTermHandlers(getSolarScopeRange),
 
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {

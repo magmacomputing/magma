@@ -16,6 +16,23 @@ export interface LunarZodiacVariants {
 	vn: RegionalVariant;
 }
 
+export const EASTERN_ANIMAL_KEYS = Object.freeze([
+	'Rat',
+	'Ox',
+	'Tiger',
+	'Rabbit',
+	'Dragon',
+	'Snake',
+	'Horse',
+	'Goat',
+	'Monkey',
+	'Rooster',
+	'Dog',
+	'Pig',
+] as const);
+
+export type EasternAnimalKey = (typeof EASTERN_ANIMAL_KEYS)[number];
+
 export interface EasternZodiacScope {
 	key: string;
 	animal: string;
@@ -33,6 +50,7 @@ export interface EasternZodiacScope {
 	millisecond: number;
 	microsecond: number;
 	nanosecond: number;
+	keys: readonly EasternAnimalKey[];
 	start: Tempo;
 	end: Tempo;
 }
@@ -179,6 +197,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		millisecond: dt.millisecond,
 		microsecond: dt.microsecond,
 		nanosecond: dt.nanosecond,
+		keys: EASTERN_ANIMAL_KEYS,
 		start,
 		end,
 	};
@@ -193,6 +212,7 @@ export const EasternTerm = /*#__PURE__*/ defineTerm({
 	scope: 'shengxiao',
 	aliases: ['lunarSign', 'eastern'],
 	description: 'Eastern Lunar Zodiac cycle and regional variants',
+	keys: EASTERN_ANIMAL_KEYS,
 	resolve(this: Tempo, anchor?: any) {
 		return [getEasternScope(this, anchor)];
 	},

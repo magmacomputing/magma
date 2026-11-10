@@ -36,7 +36,7 @@ const t = new Tempo('2026-06-21T12:00:00Z', {
 console.log(t.term.sun);          // 'daylight'
 console.log(t.term.solar.key);    // 'daylight'
 console.log(t.term.solar.phase);  // 'Daylight'
-console.log(t.term.solar.phases); // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
+console.log(t.term.solar.keys);   // ['night', 'astronomical-twilight', 'nautical-twilight', 'civil-twilight', 'daylight']
 ```
 
 ::: tip Explicit Timezone Pairing

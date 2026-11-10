@@ -49,4 +49,12 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 		expect(tempo.term.equinox).toBeDefined();
 		expect(tempo.term.solstice).toBe('Summer');
 	});
+
+	it('exposes frozen keys array on AstroTerm and scope astronomy', () => {
+		const tempo = new Tempo('2026-06-21T12:00:00Z', { sphere: 'north' });
+		expect(Array.isArray(tempo.term.astronomy.keys)).toBe(true);
+		expect(tempo.term.astronomy.keys).toBe(AstroTerm.keys);
+		expect(Object.isFrozen(tempo.term.astronomy.keys)).toBe(true);
+		expect(tempo.term.astronomy.keys).toEqual(['Vernal', 'Summer', 'Autumnal', 'Winter']);
+	});
 });

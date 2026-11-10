@@ -22,7 +22,7 @@ export const COMPASS = looseIndex<string, string>()(enumify({
 	/** West direction */ West: 'west',
 	/** Equator zone */ Equator: 'equator',
 }, false));
-export type COMPASS = ValueOf<typeof COMPASS>
+export type COMPASS = LooseUnion<ValueOf<typeof COMPASS>>
 
 /**
  * Various enumerations used throughout the Tempo library.

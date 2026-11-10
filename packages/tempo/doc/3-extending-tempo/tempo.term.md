@@ -46,8 +46,9 @@ Hemisphere-aware: southern-hemisphere configs shift the quarter boundaries by si
 ```ts
 const t = new Tempo('15-Feb-2025');
 
-t.term.qtr      // → 'Q1'
-t.term.quarter  // → { key: 'Q1', day: 1, month: 1, fiscal: 2025, sphere: 'north' }
+t.term.qtr           // → 'Q1'
+t.term.quarter       // → { key: 'Q1', day: 1, month: 1, fiscal: 2025, sphere: 'north', keys: ['Q1', 'Q2', 'Q3', 'Q4'] }
+t.term.quarter.keys  // → ['Q1', 'Q2', 'Q3', 'Q4']
 ```
 
 ```ts
@@ -64,9 +65,10 @@ Hemisphere-aware (northern / southern boundaries differ).
 ```ts
 const t = new Tempo('01-Jul-2025');
 
-t.term.szn      // → 'Summer'  (northern hemisphere)
+t.term.szn          // → 'Summer'  (northern hemisphere)
 t.term.season
-// → { key: 'Summer', day: 1, month: 6, symbol: 'Sun', sphere: 'north' }
+// → { key: 'Summer', day: 1, month: 6, symbol: 'Sun', sphere: 'north', keys: ['Spring', 'Summer', 'Autumn', 'Winter'] }
+t.term.season.keys  // → ['Spring', 'Summer', 'Autumn', 'Winter']
 ```
 
 ```ts
@@ -83,9 +85,10 @@ The full `zodiac` scope also includes the **Chinese zodiac** (animal, element, Y
 ```ts
 const t = new Tempo('14-Mar-2025');
 
-t.term.zdc      // → 'Pisces'
+t.term.zdc          // → 'Pisces'
 t.term.zodiac
-// → { key: 'Pisces', day: 19, month: 2, symbol: 'Fish', longitude: 330, planet: 'Neptune' }
+// → { key: 'Pisces', day: 19, month: 2, symbol: 'Fish', longitude: 330, planet: 'Neptune', keys: [...] }
+t.term.zodiac.keys  // → ['Aries', 'Taurus', ..., 'Pisces']
 
 t.term.zodiac.CN
 // → { animal: 'Snake', traits: 'Wise, intuitive', element: 'Wood', yinYang: 'Yin' }
@@ -109,8 +112,9 @@ Classifies the time of day into a named period based on a pre-defined range.
 ```ts
 const t = new Tempo('1pm');
 
-t.term.tod      // → 'Midday'
-t.term.timeOfDay   // → { key: 'Midday', hour: 12, group: 'standard' }
+t.term.tod            // → 'Midday'
+t.term.timeOfDay      // → { key: 'Midday', hour: 12, group: 'standard', keys: [...] }
+t.term.timeOfDay.keys // → ['Midnight', 'Early', 'Morning', 'Midmorning', 'Midday', 'Afternoon', 'Evening', 'Night']
 ```
 
 ## Inspecting Registered Terms
@@ -412,7 +416,7 @@ All lifecycle hooks are strictly isolated behind the `#` domain term sigil:
 
 To ensure a custom `Term` plugin integrates fully with Tempo, follow these guidelines:
 
-1.  **Static `ranges` Export**: Always include the `ranges` property in your `defineTerm` configuration. This enables **programmatic discovery** via `Tempo.terms` and allows the Ticker to automatically calculate next-pulse intervals.
+1.  **Static `ranges` & `keys` Discovery**: Always include the `keys` property in your `defineTerm` configuration (and `ranges` when using static interval models). Exposing an immutable frozen array of range keys (`keys: MY_KEYS`) both statically on the term definition (`Term.keys`) and within the resolved scope object (`t.term.<scope>.keys`) provides a uniform, introspectable API contract across all Terms, avoiding ambiguous plural properties (such as `.quarters` or `.seasons`). This enables programmatic discovery via `Tempo.terms` and allows the Ticker to automatically calculate next-pulse intervals.
 2.  **Metadata-First Boundaries**: If your plugin handles multiple sets (e.g. hemispheres or cultural calendars), avoid using array indices like `ranges[0]`. Instead, add marker fields like **`sphere`** or **`group`** to each range object and use `.filter()` inside your `define` function.
 3.  **Memoization Safety**: Keep the `define` function pure. It will only be called once per instance access.
 4.  **Math Readiness**: Always use `getTermRange` or provide boundaries. Without them, users cannot use your Term in `add()`, `set()`, or `ticker()`.

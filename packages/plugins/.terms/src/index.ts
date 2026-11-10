@@ -1,20 +1,34 @@
-import { QuarterTerm } from './term.quarter.js';
-import { SeasonTerm } from './term.season.js';
-import { ZodiacTerm, SunSignTerm, StarSignTerm } from './term.zodiac.js';
-import { EasternTerm, LunarSignTerm, EasternZodiacTerm } from './term.eastern.js';
-import { TimelineTerm, TimeOfDayTerm } from './term.timeline.js';
+import { QuarterTerm, QUARTER_KEYS, type QuarterKey } from './term.quarter.js';
+import { SeasonTerm, SEASON_KEYS, type SeasonKey } from './term.season.js';
+import { ZodiacTerm, SunSignTerm, StarSignTerm, ZODIAC_KEYS, type WesternZodiacKey, type WesternZodiacScope } from './term.zodiac.js';
+import { EasternTerm, LunarSignTerm, EasternZodiacTerm, EASTERN_ANIMAL_KEYS, type EasternAnimalKey, type EasternZodiacScope, type LunarZodiacVariants, type RegionalVariant } from './term.eastern.js';
+import { TimelineTerm, TimeOfDayTerm, TIMEOFDAY_KEYS, type TimeOfDayKey } from './term.timeline.js';
 
 export {
 	QuarterTerm,
+	QUARTER_KEYS,
+	type QuarterKey,
 	SeasonTerm,
+	SEASON_KEYS,
+	type SeasonKey,
 	ZodiacTerm,
 	SunSignTerm,
 	StarSignTerm,
+	ZODIAC_KEYS,
+	type WesternZodiacKey,
+	type WesternZodiacScope,
 	EasternTerm,
 	LunarSignTerm,
 	EasternZodiacTerm,
+	EASTERN_ANIMAL_KEYS,
+	type EasternAnimalKey,
+	type EasternZodiacScope,
+	type LunarZodiacVariants,
+	type RegionalVariant,
 	TimelineTerm,
 	TimeOfDayTerm,
+	TIMEOFDAY_KEYS,
+	type TimeOfDayKey,
 };
 
 /**

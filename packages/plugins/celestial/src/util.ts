@@ -124,6 +124,7 @@ export function getLunarDetails(t: Tempo, coords?: ReturnType<typeof getCelestia
 		isWaxing: res.isWaxing,
 		...(sphere && res.emoji !== undefined ? { emoji: res.emoji } : {}),
 		phases: res.phases,
+		keys: res.phases,
 	}
 }
 

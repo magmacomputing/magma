@@ -63,6 +63,7 @@ const t = new Tempo('2026-03-20T12:00:00Z', { sphere: 'north' });
 const astro = t.term.astronomy;
 
 console.log(astro.key);      // 'Vernal'
+console.log(astro.keys);     // ['Vernal', 'Summer', 'Autumnal', 'Winter']
 console.log(astro.season);   // 'Spring'
 console.log(astro.event);    // 'Equinox'
 console.log(astro.year);     // 2026

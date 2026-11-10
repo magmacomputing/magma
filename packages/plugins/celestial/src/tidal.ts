@@ -62,6 +62,8 @@ export function getTidalScopeRange(t: Tempo, anchor?: any) {
 		lunitidalIntervalMin: res.lunitidalIntervalMin ?? null,
 		regime: res.regime ?? null,
 		states: TIDAL_PHASE_STATES,
+		phases: TIDAL_PHASE_STATES,
+		keys: TIDAL_PHASE_STATES,
 		geo,
 		...toDateTimeFields(refTempo),
 		start: refTempo,
@@ -79,6 +81,8 @@ export const TidalTerm = defineTerm({
 	scope: 'tides',
 	description: 'Astronomical tidal state, alignment, and perigee factor',
 	phases: TIDAL_PHASE_STATES,
+	states: TIDAL_PHASE_STATES,
+	keys: TIDAL_PHASE_STATES,
 	...createCelestialTermHandlers(getTidalScopeRange),
 
 	[TermHook.step](_unit: string, count: number, tempo: Tempo) {

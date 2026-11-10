@@ -5,6 +5,9 @@ import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
 type ASTRO = ValueOf<typeof ASTRO>;
 
+export const ASTRO_KEYS = Object.freeze(['Vernal', 'Summer', 'Autumnal', 'Winter'] as const);
+export type AstroKey = (typeof ASTRO_KEYS)[number];
+
 const { COMPASS } = enums;
 const key = 'astro';
 const scope = 'astronomy';
@@ -107,6 +110,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	aliases: ['equinox', 'solstice'],
 	scope,
 	description: 'Astronomical seasons and events',
+	keys: ASTRO_KEYS,
 	resolve(this: Tempo, anchor?: any, alias?: string) {
 		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
 		return resolveFiltered(this, anchor, filterType);
@@ -139,6 +143,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 			return {
 				...dateScoped,
 				strict: scoped.key,
+				keys: ASTRO_KEYS,
 			};
 		}
 
@@ -159,12 +164,14 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 			return {
 				...dateScoped,
 				strict: scoped.key,
+				keys: ASTRO_KEYS,
 			};
 		}
 
 		return {
 			...keyedScope,
 			strict: scoped.key,
+			keys: ASTRO_KEYS,
 		};
 	},
 

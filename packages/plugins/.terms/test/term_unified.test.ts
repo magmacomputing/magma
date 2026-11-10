@@ -1,4 +1,17 @@
 import { Tempo } from '#tempo';
+import {
+	QuarterTerm,
+	QUARTER_KEYS,
+	SeasonTerm,
+	SEASON_KEYS,
+	TimelineTerm,
+	TIMEOFDAY_KEYS,
+	ZodiacTerm,
+	ZODIAC_KEYS,
+	EasternTerm,
+	EASTERN_ANIMAL_KEYS,
+	CulturalTerms,
+} from '../src/index.js';
 
 describe('Term Unified Logic (Mutation & Identity)', () => {
 	// 2024-05-15 is in Q2 (Apr-Jun) in Northern hemisphere
@@ -119,6 +132,66 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect(Object.isFrozen(q)).toBe(true);
 			expect(Object.isFrozen(q.start)).toBe(true);
 			expect(Object.isFrozen(q.end)).toBe(true);
+		});
+	});
+
+	describe('Standardized Term Range Keys (.keys)', () => {
+		it('QuarterTerm exposes frozen keys reference without redundant plural properties', () => {
+			expect(QuarterTerm.keys).toBe(QUARTER_KEYS);
+			expect((QuarterTerm as any).quarters).toBeUndefined();
+			expect(Object.isFrozen(QUARTER_KEYS)).toBe(true);
+
+			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			expect(t.term.quarter.keys).toBe(QUARTER_KEYS);
+			expect((t.term.quarter as any).quarters).toBeUndefined();
+		});
+
+		it('SeasonTerm exposes frozen keys reference without redundant plural properties', () => {
+			expect(SeasonTerm.keys).toBe(SEASON_KEYS);
+			expect((SeasonTerm as any).seasons).toBeUndefined();
+			expect(Object.isFrozen(SEASON_KEYS)).toBe(true);
+
+			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			expect(t.term.season.keys).toBe(SEASON_KEYS);
+			expect((t.term.season as any).seasons).toBeUndefined();
+		});
+
+		it('TimelineTerm exposes frozen keys reference without redundant plural properties', () => {
+			expect(TimelineTerm.keys).toBe(TIMEOFDAY_KEYS);
+			expect((TimelineTerm as any).periods).toBeUndefined();
+			expect((TimelineTerm as any).timesOfDay).toBeUndefined();
+			expect(Object.isFrozen(TIMEOFDAY_KEYS)).toBe(true);
+
+			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			expect(t.term.timeOfDay.keys).toBe(TIMEOFDAY_KEYS);
+			expect((t.term.timeOfDay as any).periods).toBeUndefined();
+			expect((t.term.timeOfDay as any).timesOfDay).toBeUndefined();
+		});
+
+		it('ZodiacTerm exposes frozen keys reference without redundant plural properties', () => {
+			Tempo.use(CulturalTerms);
+			expect(ZodiacTerm.keys).toBe(ZODIAC_KEYS);
+			expect((ZodiacTerm as any).signs).toBeUndefined();
+			expect((ZodiacTerm as any).zodiacs).toBeUndefined();
+			expect(Object.isFrozen(ZODIAC_KEYS)).toBe(true);
+
+			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			expect(t.term.zodiac.keys).toBe(ZODIAC_KEYS);
+			expect((t.term.zodiac as any).signs).toBeUndefined();
+			expect((t.term.zodiac as any).zodiacs).toBeUndefined();
+		});
+
+		it('EasternTerm exposes frozen keys reference without redundant plural properties', () => {
+			Tempo.use(CulturalTerms);
+			expect(EasternTerm.keys).toBe(EASTERN_ANIMAL_KEYS);
+			expect((EasternTerm as any).animals).toBeUndefined();
+			expect((EasternTerm as any).signs).toBeUndefined();
+			expect(Object.isFrozen(EASTERN_ANIMAL_KEYS)).toBe(true);
+
+			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			expect(t.term.shengxiao.keys).toBe(EASTERN_ANIMAL_KEYS);
+			expect((t.term.shengxiao as any).animals).toBeUndefined();
+			expect((t.term.shengxiao as any).signs).toBeUndefined();
 		});
 	});
 });

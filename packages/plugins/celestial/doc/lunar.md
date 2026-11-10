@@ -35,6 +35,7 @@ const t = new Tempo('2026-03-03T12:00:00Z', { sphere: 'north' });
 
 console.log(t.term.moon);               // 'full-moon'
 console.log(t.term.lunar.phase);        // 'Full Moon'
+console.log(t.term.lunar.keys);         // ['new-moon', 'waxing-crescent', ...]
 console.log(t.term.lunar.index);        // 5 (1-based index)
 console.log(t.term.lunar.illumination); // 1.0
 console.log(t.term.lunar.ageDays);      // ~14.8 days
