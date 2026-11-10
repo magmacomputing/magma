@@ -1,5 +1,5 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isString, isObject, isNotNullish, isNullish, isUndefined, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isDefined, isNotNullish, isNullish, isUndefined, isFunction } from '#library/assertion.library.js';
 import { hasKey } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
@@ -176,7 +176,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 			({ unit, ...opts } = until as any);
 			value = arg;
 			break;
-		case isObject(arg) && hasKey(arg, 'unit'):
+		case isObject(arg) && isDefined((arg as any).unit):
 			({ unit, value, ...opts } = arg as any);
 			break;
 		default:

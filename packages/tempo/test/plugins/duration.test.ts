@@ -22,6 +22,16 @@ describe('Tempo overloads', () => {
     expect(d5).toHaveProperty('iso');
     expect(d5.format()).toBe('custom formatted duration');
     expect(customFormat).toHaveBeenCalled();
+
+    const durationInput = Tempo.duration({ days: 1 });
+    const d6 = t.until(durationInput);
+    expect(d6).toHaveProperty('iso');
+    expect(d6.days).toBe(1);
+
+    const plainDuration = { days: 2 };
+    const d7 = t.until(plainDuration);
+    expect(d7).toHaveProperty('iso');
+    expect(d7.days).toBe(2);
   });
 
   test('until() returns number when unit is specified', () => {
