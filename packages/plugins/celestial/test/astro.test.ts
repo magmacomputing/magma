@@ -53,6 +53,10 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 
 		const boundStart = AstroTerm[TermHook.bound]('start', 'astro', onSolsticeDate);
 		expect(boundStart.epoch.ns).toBe(start.epoch.ns);
+
+		// Span elapsed and progress should be measured from the actual date (23:00Z), not boundaryAnchor (start + 1min)
+		expect(onSolsticeDate.term.astronomy.span.elapsed.hours).toBeGreaterThanOrEqual(14);
+		expect(onSolsticeDate.term.astronomy.span.progress).toBeGreaterThan(0.005);
 	});
 
 	it('should allow standalone use of AstroTerm', () => {

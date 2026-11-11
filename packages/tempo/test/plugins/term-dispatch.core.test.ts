@@ -52,6 +52,13 @@ describe('Term Dispatch Refactor', () => {
 		expect(parsed.toPlainDate().toString({ calendarName: 'never' })).toBe('2024-04-01');
 	});
 
+	it('should preserve anchor time zone when ParseEngine parses a bare term with differing configured time zone', () => {
+		const anchor = new Tempo('2024-05-15T12:00:00Z'); // UTC
+		const parsed = ParseEngine.parse('#quarter', anchor.toDateTime(), '#quarter') as Temporal.ZonedDateTime;
+		expect(parsed.timeZoneId).toBe('UTC');
+		expect(parsed.toPlainDate().toString({ calendarName: 'never' })).toBe('2024-04-01');
+	});
+
 	it('should advance across empty match windows using currentRes.span forward and backward', () => {
 		Tempo.use(defineTerm({
 			key: 'win',

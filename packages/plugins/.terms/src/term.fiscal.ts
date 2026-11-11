@@ -1,5 +1,5 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan, isUndefined } from '@magmacomputing/tempo/plugin/sdk';
-import { isNumber, isString, isDefined, asArray } from '@magmacomputing/library';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { isNumber, isString, isDefined, isUndefined, asArray } from '@magmacomputing/library';
 import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -70,21 +70,27 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 	const rawStartMonth = opts.startMonth;
 	const rawCountry = opts.country;
 
+	const validStartMonth = (isNumber(rawStartMonth) && rawStartMonth >= 1 && rawStartMonth <= 12)
+		? Math.trunc(rawStartMonth)
+		: undefined;
+	if (isDefined(rawStartMonth) && isUndefined(validStartMonth)) {
+		logWarn(`[tempo] FiscalTerm ignoring invalid startMonth ${rawStartMonth}; expected an integer from 1 to 12.`, config);
+	}
+
 	// Conflict detection: if both startMonth and country are provided and diverge
-	if (isNumber(rawStartMonth) && isString(rawCountry)) {
+	if (isDefined(validStartMonth) && isString(rawCountry)) {
 		const countryDefault = FISCAL_COUNTRY_DEFAULTS[rawCountry.toUpperCase()];
-		if (isDefined(countryDefault) && countryDefault !== rawStartMonth) {
+		if (isDefined(countryDefault) && countryDefault !== validStartMonth) {
 			logWarn(
-				`[tempo] FiscalTerm received conflicting options: country '${rawCountry}' (default start month ${countryDefault}) and explicit startMonth ${rawStartMonth}. Prioritizing startMonth: ${rawStartMonth}.`,
+				`[tempo] FiscalTerm received conflicting options: country '${rawCountry}' (default start month ${countryDefault}) and explicit startMonth ${validStartMonth}. Prioritizing startMonth: ${validStartMonth}.`,
 				config
 			);
 		}
 	}
 
 	// 1. Explicit startMonth override
-	if (isNumber(rawStartMonth) && rawStartMonth >= 1 && rawStartMonth <= 12) {
-		return Math.trunc(rawStartMonth);
-	}
+	if (isDefined(validStartMonth))
+		return validStartMonth;
 
 	// 2. Explicit country override
 	if (isString(rawCountry)) {

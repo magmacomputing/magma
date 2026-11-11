@@ -94,6 +94,25 @@ describe('FiscalTerm Plugin', () => {
 				warnSpy.mockRestore();
 			}
 		});
+
+		it('warns when startMonth is invalid and falls back to country default or locale', () => {
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				// AU defaults to month 7; startMonth 13 is invalid
+				const t = new Tempo('2025-08-01', {
+					pluginOptions: { fiscal: { country: 'AU', startMonth: 13 } }
+				});
+
+				expect(t.term.fiscal.key).toBe('FQ1');
+				expect(t.term.fiscal.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2025-07-01');
+
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining('FiscalTerm ignoring invalid startMonth 13; expected an integer from 1 to 12.')
+				);
+			} finally {
+				warnSpy.mockRestore();
+			}
+		});
 	});
 
 	describe('Jurisdiction Resolution Cascade', () => {
