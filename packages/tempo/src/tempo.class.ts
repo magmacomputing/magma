@@ -277,8 +277,8 @@ export class Tempo {
 	}
 
 	/**
-	 * swap parsing-order of layouts to suit different timeZones  
-	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023  
+	 * swap parsing-order of layouts to suit different timeZones
+	 * this allows the parser to try to interpret '04012023' as Apr-01-2023 before trying 04-Jan-2023
 	 */
 	static #swapLayout(shape: Internal.State) {
 		const { layouts } = shape.parse.monthDay;
@@ -327,8 +327,8 @@ export class Tempo {
 	}
 
 	/**
-	 * conform input of Snippet / Layout / Event / Period options  
-	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]  
+	 * conform input of Snippet / Layout / Event / Period options
+	 * This is needed because we allow the user to flexibly provide detail as {[key]:val} or {[key]:val}[] or [key,val][]
 	 */
 	/** @internal */
 	static [$setConfig](shape: Internal.State, ...options: t.Options[]) {
@@ -529,34 +529,34 @@ export class Tempo {
 
 	/**
 	 * Register discovery configuration with an optional discovery symbol.
-	 * 
+	 *
 	 * @param discovery - Discovery object defining options, formats, periods, or terms.
 	 * @param symbol - Optional symbol identifier under globalThis to attach discovery data.
 	 */
 	/**
 	 * Register discovery configuration with an optional discovery symbol.
-	 * 
+	 *
 	 * @param discovery - Discovery object defining options, formats, periods, or terms.
 	 * @param symbol - Optional symbol identifier under globalThis to attach discovery data.
 	 */
 	static use(discovery: t.Discovery, symbol?: symbol): typeof Tempo;
 	/**
 	 * Register an individual plugin or plugin factory.
-	 * 
+	 *
 	 * @param plugin - The plugin function or definition to register.
 	 * @param options - Optional configuration for the plugin.
 	 */
 	static use<T extends TempoPlugin = TempoPlugin, Opts = any>(plugin: t.PluginEntry<T, Opts>, options?: t.Options): typeof Tempo;
 	/**
 	 * Register an array of plugins, terms, factories, or tuples.
-	 * 
+	 *
 	 * @param plugins - An array of plugins, terms, factories, or tuples to register.
 	 * @param options - Optional configuration for the plugins.
 	 */
 	static use(plugins: (t.PluginEntry | any)[], options?: t.Options): typeof Tempo;
 	/**
 	 * Register multiple plugins or term extensions.
-	 * 
+	 *
 	 * @param args - A plugin, term, or list of extensions to register.
 	 */
 	static use(...args: any[]): typeof Tempo;
@@ -571,10 +571,10 @@ export class Tempo {
 	 */
 	/**
 	 * 🏭 Sandbox Factory & Scoped Execution Mode
-	 * 
+	 *
 	 * 1. Factory Mode: Derives a fresh, isolated Tempo subclass with its own configuration and registries.
 	 *    The returned class implements `Disposable` (`[Symbol.dispose]()`), allowing deterministic cleanup via `using`.
-	 * 
+	 *
 	 * 2. Scoped Execution Mode: When provided a callback, derives an isolated sandbox, executes the callback,
 	 *    and automatically disposes the sandbox upon completion (supporting both synchronous and Promise returns).
 	 *
@@ -585,7 +585,7 @@ export class Tempo {
 	 *   using sb = Tempo.derive({ discovery: 'test' });
 	 *   sb.use(MyPlugin);
 	 * }
-	 * 
+	 *
 	 * // Scoped callback mode
 	 * const result = Tempo.derive((sb) => {
 	 *   sb.use(MyPlugin);
@@ -600,7 +600,7 @@ export class Tempo {
 		return createSandbox(this, arg1, arg2);
 	}
 
-	/** 
+	/**
 	 * Wait for engine readiness.
 	 * @returns The final status ('none' in Community Tempo)
 	 */
@@ -608,7 +608,7 @@ export class Tempo {
 		return 'none';
 	}
 
-	/** 
+	/**
 	 * Automatically discovers and loads configuration from `tempo.config.*`
 	 * before initializing the engine.
 	 */
@@ -947,7 +947,7 @@ export class Tempo {
 		return cast<Readonly<t.Config>>(Object.freeze({ ...Default, scope: 'default', timeZone: Default.timeZone || enums.TIMEZONE.utc }));
 	}
 
-	/** 
+	/**
 	 * configuration governing the static 'rules' used when parsing t.DateTime argument
 	 */
 	static get parse() {
@@ -1056,7 +1056,7 @@ export class Tempo {
 
 
 
-	/** 
+	/**
 	 * @internal Internal access to instance private state.
 	 * This surface is not part of the public contract and is subject to change.
 	 */
@@ -1109,13 +1109,13 @@ export class Tempo {
 
 	/**
 	 * Instantiates a new `Tempo` object with configuration only.
-	 * 
+	 *
 	 * @param options - Configuration options for this specific instance.
 	 */
 	constructor(options?: t.Options);
 	/**
 	 * Instantiates a new `Tempo` object with a value.
-	 * 
+	 *
 	 * @param tempo - The date-time value to parse.
 	 * @param options - Configuration options for this specific instance.
 	 */
@@ -1430,6 +1430,7 @@ export class Tempo {
 	/** iso weekday number: Mon=1, Sun=7 */										get dow() { return this.toDateTime().dayOfWeek as t.Weekday }
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
 	/** Days in current month, using instance calendar. */		get dim() { return this.toDateTime().daysInMonth }
+	/** Days in current year, using instance calendar. */			get diy() { return this.toDateTime().daysInYear }
 	/** Julian day number for the local ISO calendar date. */	get jj() { return (this.#memo.jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
 	/** Standard ISO 8601 string in UTC */										get iso() { return (this.#memo.iso ??= this.toDateTime().toInstant().toString()); }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
@@ -1522,10 +1523,10 @@ export class Tempo {
 	/** units since epoch for this date-time instance */			get epoch() { return (this.#memo.epoch ??= Tempo.#getEpoch(this.toDateTime())); }
 
 	/**
-	 * @Immutable class decorators wrap the class but leave internal lexical bindings pointing to the original, undecorated class.  
-	 * To ensure new instances returned by instance methods are properly frozen,  
-	 * we must instantiate internally from the decorated wrapper (which is bound to `this.constructor`)  
-	 * rather than using `new Tempo(..)`.  
+	 * @Immutable class decorators wrap the class but leave internal lexical bindings pointing to the original, undecorated class.
+	 * To ensure new instances returned by instance methods are properly frozen,
+	 * we must instantiate internally from the decorated wrapper (which is bound to `this.constructor`)
+	 * rather than using `new Tempo(..)`.
 	 */
 	/** @internal */																					get #Tempo() { return this.constructor as typeof Tempo; }
 	/** @internal */																					get #now(): Temporal.Instant { return this.#instant ??= instant(); }

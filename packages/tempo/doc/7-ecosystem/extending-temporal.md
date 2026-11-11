@@ -55,15 +55,15 @@ For comprehensive examples of localized output and custom layouts, read the dedi
 
 ## 3. Extensibility: Domain-Specific Logic
 
-Native Temporal deals strictly with standard calendar units (days, months, years). If you need to map a date to domain-specific logic (like a fiscal quarter or a meteorological season), you have to write and maintain your own math utilities.
+Native Temporal deals strictly with standard calendar units (days, months, years). If you need to map a date to domain-specific logic (like a calendar quarter or a meteorological season), you have to write and maintain your own math utilities.
 
 **Native Temporal 🐢**
 ```javascript
 const date = Temporal.Now.plainDateISO();
 
-// 1. Calculate the fiscal quarter
+// 1. Calculate the calendar quarter
 const month = date.month;
-const fiscalQuarter = `Q${Math.ceil(month / 3)}`; // Manual math
+const quarter = `Q${Math.ceil(month / 3)}`; // Manual math
 
 // 2. Calculate the meteorological season (Northern Hemisphere)
 let season;
@@ -83,7 +83,7 @@ Tempo solves this elegantly using the **Terms** plugin system. Terms are lazy-lo
 const t = new Tempo('2026-01-24T12:00:00', { sphere: 'north' });
 
 // Built-in complex Terms via the standard plugin
-t.term.qtr; // → 'Q1' (Calculates fiscal quarter)
+t.term.qtr; // → 'Q1' (Calculates calendar quarter)
 t.term.szn; // → 'Winter' (Calculates meteorological season, respecting hemisphere)
 ```
 

@@ -159,6 +159,72 @@ const val = Tempo.derive((sb) => sb.now());
 
 ---
 
+### 8. Term Architecture: Civic vs. Cultural Terms, Quarter Split & `.span` Encapsulation
+In v5.0.0, the Term system undergoes a breaking architectural refinement to align with international standards and provide clean, encapsulated range objects:
+
+* **Opt-in Requirement for Cultural & Astrological Terms:**
+  * `TermsModule` now registers only standard `CivicTerms` (`QuarterTerm`, `SeasonTerm`, `TimelineTerm`) by default.
+  * Cultural, astrological, and corporate terms (`ZodiacTerm`, `EasternTerm`, `FiscalTerm`) are now opt-in and must be explicitly imported and registered via `Tempo.use(...)` or en masse with `CulturalTerms`.
+  * Code relying on automatic `t.term.zodiac` or `t.term.shengxiao` registration will evaluate to `undefined` unless explicitly registered.
+* **`QuarterTerm` (`qtr` / `quarter`) strictly ISO 8601-2 aligned:**
+  * Calendar quarters strictly map to standard Gregorian calendar quarters (`Q1` = Jan 1, `Q2` = Apr 1, `Q3` = Jul 1, `Q4` = Oct 1) globally, completely decoupled from geographic hemisphere (`sphere`).
+  * The legacy `fiscal` field on `QuarterTerm` scope has been removed.
+* **Dedicated `FiscalTerm` (`fqtr` / `fiscal`):**
+  * Financial, corporate, and jurisdictional fiscal quarters have moved to the dedicated `FiscalTerm` plugin.
+  * Standard range keys are `'FQ1'`, `'FQ2'`, `'FQ3'`, `'FQ4'`.
+  * Provides a direct numeric `fiscalYear: number` (e.g. `2026`) for user financial calculations.
+  * Supports configurable options `{ startMonth?: number, country?: string }` with automated jurisdictional defaults.
+* **Encapsulated Range Metrics (`.span`):**
+  * Temporal boundaries (`start`, `end`) and duration progress metrics (`total`, `elapsed`, `remaining`, `progress`) are now encapsulated within `span: TermSpan`.
+  * The legacy root-level getters (`range.start`, `range.end`) have been removed.
+  * Leaked internal template schema matching units (`year`, `month`, `week`, `day`, `hour`, `minute`, etc.) are stripped from resolved root range objects.
+* **`SeasonTerm` Equatorial Support:**
+  * `SeasonTerm` now supports `sphere: 'equator'`, resolving tropical bimodal `Wet` and `Dry` seasons (`'Long Wet'`, `'Long Dry'`, `'Short Wet'`, `'Short Dry'`).
+
+```typescript
+// ❌ v4.x (Quarter was hemisphere-dependent; cultural terms auto-loaded; root start/end leaked)
+const t4 = new Tempo('2026-02-15', { sphere: 'south' });
+t4.term.qtr; // 'Q3' (in v4 southern hemisphere)
+t4.term.quarter.start; // Root getter
+t4.term.quarter.fiscal; // Legacy fiscal year string/number
+t4.term.quarter.month; // Leaked template matching schema key
+t4.term.zdc; // 'Aquarius' (cultural terms were auto-registered)
+```
+
+```typescript
+// ✅ v5.0.0 (Quarter is ISO 8601-2; boundaries and progress encapsulated in .span)
+const t = new Tempo('2026-02-15', { sphere: 'south' });
+t.term.qtr; // 'Q1' (strictly ISO 8601-2 calendar quarter everywhere)
+t.term.quarter.span.start; // Frozen Tempo instance
+t.term.quarter.span.end;   // Frozen Tempo instance
+t.term.quarter.span.progress; // Normalized float (0.0 .. 1.0)
+
+// ✅ v5.0.0 (Cultural & Astrological terms require explicit opt-in)
+import { ZodiacTerm, EasternTerm, CulturalTerms } from '@magmacomputing/tempo/terms';
+
+// Option A: Register individual terms
+Tempo.use(ZodiacTerm);
+Tempo.use(EasternTerm);
+
+// Option B: Register all cultural terms at once
+Tempo.use(CulturalTerms);
+
+const tAstro = new Tempo('2026-02-15');
+tAstro.term.zdc; // 'Aquarius'
+tAstro.term.shengxiao.animal; // 'Horse'
+
+// ✅ v5.0.0 (Fiscal cycles use FiscalTerm)
+import { FiscalTerm } from '@magmacomputing/tempo/terms';
+Tempo.use(FiscalTerm);
+
+const tFiscal = new Tempo('2026-02-15', { pluginOptions: { fiscal: { country: 'AU' } } });
+tFiscal.term.fqtr; // 'FQ3'
+tFiscal.term.fiscal.fiscalYear; // 2026
+tFiscal.term.fiscal.span.start; // Tempo('2026-01-01T00:00:00')
+```
+
+---
+
 # ⚠️ Migrating to Tempo v4.x
 
 Tempo v4.x introduces a standardized plugin & registry architecture, strict configuration namespaces, cascading configuration inheritance, and deterministic resource disposal while excising legacy v3.x deprecated interfaces.

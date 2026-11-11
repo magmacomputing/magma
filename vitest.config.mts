@@ -7,9 +7,13 @@ import swc from 'unplugin-swc'
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
 
-const stdDist = path.resolve(__dirname, './packages/plugins/.std/dist/index.js');
-const stdSrc = path.resolve(__dirname, './packages/plugins/.std/src/index.ts');
-const stdDistEntry = existsSync(stdDist) ? stdDist : stdSrc;
+const termsDist = path.resolve(__dirname, './packages/plugins/.terms/dist/index.js');
+const termsSrc = path.resolve(__dirname, './packages/plugins/.terms/src/index.ts');
+const hasTermsDist = existsSync(termsDist);
+const termsDistEntry = hasTermsDist ? termsDist : termsSrc;
+const termsDistSubpath = hasTermsDist
+  ? path.resolve(__dirname, './packages/plugins/.terms/dist/term.$1.js')
+  : path.resolve(__dirname, './packages/plugins/.terms/src/term.$1.ts');
 
 export default defineConfig({
   esbuild: false,
@@ -27,8 +31,11 @@ export default defineConfig({
       { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.index.js') },
       { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.sdk.js') },
       { find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/$1.js') },
+      { find: /^@magmacomputing\/tempo\/term\/fiscal$/, replacement: path.resolve(__dirname, './packages/tempo/dist/term/term.fiscal.js') },
       { find: /^@magmacomputing\/tempo\/term$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/term.index.js') },
       { find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/term/term.$1.js') },
+      { find: /^@magmacomputing\/tempo\/terms\/(.*?)(\.js)?$/, replacement: termsDistSubpath },
+      { find: /^@magmacomputing\/tempo\/terms$/, replacement: termsDistEntry },
       { find: /^@magmacomputing\/tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/dist/core.index.js') },
       { find: /^@magmacomputing\/tempo\/config$/, replacement: path.resolve(__dirname, './packages/tempo/dist/config/config.index.js') },
       { find: /^@magmacomputing\/tempo\/library$/, replacement: path.resolve(__dirname, './packages/tempo/dist/library.index.js') },
@@ -70,15 +77,22 @@ export default defineConfig({
       { find: /^#tempo\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.$1.js') },
       { find: /^#tempo\/plugin\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/$1.js') },
       { find: /^#tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/dist/plugin/plugin.index.js') },
+      { find: /^#tempo\/terms\/(.*?)(\.js)?$/, replacement: termsDistSubpath },
+      { find: /^#tempo\/terms$/, replacement: termsDistEntry },
+      { find: /^#tempo\/std$/, replacement: termsDistEntry },
+      { find: /^@magmacomputing\/tempo-terms\/(.*?)(\.js)?$/, replacement: termsDistSubpath },
+      { find: /^@magmacomputing\/tempo-terms$/, replacement: termsDistEntry },
       { find: /^#tempo\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/dist/$1.js') },
-      { find: /^#tempo\/std$/, replacement: stdDistEntry },
       { find: /^#tempo$/, replacement: path.resolve(__dirname, './packages/tempo/dist/tempo.index.js') }
     ] : [
       { find: /^@magmacomputing\/tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/sdk$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.sdk.ts') },
       { find: /^@magmacomputing\/tempo\/plugin\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/$1.ts') },
+      { find: /^@magmacomputing\/tempo\/term\/fiscal$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/term.fiscal.ts') },
       { find: /^@magmacomputing\/tempo\/term$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/term.index.ts') },
       { find: /^@magmacomputing\/tempo\/term\/(.*)$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/term/term.$1.ts') },
+      { find: /^@magmacomputing\/tempo\/terms\/(.*?)(\.js)?$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/term.$1.ts') },
+      { find: /^@magmacomputing\/tempo\/terms$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/index.ts') },
       { find: /^@magmacomputing\/tempo\/core$/, replacement: path.resolve(__dirname, './packages/tempo/src/core.index.ts') },
       { find: /^@magmacomputing\/tempo\/config$/, replacement: path.resolve(__dirname, './packages/tempo/src/config/config.index.ts') },
       { find: /^@magmacomputing\/tempo\/library$/, replacement: path.resolve(__dirname, './packages/tempo/src/library.index.ts') },
@@ -121,8 +135,12 @@ export default defineConfig({
       { find: /^#tempo\/plugin\.(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.$1.ts') },
       { find: /^#tempo\/plugin\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/$1.ts') },
       { find: /^#tempo\/plugin$/, replacement: path.resolve(__dirname, './packages/tempo/src/plugin/plugin.index.ts') },
+      { find: /^#tempo\/terms\/(.*?)(\.js)?$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/term.$1.ts') },
+      { find: /^#tempo\/terms$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/index.ts') },
+      { find: /^#tempo\/std$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/index.ts') },
+      { find: /^@magmacomputing\/tempo-terms\/(.*?)(\.js)?$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/term.$1.ts') },
+      { find: /^@magmacomputing\/tempo-terms$/, replacement: path.resolve(__dirname, './packages/plugins/.terms/src/index.ts') },
       { find: /^#tempo\/(.*)\.js$/, replacement: path.resolve(__dirname, './packages/tempo/src/$1.ts') },
-      { find: /^#tempo\/std$/, replacement: path.resolve(__dirname, './packages/plugins/.std/src/index.ts') },
       { find: /^#tempo$/, replacement: path.resolve(__dirname, './packages/tempo/src/tempo.index.ts') }
     ]
   },

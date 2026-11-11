@@ -25,6 +25,7 @@ export interface LunarPhaseResult {
 	isWaxing: boolean;
 	emoji?: string | undefined;
 	phases: readonly LunarPhaseKey[];
+	keys: readonly LunarPhaseKey[];
 }
 
 const SYNODIC_MONTH_MS = 29.530588 * 86400 * 1000;
@@ -160,6 +161,7 @@ export const LunarTerm = defineTerm({
 	scope: 'lunar',
 	description: 'Lunar phase cycle and range resolution',
 	phases: LUNAR_PHASE_KEYS,
+	keys: LUNAR_PHASE_KEYS,
 	...createCelestialTermHandlers(getLunarScopeRange),
 
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {

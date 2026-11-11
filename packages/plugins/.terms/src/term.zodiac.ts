@@ -1,8 +1,8 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of Western (Tropical) astrological zodiac ranges */
-const groups = defineRange([
+const groups = /*#__PURE__*/ defineRange([
 	// Western (Tropical) - @link https://en.wikipedia.org/wiki/Astrological_sign
 	{ key: 'Aries', day: 21, month: 3, symbol: 'Ram', emoji: '♈', trait: 'Daring and energetic, a natural leader', group: 'western' },
 	{ key: 'Taurus', day: 20, month: 4, symbol: 'Bull', emoji: '♉', trait: 'Reliable and patient, enjoys luxury', group: 'western' },
@@ -30,7 +30,22 @@ function resolve(t: Tempo, anchor?: any) {
 	return resolveCycleWindow(t, groups, { anchor, groupBy: ['group'], group: 'western' });
 }
 
-export type WesternZodiacKey = 'Aries' | 'Taurus' | 'Gemini' | 'Cancer' | 'Leo' | 'Virgo' | 'Libra' | 'Scorpio' | 'Sagittarius' | 'Capricorn' | 'Aquarius' | 'Pisces';
+export const ZODIAC_KEYS = Object.freeze([
+	'Aries',
+	'Taurus',
+	'Gemini',
+	'Cancer',
+	'Leo',
+	'Virgo',
+	'Libra',
+	'Scorpio',
+	'Sagittarius',
+	'Capricorn',
+	'Aquarius',
+	'Pisces',
+] as const);
+
+export type WesternZodiacKey = (typeof ZODIAC_KEYS)[number];
 
 export interface WesternZodiacScope {
 	key: WesternZodiacKey;
@@ -38,23 +53,21 @@ export interface WesternZodiacScope {
 	emoji: string;
 	trait: string;
 	group: 'western';
-	day: number;
-	month: number;
-	year?: number;
-	start: Tempo;
-	end: Tempo;
+	keys: readonly WesternZodiacKey[];
+	span: TermSpan;
 }
 
 /**
  * ## ZodiacTerm
  * Astrological Western Tropical Zodiac signs (`t.term.zdc`, `t.term.zodiac`, `t.term.sunSign`, `t.term.starSign`).
  */
-export const ZodiacTerm = defineTerm({
+export const ZodiacTerm = /*#__PURE__*/ defineTerm({
 	key: 'zdc',
 	scope: 'zodiac',
 	aliases: ['sunSign', 'starSign'],
 	description: 'Astrological Western Tropical Zodiac sign',
 	groups,
+	keys: ZODIAC_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return resolve(this, anchor);
@@ -62,7 +75,8 @@ export const ZodiacTerm = defineTerm({
 
 	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
-		return getTermRange(this, resolve(this, anchor), keyOnly as any, anchor);
+		const scope = getTermRange(this, resolve(this, anchor), keyOnly as any, anchor) as any;
+		return (scope && typeof scope === 'object') ? { ...scope, keys: ZODIAC_KEYS } : scope;
 	},
 
 	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {

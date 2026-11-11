@@ -58,6 +58,12 @@
     "#tempo": {
       "default": "./dist/tempo.index.js"
     },
+    "#tempo/terms": {
+      "default": "./dist/term/index.js"
+    },
+    "#tempo/terms/*": {
+      "default": "./dist/term/term.*.js"
+    },
     "#tempo/std": {
       "default": "./dist/term/index.js"
     },
@@ -145,6 +151,41 @@
       "import": "./dist/module/module.*.js",
       "default": "./dist/module/module.*.js"
     },
+    "./terms": {
+      "types": "./dist/term/index.d.ts",
+      "import": "./dist/term/index.js",
+      "default": "./dist/term/index.js"
+    },
+    "./terms/quarter": {
+      "types": "./dist/term/term.quarter.d.ts",
+      "import": "./dist/term/term.quarter.js",
+      "default": "./dist/term/term.quarter.js"
+    },
+    "./terms/season": {
+      "types": "./dist/term/term.season.d.ts",
+      "import": "./dist/term/term.season.js",
+      "default": "./dist/term/term.season.js"
+    },
+    "./terms/zodiac": {
+      "types": "./dist/term/term.zodiac.d.ts",
+      "import": "./dist/term/term.zodiac.js",
+      "default": "./dist/term/term.zodiac.js"
+    },
+    "./terms/eastern": {
+      "types": "./dist/term/term.eastern.d.ts",
+      "import": "./dist/term/term.eastern.js",
+      "default": "./dist/term/term.eastern.js"
+    },
+    "./terms/timeline": {
+      "types": "./dist/term/term.timeline.d.ts",
+      "import": "./dist/term/term.timeline.js",
+      "default": "./dist/term/term.timeline.js"
+    },
+    "./terms/fiscal": {
+      "types": "./dist/term/term.fiscal.d.ts",
+      "import": "./dist/term/term.fiscal.js",
+      "default": "./dist/term/term.fiscal.js"
+    },
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",
       "import": "./dist/plugin/term/term.*.js",
@@ -170,10 +211,20 @@
       "import": "./dist/term/term.zodiac.js",
       "default": "./dist/term/term.zodiac.js"
     },
+    "./term/eastern": {
+      "types": "./dist/term/term.eastern.d.ts",
+      "import": "./dist/term/term.eastern.js",
+      "default": "./dist/term/term.eastern.js"
+    },
     "./term/timeline": {
       "types": "./dist/term/term.timeline.d.ts",
       "import": "./dist/term/term.timeline.js",
       "default": "./dist/term/term.timeline.js"
+    },
+    "./term/fiscal": {
+      "types": "./dist/term/term.fiscal.d.ts",
+      "import": "./dist/term/term.fiscal.js",
+      "default": "./dist/term/term.fiscal.js"
     },
     "./plugin": {
       "types": "./dist/plugin/plugin.index.d.ts",
@@ -252,7 +303,7 @@
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
     "repl:lite": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
     "repl:core": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/core.ts",
-    "parse": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/parse.ts",
+    "repl:parse": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/parse.ts",
     "build": "npm run clean && node ../../node_modules/typescript-7/bin/tsc -b src --force && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",

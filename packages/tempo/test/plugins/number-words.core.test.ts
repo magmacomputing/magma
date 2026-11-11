@@ -3,7 +3,7 @@ import { FormatModule } from '#tempo/format';
 import { DurationModule } from '#tempo/duration';
 import { MutateModule } from '#tempo/mutate';
 import { ParseModule } from '#tempo/parse';
-import { StandardTerms } from '#tempo/std';
+import { StandardTerms } from '#tempo/terms';
 import { TermsModule } from '#tempo';
 
 Tempo.use([ParseModule, FormatModule, MutateModule, DurationModule, TermsModule, StandardTerms]);

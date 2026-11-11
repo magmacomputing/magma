@@ -5,7 +5,7 @@ Tempo.use(TickerPlugin);
 
 describe('Ticker with Terms', () => {
 	beforeEach(() => {
-		Tempo.init({ sphere: 'north' });
+		Tempo.init();
 		Tempo.use(TickerPlugin);
 	});
 

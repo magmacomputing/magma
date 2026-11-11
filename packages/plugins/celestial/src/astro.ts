@@ -1,9 +1,25 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache, TermHook, isNumber } from '@magmacomputing/tempo/plugin/sdk';
+import { enums, getTermRange, defineSpan, defineTerm, enumify, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere, logWarn, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
 type ASTRO = ValueOf<typeof ASTRO>;
+
+export const ASTRO_KEYS = Object.freeze(['Vernal', 'Summer', 'Autumnal', 'Winter'] as const);
+export type AstroKey = (typeof ASTRO_KEYS)[number];
+
+export interface AstronomyScope {
+	key: AstroKey;
+	strict: AstroKey;
+	season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+	sphere: Tempo.COMPASS;
+	event: 'Equinox' | 'Solstice';
+	keys: readonly AstroKey[];
+	group: 'astronomy';
+	span: TermSpan;
+}
+
+export type AstroScope = AstronomyScope;
 
 const { COMPASS } = enums;
 const key = 'astro';
@@ -40,19 +56,50 @@ function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
 	return new Tempo(epochMs, { timeZone, timeStamp: 'ms' });
 }
 
-function resolve(t: Tempo, anchor?: any) {
-	const sphere = t.sphere;
-	if (!sphere) return [];
+/**
+ * Normalizes any anchor override (Tempo, Date, timestamp number, ISO string)
+ * into a valid Tempo instance.
+ */
+function toAnchorTempo(anchor: any, fallback: Tempo): Tempo {
+	if (anchor instanceof Tempo) {
+		return anchor.isValid ? anchor : (fallback instanceof Tempo ? fallback : new (Tempo as any)(fallback));
+	}
+	if (anchor !== undefined && anchor !== null) {
+		if (isNumber(anchor)) {
+			const inst = new (fallback.constructor as any)(new Date(anchor), (fallback as any).config);
+			if (inst.isValid) return inst;
+		}
 
-	const year = anchor?.yy ?? anchor?.year ?? t.yy;
-	const timeZone = anchor?.timeZoneId ?? t.tz ?? 'UTC';
+		try {
+			const inst = new (fallback.constructor as any)(anchor, (fallback as any).config);
+			if (inst.isValid) return inst;
+		} catch {
+			// ignore and fallback
+		}
+	}
+	return fallback instanceof Tempo ? fallback : new (Tempo as any)(fallback);
+}
+
+function resolve(t: Tempo, anchor?: any) {
+	const anchorTempo = toAnchorTempo(anchor, t);
+	const sphere = resolveTermSphere(anchorTempo.sphere ?? t.sphere, 'AstroTerm', t.config);
+	if (!sphere || sphere === 'equator') {
+		if (sphere === 'equator')
+			logWarn(`[tempo] AstroTerm requires an explicit hemisphere of 'north' or 'south' (received: "equator").`, t.config);
+		return [];
+	}
+
+	const isSouth = sphere === 'south';
+	const compassSphere = isSouth ? COMPASS.South : COMPASS.North;
+	const year = anchorTempo.yy;
+	const timeZone = anchorTempo.tz ?? t.tz ?? 'UTC';
 	const list: any[] = [];
 
-	const labels = (sphere === COMPASS.South)
+	const labels = isSouth
 		? { vernal: 'Autumnal', summer: 'Winter', autumnal: 'Vernal', winter: 'Summer' } as const
 		: { vernal: 'Vernal', summer: 'Summer', autumnal: 'Autumnal', winter: 'Winter' } as const;
 
-	const seasons = (sphere === COMPASS.South)
+	const seasons = isSouth
 		? { vernal: 'Autumn', summer: 'Winter', autumnal: 'Spring', winter: 'Summer' } as const
 		: { vernal: 'Spring', summer: 'Summer', autumnal: 'Autumn', winter: 'Winter' } as const;
 
@@ -68,10 +115,10 @@ function resolve(t: Tempo, anchor?: any) {
 			};
 		};
 
-		list.push({ key: labels.vernal, season: seasons.vernal, sphere, ...m(y, ASTRO.Vernal), event: 'Equinox', group: 'astronomy' });
-		list.push({ key: labels.summer, season: seasons.summer, sphere, ...m(y, ASTRO.Summer), event: 'Solstice', group: 'astronomy' });
-		list.push({ key: labels.autumnal, season: seasons.autumnal, sphere, ...m(y, ASTRO.Autumnal), event: 'Equinox', group: 'astronomy' });
-		list.push({ key: labels.winter, season: seasons.winter, sphere, ...m(y, ASTRO.Winter), event: 'Solstice', group: 'astronomy' });
+		list.push({ key: labels.vernal, season: seasons.vernal, sphere: compassSphere, ...m(y, ASTRO.Vernal), event: 'Equinox', group: 'astronomy' });
+		list.push({ key: labels.summer, season: seasons.summer, sphere: compassSphere, ...m(y, ASTRO.Summer), event: 'Solstice', group: 'astronomy' });
+		list.push({ key: labels.autumnal, season: seasons.autumnal, sphere: compassSphere, ...m(y, ASTRO.Autumnal), event: 'Equinox', group: 'astronomy' });
+		list.push({ key: labels.winter, season: seasons.winter, sphere: compassSphere, ...m(y, ASTRO.Winter), event: 'Solstice', group: 'astronomy' });
 	}
 
 	return list;
@@ -107,38 +154,42 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	aliases: ['equinox', 'solstice'],
 	scope,
 	description: 'Astronomical seasons and events',
+	keys: ASTRO_KEYS,
 	resolve(this: Tempo, anchor?: any, alias?: string) {
 		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
 		return resolveFiltered(this, anchor, filterType);
 	},
 	define(this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) {
 		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
-		const strictList = resolveFiltered(this, anchor, filterType);
-		const dateBoundaryList = resolveDateBoundaryFiltered(this, anchor, filterType);
-		const zdt = anchor ?? (this as any).toDateTime();
+		const anchorTempo = toAnchorTempo(anchor, this);
+		const strictList = resolveFiltered(this, anchorTempo, filterType);
+		const dateBoundaryList = resolveDateBoundaryFiltered(this, anchorTempo, filterType);
+		const zdt = anchorTempo.toDateTime();
 
 		if (keyOnly === true || keyOnly === undefined) {
-			const result = getTermRange(this, dateBoundaryList, true, anchor);
+			const result = getTermRange(this, dateBoundaryList, true, anchorTempo);
 			return result;
 		}
 
-		const scoped = getTermRange(this, strictList, false, anchor) as any;
+		const scoped = getTermRange(this, strictList, false, anchorTempo) as any;
 		if (!scoped) return scoped;
 
-		const dateScoped = getTermRange(this, dateBoundaryList, false, anchor) as any;
+		const dateScoped = getTermRange(this, dateBoundaryList, false, anchorTempo) as any;
 		if (!dateScoped) return scoped;
 
-		const strictBoundary = strictList.find((item: any) =>
+		const dateStart = dateScoped.span?.start?.toDateTime?.().withCalendar('iso8601');
+		const strictBoundary = dateStart ? strictList.find((item: any) =>
 			item.key === dateScoped.key &&
-			item.year === dateScoped.year &&
-			item.month === dateScoped.month &&
-			item.day === dateScoped.day
-		);
+			item.year === dateStart.year &&
+			item.month === dateStart.month &&
+			item.day === dateStart.day
+		) : undefined;
 
 		if (!strictBoundary) {
 			return {
 				...dateScoped,
 				strict: scoped.key,
+				keys: ASTRO_KEYS,
 			};
 		}
 
@@ -159,12 +210,15 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 			return {
 				...dateScoped,
 				strict: scoped.key,
+				keys: ASTRO_KEYS,
 			};
 		}
 
 		return {
 			...keyedScope,
+			span: defineSpan(this, keyedScope.span.start, keyedScope.span.end, zdt),
 			strict: scoped.key,
+			keys: ASTRO_KEYS,
 		};
 	},
 
@@ -209,7 +263,9 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 
 			const year = context?.anchor?.yy ?? context?.anchor?.year ?? new Tempo().yy;
 			const timeZone = context?.anchor?.tz ?? 'UTC';
-			const sphere = context?.anchor?.sphere ?? 'north';
+			const sphere = resolveTermSphere(context?.anchor?.sphere ?? context?.config?.sphere, 'AstroTerm', context?.config);
+			if (!sphere || sphere === 'equator') return undefined;
+
 			const isSouth = sphere === 'south';
 
 			let quarter: ASTRO | undefined;
@@ -223,20 +279,23 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 
 			if (quarter) {
 				const moment = calculateAstroMoment(year, quarter, timeZone);
-				return new Tempo(moment.epoch.ms, { timeZone, timeStamp: 'ms', ...(sphere ? { sphere } : {}) });
+				return new Tempo(moment.epoch.ms, { timeZone, timeStamp: 'ms', sphere });
 			}
 		}
 		return undefined;
 	},
 
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
-		const scope = AstroTerm.define.call(tempo, false) as any;
-		if (scope?.start && scope?.end) {
-			if (boundary === 'start') return scope.start;
-			if (boundary === 'end') return scope.end.sub({ nanoseconds: 1 });
+		const target = tempo instanceof Tempo ? tempo : new Tempo(tempo);
+		const scope = AstroTerm.define.call(target, false) as any;
+		const start = scope?.span?.start;
+		const end = scope?.span?.end;
+		if (start && end) {
+			if (boundary === 'start') return start;
+			if (boundary === 'end') return end.sub({ nanoseconds: 1 });
 			if (boundary === 'mid') {
-				const midMs = Math.round((scope.start.epoch.ms + scope.end.epoch.ms) / 2);
-				return new Tempo(midMs, { timeZone: scope.start.tz, timeStamp: 'ms', ...(tempo.sphere ? { sphere: tempo.sphere } : {}) });
+				const midMs = Math.round((start.epoch.ms + end.epoch.ms) / 2);
+				return new Tempo(midMs, { timeZone: start.tz, timeStamp: 'ms', ...(target.sphere ? { sphere: target.sphere } : {}) });
 			}
 		}
 		return undefined;
@@ -257,3 +316,12 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 		return undefined;
 	},
 });
+
+declare module '@magmacomputing/tempo' {
+	interface TempoTermRegistry {
+		astro: AstroKey;
+		equinox: 'Vernal' | 'Autumnal';
+		solstice: 'Summer' | 'Winter';
+		astronomy: AstronomyScope;
+	}
+}

@@ -7,12 +7,12 @@ import { deepFreeze } from '#library/utility.library.js';
 import { cast } from '#library/type.library.js';
 
 import { TEMPO_VERSION } from '../../tempo.version.js';
-import { getHost } from '../plugin.util.js';
+import { getHost, ensureModule } from '../plugin.util.js';
 import { sym, TermError, isTempo } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
-import { SCHEMA, getLargestUnit } from '../../support/support.util.js';
+import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
-import type { TermPlugin, Range, ResolvedRange, TermFactory } from './term.type.js';
+import type { TermPlugin, Range, ResolvedRange, TermSpan, TermFactory } from './term.type.js';
 
 /**
  * ## defineTerm
@@ -78,6 +78,62 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
 }
 
 /**
+ * ## defineSpan
+ * Constructs an encapsulated TermSpan object with temporal boundaries, durations,
+ * and normalized progress metrics (`0.0..1.0`).
+ *
+ * @param tempo - The reference Tempo instance
+ * @param start - Start boundary of the range (Tempo instance)
+ * @param end - End boundary of the range (Tempo instance)
+ * @param anchor - Optional reference instant (defaults to `tempo`)
+ * @returns Encapsulated TermSpan object
+ */
+export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
+	const hostTempo = isTempo(tempo) ? tempo : start;
+	const Host = getHost(hostTempo);
+	const refTempo = isTempo(anchor)
+		? anchor
+		: (isZonedDateTime(anchor) && Host ? new Host(anchor, (hostTempo as any).config) : hostTempo);
+	const refZdt = refTempo.toDateTime();
+	let total: any;
+	let elapsed: any;
+	let remaining: any;
+
+	if (ensureModule(hostTempo, 'DurationModule', true)) {
+		total = start.until(end);
+		elapsed = start.until(refTempo);
+		remaining = refTempo.until(end);
+	} else if (isFunction((getHost(hostTempo) as any)?.duration)) {
+		const startZdt = start.toDateTime();
+		const endZdt = end.toDateTime();
+		total = (getHost(hostTempo) as any).duration(startZdt.until(endZdt));
+		elapsed = (getHost(hostTempo) as any).duration(startZdt.until(refZdt));
+		remaining = (getHost(hostTempo) as any).duration(refZdt.until(endZdt));
+	} else {
+		const startZdt = start.toDateTime();
+		const endZdt = end.toDateTime();
+		total = startZdt.until(endZdt);
+		elapsed = startZdt.until(refZdt);
+		remaining = refZdt.until(endZdt);
+	}
+
+	const totalNs = (end.toDateTime().epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
+	const elapsedNs = (refZdt.epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
+	const rawProgress = totalNs > 0n ? Number(elapsedNs) / Number(totalNs) : 0;
+	const progress = Math.round(Math.max(0, Math.min(1, rawProgress)) * 10000) / 10000;
+
+	return {
+		start,
+		end,
+		total,
+		elapsed,
+		remaining,
+		progress
+	};
+}
+
+/**
+ * ## defineRange
  * Groups and secures term ranges for efficient lookup.
  *
  * @param ranges - The ranges to group
@@ -99,8 +155,7 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
  * @internal
  */
 export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any): string | ResolvedRange | undefined | null {
-	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
-	if (chronological.length === 0) return undefined;
+	if (list.length === 0) return undefined;
 
 	let zdt = isTempo(anchor)
 		? anchor.toDateTime()
@@ -115,6 +170,9 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const rolloverUnit = SCHEMA[rolloverIndex][0];
 
 	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
+		if (range.span?.start)
+			return range.span.start;
+		
 		const obj: any = {};
 		for (let i = 0; i < SCHEMA.length; i++) {
 			const [u] = SCHEMA[i];
@@ -134,69 +192,173 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 
 		// @ts-ignore
 		return new (getHost(tempo))(resZdt, (tempo as any).config);
-	}
+	};
+
+	const hasSpans = list.some(r => r.span?.start);
+	const chronological = hasSpans
+		? [...list].sort((a, b) => {
+			const aNs = (a.span?.start ?? resolve(a, zdt)).epoch.ns as bigint;
+			const bNs = (b.span?.start ?? resolve(b, zdt)).epoch.ns as bigint;
+			return aNs < bNs ? -1 : (aNs > bNs ? 1 : 0);
+		})
+		: sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
+	if (chronological.length === 0) return undefined;
 
 	const matchIndex = chronological.findLastIndex(range => {
 		const date = resolve(range, zdt);
 		return (date.toDateTime().epochNanoseconds as bigint) <= (zdt.epochNanoseconds as bigint);
 	});
 
-	if (isNumber(keyOnly)) {
-		const cycle = Math.floor(chronological.length / 3);
-		if (cycle === 0 || !Number.isInteger(keyOnly) || keyOnly < 1 || keyOnly > cycle) return undefined;
+	const SCHEMA_KEYS = new Set([
+		'year', 'month', 'week', 'day', 'hour',
+		'minute', 'second', 'millisecond', 'microsecond', 'nanosecond'
+	]);
 
-		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
+	const hostTempo = isTempo(tempo) ? tempo : new (getHost(tempo))(zdt, (tempo as any)?.config);
+
+	const buildResolvedRange = (matchItem: any, start: Tempo, end: Tempo): ResolvedRange => {
+		const meta: Record<string, any> = {};
+		for (const [k, v] of Object.entries(matchItem)) {
+			if (!SCHEMA_KEYS.has(k) && k !== 'span')
+				meta[k] = v;
+		}
+
+		const resolvedStart = matchItem.span?.start ?? start;
+		const resolvedEnd = matchItem.span?.end ?? end;
+
+		return {
+			...meta,
+			span: defineSpan(hostTempo, resolvedStart, resolvedEnd, zdt)
+		} as ResolvedRange;
+	};
+
+	const deriveCycleLength = (): number => {
+		const len = chronological.length;
+		if (len <= 2) return len;
+		if (len % 3 === 0) {
+			const third = len / 3;
+
+			// Verify the three slices repeat the same range keys
+			let keysMatch = true;
+			for (let i = 0; i < third; i++) {
+				const k0 = chronological[i]?.key;
+				const k1 = chronological[third + i]?.key;
+				const k2 = chronological[third * 2 + i]?.key;
+				if (k0 !== k1 || k1 !== k2) {
+					keysMatch = false;
+					break;
+				}
+			}
+			if (!keysMatch) return len;
+
+			const r0 = chronological[0];
+			const r1 = chronological[third];
+			const r2 = chronological[third * 2];
+
+			const y0 = r0?.span?.start?.yy ?? r0?.year;
+			const y1 = r1?.span?.start?.yy ?? r1?.year;
+			const y2 = r2?.span?.start?.yy ?? r2?.year;
+
+			// 1. Successive cycle years (e.g. 2024, 2025, 2026)
+			if (isNumber(y0) && isNumber(y1) && isNumber(y2) && y1 === y0 + 1 && y2 === y1 + 1) {
+				return third;
+			}
+
+			// 2. Successive daily cycles (e.g. yesterday, today, tomorrow)
+			const d0 = r0?.span?.start ?? (isNumber(r0?.day) && isNumber(r0?.month) && isNumber(y0) ? resolve(r0, zdt) : undefined);
+			const d1 = r1?.span?.start ?? (isNumber(r1?.day) && isNumber(r1?.month) && isNumber(y1) ? resolve(r1, zdt) : undefined);
+			const d2 = r2?.span?.start ?? (isNumber(r2?.day) && isNumber(r2?.month) && isNumber(y2) ? resolve(r2, zdt) : undefined);
+
+			if (d0 && d1 && d2) {
+				const pd0 = d0.toDateTime().toPlainDate();
+				const pd1 = d1.toDateTime().toPlainDate();
+				const pd2 = d2.toDateTime().toPlainDate();
+				if (
+					pd1.since(pd0, { largestUnit: 'day' }).days === 1 &&
+					pd2.since(pd1, { largestUnit: 'day' }).days === 1
+				) {
+					return third;
+				}
+			}
+		}
+		return len;
+	};
+
+	if (isNumber(keyOnly)) {
+		if (!Number.isInteger(keyOnly) || keyOnly < 1) return undefined;
+
+		const cycle = deriveCycleLength();
+		if (cycle === 0 || keyOnly > cycle) return undefined;
+
+		const offset = (cycle === chronological.length)
+			? 0
+			: (matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle);
 		const match = chronological[offset + (keyOnly - 1)];
 		if (!match) return undefined;
 
-		const start = resolve(match, zdt);
+		const start = match.span?.start ?? resolve(match, zdt);
 		let end: Tempo;
-		const i = offset + (keyOnly - 1);
-		const next = chronological[i + 1];
-
-		if (next) {
-			end = resolve(next, zdt);
+		if (match.span?.end) {
+			end = match.span.end;
 		} else {
-			const roll = { ...match };
-			if (isNumber(roll.year)) roll.year++;
-			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			const i = offset + (keyOnly - 1);
+			const next = chronological[i + 1];
+
+			if (next) {
+				end = next.span?.start ?? resolve(next, zdt);
+			} else {
+				const roll = { ...match };
+				if (isNumber(roll.year)) roll.year++;
+				end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			}
 		}
 
-		return {
-			start,
-			end,
-			...match
-		}
+		return buildResolvedRange(match, start, end);
 	}
 
 	if (isText(keyOnly)) {
-		const cycle = Math.floor(chronological.length / 3);
-		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
-		const cycleSlice = cycle > 0 ? chronological.slice(offset, offset + cycle) : chronological;
+		const cycle = deriveCycleLength();
+		const offset = (cycle === 0 || cycle === chronological.length)
+			? 0
+			: (matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle);
+		const cycleSlice = cycle > 0 && cycle < chronological.length ? chronological.slice(offset, offset + cycle) : chronological;
 		const lowKey = keyOnly.toLowerCase();
-		const match = chronological.find(r => r.year === zdt.year && (r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey))
-			?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey)
-			?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey);
+		const isFiscal = chronological.some(r => (r as any)._startMonth !== undefined && (r as any)._startMonth !== 1);
+
+		const currentMatch = matchIndex >= 0 ? chronological[matchIndex] : undefined;
+		const match = (currentMatch && (currentMatch.label?.toLowerCase() === lowKey || currentMatch.key?.toLowerCase() === lowKey))
+			? currentMatch
+			: (isFiscal
+				? (cycleSlice.find(r => r.label?.toLowerCase() === lowKey)
+					?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.year === zdt.year && r.label?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.year === zdt.year && r.key?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey))
+				: (chronological.find(r => r.year === zdt.year && r.label?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.year === zdt.year && r.key?.toLowerCase() === lowKey)
+					?? cycleSlice.find(r => r.label?.toLowerCase() === lowKey)
+					?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey)));
 		if (!match) return undefined;
 
-		const start = resolve(match, zdt);
-		const i = chronological.indexOf(match);
-		const next = chronological[i + 1];
+		const start = match.span?.start ?? resolve(match, zdt);
 		let end: Tempo;
-
-		if (next) {
-			end = resolve(next, zdt);
+		if (match.span?.end) {
+			end = match.span.end;
 		} else {
-			const roll = { ...match };
-			if (isNumber(roll.year)) roll.year++;
-			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			const i = chronological.indexOf(match);
+			const next = chronological[i + 1];
+
+			if (next) {
+				end = next.span?.start ?? resolve(next, zdt);
+			} else {
+				const roll = { ...match };
+				if (isNumber(roll.year)) roll.year++;
+				end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			}
 		}
 
-		return {
-			start,
-			end,
-			...match
-		};
+		return buildResolvedRange(match, start, end);
 	}
 
 	const match = chronological[matchIndex === -1 ? 0 : matchIndex];
@@ -205,22 +367,20 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const i = chronological.indexOf(match);
 	const next = chronological[i + 1];
 
-	const start = resolve(match, zdt);
+	const start = match.span?.start ?? resolve(match, zdt);
 	let end: Tempo;
 
-	if (next) {
-		end = resolve(next, zdt);
+	if (match.span?.end) {
+		end = match.span.end;
+	} else if (next) {
+		end = next.span?.start ?? resolve(next, zdt);
 	} else {
 		const roll = { ...match };
 		if (isNumber(roll.year)) roll.year++;
 		end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
 	}
 
-	return {
-		start,
-		end,
-		...match
-	}
+	return buildResolvedRange(match, start, end);
 }
 
 /**
@@ -300,15 +460,18 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 	const range = (getTermRange(tempo, list, false, anchor) as any);
 	if (!range) return undefined;
 
-	if (mutate === 'start') return range.start;
+	const start = range.span.start;
+	const end = range.span.end;
+
+	if (mutate === 'start') return start;
 	if (mutate === 'mid') {
-		const startNs = range.start.toDateTime().epochNanoseconds as bigint;
-		const endNs = range.end.toDateTime().epochNanoseconds as bigint;
+		const startNs = start.toDateTime().epochNanoseconds as bigint;
+		const endNs = end.toDateTime().epochNanoseconds as bigint;
 		const midNs = startNs + (endNs - startNs) / 2n;
 		// @ts-ignore
-		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
+		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((start as any).tz).withCalendar((start as any).cal), (tempo as any).config);
 	}
-	if (mutate === 'end') return range.end.subtract({ nanoseconds: 1 });
+	if (mutate === 'end') return end.subtract({ nanoseconds: 1 });
 
 	return undefined;
 }
@@ -341,12 +504,29 @@ export function resolveTermShift(tempo: Tempo, source: readonly any[], offset: s
 	const range = (getTermRange(tempo, list, false, anchor) as any);
 	if (!range) return undefined;
 
+	const targetStart = range.span.start;
+
 	// find index in list (matching key and major components for identity)
 	const idx = list.findIndex(r => {
-		return r.key === range.key &&
-			(isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
+		if (r.key !== range.key) return false;
+		if (r.span?.start && targetStart) {
+			return r.span.start.epoch.ns === targetStart.epoch.ns;
+		}
+		if (targetStart) {
+			return (isUndefined(r.year) || r.year === targetStart.yy) &&
+				(isUndefined(r.month) || r.month === targetStart.mm) &&
+				(isUndefined(r.day) || r.day === targetStart.dd) &&
+				(isUndefined(r.hour) || r.hour === targetStart.hh) &&
+				(isUndefined(r.minute) || r.minute === targetStart.mi) &&
+				(isUndefined(r.second) || r.second === targetStart.ss) &&
+				(isUndefined(r.millisecond) || r.millisecond === targetStart.ms);
+		}
+		return (isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
 			(isUndefined(r.month) || isUndefined(range.month) || r.month === range.month) &&
-			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day);
+			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day) &&
+			(isUndefined(r.hour) || isUndefined(range.hour) || r.hour === range.hour) &&
+			(isUndefined(r.minute) || isUndefined(range.minute) || r.minute === range.minute) &&
+			(isUndefined(r.second) || isUndefined(range.second) || r.second === range.second);
 	});
 
 	if (idx === -1) return undefined;
@@ -358,7 +538,7 @@ export function resolveTermShift(tempo: Tempo, source: readonly any[], offset: s
 	// resolve target range
 	const res = (getTermRange(tempo, [target], false) as any);
 	if (!res) return undefined;
-	return res.start;
+	return res.span.start;
 }
 
 type resolveOptions = {
@@ -375,9 +555,42 @@ type resolveOptions = {
  * @returns Detached range copies representing the previous, current, and next periods.
  * @internal
  */
+/**
+ * Coerces a Tempo instance, internal state, or date-time source into a valid Tempo host.
+ *
+ * @param source - Tempo instance, internal parser state, or date-time input
+ * @param anchor - Optional date-time anchor when resolving from internal state
+ * @returns A Tempo host instance, or `source` unchanged if no constructor is available
+ * @internal
+ */
+export function resolveTermHost(source: Tempo | any, anchor?: any): Tempo | any {
+	if (isTempo(source)) {
+		if (isNotNullish(anchor)) {
+			const Host = getHost(source);
+			return Host ? new Host(anchor, (source as any).config) : source;
+		}
+		return source;
+	}
+	if (isObject(source) && 'pluginsDb' in source && 'config' in source) {
+		const Host = (source as any).tempoInstance?.constructor ?? getHost(source);
+		const safeConfig = { ...(source as any).config };
+		delete safeConfig.anchor;
+		delete safeConfig.scope;
+		if (safeConfig.registry && Object.keys(safeConfig.registry).length === 0)
+			delete safeConfig.registry;
+		const basis = anchor ?? (source as any).tempoInstance ?? (source as any).parse?.anchor;
+		return Host ? new Host(basis, safeConfig) : source;
+	}
+	if (isNotNullish(source)) {
+		const Host = getHost(source);
+		return Host ? new Host(source) : source;
+	}
+	return source;
+}
+
 export function resolveCycleWindow(source: Tempo | any, template: Range[] | readonly Range[] | Record<string, Range[] | readonly Range[]> | Record<PropertyKey, any>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
 	// ensure we have a valid Tempo instance to work with
-	const t = (isTempo(source) ? source : (isNotNullish(source) ? new (getHost(source))(source) : source)) as Tempo;
+	const t = resolveTermHost(source, anchor) as Tempo;
 	if (!isTempo(t)) return [];
 
 	// 1. Resolve Template (supporting optional dynamic grouping)
@@ -517,7 +730,7 @@ export function registerTerm(term: TermPlugin, state?: any) {
 export function resolveRangeOrdinal(
 	termObj: any,
 	groups: Record<string, any>,
-	anchor: Tempo
+	anchor: Tempo,
 ): Tempo | undefined {
 	const rawDayOffset = groups.value ?? (isString(groups.ord) ? parseInt(groups.ord, 10) : undefined);
 	if (!Number.isFinite(rawDayOffset) || rawDayOffset === 0) return undefined;
@@ -537,15 +750,17 @@ export function resolveRangeOrdinal(
 		range = isFunction(termObj.define) ? termObj.define.call(anchor, false, anchor) : undefined;
 	}
 
-	if (!range || !range.start || !range.end) return undefined;
+	const start = range?.span?.start;
+	const end = range?.span?.end;
+	if (!start || !end) return undefined;
 
 	const target = (rawDayOffset > 0)
-		? range.start.add({ days: rawDayOffset - 1 })
-		: range.end.subtract({ days: Math.abs(rawDayOffset) });
+		? start.add({ days: rawDayOffset - 1 })
+		: end.subtract({ days: Math.abs(rawDayOffset) });
 
 	const targetNs = target.toDateTime().epochNanoseconds as bigint;
-	const startNs = range.start.toDateTime().epochNanoseconds as bigint;
-	const endNs = range.end.toDateTime().epochNanoseconds as bigint;
+	const startNs = start.toDateTime().epochNanoseconds as bigint;
+	const endNs = end.toDateTime().epochNanoseconds as bigint;
 
 	return (targetNs < startNs || targetNs >= endNs)
 		? undefined
@@ -566,16 +781,20 @@ export function resolveRangeDiff(
 	termObj: any,
 	other: Tempo,
 	_unit: string,
-	tempo: Tempo
+	tempo: Tempo,
 ): number | undefined {
 	if (!isFunction(termObj?.define)) return undefined;
 
 	const rangeA = termObj.define.call(tempo, false, tempo);
 	const rangeB = termObj.define.call(other, false, other);
-	if (!rangeA?.start || !rangeA?.end || !rangeB?.start || !rangeB?.end) return undefined;
+	const startA = rangeA?.span?.start;
+	const endA = rangeA?.span?.end;
+	const startB = rangeB?.span?.start;
+	const endB = rangeB?.span?.end;
+	if (!startA || !endA || !startB || !endB) return undefined;
 
-	const startANs = rangeA.start.toDateTime().epochNanoseconds as bigint;
-	const startBNs = rangeB.start.toDateTime().epochNanoseconds as bigint;
+	const startANs = startA.toDateTime().epochNanoseconds as bigint;
+	const startBNs = startB.toDateTime().epochNanoseconds as bigint;
 
 	if (startANs === startBNs) return 0;
 
@@ -590,13 +809,18 @@ export function resolveRangeDiff(
 	const maxIterations = 10000;
 
 	while (count < maxIterations) {
-		const currentEndNs = currentRange.end.toDateTime().epochNanoseconds as bigint;
+		const currentEnd = currentRange?.span?.end;
+		if (!currentEnd) return undefined;
+		const currentEndNs = currentEnd.toDateTime().epochNanoseconds as bigint;
 		if (currentEndNs > startBNs)
 			break;
 
 		count++;
-		const nextRange = termObj.define.call(currentRange.end, false, currentRange.end);
-		if (!nextRange?.start || !nextRange?.end || (nextRange.start.toDateTime().epochNanoseconds as bigint) <= (currentRange.start.toDateTime().epochNanoseconds as bigint))
+		const nextRange = termObj.define.call(currentEnd, false, currentEnd);
+		const currentStart = currentRange?.span?.start;
+		const nextStart = nextRange?.span?.start;
+		const nextEnd = nextRange?.span?.end;
+		if (!nextStart || !nextEnd || (nextStart.toDateTime().epochNanoseconds as bigint) <= (currentStart.toDateTime().epochNanoseconds as bigint))
 			return undefined;
 
 		currentRange = nextRange;
@@ -617,7 +841,7 @@ export function resolveRangeDiff(
 export function resolveRangeFormat(
 	termObj: any,
 	token: string,
-	tempo: Tempo
+	tempo: Tempo,
 ): string | undefined {
 	if (!isFunction(termObj?.define)) return undefined;
 
@@ -637,11 +861,13 @@ export function resolveRangeFormat(
 		return isNotNullish(val) ? String(val) : undefined;
 	}
 
-	// Traverse sub-keys (e.g. "{#qtr.label}", "{#szn.symbol}")
+	// Traverse sub-keys (e.g. "{#qtr.label}", "{#szn.symbol}", "{#qtr.span.start}", "{#tod.hour}")
 	let curr: any = range;
 	for (const key of subKeys) {
 		if (isNullish(curr) || !isSafeKey(key)) return undefined;
-		curr = curr[key];
+		curr = curr[key] ??
+			curr.span?.[key] ??
+			(isTempo(curr.span?.start) ? (curr.span.start.toDateTime() as any)[key] ?? (curr.span.start as any)[key] : undefined);
 	}
 
 	if (isNullish(curr) || isFunction(curr)) return undefined;
@@ -653,4 +879,49 @@ export function resolveRangeFormat(
 		? String(curr.label ?? curr.key ?? curr.name ?? curr.value ?? curr)
 		: String(curr);
 }
+
+/**
+ * Resolves a normalized hemisphere ('north' | 'south') for terms requiring a polar sphere.
+ * Enforces the "refuse-to-guess" policy: if the sphere is missing, non-polar (e.g. 'equator', 'east'),
+ * or unresolvable, emits a diagnostic warning and returns undefined.
+ *
+ * @param source - The raw sphere string, or an object containing sphere (e.g. Tempo instance, anchor, or context)
+ * @param termName - Optional name of the calling term plugin for the diagnostic warning
+ * @param config - Optional configuration object passed to logWarn
+ * @returns 'north' | 'south' | undefined
+ */
+/**
+ * Resolves the hemisphere or equatorial sphere from a configuration source.
+ *
+ * @param source - The source containing sphere/hemisphere settings
+ * @param termName - Optional term identifier for warning messages
+ * @param config - Optional configuration object
+ * @returns 'north' | 'south' | 'equator' | undefined
+ */
+export function resolveTermSphere(
+	source?: any,
+	termName?: string,
+	config?: any,
+): 'north' | 'south' | 'equator' | undefined {
+	const raw = isObject(source)
+		? (source.sphere ?? (source as any).anchor?.sphere ?? (source as any).config?.sphere)
+		: source;
+
+	const s = isString(raw) ? raw.toLowerCase() : '';
+	const isSouth = s.includes('south');
+	const isNorth = s.includes('north');
+	const isEquator = s.includes('equator');
+
+	const matches = [isSouth, isNorth, isEquator].filter(Boolean).length;
+	if (matches !== 1) {
+		if (termName)
+			logWarn(`[tempo] ${termName} requires an explicit sphere of 'north', 'south', or 'equator' (received: ${JSON.stringify(raw)}).`, config);
+
+		return undefined;
+	}
+
+	if (isEquator) return 'equator';
+	return isSouth ? 'south' : 'north';
+}
+
 

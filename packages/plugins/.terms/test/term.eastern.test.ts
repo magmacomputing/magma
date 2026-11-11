@@ -1,8 +1,10 @@
 import { Tempo } from '@magmacomputing/tempo';
+import { CulturalTerms, EasternTerm } from '../src/index.js';
 
 describe('Eastern Zodiac & Western Zodiac Terms', () => {
 	beforeEach(() => {
 		Tempo.init();
+		Tempo.use(CulturalTerms);
 	});
 
 	it('resolves Western Tropical Zodiac signs with emojis (zdc, zodiac, sunSign, starSign)', () => {
@@ -46,6 +48,10 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 
 		expect(scope.variants.vn.animal).toBe('Horse');
 		expect(scope.variants.vn.emoji).toBe('🐎');
+
+		// Span should measure elapsed and progress from the requested date
+		expect(scope.span.progress).toBeGreaterThan(0.4);
+		expect(scope.span.progress).toBeLessThan(0.5);
 	});
 
 	it('resolves regional variations & emojis for Cat/Rabbit, Water Buffalo/Ox, and Wild Boar/Pig years', () => {
@@ -79,10 +85,12 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		const tVN = new Tempo('2023-05-01T12:00:00Z', { locale: 'vi-VN' });
 		expect(tVN.term.sign).toBe('Cat');
 		expect(tVN.term.shengxiao.emoji).toBe('🐈');
+		expect(tVN.term.shengxiao.keys.includes(tVN.term.shengxiao.key as any)).toBe(true);
 
 		const tJP = new Tempo('2019-05-01T12:00:00Z', { locale: 'ja-JP' });
 		expect(tJP.term.sign).toBe('Wild Boar');
 		expect(tJP.term.shengxiao.emoji).toBe('🐗');
+		expect(tJP.term.shengxiao.keys.includes(tJP.term.shengxiao.key as any)).toBe(true);
 	});
 
 	it('honors keyOnly: false for lunarSign and eastern terms', () => {
@@ -93,7 +101,37 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		// Explicit define with keyOnly = false
 		const fullScope = (t as any).defineTerm?.('lunarSign', false) ?? (t.term as any).shengxiao;
 		expect(fullScope.key).toBe('Horse');
-		expect(fullScope.start).toBeDefined();
-		expect(fullScope.end).toBeDefined();
+		expect(fullScope.span.start).toBeDefined();
+		expect(fullScope.span.end).toBeDefined();
+	});
+
+	it('resolves animal and span based on Tempo anchor year', () => {
+		const t2024 = new Tempo('2024-01-01T00:00:00Z');
+		// 2030 is Year of the Dog
+		const t2030Anchor = new Tempo('2030-06-01T00:00:00Z');
+		const scope = (EasternTerm as any).define.call(t2024, false, t2030Anchor);
+		expect(scope).toBeDefined();
+		expect(scope.animal).toBe('Dog');
+		expect(scope.span.start.format('{yyyy}')).toBe('2030');
+	});
+
+	it('resolves localized animal key and timezone from anchor override', () => {
+		const tDefault = new Tempo('2023-01-01T00:00:00Z');
+		// 2023 in Vietnam is Cat
+		const anchorVN = new Tempo('2023-06-01T12:00:00+07:00', { locale: 'vi-VN' });
+		const scope = (EasternTerm as any).define.call(tDefault, false, anchorVN);
+		expect(scope).toBeDefined();
+		expect(scope.key).toBe('Cat');
+		expect(scope.emoji).toBe('🐈');
+		expect(scope.span.start.tz).toBe('+07:00');
+	});
+
+	it('interprets numeric anchor 0 as epoch 1970 instead of year 0', () => {
+		const t = new Tempo('2024-01-01T00:00:00Z');
+		// 1970 is Year of the Dog
+		const scope = (EasternTerm as any).define.call(t, false, 0);
+		expect(scope).toBeDefined();
+		expect(scope.animal).toBe('Dog');
+		expect(scope.span.start.format('{yyyy}')).toBe('1970');
 	});
 });

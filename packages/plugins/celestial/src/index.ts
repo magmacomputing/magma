@@ -28,7 +28,7 @@ import type {
 import { LunarTerm, type LunarPhaseOptions, type LunarPhaseResult } from './lunar.js';
 import { SolarTerm, type SolarPhaseState } from './solar.js';
 import { TidalTerm } from './tidal.js';
-import { AstroTerm, type AstroTermOptions } from './astro.js';
+import { AstroTerm, ASTRO_KEYS, type AstroKey, type AstroTermOptions, type AstronomyScope, type AstroScope } from './astro.js';
 
 export type {
 	LunarPhaseKey,
@@ -47,7 +47,10 @@ export type {
 	LunarPhaseOptions,
 	LunarPhaseResult,
 	SolarPhaseState,
+	AstroKey,
 	AstroTermOptions,
+	AstronomyScope,
+	AstroScope,
 };
 
 export {
@@ -55,6 +58,7 @@ export {
 	SOLAR_PHASE_STATES,
 	SOLAR_PHASE_NAMES,
 	TIDAL_PHASE_STATES,
+	ASTRO_KEYS,
 	HALF_DAY_MS,
 	DAY_MS,
 	getEclipse,
@@ -77,6 +81,7 @@ declare module '@magmacomputing/tempo' {
 			isWaxing: boolean;
 			emoji?: string | undefined;
 			phases: readonly LunarPhaseKey[];
+			keys: readonly LunarPhaseKey[];
 			moonrise: Tempo | null;
 			moonset: Tempo | null;
 			transit: Tempo | null;
@@ -111,6 +116,7 @@ declare module '@magmacomputing/tempo' {
 			key: SolarPhaseState | null;
 			phase: SolarPhaseName | null;
 			phases: readonly SolarPhaseState[];
+			keys: readonly SolarPhaseState[];
 			index: number | null;
 			group: 'solar';
 			geo?: any;
@@ -163,6 +169,8 @@ declare module '@magmacomputing/tempo' {
 			lunitidalIntervalMin: number | null;
 			regime: TidalRegime | null;
 			states: readonly TidalState[];
+			phases: readonly TidalState[];
+			keys: readonly TidalState[];
 			geo?: any;
 			year: number;
 			month: number;
@@ -176,28 +184,10 @@ declare module '@magmacomputing/tempo' {
 			start: Tempo;
 			end: Tempo;
 		};
-		astro: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
+		astro: AstroKey;
 		equinox: 'Vernal' | 'Autumnal';
 		solstice: 'Summer' | 'Winter';
-		astronomy: {
-			key: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-			strict: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-			season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
-			sphere: Tempo.COMPASS;
-			event: 'Equinox' | 'Solstice';
-			group: 'astronomy';
-			year: number;
-			month: number;
-			day: number;
-			hour: number;
-			minute: number;
-			second: number;
-			millisecond: number;
-			microsecond: number;
-			nanosecond: number;
-			start: Tempo;
-			end: Tempo;
-		};
+		astronomy: AstronomyScope;
 	}
 }
 

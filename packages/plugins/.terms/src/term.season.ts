@@ -1,5 +1,8 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, logWarn, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
+
+export const SEASON_KEYS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter', 'Dry', 'Wet'] as const);
+export type SeasonKey = (typeof SEASON_KEYS)[number];
 
 /** definition of meteorological season ranges */
 const groups = defineRange([
@@ -14,6 +17,12 @@ const groups = defineRange([
 	{ key: 'Summer', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Autumn', day: 1, month: 3, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
+
+	// Meteorological (Equator - bimodal tropical)
+	{ key: 'Wet', day: 1, month: 3, symbol: 'CloudRain', group: 'meteorological', sphere: COMPASS.Equator, label: 'Long Wet' },
+	{ key: 'Dry', day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.Equator, label: 'Long Dry' },
+	{ key: 'Wet', day: 1, month: 10, symbol: 'CloudRain', group: 'meteorological', sphere: COMPASS.Equator, label: 'Short Wet' },
+	{ key: 'Dry', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.Equator, label: 'Short Dry' },
 ], 'group', 'sphere');
 
 /**
@@ -25,10 +34,8 @@ const groups = defineRange([
  * @internal
  */
 function resolve(t: Tempo, anchor?: any) {
-	if (t.sphere === undefined && anchor?.sphere === undefined) {
-		logWarn(`[tempo] SeasonTerm requires 'sphere' configuration (e.g. Tempo.init({ sphere: 'north' }) or { sphere: 'south' }).`, t.config);
-		return [];
-	}
+	const sphere = resolveTermSphere(anchor?.sphere ?? t.sphere, 'SeasonTerm', t.config);
+	if (!sphere) return [];
 
 	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['group', 'sphere'], group: 'meteorological' });
 
@@ -44,13 +51,15 @@ export const SeasonTerm = defineTerm({
 	scope: 'season',
 	description: 'Meteorological season',
 	groups,
+	keys: SEASON_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return resolve(this, anchor);
 	},
 
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
-		return getTermRange(this, resolve(this, anchor), keyOnly as any, anchor);
+		const scope = getTermRange(this, resolve(this, anchor), keyOnly as any, anchor) as any;
+		return (scope && typeof scope === 'object') ? { ...scope, keys: SEASON_KEYS } : scope;
 	},
 
 	[TermHook.ordinal](this: any, groups: Record<string, any>, anchor: Tempo) {
@@ -68,16 +77,15 @@ export const SeasonTerm = defineTerm({
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
-		szn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+		szn: SeasonKey;
 		season: {
-			key: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
-			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake';
+			key: SeasonKey;
+			label?: string;
+			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake' | 'CloudRain';
 			group: 'meteorological';
 			sphere: COMPASS;
-			day: number;
-			month: number;
-			start: Tempo;
-			end: Tempo;
+			keys: readonly SeasonKey[];
+			span: TermSpan;
 		};
 	}
 }

@@ -45,26 +45,57 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
      npm run build:all
      ```
 
-6. **Post Explanatory Comments on PR Threads**:
-   - For each evaluated finding, post a concise reply comment to its GitHub PR review thread using `gh api graphql`:
-     ```bash
-     gh api graphql -f query='
-     mutation($threadId: ID!, $body: String!) {
-       addPullRequestReviewThreadReply(input: { pullRequestReviewThreadId: $threadId, body: $body }) {
-         comment { id }
-       }
-     }' -f threadId="<THREAD_ID>" -f body="<Accepted. ... / Skipped. ...>"
-     ```
-   - If **Remediated**: Format reply starting with `Remediated locally (pending push): <Brief summary of the local fix applied in the working tree>`.
-     *(Note: Omitting the trigger word `Accepted.` keeps the thread open on GitHub until the commit is pushed and a review is manually triggered, at which point CodeRabbit inspects the commit diff, verifies the fix, and auto-resolves the thread).*
-   - If **Skipped**: Format reply starting with `Skipped. <Clear technical rationale why no change was needed>`.
-   - **Do NOT call `resolveReviewThread` directly**: The agent never manually executes thread resolution mutations; thread resolution is handled natively by CodeRabbit's bot after verifying the pushed commit, or left for the user's manual review.
+6. **Automated Thread Resolution & Reply Strategy**:
+   For each evaluated finding, check whether it is associated with an inline review thread (`threadId` present) or a top-level review comment (`threadId` absent):
+
+   - **Top-Level Findings (No `threadId`)**:
+     Top-level PR comments do not have a thread ID and cannot be replied to or resolved via `--reply` or `--resolve`. Review and evaluate their suggestions, apply valid fixes locally, and report them in the Step 7 summary or **Manual Review Fallback** table for the user to review on GitHub.
+
+   - **Category A: Outdated Threads (`isOutdated: true`, `threadId` Present)**:
+     CodeRabbit does **not** auto-resolve outdated threads when diff hunks have shifted or code lines were refactored in subsequent commits.
+     - Inspect git history on the pushed PR branch (e.g. `git log -S` / `git diff origin/main...origin/<branch>`) to verify whether the specifically flagged code or pattern was already modified, removed, or addressed in prior pushed commits on the branch. (Do not rely solely on uncommitted local working-tree edits; if the fix is only in local files, keep the thread open under Category B until the commit is pushed).
+     - If concretely verified as addressed in pushed history, post a brief resolution note and execute automated thread resolution:
+       ```bash
+       npm run review:pr -- --reply "<THREAD_ID>" "Addressed in prior commit on branch."
+       npm run review:pr -- --resolve "<THREAD_ID>"
+       ```
+     - If still ambiguous, unconfirmed, or the cited issue might persist elsewhere, do **not** auto-resolve; route it to the **Manual Review Fallback** (Step 7).
+
+   - **Category B: Active Threads Remediated Locally (`isOutdated: false`, Valid Finding)**:
+     - Post an explanatory reply comment to the thread:
+       ```bash
+       npm run review:pr -- --reply "<THREAD_ID>" "Remediated locally (pending push): <Brief summary of local fix applied in working tree>"
+       ```
+     - *(Note: Do NOT manually resolve this thread yet. CodeRabbit listens to GitHub comment webhooks and commit push events. When the user pushes the commit, CodeRabbit automatically inspects the AST, posts `✅ Confirmed as addressed by @...`, and resolves the thread under its own bot logic).*
+
+   - **Category C: Deterministic Rejections / False Positives**:
+     - When a finding contradicts repository invariants, strict typing rules, or documented guidelines (e.g. peer dependency locks, user documentation rules):
+       ```bash
+       npm run review:pr -- --reply "<THREAD_ID>" "Skipped. <Technical rationale why this change is not applicable or violates project invariants>"
+       npm run review:pr -- --resolve "<THREAD_ID>"
+       ```
+     - Auto-resolve the thread if the rejection is based on an explicit project rule or clear false positive.
+
+   - **Category D: Fallback — Subjective / Design Trade-Offs**:
+     - If a suggestion involves subjective architectural choices or trade-offs requiring user judgment, post the technical context:
+       ```bash
+       npm run review:pr -- --reply "<THREAD_ID>" "Under review. <Technical context on design trade-off>"
+       ```
+     - Leave the thread **open** and flag it explicitly for user attention in Step 7.
 
 7. **Summary & User Handoff**:
-   - Provide a concise summary table or list detailing:
-     - Each finding addressed (Accepted vs Skipped with rationale).
-     - Confirmation that thread reply comments were posted on GitHub.
-     - Modified files left in the working tree.
-     - Test run results.
-   - Prompt the user to inspect `git diff`, push commits, and verify any remaining unresolved threads on GitHub.
+   - Provide a structured summary detailing:
+     - **Automated Actions Taken**:
+       - Remediated active threads (pending user commit & push for bot auto-resolution).
+       - Auto-resolved outdated threads verified against git history.
+       - Deterministic rejections closed with rationale.
+     - **Modified Files**: List all uncommitted files in the working tree.
+     - **Verification**: Test and build status.
+     - **Manual Review Fallback (User Action Required)**:
+       If any threads could not be safely auto-resolved (e.g. subjective design decisions, ambiguous outdated hunks, or unconfirmed suggestions), present them in a dedicated table:
+       | Thread ID | File & Line | Status / Reason | User Action |
+       | :--- | :--- | :--- | :--- |
+       | `<ID>` | `<file:line>` | `Ambiguous outdated hunk` | Inspect and click 'Resolve conversation' if satisfied |
+       | `<ID>` | `<file:line>` | `Subjective design choice` | Review technical trade-off and decide |
+   - Prompt the user to inspect `git diff`, stage and commit changes, push to origin, and verify GitHub PR status.
 

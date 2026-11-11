@@ -265,7 +265,7 @@ export interface TempoFormatTokens {
 	// ── timestamp / zone / calendar ───────────────────
 	ts: true; nano: true; tz: true; cal: true; sphere: true; iso: true;
 	// ── specialized tokens & counters ─────────────────
-	cen: true; century: true; dim: true; jj: true; julian: true; wom: true;
+	cen: true; century: true; dim: true; diy: true; jj: true; julian: true; wom: true;
 }
 
 /** All statically-known base token names (derived from TempoFormatTokens). */

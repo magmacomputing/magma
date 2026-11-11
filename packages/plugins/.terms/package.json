@@ -1,8 +1,8 @@
 {
-  "name": "@magmacomputing/tempo-std",
+  "name": "@magmacomputing/tempo-terms",
   "version": "1.0.0",
   "private": true,
-  "description": "Standard built-in Terms for @magmacomputing/tempo (showcase implementation — not published separately)",
+  "description": "Built-in Civic and Cultural Terms for @magmacomputing/tempo (bundled natively under ./terms — not published separately)",
   "type": "module",
   "scripts": {
     "build": "tsc -b",

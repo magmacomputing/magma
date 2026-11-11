@@ -62,16 +62,12 @@ Accessing `t.term.astronomy` provides the complete structured record for the act
 const t = new Tempo('2026-03-20T12:00:00Z', { sphere: 'north' });
 const astro = t.term.astronomy;
 
-console.log(astro.key);      // 'Vernal'
-console.log(astro.season);   // 'Spring'
-console.log(astro.event);    // 'Equinox'
-console.log(astro.year);     // 2026
-console.log(astro.month);    // 3
-console.log(astro.day);      // 20
-console.log(astro.hour);     // 14 (exact UTC hour of equinox)
-console.log(astro.minute);   // 45 (exact UTC minute)
-console.log(astro.start);    // Tempo instance for the quarter's start boundary
-console.log(astro.end);      // Tempo instance for the quarter's end boundary
+console.log(astro.key);          // 'Vernal'
+console.log(astro.keys);         // ['Vernal', 'Summer', 'Autumnal', 'Winter']
+console.log(astro.season);       // 'Spring'
+console.log(astro.event);        // 'Equinox'
+console.log(astro.span.start);   // Tempo instance for the quarter's start boundary
+console.log(astro.span.end);     // Tempo instance for the quarter's end boundary
 ```
 
 ---

@@ -400,6 +400,55 @@ To maintain complete visual and design consistency across READMEs, documentation
 - Rely strictly on open core extensions (`definePlugin`, `defineTerm`, `defineNamespace`).
 - While optional, it is highly recommended to provide a short `description` when using `defineTerm` (e.g., `description: 'My custom term'`) so it appears in the `Tempo.terms` registry.
 
+### Term Plugin Guidelines (`defineTerm`)
+
+When authoring a custom Term plugin that partitions time into ranges or named states:
+
+1. **Standardize on `.keys` for Range-Key Discovery**:
+   - Always expose an immutable, frozen array of valid range keys (strings or string union literals) via a constant:
+     ```typescript
+     export const FISCAL_KEYS = Object.freeze(['Q1', 'Q2', 'Q3', 'Q4'] as const);
+     export type FiscalKey = (typeof FISCAL_KEYS)[number];
+     ```
+   - Attach `keys` to the static Term definition object:
+     ```typescript
+     export const FiscalTerm = defineTerm({
+       key: 'cfqtr',
+       scope: 'fiscalQuarter',
+       description: 'Fiscal quarters',
+       keys: FISCAL_KEYS,
+       // ...
+     });
+     ```
+   - Inject `keys` onto the resolved scope object in `define(keyOnly)` when `keyOnly === false`:
+     ```typescript
+     define(this: Tempo, keyOnly?: boolean) {
+       const scope = resolveScope(this);
+       if (keyOnly === true || keyOnly === undefined) return scope.key;
+       return {
+         ...scope,
+         keys: FISCAL_KEYS,
+       };
+     }
+     ```
+   - **Avoid Custom Plural Properties**: Do **not** invent domain-specific plurals on the scope (e.g., avoid `.quarters`, `.seasons`, `.periods`, `.signs`, `.animals`). Plural names are ambiguous—consumers cannot tell whether `.seasons` returns an array of string keys or an array of resolved season scope objects. Standardizing strictly on `.keys` guarantees uniform, predictable range discovery across both static terms (`FiscalTerm.keys`) and resolved instances (`t.term.fiscalQuarter.keys`).
+
+2. **Augment `TempoTermRegistry`**:
+   - Always augment the global `TempoTermRegistry` interface so developers get full TypeScript autocomplete and type safety for shorthand keys and scope objects:
+     ```typescript
+     declare module '@magmacomputing/tempo' {
+       interface TempoTermRegistry {
+         cfqtr: FiscalKey;
+         fiscalQuarter: {
+           key: FiscalKey;
+           keys: readonly FiscalKey[];
+           span: TermSpan;
+           // ...
+         };
+       }
+     }
+     ```
+
 > [!IMPORTANT]
 > **Guideline for Future Agents & Developers: Base Class Lockdown & Immutability**
 >

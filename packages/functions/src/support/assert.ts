@@ -99,7 +99,7 @@ const isTagged = (arg: any): arg is Record<string | symbol, any> =>
  * Checks if the given argument is a Tempo instance.
  */
 export function isTempo(arg: any): arg is Tempo {
-	return isTagged(arg) && arg[Symbol.toStringTag] === 'Tempo';
+	return isTagged(arg) && (arg[Symbol.toStringTag] === 'Tempo' || arg[Symbol.toStringTag] === 'TempoSandbox');
 }
 
 /**

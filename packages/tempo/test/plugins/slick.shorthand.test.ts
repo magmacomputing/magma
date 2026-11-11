@@ -1,12 +1,14 @@
 import { Tempo } from '#tempo';
+import { ZodiacTerm } from '#tempo/terms';
 
 describe('Slick Shorthand Resolution', () => {
   beforeEach(() => {
-    Tempo.init({ timeZone: 'UTC', sphere: 'north', locale: 'en-US' });
+    Tempo.init({ timeZone: 'UTC', locale: 'en-US' });
+    Tempo.use(ZodiacTerm);
   });
 
   it('move to next specific quarter (#qtr.>q2)', () => {
-    const t = new Tempo('2024-04-15');										  // In Q2 2024 (inherits global 'north' lock)
+    const t = new Tempo('2024-04-15');										  // In Q2 2024
     const nextQ2 = t.set('#qtr.>q2');
 
     expect(nextQ2.yy).toBe(2025);
@@ -73,7 +75,7 @@ describe('Slick Shorthand Resolution', () => {
   });
 
   test('shorthand with mid and end mutations', () => {
-    const t = new Tempo('2024-01-01', { sphere: 'north' }); // Start of Q1 (North)
+    const t = new Tempo('2024-01-01'); // Start of Q1
 
     // Q1 2024 (Jan 1 - Apr 1). Midpoint is Feb 15th
     const midQ1 = t.set({ mid: '#qtr.q1' });

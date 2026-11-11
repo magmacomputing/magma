@@ -13,23 +13,27 @@ import { FormatModule } from '#tempo/format';
 
 import { MutateModule } from '#tempo/mutate';
 import { DurationModule } from '#tempo/duration';
-import { StandardTerms } from '#tempo/std';
+import { QuarterTerm } from '#tempo/terms/quarter';
+import { SeasonTerm } from '#tempo/terms/season';
+import { TimelineTerm } from '#tempo/terms/timeline';
 import { defineModule } from './plugin/plugin.util.js';
 
+const CivicTerms = [QuarterTerm, SeasonTerm, TimelineTerm];
+
 /**
- * TermsModule provides the standard term definitions for Tempo.
+ * TermsModule provides the standard civic term definitions for Tempo (`#quarter`, `#season`, `#timeOfDay`).
  *
- * This module automatically registers standard temporal terms like "today", "tomorrow",
- * "next week", etc., and ensures they are re-registered on registry resets.
+ * This module automatically registers standard civic temporal terms and ensures
+ * they are re-registered on registry resets.
  */
 export const TermsModule = defineModule({
 	/** Module name identifier */
 	name: 'TermsModule',
-	/** Installs standard terms into the Tempo class */
+	/** Installs standard civic terms into the Tempo class */
 	install(this: typeof Tempo, TempoClass: typeof Tempo) {
 		getRuntime().modules['TermsModule'] = true;
-		onRegistryReset(() => { TempoClass.use(StandardTerms); });
-		TempoClass.use(StandardTerms);
+		onRegistryReset(() => { TempoClass.use(CivicTerms); });
+		TempoClass.use(CivicTerms);
 	},
 });
 

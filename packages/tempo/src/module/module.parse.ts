@@ -16,7 +16,7 @@ import { selectLayoutPatterns } from '../engine/engine.planner.js';
 import { compose } from '../engine/engine.composer.js';
 import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js';
 
-import { getRange, getTermRange, findTermPlugin } from '../plugin/term/term.util.js';
+import { getRange, getTermRange, findTermPlugin, resolveTermHost } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange, TermParseContext } from '../plugin/term/term.type.js';
 
@@ -337,7 +337,12 @@ const _ParseEngine = {
 			const terms = state.pluginsDb.terms;
 
 			const val = dateTime ?? state.anchor ?? state.config.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
-			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
+			const anchorZdt = isTempo(val) ? (val as any).toDateTime() : (isZonedDateTime(val) ? val : undefined);
+			const hasExplicitTz = hasOwn(state.options ?? {}, 'timeZone');
+			const [tz, cal] = getTemporalIds(
+				(!hasExplicitTz && anchorZdt) ? anchorZdt.timeZoneId : config.timeZone,
+				(!hasOwn(state.options ?? {}, 'calendar') && anchorZdt) ? anchorZdt.calendarId : config.calendar
+			);
 
 			let basis: Temporal.ZonedDateTime;
 			if (isTempo(val)) basis = (val as any).toDateTime();
@@ -379,7 +384,22 @@ const _ParseEngine = {
 
 					const isMultiCycle = isNotNullish(termObj.resolve) && list.some(r => r.year !== undefined);
 					const itemsPerCycle = isMultiCycle ? list.length / 3 : list.length;
-					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === current.year : true));
+					const currentStart = current.span.start;
+					const currentIdx = list.findIndex(r => {
+						if (r.key !== current.key) return false;
+						if (r.span?.start && currentStart)
+							return r.span.start.epoch.ns === currentStart.epoch.ns;
+
+						if (currentStart)
+							return (isUndefined(r.year) || r.year === currentStart.yy) &&
+								(isUndefined(r.month) || r.month === currentStart.mm) &&
+								(isUndefined(r.day) || r.day === currentStart.dd) &&
+								(isUndefined(r.hour) || r.hour === currentStart.hh) &&
+								(isUndefined(r.minute) || r.minute === currentStart.mi) &&
+								(isUndefined(r.second) || r.second === currentStart.ss);
+
+						return isMultiCycle ? r.year === currentStart?.yy : true;
+					});
 
 					if (currentIdx === -1 || itemsPerCycle <= 0) throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 
@@ -389,16 +409,21 @@ const _ParseEngine = {
 
 					if (item) {
 						const range = (getTermRange(state as any, [item], false, today) as any);
-						if (range?.start) return { type: 'Temporal.ZonedDateTime', value: range.start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
+						const start = range?.span?.start;
+						if (start) return { type: 'Temporal.ZonedDateTime', value: start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 					}
 					throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 				}
 
 				if (tempo === term) {
-					const range = termObj.define.call(state as any, false, today);
+					const host = resolveTermHost(state, today);
+					const range = termObj.define.call(host as any, false, today);
 					const list = isUndefined(range) ? [] : asArray(range as Range | Range[]);
-					const current = getTermRange(state as any, list, false, today) as ResolvedRange | undefined;
-					if (current?.start) return { type: 'Temporal.ZonedDateTime', value: current.start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
+					const current = !Array.isArray(range) && isObject(range) && 'span' in range
+						? range as ResolvedRange
+						: getTermRange(host as any, list, false, today) as ResolvedRange | undefined;
+					const start = current?.span?.start;
+					if (start) return { type: 'Temporal.ZonedDateTime', value: start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 				}
 			}
 
@@ -566,7 +591,8 @@ const _ParseEngine = {
 			}
 
 			if (value.startsWith('#')) {
-				const res = resolveTermValue(TempoClass, state as any, value, dateTime);
+				const host = resolveTermHost(state, dateTime);
+				const res = resolveTermValue(TempoClass, host as any, value, dateTime);
 				if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res, zone: res.timeZoneId };
 				return { type: 'Void', value: undefined as any };
 			}

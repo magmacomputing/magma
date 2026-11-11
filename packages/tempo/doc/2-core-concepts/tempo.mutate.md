@@ -156,7 +156,7 @@ const endOfQ1 = t
 
 ## Relational vs. Navigation Shifting
 
-When using custom terminology plugins (like Fiscal Quarters or Seasons), Tempo provides two distinct shorthand styles for mutation:
+When using custom terminology plugins (like Calendar Quarters or Seasons), Tempo provides two distinct shorthand styles for mutation:
 
 ### 1. Navigation Mode (String)
 Use a string to **jump** to a specific boundary. This relies on chronological momentum.

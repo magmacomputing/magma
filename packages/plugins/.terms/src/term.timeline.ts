@@ -1,5 +1,17 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
+
+export const TIMEOFDAY_KEYS = Object.freeze([
+	'Midnight',
+	'Early',
+	'Morning',
+	'Midmorning',
+	'Midday',
+	'Afternoon',
+	'Evening',
+	'Night',
+] as const);
+export type TimeOfDayKey = (typeof TIMEOFDAY_KEYS)[number];
 
 /** definition of daily time periods */
 const groups = defineRange([
@@ -30,13 +42,15 @@ export const TimelineTerm = defineTerm({
 	scope: 'timeOfDay',
 	description: 'Daily time period',
 	groups,
+	keys: TIMEOFDAY_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
 		return resolve(this, anchor);
 	},
 
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
-		return getTermRange(this, resolve(this, anchor), keyOnly, anchor);
+		const scope = getTermRange(this, resolve(this, anchor), keyOnly, anchor) as any;
+		return (scope && typeof scope === 'object') ? { ...scope, keys: TIMEOFDAY_KEYS } : scope;
 	},
 
 	[TermHook.format](this: any, token: string, tempo: Tempo) {
@@ -44,16 +58,16 @@ export const TimelineTerm = defineTerm({
 	}
 });
 
+export const TimeOfDayTerm = TimelineTerm;
+
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
-		tod: 'Midnight' | 'Early' | 'Morning' | 'Midmorning' | 'Midday' | 'Afternoon' | 'Evening' | 'Night';
+		tod: TimeOfDayKey;
 		timeOfDay: {
-			key: 'Midnight' | 'Early' | 'Morning' | 'Midmorning' | 'Midday' | 'Afternoon' | 'Evening' | 'Night';
+			key: TimeOfDayKey;
 			group: 'standard';
-			hour: number;
-			minute?: number;
-			start: Tempo;
-			end: Tempo;
+			keys: readonly TimeOfDayKey[];
+			span: TermSpan;
 		};
 	}
 }

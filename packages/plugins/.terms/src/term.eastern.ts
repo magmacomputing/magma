@@ -1,4 +1,5 @@
-import { defineTerm, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { isNumber } from '@magmacomputing/library';
 import { getChineseZodiac as getChineseZodiacFn } from '@magmacomputing/tempo-fns';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -16,6 +17,27 @@ export interface LunarZodiacVariants {
 	vn: RegionalVariant;
 }
 
+export const EASTERN_ANIMAL_KEYS = Object.freeze([
+	'Rat',
+	'Ox',
+	'Water Buffalo',
+	'Tiger',
+	'Rabbit',
+	'Cat',
+	'Dragon',
+	'Snake',
+	'Horse',
+	'Goat',
+	'Sheep',
+	'Monkey',
+	'Rooster',
+	'Dog',
+	'Pig',
+	'Wild Boar',
+] as const);
+
+export type EasternAnimalKey = (typeof EASTERN_ANIMAL_KEYS)[number];
+
 export interface EasternZodiacScope {
 	key: string;
 	animal: string;
@@ -24,17 +46,8 @@ export interface EasternZodiacScope {
 	yinYang: 'Yin' | 'Yang';
 	variants: LunarZodiacVariants;
 	group: 'lunar-zodiac';
-	year: number;
-	month: number;
-	day: number;
-	hour: number;
-	minute: number;
-	second: number;
-	millisecond: number;
-	microsecond: number;
-	nanosecond: number;
-	start: Tempo;
-	end: Tempo;
+	keys: readonly EasternAnimalKey[];
+	span: TermSpan;
 }
 
 /** Regional variant data mapping for East Asian Lunar Zodiac systems */
@@ -129,8 +142,10 @@ const BASE_EMOJI_MAP: Record<string, string> = {
  * @internal
  */
 function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
-	const refTempo = anchor ?? t;
-	const year = anchor?.year ?? refTempo.yy;
+	const refTempo = isNumber(anchor)
+		? new (t.constructor as any)(new Date(anchor), (t as any).config)
+		: anchor;
+	const year = refTempo?.year ?? refTempo?.yy ?? t.yy;
 	const res = getChineseZodiacFn(year);
 
 	const animal = res.animal;
@@ -144,7 +159,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	};
 
 	// Determine key string based on optional locale config
-	const locale = (refTempo as any).config?.locale ?? (refTempo as any).locale;
+	const locale = (refTempo as any)?.config?.locale ?? (refTempo as any)?.locale ?? (t as any).config?.locale ?? (t as any).locale;
 	let key = animal;
 	let emoji = baseEmoji;
 
@@ -156,11 +171,10 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		else if (loc.startsWith('zh') || loc === 'cn') { key = variants.cn.animal; emoji = variants.cn.emoji; }
 	}
 
-	const timeZone = refTempo.tz ?? 'UTC';
+	const timeZone = (refTempo as any)?.tz ?? (refTempo as any)?.timeZoneId ?? (typeof (refTempo as any)?.toDateTime === 'function' ? (refTempo as any).toDateTime().timeZoneId : undefined) ?? t.tz ?? 'UTC';
 	const start = new (t.constructor as any)(`${year}-01-01T00:00:00`, { timeZone });
 	const nextYear = year + 1;
 	const end = new (t.constructor as any)(`${nextYear}-01-01T00:00:00`, { timeZone });
-	const dt = start.toDateTime();
 
 	return {
 		key,
@@ -170,17 +184,8 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		yinYang: res.yinYang as EasternZodiacScope['yinYang'],
 		variants,
 		group: 'lunar-zodiac',
-		year,
-		month: dt.month,
-		day: dt.day,
-		hour: dt.hour,
-		minute: dt.minute,
-		second: dt.second,
-		millisecond: dt.millisecond,
-		microsecond: dt.microsecond,
-		nanosecond: dt.nanosecond,
-		start,
-		end,
+		keys: EASTERN_ANIMAL_KEYS,
+		span: defineSpan(t, start, end, refTempo),
 	};
 }
 
@@ -188,11 +193,12 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
  * ## EasternTerm
  * Primary Eastern Lunar Zodiac term definition (`t.term.sign`, `t.term.shengxiao`).
  */
-export const EasternTerm = defineTerm({
+export const EasternTerm = /*#__PURE__*/ defineTerm({
 	key: 'sign',
 	scope: 'shengxiao',
 	aliases: ['lunarSign', 'eastern'],
 	description: 'Eastern Lunar Zodiac cycle and regional variants',
+	keys: EASTERN_ANIMAL_KEYS,
 	resolve(this: Tempo, anchor?: any) {
 		return [getEasternScope(this, anchor)];
 	},
