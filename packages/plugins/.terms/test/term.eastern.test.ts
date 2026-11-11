@@ -95,7 +95,7 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		// Explicit define with keyOnly = false
 		const fullScope = (t as any).defineTerm?.('lunarSign', false) ?? (t.term as any).shengxiao;
 		expect(fullScope.key).toBe('Horse');
-		expect(fullScope.start).toBeDefined();
-		expect(fullScope.end).toBeDefined();
+		expect(fullScope.span.start).toBeDefined();
+		expect(fullScope.span.end).toBeDefined();
 	});
 });

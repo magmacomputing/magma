@@ -7,12 +7,12 @@ import { deepFreeze } from '#library/utility.library.js';
 import { cast } from '#library/type.library.js';
 
 import { TEMPO_VERSION } from '../../tempo.version.js';
-import { getHost } from '../plugin.util.js';
+import { getHost, ensureModule } from '../plugin.util.js';
 import { sym, TermError, isTempo } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
-import type { TermPlugin, Range, ResolvedRange, TermFactory } from './term.type.js';
+import type { TermPlugin, Range, ResolvedRange, TermSpan, TermFactory } from './term.type.js';
 
 /**
  * ## defineTerm
@@ -78,6 +78,56 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
 }
 
 /**
+ * ## defineSpan
+ * Constructs an encapsulated TermSpan object with temporal boundaries, durations,
+ * and normalized progress metrics (`0.0..1.0`).
+ *
+ * @param tempo - The reference Tempo instance
+ * @param start - Start boundary of the range (Tempo instance)
+ * @param end - End boundary of the range (Tempo instance)
+ * @param anchor - Optional reference instant (defaults to `tempo`)
+ * @returns Encapsulated TermSpan object
+ */
+export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
+	const hostTempo = isTempo(tempo) ? tempo : start;
+	let total: any;
+	let elapsed: any;
+	let remaining: any;
+
+	if (ensureModule(hostTempo, 'DurationModule', true)) {
+		total = start.until(end);
+		elapsed = start.until(hostTempo);
+		remaining = hostTempo.until(end);
+	} else {
+		const startZdt = start.toDateTime();
+		const endZdt = end.toDateTime();
+		const hostZdt = hostTempo.toDateTime();
+		total = startZdt.until(endZdt);
+		elapsed = startZdt.until(hostZdt);
+		remaining = hostZdt.until(endZdt);
+	}
+
+	const refZdt = isTempo(anchor)
+		? anchor.toDateTime()
+		: (isZonedDateTime(anchor) ? anchor : hostTempo.toDateTime());
+
+	const totalNs = (end.toDateTime().epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
+	const elapsedNs = (refZdt.epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
+	const rawProgress = totalNs > 0n ? Number(elapsedNs) / Number(totalNs) : 0;
+	const progress = Math.round(Math.max(0, Math.min(1, rawProgress)) * 10000) / 10000;
+
+	return {
+		start,
+		end,
+		total,
+		elapsed,
+		remaining,
+		progress
+	};
+}
+
+/**
+ * ## defineRange
  * Groups and secures term ranges for efficient lookup.
  *
  * @param ranges - The ranges to group
@@ -141,6 +191,26 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		return (date.toDateTime().epochNanoseconds as bigint) <= (zdt.epochNanoseconds as bigint);
 	});
 
+	const SCHEMA_KEYS = new Set([
+		'year', 'month', 'week', 'day', 'hour',
+		'minute', 'second', 'millisecond', 'microsecond', 'nanosecond'
+	]);
+
+	const hostTempo = isTempo(tempo) ? tempo : new (getHost(tempo))(zdt, (tempo as any)?.config);
+
+	const buildResolvedRange = (matchItem: any, start: Tempo, end: Tempo): ResolvedRange => {
+		const meta: Record<string, any> = {};
+		for (const [k, v] of Object.entries(matchItem)) {
+			if (!SCHEMA_KEYS.has(k))
+				meta[k] = v;
+		}
+
+		return {
+			...meta,
+			span: defineSpan(hostTempo, start, end, zdt)
+		} as ResolvedRange;
+	};
+
 	if (isNumber(keyOnly)) {
 		const cycle = Math.floor(chronological.length / 3);
 		if (cycle === 0 || !Number.isInteger(keyOnly) || keyOnly < 1 || keyOnly > cycle) return undefined;
@@ -162,11 +232,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
 		}
 
-		return {
-			start,
-			end,
-			...match
-		}
+		return buildResolvedRange(match, start, end);
 	}
 
 	if (isText(keyOnly)) {
@@ -192,11 +258,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
 		}
 
-		return {
-			start,
-			end,
-			...match
-		};
+		return buildResolvedRange(match, start, end);
 	}
 
 	const match = chronological[matchIndex === -1 ? 0 : matchIndex];
@@ -216,11 +278,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
 	}
 
-	return {
-		start,
-		end,
-		...match
-	}
+	return buildResolvedRange(match, start, end);
 }
 
 /**
@@ -300,15 +358,18 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 	const range = (getTermRange(tempo, list, false, anchor) as any);
 	if (!range) return undefined;
 
-	if (mutate === 'start') return range.start;
+	const start = range.span.start;
+	const end = range.span.end;
+
+	if (mutate === 'start') return start;
 	if (mutate === 'mid') {
-		const startNs = range.start.toDateTime().epochNanoseconds as bigint;
-		const endNs = range.end.toDateTime().epochNanoseconds as bigint;
+		const startNs = start.toDateTime().epochNanoseconds as bigint;
+		const endNs = end.toDateTime().epochNanoseconds as bigint;
 		const midNs = startNs + (endNs - startNs) / 2n;
 		// @ts-ignore
-		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((range.start as any).tz).withCalendar((range.start as any).cal), (tempo as any).config);
+		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((start as any).tz).withCalendar((start as any).cal), (tempo as any).config);
 	}
-	if (mutate === 'end') return range.end.subtract({ nanoseconds: 1 });
+	if (mutate === 'end') return end.subtract({ nanoseconds: 1 });
 
 	return undefined;
 }
@@ -341,10 +402,17 @@ export function resolveTermShift(tempo: Tempo, source: readonly any[], offset: s
 	const range = (getTermRange(tempo, list, false, anchor) as any);
 	if (!range) return undefined;
 
+	const targetStart = range.span.start;
+
 	// find index in list (matching key and major components for identity)
 	const idx = list.findIndex(r => {
-		return r.key === range.key &&
-			(isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
+		if (r.key !== range.key) return false;
+		if (targetStart) {
+			return (isUndefined(r.year) || r.year === targetStart.yy) &&
+				(isUndefined(r.month) || r.month === targetStart.mm) &&
+				(isUndefined(r.day) || r.day === targetStart.dd);
+		}
+		return (isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
 			(isUndefined(r.month) || isUndefined(range.month) || r.month === range.month) &&
 			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day);
 	});
@@ -358,7 +426,7 @@ export function resolveTermShift(tempo: Tempo, source: readonly any[], offset: s
 	// resolve target range
 	const res = (getTermRange(tempo, [target], false) as any);
 	if (!res) return undefined;
-	return res.start;
+	return res.span.start;
 }
 
 type resolveOptions = {
@@ -537,15 +605,17 @@ export function resolveRangeOrdinal(
 		range = isFunction(termObj.define) ? termObj.define.call(anchor, false, anchor) : undefined;
 	}
 
-	if (!range || !range.start || !range.end) return undefined;
+	const start = range?.span?.start;
+	const end = range?.span?.end;
+	if (!start || !end) return undefined;
 
 	const target = (rawDayOffset > 0)
-		? range.start.add({ days: rawDayOffset - 1 })
-		: range.end.subtract({ days: Math.abs(rawDayOffset) });
+		? start.add({ days: rawDayOffset - 1 })
+		: end.subtract({ days: Math.abs(rawDayOffset) });
 
 	const targetNs = target.toDateTime().epochNanoseconds as bigint;
-	const startNs = range.start.toDateTime().epochNanoseconds as bigint;
-	const endNs = range.end.toDateTime().epochNanoseconds as bigint;
+	const startNs = start.toDateTime().epochNanoseconds as bigint;
+	const endNs = end.toDateTime().epochNanoseconds as bigint;
 
 	return (targetNs < startNs || targetNs >= endNs)
 		? undefined
@@ -572,10 +642,14 @@ export function resolveRangeDiff(
 
 	const rangeA = termObj.define.call(tempo, false, tempo);
 	const rangeB = termObj.define.call(other, false, other);
-	if (!rangeA?.start || !rangeA?.end || !rangeB?.start || !rangeB?.end) return undefined;
+	const startA = rangeA?.span?.start;
+	const endA = rangeA?.span?.end;
+	const startB = rangeB?.span?.start;
+	const endB = rangeB?.span?.end;
+	if (!startA || !endA || !startB || !endB) return undefined;
 
-	const startANs = rangeA.start.toDateTime().epochNanoseconds as bigint;
-	const startBNs = rangeB.start.toDateTime().epochNanoseconds as bigint;
+	const startANs = startA.toDateTime().epochNanoseconds as bigint;
+	const startBNs = startB.toDateTime().epochNanoseconds as bigint;
 
 	if (startANs === startBNs) return 0;
 
@@ -590,13 +664,18 @@ export function resolveRangeDiff(
 	const maxIterations = 10000;
 
 	while (count < maxIterations) {
-		const currentEndNs = currentRange.end.toDateTime().epochNanoseconds as bigint;
+		const currentEnd = currentRange?.span?.end;
+		if (!currentEnd) return undefined;
+		const currentEndNs = currentEnd.toDateTime().epochNanoseconds as bigint;
 		if (currentEndNs > startBNs)
 			break;
 
 		count++;
-		const nextRange = termObj.define.call(currentRange.end, false, currentRange.end);
-		if (!nextRange?.start || !nextRange?.end || (nextRange.start.toDateTime().epochNanoseconds as bigint) <= (currentRange.start.toDateTime().epochNanoseconds as bigint))
+		const nextRange = termObj.define.call(currentEnd, false, currentEnd);
+		const currentStart = currentRange?.span?.start;
+		const nextStart = nextRange?.span?.start;
+		const nextEnd = nextRange?.span?.end;
+		if (!nextStart || !nextEnd || (nextStart.toDateTime().epochNanoseconds as bigint) <= (currentStart.toDateTime().epochNanoseconds as bigint))
 			return undefined;
 
 		currentRange = nextRange;
@@ -637,11 +716,13 @@ export function resolveRangeFormat(
 		return isNotNullish(val) ? String(val) : undefined;
 	}
 
-	// Traverse sub-keys (e.g. "{#qtr.label}", "{#szn.symbol}")
+	// Traverse sub-keys (e.g. "{#qtr.label}", "{#szn.symbol}", "{#qtr.span.start}", "{#tod.hour}")
 	let curr: any = range;
 	for (const key of subKeys) {
 		if (isNullish(curr) || !isSafeKey(key)) return undefined;
-		curr = curr[key];
+		curr = curr[key] ??
+			curr.span?.[key] ??
+			(isTempo(curr.span?.start) ? (curr.span.start.toDateTime() as any)[key] ?? (curr.span.start as any)[key] : undefined);
 	}
 
 	if (isNullish(curr) || isFunction(curr)) return undefined;
@@ -664,11 +745,19 @@ export function resolveRangeFormat(
  * @param config - Optional configuration object passed to logWarn
  * @returns 'north' | 'south' | undefined
  */
+/**
+ * Resolves the hemisphere or equatorial sphere from a configuration source.
+ *
+ * @param source - The source containing sphere/hemisphere settings
+ * @param termName - Optional term identifier for warning messages
+ * @param config - Optional configuration object
+ * @returns 'north' | 'south' | 'equator' | undefined
+ */
 export function resolveTermSphere(
 	source?: any,
 	termName?: string,
 	config?: any,
-): 'north' | 'south' | undefined {
+): 'north' | 'south' | 'equator' | undefined {
 	const raw = isObject(source)
 		? (source.sphere ?? (source as any).anchor?.sphere ?? (source as any).config?.sphere)
 		: source;
@@ -676,14 +765,17 @@ export function resolveTermSphere(
 	const s = isString(raw) ? raw.toLowerCase() : '';
 	const isSouth = s.includes('south');
 	const isNorth = s.includes('north');
+	const isEquator = s.includes('equator');
 
-	if (isSouth === isNorth) {
+	const matches = [isSouth, isNorth, isEquator].filter(Boolean).length;
+	if (matches !== 1) {
 		if (termName)
-			logWarn(`[tempo] ${termName} requires an explicit hemisphere of 'north' or 'south' (received: ${JSON.stringify(raw)}).`, config);
+			logWarn(`[tempo] ${termName} requires an explicit sphere of 'north', 'south', or 'equator' (received: ${JSON.stringify(raw)}).`, config);
 
 		return undefined;
 	}
 
+	if (isEquator) return 'equator';
 	return isSouth ? 'south' : 'north';
 }
 

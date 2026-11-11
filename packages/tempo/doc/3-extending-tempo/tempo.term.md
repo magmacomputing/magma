@@ -4,7 +4,7 @@
 
 The **Terms** system is Tempo's extensible plugin mechanism for attaching business-logic to a date-time instance, without adding to the _profile_ (memory footprint) of a `Tempo` object.
 
-Because a `Tempo` instance is designed to be as lean as possible, `term` properties are **lazy-loaded**: their lookup function is not executed until the property is first accessed.  
+Because a `Tempo` instance is designed to be as lean as possible, `term` properties are **lazy-loaded**: their lookup function is not executed until the property is first accessed.
 Once evaluated, the result is memoised — subsequent reads of the same property return the cached value directly, with no further computation.
 
 ```
@@ -35,51 +35,70 @@ The `<key>` and `<scope>` are defined by the plugin author, where the intent of 
 ## Provided Plugin
 
 ::: info
-The examples given below for Fiscal Quarters and Meteorological Seasons assume a Northern Hemisphere configuration (sphere: 'north'), unless they explicitly state otherwise.
+Meteorological Seasons assume a Northern Hemisphere configuration (`sphere: 'north'`) by default, and also support Southern Hemisphere (`'south'`) and equatorial tropical cycles (`'equator'`). Calendar Quarters are strictly decoupled from hemisphere.
 :::
 
-### `qtr` / `quarter` — Fiscal Quarters
+### `qtr` / `quarter` — Calendar Quarters (ISO 8601-2)
 
-Divides the calendar year into four fiscal quarters.  
-Hemisphere-aware: southern-hemisphere configs shift the quarter boundaries by six months.
+Divides the Gregorian calendar year into four standard quarters aligned with ISO 8601-2 and ISO 17369: `Q1` (Jan 1), `Q2` (Apr 1), `Q3` (Jul 1), and `Q4` (Oct 1). It is strictly calendar-based and completely independent of geographic hemisphere.
 
 ```ts
 const t = new Tempo('15-Feb-2025');
 
 t.term.qtr           // → 'Q1'
-t.term.quarter       // → { key: 'Q1', day: 1, month: 1, fiscal: 2025, sphere: 'north', keys: ['Q1', 'Q2', 'Q3', 'Q4'] }
+t.term.quarter       // → { key: 'Q1', keys: ['Q1', 'Q2', 'Q3', 'Q4'], span: { ... } }
 t.term.quarter.keys  // → ['Q1', 'Q2', 'Q3', 'Q4']
+t.term.quarter.span.start // → Tempo('2025-01-01T00:00:00')
+t.term.quarter.span.end   // → Tempo('2025-04-01T00:00:00')
+t.term.quarter.span.progress // → 0.5055 (normalized 0.0 .. 1.0)
 ```
 
-```ts
-const t = new Tempo('15-Feb-2025', { sphere: 'south' });
+### `fqtr` / `fiscal` — Fiscal Quarters
 
-t.term.qtr      // → 'Q3'  (southern hemisphere)
+Divides corporate or governmental financial cycles into four fiscal quarters (`FQ1`, `FQ2`, `FQ3`, `FQ4`). Supports configurable start months or automated jurisdictional defaults (e.g., Australia starting July 1, UK/India starting April 1, US federal starting October 1). Provides numeric `fiscalYear: number` for direct financial arithmetic.
+
+```ts
+import { FiscalTerm } from '@magmacomputing/tempo/terms';
+Tempo.use(FiscalTerm);
+
+// Jurisdictional lookup via pluginOptions or geo.country
+const tAU = new Tempo('15-Feb-2026', { pluginOptions: { fiscal: { country: 'AU' } } });
+tAU.term.fqtr              // → 'FQ3'
+tAU.term.fiscal.fiscalYear // → 2026
+tAU.term.fiscal.span.start // → Tempo('2026-01-01T00:00:00')
+
+// Or via GeoConfig or call-site options
+const tGeoAU = new Tempo('15-Feb-2026', { geo: { country: 'AU' } });
+tGeoAU.term.fqtr           // → 'FQ3'
+
+const tCustom = new Tempo('15-Feb-2026');
+tCustom.term.fiscal({ startMonth: 4 }).key // → 'FQ4'
 ```
 
 ### `szn` / `season` — Meteorological Seasons
 
-Maps the current date to the appropriate meteorological season.  
-Hemisphere-aware (northern / southern boundaries differ).
+Maps the current date to the appropriate meteorological season. Supports Northern Hemisphere (`'north'`), Southern Hemisphere (`'south'`), and equatorial tropical cycles (`'equator'`: `Wet` and `Dry` seasons).
 
 ```ts
 const t = new Tempo('01-Jul-2025');
 
-t.term.szn          // → 'Summer'  (northern hemisphere)
-t.term.season
-// → { key: 'Summer', day: 1, month: 6, symbol: 'Sun', sphere: 'north', keys: ['Spring', 'Summer', 'Autumn', 'Winter'] }
-t.term.season.keys  // → ['Spring', 'Summer', 'Autumn', 'Winter']
+t.term.szn               // → 'Summer'  (northern hemisphere default)
+t.term.season.keys       // → ['Spring', 'Summer', 'Autumn', 'Winter', 'Dry', 'Wet']
+t.term.season.span.start // → Tempo('2025-06-01T00:00:00')
 ```
 
 ```ts
-const t = new Tempo('01-Jul-2025', { sphere: 'south' });
+const tSouth = new Tempo('01-Jul-2025', { sphere: 'south' });
+tSouth.term.szn     // → 'Winter'  (southern hemisphere)
 
-t.term.szn      // → 'Winter'  (southern hemisphere, different boundary dates)
+const tTropics = new Tempo('15-Apr-2025', { sphere: 'equator' });
+tTropics.term.szn   // → 'Wet'     (equatorial bimodal cycle)
+tTropics.term.season.label // → 'Long Wet' ('Long Wet', 'Long Dry', 'Short Wet', 'Short Dry')
 ```
 
 ### `zdc` / `zodiac` — Astrological Zodiac
 
-Determines the Western astrological sign for the date.  
+Determines the Western astrological sign for the date.
 The full `zodiac` scope also includes the **Chinese zodiac** (animal, element, Yin/Yang) derived from the year.
 
 ```ts
@@ -186,7 +205,7 @@ function resolve(t: Tempo, anchor?: any): any[] {
   const source = anchor ?? t;
   const sphere = source.sphere ?? t.sphere;
   const template = ranges[sphere] ?? [];
-  
+
   // resolveCycleWindow handle the ±1 year shifting for boundaries
   return resolveCycleWindow(t, template, anchor);
 }
@@ -206,7 +225,7 @@ export const MyRetailSeasonTerm = defineTerm({
     /**
      * Determine the current range.
      * @param keyOnly - if true, return only the identifier string
-     * @param anchor - the specific date-time we are calculating for 
+     * @param anchor - the specific date-time we are calculating for
      */
     define(this: Tempo, keyOnly?: boolean, anchor?: any) {
       const list = resolve(this, anchor);
@@ -217,11 +236,11 @@ export const MyRetailSeasonTerm = defineTerm({
 
 ### `Range` fields
 
-A `Range` object must include a `key` and any subset of the date-time fields below.  
+A `Range` object must include a `key` and any subset of the date-time fields below.
 `getTermRange` sorts ranges in descending chronological order and returns the **first range whose boundary the instance has reached or passed**.
 
 ### 🔄 Sync to Alias Engine
-When a Term plugin defines `ranges` with string-based `key` values, Tempo automatically synchronizes these keys with the internal **Alias Engine**. 
+When a Term plugin defines `ranges` with string-based `key` values, Tempo automatically synchronizes these keys with the internal **Alias Engine**.
 
 *   **Period Scopes**: Ranges defined in a `period` scope (like `midnight` or `morning`) are registered as **Period Aliases**.
 *   **Event Scopes**: Ranges defined in an `event` scope are registered as **Event Aliases**.
@@ -262,7 +281,7 @@ Since `Tempo` preserves non-standard configuration options in its internal `conf
 
 ```ts
 // 1. Initialize with a custom 'business' config option
-Tempo.init({ 
+Tempo.init({
   fiscalYearStart: 7 // e.g., July
 });
 
@@ -275,7 +294,7 @@ Tempo.use({
     const startMonth = this.config.fiscalYearStart ?? 1;
     const isPastStart = this.mm >= startMonth;
     const year = `FY${this.yy - Number(!isPastStart)}`;
-    
+
     return keyOnly
       ? year
       : { key: year, year, startMonth };
@@ -288,36 +307,39 @@ console.log(t.term.cfy); // → "FY2024" (because it's before July 2025)
 
 ## 🧭 Writing Math-Aware Terms
 
-To unlock Tempo's advanced **Term Traversal** (e.g., `t.add({ '#quarter': 1 })`) and **Ticker Syncing**, a plugin must provide semantic **boundaries** (`start` and `end`). 
+To unlock Tempo's advanced **Term Traversal** (e.g., `t.add({ '#quarter': 1 })`) and **Ticker Syncing**, a plugin provides semantic **boundaries and duration metrics** via `span: TermSpan` (`span.start`, `span.end`, `span.total`, `span.elapsed`, `span.remaining`, `span.progress`).
 
 ### The `getTermRange` Helper
-The library provides a specialized helper that calculates these boundaries automatically based on your `ranges` array.
+The library provides a specialized helper that calculates these boundaries and progress metrics automatically based on your `ranges` array.
 
 ```ts
 import { getTermRange } from '@magmacomputing/tempo/plugin/sdk';
 
 export function define(this: Tempo, keyOnly?: boolean) {
-  // Finds the current range, then injects 'start' and 'end' (as Tempo instances)
-  // into the result object before returning it to the user.
+  // Finds the current range, then encapsulates temporal boundaries and progress into 'span'
+  // (with start, end, total, elapsed, remaining, progress) before returning it to the user.
   return getTermRange(this, ranges, keyOnly);
 }
 ```
 
-### Manual Boundaries
-If you choose not to use `getTermRange`, you must manually include `start` and `end` (as `Tempo` instances) in your scope object:
+### Manual Boundaries and Progress Spans
+For procedural terms that compute custom start/end dates instead of calling `getTermRange`, use the `defineSpan(this, start, end)` helper from `@magmacomputing/tempo/plugin/sdk`:
 
 ```ts
+import { defineSpan } from '@magmacomputing/tempo/plugin/sdk';
+
+const start = this.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+const end = start.add({ days: 1 });
 return keyOnly ? 'MyTerm' : {
   key: 'MyTerm',
-  start: this.set({ hour: 0 }),
-  end: this.set({ hour: 23, mi: 59 })
+  span: defineSpan(this, start, end)
 };
 ```
 
 ### Multi-Cycle Discovery & Traversals (The `resolve` method)
 The `define` method only returns a *single* boundary (the one the instance currently falls into). But what happens if a user wants to traverse forward by three boundaries (`t.add({ '#rsn': 3 })`)? Or what if the `Ticker` engine needs to discover virtual deadlines across multiple years?
 
-To enable this, your plugin can optionally provide a **`resolve(anchor)`** method. This method should return the *complete array of boundaries* for a given cycle (e.g., all the retail seasons in a given year). 
+To enable this, your plugin can optionally provide a **`resolve(anchor)`** method. This method should return the *complete array of boundaries* for a given cycle (e.g., all the retail seasons in a given year).
 
 When the core engine needs to mathematically "step" through boundaries across multiple years, it repeatedly calls your `resolve` method with different `anchor` dates (e.g., shifting the year forward) to discover future/past boundaries seamlessly!
 

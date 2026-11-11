@@ -1,4 +1,4 @@
-import { defineTerm, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import { getChineseZodiac as getChineseZodiacFn } from '@magmacomputing/tempo-fns';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -41,18 +41,8 @@ export interface EasternZodiacScope {
 	yinYang: 'Yin' | 'Yang';
 	variants: LunarZodiacVariants;
 	group: 'lunar-zodiac';
-	year: number;
-	month: number;
-	day: number;
-	hour: number;
-	minute: number;
-	second: number;
-	millisecond: number;
-	microsecond: number;
-	nanosecond: number;
 	keys: readonly EasternAnimalKey[];
-	start: Tempo;
-	end: Tempo;
+	span: TermSpan;
 }
 
 /** Regional variant data mapping for East Asian Lunar Zodiac systems */
@@ -178,7 +168,6 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	const start = new (t.constructor as any)(`${year}-01-01T00:00:00`, { timeZone });
 	const nextYear = year + 1;
 	const end = new (t.constructor as any)(`${nextYear}-01-01T00:00:00`, { timeZone });
-	const dt = start.toDateTime();
 
 	return {
 		key,
@@ -188,18 +177,8 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		yinYang: res.yinYang as EasternZodiacScope['yinYang'],
 		variants,
 		group: 'lunar-zodiac',
-		year,
-		month: dt.month,
-		day: dt.day,
-		hour: dt.hour,
-		minute: dt.minute,
-		second: dt.second,
-		millisecond: dt.millisecond,
-		microsecond: dt.microsecond,
-		nanosecond: dt.nanosecond,
 		keys: EASTERN_ANIMAL_KEYS,
-		start,
-		end,
+		span: defineSpan(refTempo, start, end),
 	};
 }
 

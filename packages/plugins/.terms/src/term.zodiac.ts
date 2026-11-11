@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
 /** definition of Western (Tropical) astrological zodiac ranges */
@@ -53,12 +53,8 @@ export interface WesternZodiacScope {
 	emoji: string;
 	trait: string;
 	group: 'western';
-	day: number;
-	month: number;
-	year?: number;
-	start: Tempo;
-	end: Tempo;
 	keys: readonly WesternZodiacKey[];
+	span: TermSpan;
 }
 
 /**

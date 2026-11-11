@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
 export const TIMEOFDAY_KEYS = Object.freeze([
@@ -66,11 +66,8 @@ declare module '@magmacomputing/tempo' {
 		timeOfDay: {
 			key: TimeOfDayKey;
 			group: 'standard';
-			hour: number;
-			minute?: number;
-			start: Tempo;
-			end: Tempo;
 			keys: readonly TimeOfDayKey[];
+			span: TermSpan;
 		};
 	}
 }

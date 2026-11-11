@@ -9,22 +9,22 @@ describe('Tempo Shorthand Suite (Comprehensive)', () => {
 
 	describe('Quarter Shorthand (#qtr)', () => {
 		test('forward shift (#qtr.>) from mid-period', () => {
-			const t = new Tempo('2024-12-25'); // Q2 South (Oct-Dec)
+			const t = new Tempo('2024-12-25'); // Q4 ISO Calendar (Oct-Dec)
 			const next = t.set('#qtr.>');
-			expect(next.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2025-01-01 (Q3)');
+			expect(next.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2025-01-01 (Q1)');
 		});
 
 		test('multi-step forward shift (#qtr.>2)', () => {
-			const t = new Tempo('2024-12-25'); // Q2 South
+			const t = new Tempo('2024-12-25'); // Q4 ISO Calendar
 			const next2 = t.set('#qtr.>2');
-			// Q2 (Dec 25) -> Q3 (Jan 1) -> Q4 (Apr 1)
-			expect(next2.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2025-04-01 (Q4)');
+			// Q4 (Dec 25) -> Q1 (Jan 1) -> Q2 (Apr 1)
+			expect(next2.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2025-04-01 (Q2)');
 		});
 
 		test('backward shift (#qtr.<)', () => {
-			const t = new Tempo('2025-01-15'); // Q3 South
+			const t = new Tempo('2025-01-15'); // Q1 ISO Calendar
 			const prev = t.set('#qtr.<');
-			expect(prev.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2024-10-01 (Q2)');
+			expect(prev.format('{yyyy}-{mm}-{dd} ({#qtr})')).toBe('2024-10-01 (Q4)');
 		});
 	});
 

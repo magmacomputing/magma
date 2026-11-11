@@ -1,5 +1,6 @@
 import type { Property, ValueOf } from '#library/type.library.js';
 import type { Tempo } from '../../tempo.class.js';
+import type { Duration } from '../../tempo.type.js';
 import { TermError, TermHook } from '#tempo/support';
 
 /**
@@ -70,9 +71,9 @@ export interface TermPlugin extends TermLifecycleHooks {
 	/** Colocated or runtime configuration options */
 	options?: any;
 	/** Resolves the term to concrete time ranges */
-	resolve?: (this: Tempo, anchor?: any, alias?: string) => readonly Range[] | Range[];
+	resolve?: (this: Tempo, anchor?: any, alias?: string) => readonly (Range | ResolvedRange)[] | (Range | ResolvedRange)[];
 	/** Defines the term's value or range */
-	define: (this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) => string | Range | readonly Range[] | Range[] | undefined | null;
+	define: (this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) => string | Range | ResolvedRange | readonly (Range | ResolvedRange)[] | (Range | ResolvedRange)[] | undefined | null;
 	[key: string]: any;
 }
 
@@ -91,8 +92,8 @@ export type Terms = Property<any>;
 /**
  * ## Range
  * Discrete time interval within a specific term.
- * 
- * When Range.year is a number it is interpreted as a relative offset if |year| ≤ 10 
+ *
+ * When Range.year is a number it is interpreted as a relative offset if |year| ≤ 10
  * and as an absolute year otherwise.
  */
 export type Range = {
@@ -111,7 +112,8 @@ export type Range = {
 		/** Second value (0-59) */ { second: number } |
 		/** Millisecond value */ { millisecond: number } |
 		/** Microsecond value */ { microsecond: number } |
-		/** Nanosecond value */ { nanosecond: number }
+		/** Nanosecond value */ { nanosecond: number } |
+		/** Encapsulated temporal boundary span */ { span: TermSpan }
 	) & {
 		/** Optional year override */
 		year?: number;
@@ -135,20 +137,40 @@ export type Range = {
 		nanosecond?: number;
 	}
 
+/**
+ * ## TermSpan
+ * Encapsulated temporal boundaries and duration progress metrics.
+ */
+export interface TermSpan {
+	/** Start boundary of the term range (frozen Tempo instance) */
+	start: Tempo;
+	/** End boundary of the term range (frozen Tempo instance) */
+	end: Tempo;
+	/** Total duration of the range from start to end */
+	total: Duration;
+	/** Duration elapsed from start to current instant */
+	elapsed: Duration;
+	/** Duration remaining from current instant until end */
+	remaining: Duration;
+	/** Normalized progress ratio through the range (0.0 .. 1.0) */
+	progress: number;
+}
 
 /**
  * ## ResolvedRange
- * Range with additional metadata.
+ * Term range with encapsulated boundaries, duration metrics, and domain metadata.
  */
-export type ResolvedRange = Range & {
-	/** Start boundary of the resolved range */
-	start: Tempo;
-	/** End boundary of the resolved range */
-	end: Tempo;
-	/** Scope or category of the term */
-	scope?: string;
+export type ResolvedRange = {
+	/** Unique identifier for the matched range */
+	key: string;
 	/** Human-readable label for the range */
 	label?: string;
+	/** All available keys in this term's cycle */
+	keys?: readonly string[];
+	/** The temporal boundary and progress span */
+	span: TermSpan;
+	/** Scope or category of the term */
+	scope?: string;
 	/** Locale-specific translations */
 	locale?: Record<string, string | Function>;
 	/** Primary unit for this range */
@@ -156,4 +178,4 @@ export type ResolvedRange = Range & {
 	/** Rollover behavior for the range */
 	rollover?: string;
 	[str: string]: any;
-}
+};

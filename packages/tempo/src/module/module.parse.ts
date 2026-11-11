@@ -379,7 +379,8 @@ const _ParseEngine = {
 
 					const isMultiCycle = isNotNullish(termObj.resolve) && list.some(r => r.year !== undefined);
 					const itemsPerCycle = isMultiCycle ? list.length / 3 : list.length;
-					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === current.year : true));
+					const currentStart = current.span.start;
+					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === currentStart?.yy : true));
 
 					if (currentIdx === -1 || itemsPerCycle <= 0) throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 
@@ -389,7 +390,8 @@ const _ParseEngine = {
 
 					if (item) {
 						const range = (getTermRange(state as any, [item], false, today) as any);
-						if (range?.start) return { type: 'Temporal.ZonedDateTime', value: range.start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
+						const start = range?.span?.start;
+						if (start) return { type: 'Temporal.ZonedDateTime', value: start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 					}
 					throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 				}
@@ -398,7 +400,8 @@ const _ParseEngine = {
 					const range = termObj.define.call(state as any, false, today);
 					const list = isUndefined(range) ? [] : asArray(range as Range | Range[]);
 					const current = getTermRange(state as any, list, false, today) as ResolvedRange | undefined;
-					if (current?.start) return { type: 'Temporal.ZonedDateTime', value: current.start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
+					const start = current?.span?.start;
+					if (start) return { type: 'Temporal.ZonedDateTime', value: start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 				}
 			}
 

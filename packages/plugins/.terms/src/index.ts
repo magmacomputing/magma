@@ -1,4 +1,5 @@
 import { QuarterTerm, QUARTER_KEYS, type QuarterKey } from './term.quarter.js';
+import { FiscalTerm, FISCAL_KEYS, type FiscalKey, type FiscalTermOptions, FISCAL_COUNTRY_DEFAULTS } from './term.fiscal.js';
 import { SeasonTerm, SEASON_KEYS, type SeasonKey } from './term.season.js';
 import { ZodiacTerm, SunSignTerm, StarSignTerm, ZODIAC_KEYS, type WesternZodiacKey, type WesternZodiacScope } from './term.zodiac.js';
 import { EasternTerm, LunarSignTerm, EasternZodiacTerm, EASTERN_ANIMAL_KEYS, type EasternAnimalKey, type EasternZodiacScope, type LunarZodiacVariants, type RegionalVariant } from './term.eastern.js';
@@ -8,6 +9,11 @@ export {
 	QuarterTerm,
 	QUARTER_KEYS,
 	type QuarterKey,
+	FiscalTerm,
+	FISCAL_KEYS,
+	type FiscalKey,
+	type FiscalTermOptions,
+	FISCAL_COUNTRY_DEFAULTS,
 	SeasonTerm,
 	SEASON_KEYS,
 	type SeasonKey,
@@ -41,9 +47,10 @@ export const CivicTerms = [
 ];
 
 /**
- * Cultural and astrological terms available opt-in via the `./terms` subpath.
+ * Cultural, corporate, and astrological terms available opt-in via the `./terms` subpath.
  */
 export const CulturalTerms = [
+	FiscalTerm,
 	ZodiacTerm,
 	EasternTerm,
 ];

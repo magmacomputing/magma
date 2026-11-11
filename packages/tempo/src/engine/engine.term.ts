@@ -249,7 +249,8 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			}
 
 			// Calculate cursor's offset within current range (nanoseconds)
-			const startNs = toZdt(currentRange.start).epochNanoseconds as bigint;
+			const curStart = currentRange.span.start;
+			const startNs = toZdt(curStart).epochNanoseconds as bigint;
 			const cursorNs = zdt.epochNanoseconds as bigint;
 			const positionNs = cursorNs - startNs;
 
@@ -265,10 +266,13 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				const range = getTermRange(instance, jumpList, false, jump) as any;
 				if (!range) break;
 
+				const rStart = range.span.start;
+				const rEnd = range.span.end;
+
 				const matchKey = !rKey || range.key?.toLowerCase() === rKey.toLowerCase();
 				const hasMoved = (shiftDir > 0)
-					? (toZdt(range.start).epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint)
-					: (toZdt(range.end).epochNanoseconds as bigint) < (zdt.epochNanoseconds as bigint);
+					? (toZdt(rStart).epochNanoseconds as bigint) > (zdt.epochNanoseconds as bigint)
+					: (toZdt(rEnd).epochNanoseconds as bigint) < (zdt.epochNanoseconds as bigint);
 
 				if (matchKey && (iters > 1 || hasMoved)) {
 					target = range;
@@ -276,8 +280,8 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				}
 
 				jump = (shiftDir > 0)
-					? toZdt(range.end)
-					: toZdt(range.start).subtract({ nanoseconds: 1 });
+					? toZdt(rEnd)
+					: toZdt(rStart).subtract({ nanoseconds: 1 });
 			}
 
 			if (!target || remaining > 0) {
@@ -286,8 +290,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			}
 
 			// Apply same position-offset, clamped to target range bounds
-			const tStartNs = toZdt(target.start).epochNanoseconds as bigint;
-			const tEndNs = toZdt(target.end).epochNanoseconds as bigint;
+			const tStart = target.span.start;
+			const tEnd = target.span.end;
+			const tStartNs = toZdt(tStart).epochNanoseconds as bigint;
+			const tEndNs = toZdt(tEnd).epochNanoseconds as bigint;
 			let tNs = tStartNs + positionNs;
 			if (tNs >= tEndNs) tNs = tEndNs - 1n;	// clamp to range end
 			if (tNs < tStartNs) tNs = tStartNs;		// clamp to range start
@@ -551,13 +557,15 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				Tempo?.[TermError]?.(instance.config, unit);
 				return null;
 			}
+			const finalStart = finalRange.span.start;
+			const finalEnd = finalRange.span.end;
 			if (mutate === 'mid') {
-				const startNs = toZdt(finalRange.start).epochNanoseconds as bigint;
-				const endNs = toZdt(finalRange.end).epochNanoseconds as bigint;
+				const startNs = toZdt(finalStart).epochNanoseconds as bigint;
+				const endNs = toZdt(finalEnd).epochNanoseconds as bigint;
 				const midNs = startNs + (endNs - startNs) / 2n;
 				return toInstant(midNs).toZonedDateTimeISO(tz).withCalendar(cal);
 			}
-			return toZdt(finalRange.end).subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);
+			return toZdt(finalEnd).subtract({ nanoseconds: 1 }).withTimeZone(tz).withCalendar(cal);
 		}
 		return jump;
 	}
@@ -607,7 +615,8 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 	if (mutate === 'set' && !mod && isNumeric(offset)) {
 		const rawList = getRange(termObj, instance, zdt);
 		const target = getTermRange(instance, rawList, Number(offset), zdt) as any;
-		if (target) return toZdt(target.start).withTimeZone(tz).withCalendar(cal);
+		const targetStart = target?.span?.start;
+		if (targetStart) return toZdt(targetStart).withTimeZone(tz).withCalendar(cal);
 
 		Tempo?.[TermError]?.(instance.config, unit);
 		return null;
@@ -651,7 +660,9 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 					return null;
 				}
 
-				const nextJump = (direction > 0) ? toZdt(current.end) : toZdt(current.start).subtract({ nanoseconds: 1 });
+				const curEnd = current.span.end;
+				const curStart = current.span.start;
+				const nextJump = (direction > 0) ? toZdt(curEnd) : toZdt(curStart).subtract({ nanoseconds: 1 });
 				if (nextJump.epochNanoseconds === jump.epochNanoseconds) {			// detect zero-progress stall
 					jump = (direction > 0) ? jump.add({ days: 1 }) : jump.subtract({ days: 1 });
 				} else {

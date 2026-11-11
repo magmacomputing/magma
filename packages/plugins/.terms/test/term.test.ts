@@ -27,8 +27,10 @@ describe(`${label}`, () => {
 
     expect(keys).toContain('quarter')
     expect(keys).toContain('qtr')
-    expect(qtr)
-      .toBe('Q3')
+    // QuarterTerm is strictly aligned to ISO calendar quarters (Q1 on Jan 1 globally)
+    expect(qtr).toBe('Q1')
+    expect(quarter.key).toBe('Q1')
+    expect(quarter.span.start).toBeInstanceOf(Tempo)
   })
 
   test(`${label} check the {daily} term`, () => {

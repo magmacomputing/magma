@@ -90,59 +90,103 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		expect(() => t.set({ start: '#invalid' })).toThrow(/Unknown Term identifier\: #invalid/);
 	});
 
-	it('should correctly resolve quarters in the Southern Hemisphere', () => {
-		const t = new Tempo(testDate, { catch: true, sphere: 'south' }); // 2024-05-15
-		// May is in Q4 for the Southern Hemisphere (Jul start)
-		expect(t.format('{#qtr}')).toBe('Q4');
-		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+	it('should strictly resolve calendar quarters globally (ISO 8601-2)', () => {
+		const tSouth = new Tempo(testDate, { catch: true, sphere: 'south' }); // 2024-05-15
+		const tNorth = new Tempo(testDate, { catch: true, sphere: 'north' });
+		const tEquator = new Tempo(testDate, { catch: true, sphere: 'equator' });
+
+		// May 15 is Q2 globally (April 1 start)
+		expect(tSouth.format('{#qtr}')).toBe('Q2');
+		expect(tNorth.format('{#qtr}')).toBe('Q2');
+		expect(tEquator.format('{#qtr}')).toBe('Q2');
+		expect(tSouth.term.quarter.key).toBe('Q2');
+		expect(tSouth.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
 	});
 
-	it('should support granular sphere matching (e.g. SouthSouthWest)', () => {
-		// Even though ranges are defined for 'south', 'SouthSouthWest' should match it via .includes()
+	it('should support granular sphere matching for SeasonTerm (e.g. SouthSouthWest)', () => {
+		// Season ranges are defined for 'south'; 'SouthSouthWest' should match it via .includes()
 		const t = new Tempo(testDate, { catch: true, sphere: 'SouthSouthWest' });
-		expect(t.format('{#qtr}')).toBe('Q4');
-		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+		expect(t.format('{#szn}')).toBe('Autumn');
+		expect(t.set({ start: '#szn' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-03-01');
 	});
 
-	it('should match sphere values case-insensitively', () => {
+	it('should match sphere values case-insensitively for SeasonTerm', () => {
 		// Verify that all-caps 'SOUTH' produces the same results as lowercase 'south'
 		const t = new Tempo(testDate, { catch: true, sphere: 'SOUTH' });
-		expect(t.format('{#qtr}')).toBe('Q4');
-		expect(t.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+		expect(t.format('{#szn}')).toBe('Autumn');
+		expect(t.set({ start: '#szn' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-03-01');
 
 		// Also verify all-caps granular matching 'SOUTHSOUTHWEST' works like 'SouthSouthWest'
 		const t2 = new Tempo(testDate, { catch: true, sphere: 'SOUTHSOUTHWEST' });
-		expect(t2.format('{#qtr}')).toBe('Q4');
-		expect(t2.set({ start: '#quarter' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+		expect(t2.format('{#szn}')).toBe('Autumn');
+		expect(t2.set({ start: '#szn' }).format('{yyyy}-{mm}-{dd}')).toBe('2024-03-01');
 	});
 
-	it('refuses to guess hemisphere for undefined, equator, or non-polar sphere', () => {
+	it('resolves equatorial seasons for sphere: "equator" and refuses to guess for non-polar/non-equatorial sphere', () => {
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		try {
-			const tEquator = new Tempo(testDate, { catch: true, sphere: 'equator' });
-			expect(tEquator.term.quarter).toBeUndefined();
-			expect(tEquator.term.season).toBeUndefined();
+			// Equator resolves bimodal tropical seasons (Wet / Dry)
+			const tEquator = new Tempo(testDate, { catch: true, sphere: 'equator' }); // May 15 -> Long Wet (Mar 1 - Jun 1)
+			expect(tEquator.term.quarter.key).toBe('Q2'); // Calendar quarters remain deterministic
+			expect(tEquator.term.season.key).toBe('Wet');
+			expect(tEquator.term.season.label).toBe('Long Wet');
+			expect(tEquator.term.season.symbol).toBe('CloudRain');
+			expect(tEquator.term.season.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2024-03-01');
+
+			const tLongDry = new Tempo('2024-08-15T12:00:00Z', { catch: true, sphere: 'equator' });
+			expect(tLongDry.term.season.key).toBe('Dry');
+			expect(tLongDry.term.season.label).toBe('Long Dry');
+
+			const tShortWet = new Tempo('2024-11-01T12:00:00Z', { catch: true, sphere: 'equator' });
+			expect(tShortWet.term.season.key).toBe('Wet');
+			expect(tShortWet.term.season.label).toBe('Short Wet');
+
+			const tShortDry = new Tempo('2024-01-15T12:00:00Z', { catch: true, sphere: 'equator' });
+			expect(tShortDry.term.season.key).toBe('Dry');
+			expect(tShortDry.term.season.label).toBe('Short Dry');
+
+			// Formatting {#szn} (key) vs {#season} (label) and lookup by distinct label
+			expect(tEquator.format('{#szn}')).toBe('Wet');
+			expect(tEquator.format('{#season}')).toBe('Long Wet');
+			expect(tShortWet.format('{#season}')).toBe('Short Wet');
+			const shortWetRange = SeasonTerm.define!.call(tEquator as any, 'Short Wet') as any;
+			expect(shortWetRange?.key).toBe('Wet');
+			expect(shortWetRange?.label).toBe('Short Wet');
+			expect(shortWetRange?.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2024-10-01');
 
 			const tEast = new Tempo(testDate, { catch: true, sphere: 'east' });
-			expect(tEast.term.quarter).toBeUndefined();
-			expect(tEast.term.season).toBeUndefined();
+			expect(tEast.term.quarter.key).toBe('Q2'); // Quarters are universal
+			expect(tEast.term.season).toBeUndefined(); // Seasons require valid sphere
 
 			const tBoth = new Tempo(testDate, { catch: true, sphere: 'north-south' });
-			expect(tBoth.term.quarter).toBeUndefined();
+			expect(tBoth.term.quarter.key).toBe('Q2');
 			expect(tBoth.term.season).toBeUndefined();
 		} finally {
 			warnSpy.mockRestore();
 		}
 	});
 
-	describe('Term Range Boundaries (Fluent & Immutable)', () => {
-		it('should return start and end as Tempo instances', () => {
+	describe('Term Range Boundaries & TermSpan (Fluent & Immutable)', () => {
+		it('should return start, end, durations, and progress inside .span', () => {
 			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
 			const q = t.term.quarter;
 
-			expect(q.start).toBeInstanceOf(Tempo);
-			expect(q.end).toBeInstanceOf(Tempo);
-			expect(q.start.format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+			expect(q.span.start).toBeInstanceOf(Tempo);
+			expect(q.span.end).toBeInstanceOf(Tempo);
+			expect(q.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
+			expect(q.span.end.format('{yyyy}-{mm}-{dd}')).toBe('2024-07-01');
+
+			// Durations and progress
+			expect(q.span.total).toBeDefined();
+			expect(q.span.elapsed).toBeDefined();
+			expect(q.span.remaining).toBeDefined();
+			expect(typeof q.span.progress).toBe('number');
+			expect(q.span.progress).toBeGreaterThan(0);
+			expect(q.span.progress).toBeLessThan(1);
+
+			// Internal template schema units are stripped from the root range object
+			expect((q as any).month).toBeUndefined();
+			expect((q as any).day).toBeUndefined();
 		});
 
 		it('should ensure the Range object and its boundaries are frozen', () => {
@@ -150,8 +194,8 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			const q = t.term.quarter;
 
 			expect(Object.isFrozen(q)).toBe(true);
-			expect(Object.isFrozen(q.start)).toBe(true);
-			expect(Object.isFrozen(q.end)).toBe(true);
+			expect(Object.isFrozen(q.span.start)).toBe(true);
+			expect(Object.isFrozen(q.span.end)).toBe(true);
 		});
 	});
 

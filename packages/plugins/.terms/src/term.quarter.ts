@@ -1,25 +1,20 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
-import { isNumber, asArray } from '@magmacomputing/library';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { asArray } from '@magmacomputing/library';
 import type { Tempo } from '@magmacomputing/tempo';
 
 export const QUARTER_KEYS = Object.freeze(['Q1', 'Q2', 'Q3', 'Q4'] as const);
 export type QuarterKey = (typeof QUARTER_KEYS)[number];
 
-/** definition of fiscal quarter ranges */
+/** definition of ISO calendar quarter ranges */
 const groups = defineRange([
-	{ key: 'Q1', day: 1, month: 1, fiscal: 0, sphere: COMPASS.North, label: 'First Quarter' },
-	{ key: 'Q2', day: 1, month: 4, fiscal: 0, sphere: COMPASS.North, label: 'Second Quarter' },
-	{ key: 'Q3', day: 1, month: 7, fiscal: 0, sphere: COMPASS.North, label: 'Third Quarter' },
-	{ key: 'Q4', day: 1, month: 10, fiscal: 0, sphere: COMPASS.North, label: 'Fourth Quarter' },
-
-	{ key: 'Q1', day: 1, month: 7, fiscal: 1, sphere: COMPASS.South, label: 'First Quarter' },
-	{ key: 'Q2', day: 1, month: 10, fiscal: 1, sphere: COMPASS.South, label: 'Second Quarter' },
-	{ key: 'Q3', day: 1, month: 1, year: 1, fiscal: 0, sphere: COMPASS.South, label: 'Third Quarter' },
-	{ key: 'Q4', day: 1, month: 4, year: 1, fiscal: 0, sphere: COMPASS.South, label: 'Fourth Quarter' },
-], 'sphere');
+	{ key: 'Q1', day: 1, month: 1, label: 'First Quarter' },
+	{ key: 'Q2', day: 1, month: 4, label: 'Second Quarter' },
+	{ key: 'Q3', day: 1, month: 7, label: 'Third Quarter' },
+	{ key: 'Q4', day: 1, month: 10, label: 'Fourth Quarter' },
+]);
 
 /**
- * Resolves fiscal quarter candidates matching the configured hemisphere.
+ * Resolves calendar quarter candidates.
  *
  * @param t - The source Tempo instance
  * @param anchor - Optional reference time override
@@ -27,25 +22,17 @@ const groups = defineRange([
  * @internal
  */
 function resolve(t: Tempo, anchor?: any): any[] {
-	const sphere = resolveTermSphere(anchor?.sphere ?? t.sphere, 'QuarterTerm', t.config);
-	if (!sphere) return [];
-
-	const list = resolveCycleWindow(t, groups, { anchor, groupBy: ['sphere'] });
-
-	list.forEach((itm: any) => {
-		if (isNumber(itm.fiscal)) itm.fiscal += isNumber(itm.year) ? itm.year : 0;
-	});
-
-	return list;
+	return resolveCycleWindow(t, groups, { anchor });
 }
 
 /**
  * ## QuarterTerm
+ * ISO 8601-2 Calendar Quarter
  */
 export const QuarterTerm = defineTerm({
 	key: 'qtr',
 	scope: 'quarter',
-	description: 'Fiscal Quarter',
+	description: 'Calendar Quarter',
 	groups,
 	keys: QUARTER_KEYS,
 
@@ -79,14 +66,8 @@ declare module '@magmacomputing/tempo' {
 		quarter: {
 			key: QuarterKey;
 			label: 'First Quarter' | 'Second Quarter' | 'Third Quarter' | 'Fourth Quarter';
-			fiscal: number;
-			sphere: COMPASS;
-			day: number;
-			month: number;
-			year?: number;
-			start: Tempo;
-			end: Tempo;
 			keys: readonly QuarterKey[];
+			span: TermSpan;
 		};
 	}
 }

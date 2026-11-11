@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere } from '@magmacomputing/tempo/plugin/sdk';
+import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere, logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
@@ -45,7 +45,12 @@ function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
 
 function resolve(t: Tempo, anchor?: any) {
 	const sphere = resolveTermSphere(anchor?.sphere ?? t.sphere, 'AstroTerm', t.config);
-	if (!sphere) return [];
+	if (!sphere || sphere === 'equator') {
+		if (sphere === 'equator') {
+			logWarn(`[tempo] AstroTerm requires an explicit hemisphere of 'north' or 'south' (received: "equator").`, t.config);
+		}
+		return [];
+	}
 
 	const isSouth = sphere === 'south';
 	const compassSphere = isSouth ? COMPASS.South : COMPASS.North;
@@ -219,7 +224,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 			const year = context?.anchor?.yy ?? context?.anchor?.year ?? new Tempo().yy;
 			const timeZone = context?.anchor?.tz ?? 'UTC';
 			const sphere = resolveTermSphere(context?.anchor?.sphere ?? context?.config?.sphere, 'AstroTerm', context?.config);
-			if (!sphere) return undefined;
+			if (!sphere || sphere === 'equator') return undefined;
 
 			const isSouth = sphere === 'south';
 
@@ -243,12 +248,14 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	[TermHook.bound](boundary: 'start' | 'mid' | 'end', _unit: string, tempo: Tempo) {
 		const target = tempo instanceof Tempo ? tempo : new Tempo(tempo);
 		const scope = AstroTerm.define.call(target, false) as any;
-		if (scope?.start && scope?.end) {
-			if (boundary === 'start') return scope.start;
-			if (boundary === 'end') return scope.end.sub({ nanoseconds: 1 });
+		const start = scope?.span?.start;
+		const end = scope?.span?.end;
+		if (start && end) {
+			if (boundary === 'start') return start;
+			if (boundary === 'end') return end.sub({ nanoseconds: 1 });
 			if (boundary === 'mid') {
-				const midMs = Math.round((scope.start.epoch.ms + scope.end.epoch.ms) / 2);
-				return new Tempo(midMs, { timeZone: scope.start.tz, timeStamp: 'ms', ...(target.sphere ? { sphere: target.sphere } : {}) });
+				const midMs = Math.round((start.epoch.ms + end.epoch.ms) / 2);
+				return new Tempo(midMs, { timeZone: start.tz, timeStamp: 'ms', ...(target.sphere ? { sphere: target.sphere } : {}) });
 			}
 		}
 		return undefined;

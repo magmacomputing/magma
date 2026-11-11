@@ -1,7 +1,7 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
-export const SEASON_KEYS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter'] as const);
+export const SEASON_KEYS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter', 'Dry', 'Wet'] as const);
 export type SeasonKey = (typeof SEASON_KEYS)[number];
 
 /** definition of meteorological season ranges */
@@ -17,6 +17,12 @@ const groups = defineRange([
 	{ key: 'Summer', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Autumn', day: 1, month: 3, symbol: 'Leaf', group: 'meteorological', sphere: COMPASS.South },
 	{ key: 'Winter', day: 1, month: 6, symbol: 'Snowflake', group: 'meteorological', sphere: COMPASS.South },
+
+	// Meteorological (Equator - bimodal tropical)
+	{ key: 'Wet', day: 1, month: 3, symbol: 'CloudRain', group: 'meteorological', sphere: COMPASS.Equator, label: 'Long Wet' },
+	{ key: 'Dry', day: 1, month: 6, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.Equator, label: 'Long Dry' },
+	{ key: 'Wet', day: 1, month: 10, symbol: 'CloudRain', group: 'meteorological', sphere: COMPASS.Equator, label: 'Short Wet' },
+	{ key: 'Dry', day: 1, month: 12, symbol: 'Sun', group: 'meteorological', sphere: COMPASS.Equator, label: 'Short Dry' },
 ], 'group', 'sphere');
 
 /**
@@ -74,14 +80,12 @@ declare module '@magmacomputing/tempo' {
 		szn: SeasonKey;
 		season: {
 			key: SeasonKey;
-			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake';
+			label?: string;
+			symbol: 'Flower' | 'Sun' | 'Leaf' | 'Snowflake' | 'CloudRain';
 			group: 'meteorological';
 			sphere: COMPASS;
-			day: number;
-			month: number;
-			start: Tempo;
-			end: Tempo;
 			keys: readonly SeasonKey[];
+			span: TermSpan;
 		};
 	}
 }

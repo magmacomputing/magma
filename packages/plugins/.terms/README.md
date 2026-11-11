@@ -12,8 +12,9 @@ At build time, the Rollup pipeline inlines these terms directly into the Tempo b
 
 | Key | Scope | Description |
 |---|---|---|
-| `Quarter` | `financial` | Fiscal quarters (Q1, Q2, Q3, Q4) — Core (`CivicTerms`) |
-| `Season` | `meteorological` | Meteorological seasons (Spring, Summer, Autumn, Winter) — Core (`CivicTerms`) |
+| `Quarter` | `calendar` | ISO 8601-2 calendar quarters (Q1, Q2, Q3, Q4) — Core (`CivicTerms`) |
+| `Fiscal` | `fiscal` | Jurisdictional & corporate fiscal quarters (FQ1, FQ2, FQ3, FQ4) — Opt-in (`CulturalTerms` / `./terms`) |
+| `Season` | `meteorological` | Meteorological & tropical seasons (Spring, Summer, Autumn, Winter, Wet, Dry) — Core (`CivicTerms`) |
 | `Timeline` | `timeOfDay` | Daily time-of-day periods (Morning, Midday, Afternoon, Evening, Night) — Core (`CivicTerms`) |
 | `Zodiac` | `astrological` | Western Zodiac sun signs — Opt-in (`CulturalTerms` / `./terms`) |
 | `Eastern` | `shengxiao` | Eastern Lunar Zodiac cycle — Opt-in (`CulturalTerms` / `./terms`) |
