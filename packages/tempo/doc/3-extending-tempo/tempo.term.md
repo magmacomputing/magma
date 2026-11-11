@@ -330,12 +330,14 @@ For procedural terms that compute custom start/end dates instead of calling `get
 ```ts
 import { defineSpan } from '@magmacomputing/tempo/plugin/sdk';
 
-const start = this.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
-const end = start.add({ days: 1 });
-return keyOnly ? 'MyTerm' : {
-  key: 'MyTerm',
-  span: defineSpan(this, start, end)
-};
+export function define(this: Tempo, keyOnly?: boolean) {
+  const start = this.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
+  const end = start.add({ days: 1 });
+  return keyOnly ? 'MyTerm' : {
+    key: 'MyTerm',
+    span: defineSpan(this, start, end)
+  };
+}
 ```
 
 ### Multi-Cycle Discovery & Traversals (The `resolve` method)

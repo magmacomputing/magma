@@ -385,7 +385,21 @@ const _ParseEngine = {
 					const isMultiCycle = isNotNullish(termObj.resolve) && list.some(r => r.year !== undefined);
 					const itemsPerCycle = isMultiCycle ? list.length / 3 : list.length;
 					const currentStart = current.span.start;
-					const currentIdx = list.findIndex(r => r.key === current.key && (isMultiCycle ? r.year === currentStart?.yy : true));
+					const currentIdx = list.findIndex(r => {
+						if (r.key !== current.key) return false;
+						if (r.span?.start && currentStart)
+							return r.span.start.epoch.ns === currentStart.epoch.ns;
+
+						if (currentStart)
+							return (isUndefined(r.year) || r.year === currentStart.yy) &&
+								(isUndefined(r.month) || r.month === currentStart.mm) &&
+								(isUndefined(r.day) || r.day === currentStart.dd) &&
+								(isUndefined(r.hour) || r.hour === currentStart.hh) &&
+								(isUndefined(r.minute) || r.minute === currentStart.mi) &&
+								(isUndefined(r.second) || r.second === currentStart.ss);
+
+						return isMultiCycle ? r.year === currentStart?.yy : true;
+					});
 
 					if (currentIdx === -1 || itemsPerCycle <= 0) throw new RangeError(`Term index out of range: ${tempo} for ${term}`);
 

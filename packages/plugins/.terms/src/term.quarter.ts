@@ -19,12 +19,18 @@ const groups = defineRange([
  */
 function toIsoTempo(target: any, fallback: Tempo): Tempo {
 	const ref = target ?? fallback;
-	if (typeof ref?.toDateTime === 'function') {
-		const zdt = ref.toDateTime();
+	const zdt = typeof ref?.toDateTime === 'function'
+		? ref.toDateTime()
+		: (ref?.calendarId !== undefined && typeof ref?.withCalendar === 'function' ? ref : undefined);
+
+	if (zdt) {
+		const Host = fallback.constructor as any;
 		if (zdt.calendarId !== 'iso8601') {
 			const isoZdt = zdt.withCalendar('iso8601');
-			const Host = fallback.constructor as any;
 			return new Host(isoZdt, { ...(fallback as any).config, calendar: 'iso8601' });
+		}
+		if (!(ref instanceof fallback.constructor)) {
+			return new Host(zdt, (fallback as any).config);
 		}
 	}
 	return ref;

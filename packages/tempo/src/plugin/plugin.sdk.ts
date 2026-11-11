@@ -17,6 +17,6 @@ export * from '../support/support.enum.js';
 export * from './term/term.index.js';
 
 export { defineTerm, defineRange, defineSpan, findTermPlugin, getTermRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere } from './term/term.index.js';
-export { TermHook } from '../support/support.symbol.js';
+export { TermHook, sym, $Internal } from '../support/support.symbol.js';
 export { logError, logWarn, logDebug } from '../support/support.util.js';
 export { getRuntime } from '../support/support.runtime.js';

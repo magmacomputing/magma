@@ -237,6 +237,20 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		if (len <= 2) return len;
 		if (len % 3 === 0) {
 			const third = len / 3;
+
+			// Verify the three slices repeat the same range keys
+			let keysMatch = true;
+			for (let i = 0; i < third; i++) {
+				const k0 = chronological[i]?.key;
+				const k1 = chronological[third + i]?.key;
+				const k2 = chronological[third * 2 + i]?.key;
+				if (k0 !== k1 || k1 !== k2) {
+					keysMatch = false;
+					break;
+				}
+			}
+			if (!keysMatch) return len;
+
 			const r0 = chronological[0];
 			const r1 = chronological[third];
 			const r2 = chronological[third * 2];
@@ -245,9 +259,26 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 			const y1 = r1?.span?.start?.yy ?? r1?.year;
 			const y2 = r2?.span?.start?.yy ?? r2?.year;
 
-			// Require evidence of successive cycle years before reducing the list length
+			// 1. Successive cycle years (e.g. 2024, 2025, 2026)
 			if (isNumber(y0) && isNumber(y1) && isNumber(y2) && y1 === y0 + 1 && y2 === y1 + 1) {
 				return third;
+			}
+
+			// 2. Successive daily cycles (e.g. yesterday, today, tomorrow)
+			const d0 = r0?.span?.start ?? (isNumber(r0?.day) && isNumber(r0?.month) && isNumber(y0) ? resolve(r0, zdt) : undefined);
+			const d1 = r1?.span?.start ?? (isNumber(r1?.day) && isNumber(r1?.month) && isNumber(y1) ? resolve(r1, zdt) : undefined);
+			const d2 = r2?.span?.start ?? (isNumber(r2?.day) && isNumber(r2?.month) && isNumber(y2) ? resolve(r2, zdt) : undefined);
+
+			if (d0 && d1 && d2) {
+				const pd0 = d0.toDateTime().toPlainDate();
+				const pd1 = d1.toDateTime().toPlainDate();
+				const pd2 = d2.toDateTime().toPlainDate();
+				if (
+					pd1.since(pd0, { largestUnit: 'day' }).days === 1 &&
+					pd2.since(pd1, { largestUnit: 'day' }).days === 1
+				) {
+					return third;
+				}
 			}
 		}
 		return len;
@@ -484,11 +515,18 @@ export function resolveTermShift(tempo: Tempo, source: readonly any[], offset: s
 		if (targetStart) {
 			return (isUndefined(r.year) || r.year === targetStart.yy) &&
 				(isUndefined(r.month) || r.month === targetStart.mm) &&
-				(isUndefined(r.day) || r.day === targetStart.dd);
+				(isUndefined(r.day) || r.day === targetStart.dd) &&
+				(isUndefined(r.hour) || r.hour === targetStart.hh) &&
+				(isUndefined(r.minute) || r.minute === targetStart.mi) &&
+				(isUndefined(r.second) || r.second === targetStart.ss) &&
+				(isUndefined(r.millisecond) || r.millisecond === targetStart.ms);
 		}
 		return (isUndefined(r.year) || isUndefined(range.year) || r.year === range.year) &&
 			(isUndefined(r.month) || isUndefined(range.month) || r.month === range.month) &&
-			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day);
+			(isUndefined(r.day) || isUndefined(range.day) || r.day === range.day) &&
+			(isUndefined(r.hour) || isUndefined(range.hour) || r.hour === range.hour) &&
+			(isUndefined(r.minute) || isUndefined(range.minute) || r.minute === range.minute) &&
+			(isUndefined(r.second) || isUndefined(range.second) || r.second === range.second);
 	});
 
 	if (idx === -1) return undefined;

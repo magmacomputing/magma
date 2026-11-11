@@ -114,4 +114,32 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 		expect(res.key).toBe('Summer');
 		expect(res.span).toBeDefined();
 	});
+
+	it('should accept numeric epoch and Date anchors in AstroTerm.define without throwing', () => {
+		const base = new Tempo('2026-01-01T00:00:00Z', { sphere: 'north' });
+
+		// Date anchor for summer solstice 2026
+		const dateAnchor = new Date('2026-06-21T23:00:00Z');
+		const resDate = AstroTerm.define!.call(base, false, dateAnchor) as any;
+		expect(resDate).toBeDefined();
+		expect(resDate.key).toBe('Summer');
+		expect(resDate.span).toBeDefined();
+
+		// Numeric epoch anchor for summer solstice 2026
+		const epochAnchor = dateAnchor.getTime();
+		const resEpoch = AstroTerm.define!.call(base, false, epochAnchor) as any;
+		expect(resEpoch).toBeDefined();
+		expect(resEpoch.key).toBe('Summer');
+		expect(resEpoch.span).toBeDefined();
+	});
+
+	it('should fallback to receiver when anchor is invalid under catch mode', () => {
+		const base = new Tempo('2026-06-21T23:00:00Z', { sphere: 'north', catch: true });
+		// An invalid Date in catch mode produces an invalid Tempo instance
+		const invalidAnchor = new Tempo(new Date(NaN), { catch: true });
+		const res = AstroTerm.define!.call(base, false, invalidAnchor) as any;
+		expect(res).toBeDefined();
+		expect(res.key).toBe('Summer');
+		expect(res.span.start.format('{yyyy}')).toBe('2026');
+	});
 });

@@ -40,6 +40,20 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 			expect(res.hh).toBe(20)
 			expect(res.dd).toBe(31)
 		})
+
+		test('set({ "#timeOfDay": 1 }) selects today’s first period instead of yesterday’s', () => {
+			const t = new Tempo('2026-01-01T14:00:00')
+			const res = t.set({ '#timeOfDay': 1 })
+			// 1st period of today is Midnight (00:00 on 2026-01-01)
+			expect(res.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-01-01 00:00')
+		})
+
+		test('set({ "#timeOfDay": 5 }) selects today’s 5th period (Midday)', () => {
+			const t = new Tempo('2026-01-01T09:00:00')
+			const res = t.set({ '#timeOfDay': 5 })
+			// 5th period of today is Midday (12:00 on 2026-01-01)
+			expect(res.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2026-01-01 12:00')
+		})
 	})
 
 	describe('.add() shorthand', () => {

@@ -1,5 +1,5 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import { isString, isDefined, isUndefined, isInteger, asArray } from '@magmacomputing/library';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, $Internal, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { isString, isDefined, isUndefined, isInteger, isNumber, asArray } from '@magmacomputing/library';
 import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -53,11 +53,22 @@ export const FISCAL_COUNTRY_DEFAULTS: Record<string, number> = Object.freeze({
 });
 
 function getFiscalOptions(t: Tempo, callOptions?: FiscalTermOptions): FiscalTermOptions {
-	const termObj = findTermPlugin('fqtr', (t as any).state);
+	const state = (t as any)?.[$Internal]?.() ?? (t?.constructor as any)?.[$Internal]?.() ?? (t as any)?.state;
+	const termObj = findTermPlugin('fqtr', state);
 	const registeredOpts = (termObj as any)?.options;
 	const config = (t as any).config ?? {};
 	const pluginOpts = config.pluginOptions?.fiscal ?? config.fiscal ?? {};
 	return { ...registeredOpts, ...pluginOpts, ...callOptions };
+}
+
+function getCountryDefaultMonth(code: string | undefined): number | undefined {
+	if (!isString(code)) return undefined;
+	const key = code.toUpperCase();
+	if (Object.hasOwn(FISCAL_COUNTRY_DEFAULTS, key)) {
+		const val = FISCAL_COUNTRY_DEFAULTS[key];
+		return isNumber(val) ? val : undefined;
+	}
+	return undefined;
 }
 
 /**
@@ -86,7 +97,7 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 
 	// Conflict detection: if both startMonth and country are provided and diverge
 	if (isDefined(validStartMonth) && isString(rawCountry)) {
-		const countryDefault = FISCAL_COUNTRY_DEFAULTS[rawCountry.toUpperCase()];
+		const countryDefault = getCountryDefaultMonth(rawCountry);
 		if (isDefined(countryDefault) && countryDefault !== validStartMonth) {
 			logWarn(
 				`[tempo] FiscalTerm received conflicting options: country '${rawCountry}' (default start month ${countryDefault}) and explicit startMonth ${validStartMonth}. Prioritizing startMonth: ${validStartMonth}.`,
@@ -101,14 +112,16 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 
 	// 2. Explicit country override
 	if (isString(rawCountry)) {
-		const month = FISCAL_COUNTRY_DEFAULTS[rawCountry.toUpperCase()];
+		const month = getCountryDefaultMonth(rawCountry);
 		if (isDefined(month)) return month;
+		logWarn(`[tempo] FiscalTerm received unrecognized country '${rawCountry}'; expected an ISO 3166-1 alpha-2 code with known fiscal defaults.`, config);
+		return undefined;
 	}
 
 	// 3. Geographic country from t.geo.country
 	const geoCountry = (t as any).geo?.country;
 	if (isString(geoCountry)) {
-		const month = FISCAL_COUNTRY_DEFAULTS[geoCountry.toUpperCase()];
+		const month = getCountryDefaultMonth(geoCountry);
 		if (isDefined(month)) return month;
 	}
 
@@ -118,7 +131,7 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 		try {
 			const region = new Intl.Locale(locale).region;
 			if (region) {
-				const month = FISCAL_COUNTRY_DEFAULTS[region.toUpperCase()];
+				const month = getCountryDefaultMonth(region);
 				if (isDefined(month)) return month;
 			}
 		} catch {
@@ -132,6 +145,29 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 }
 
 /**
+ * Projects a Tempo or anchor instance into the ISO 8601 calendar,
+ * preserving the target instant and time zone.
+ */
+function toIsoTempo(target: any, fallback: Tempo): Tempo {
+	const ref = target ?? fallback;
+	const zdt = typeof ref?.toDateTime === 'function'
+		? ref.toDateTime()
+		: (ref?.calendarId !== undefined && typeof ref?.withCalendar === 'function' ? ref : undefined);
+
+	if (zdt) {
+		const Host = fallback.constructor as any;
+		if (zdt.calendarId !== 'iso8601') {
+			const isoZdt = zdt.withCalendar('iso8601');
+			return new Host(isoZdt, { ...(fallback as any).config, calendar: 'iso8601' });
+		}
+		if (!(ref instanceof fallback.constructor)) {
+			return new Host(zdt, (fallback as any).config);
+		}
+	}
+	return ref;
+}
+
+/**
  * Resolves fiscal quarter ranges for the active fiscal start month.
  *
  * @param t - Source Tempo instance
@@ -141,6 +177,7 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
  * @internal
  */
 function resolve(t: Tempo, anchor?: any, options?: FiscalTermOptions): any[] {
+	const isoHost = toIsoTempo(anchor, t);
 	const startMonth = resolveFiscalStartMonth(t, options);
 	if (isUndefined(startMonth)) return [];
 
@@ -152,7 +189,7 @@ function resolve(t: Tempo, anchor?: any, options?: FiscalTermOptions): any[] {
 	];
 
 	const groups = defineRange(rawRanges);
-	return resolveCycleWindow(t, groups, { anchor });
+	return resolveCycleWindow(isoHost, groups, { anchor: isoHost });
 }
 
 /**
@@ -171,10 +208,11 @@ export const FiscalTerm = defineTerm<any, FiscalTermOptions>({
 	},
 
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
+		const isoHost = toIsoTempo(anchor, this);
 		const res = resolve(this, anchor, getFiscalOptions(this, (this as any).options));
 		if (!res || res.length === 0) return undefined;
 
-		const scope = getTermRange(this, asArray(res), keyOnly as any, anchor) as any;
+		const scope = getTermRange(isoHost, asArray(res), keyOnly as any, isoHost) as any;
 		if (scope && typeof scope === 'object') {
 			const startMonth = res[0]?._startMonth ?? 1;
 			const start = scope.span.start;
@@ -204,13 +242,13 @@ export const FiscalTerm = defineTerm<any, FiscalTermOptions>({
 
 declare module '@magmacomputing/tempo' {
 	interface TempoTermRegistry {
-		fqtr: FiscalKey;
+		fqtr: FiscalKey | undefined;
 		fiscal: {
 			key: FiscalKey;
 			label: 'First Fiscal Quarter' | 'Second Fiscal Quarter' | 'Third Fiscal Quarter' | 'Fourth Fiscal Quarter';
 			fiscalYear: number;
 			keys: readonly FiscalKey[];
 			span: TermSpan;
-		};
+		} | undefined;
 	}
 }

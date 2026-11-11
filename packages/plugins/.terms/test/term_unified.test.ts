@@ -306,6 +306,13 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect(tHebrew.term.qtr).toBe('Q1');
 			expect(tHebrew.term.quarter.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-01');
 			expect(tHebrew.term.quarter.span.end.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-01');
+
+			// Also verify when anchor is passed directly as a non-ISO Temporal.ZonedDateTime
+			const zdtHebrew = tHebrew.toDateTime();
+			const tBase = new Tempo('2026-01-01T00:00:00Z');
+			const scopeAnchor = (QuarterTerm as any).define.call(tBase, false, zdtHebrew);
+			expect(scopeAnchor.key).toBe('Q1');
+			expect(scopeAnchor.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-01');
 		});
 	});
 });

@@ -413,7 +413,7 @@ When authoring a custom Term plugin that partitions time into ranges or named st
    - Attach `keys` to the static Term definition object:
      ```typescript
      export const FiscalTerm = defineTerm({
-       key: 'fqtr',
+       key: 'cfqtr',
        scope: 'fiscalQuarter',
        description: 'Fiscal quarters',
        keys: FISCAL_KEYS,
@@ -438,7 +438,7 @@ When authoring a custom Term plugin that partitions time into ranges or named st
      ```typescript
      declare module '@magmacomputing/tempo' {
        interface TempoTermRegistry {
-         fqtr: FiscalKey;
+         cfqtr: FiscalKey;
          fiscalQuarter: {
            key: FiscalKey;
            keys: readonly FiscalKey[];

@@ -56,19 +56,43 @@ function calculateAstroMoment(year: number, quarter: ASTRO, timeZone: string) {
 	return new Tempo(epochMs, { timeZone, timeStamp: 'ms' });
 }
 
-function resolve(t: Tempo, anchor?: any) {
-	const sphere = resolveTermSphere(anchor?.sphere ?? t.sphere, 'AstroTerm', t.config);
-	if (!sphere || sphere === 'equator') {
-		if (sphere === 'equator') {
-			logWarn(`[tempo] AstroTerm requires an explicit hemisphere of 'north' or 'south' (received: "equator").`, t.config);
+/**
+ * Normalizes any anchor override (Tempo, Date, timestamp number, ISO string)
+ * into a valid Tempo instance.
+ */
+function toAnchorTempo(anchor: any, fallback: Tempo): Tempo {
+	if (anchor instanceof Tempo) {
+		return anchor.isValid ? anchor : (fallback instanceof Tempo ? fallback : new (Tempo as any)(fallback));
+	}
+	if (anchor !== undefined && anchor !== null) {
+		if (isNumber(anchor)) {
+			const inst = new (fallback.constructor as any)(new Date(anchor), (fallback as any).config);
+			if (inst.isValid) return inst;
 		}
+
+		try {
+			const inst = new (fallback.constructor as any)(anchor, (fallback as any).config);
+			if (inst.isValid) return inst;
+		} catch {
+			// ignore and fallback
+		}
+	}
+	return fallback instanceof Tempo ? fallback : new (Tempo as any)(fallback);
+}
+
+function resolve(t: Tempo, anchor?: any) {
+	const anchorTempo = toAnchorTempo(anchor, t);
+	const sphere = resolveTermSphere(anchorTempo.sphere ?? t.sphere, 'AstroTerm', t.config);
+	if (!sphere || sphere === 'equator') {
+		if (sphere === 'equator')
+			logWarn(`[tempo] AstroTerm requires an explicit hemisphere of 'north' or 'south' (received: "equator").`, t.config);
 		return [];
 	}
 
 	const isSouth = sphere === 'south';
 	const compassSphere = isSouth ? COMPASS.South : COMPASS.North;
-	const year = anchor?.yy ?? anchor?.year ?? t.yy;
-	const timeZone = anchor?.tz ?? anchor?.timeZoneId ?? (typeof anchor?.toDateTime === 'function' ? anchor.toDateTime().timeZoneId : undefined) ?? t.tz ?? 'UTC';
+	const year = anchorTempo.yy;
+	const timeZone = anchorTempo.tz ?? t.tz ?? 'UTC';
 	const list: any[] = [];
 
 	const labels = isSouth
@@ -137,19 +161,20 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	},
 	define(this: Tempo, keyOnly?: boolean, anchor?: any, alias?: string) {
 		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
-		const strictList = resolveFiltered(this, anchor, filterType);
-		const dateBoundaryList = resolveDateBoundaryFiltered(this, anchor, filterType);
-		const zdt = (anchor instanceof Tempo ? anchor.toDateTime() : anchor) ?? (this instanceof Tempo ? this.toDateTime() : new Tempo(this).toDateTime());
+		const anchorTempo = toAnchorTempo(anchor, this);
+		const strictList = resolveFiltered(this, anchorTempo, filterType);
+		const dateBoundaryList = resolveDateBoundaryFiltered(this, anchorTempo, filterType);
+		const zdt = anchorTempo.toDateTime();
 
 		if (keyOnly === true || keyOnly === undefined) {
-			const result = getTermRange(this, dateBoundaryList, true, anchor);
+			const result = getTermRange(this, dateBoundaryList, true, anchorTempo);
 			return result;
 		}
 
-		const scoped = getTermRange(this, strictList, false, anchor) as any;
+		const scoped = getTermRange(this, strictList, false, anchorTempo) as any;
 		if (!scoped) return scoped;
 
-		const dateScoped = getTermRange(this, dateBoundaryList, false, anchor) as any;
+		const dateScoped = getTermRange(this, dateBoundaryList, false, anchorTempo) as any;
 		if (!dateScoped) return scoped;
 
 		const dateStart = dateScoped.span?.start?.toDateTime?.().withCalendar('iso8601');

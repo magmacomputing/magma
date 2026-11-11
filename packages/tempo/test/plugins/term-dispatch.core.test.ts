@@ -3,12 +3,13 @@ import { ParseEngine } from '#tempo/parse';
 import '#tempo/mutate';
 import '#tempo/format';
 import { defineTerm, defineSpan, getTermRange } from '#tempo/term';
-import { QuarterTerm } from '#tempo/terms';
+import { QuarterTerm, TimelineTerm } from '#tempo/terms';
 
 describe('Term Dispatch Refactor', () => {
 	beforeEach(() => {
 		Tempo.init();
 		Tempo.use(QuarterTerm);
+		Tempo.use(TimelineTerm);
 	});
 
 	it('should set term by index (#quarter: 2)', () => {
@@ -133,6 +134,27 @@ describe('Term Dispatch Refactor', () => {
 		expect(r6.span.start.mm).toBe(11);
 	});
 
+	it('should preserve distinct daily ranges as separate entries rather than collapsing to a 1-item cycle', () => {
+		const t = new Tempo('2024-01-02T12:00:00Z');
+		const distinctRanges = [
+			{ key: 'DayA', year: 2024, month: 1, day: 1 },
+			{ key: 'DayB', year: 2024, month: 1, day: 2 },
+			{ key: 'DayC', year: 2024, month: 1, day: 3 },
+		];
+
+		const r1 = getTermRange(t, distinctRanges, 1) as any;
+		expect(r1).toBeDefined();
+		expect(r1.key).toBe('DayA');
+
+		const r2 = getTermRange(t, distinctRanges, 2) as any;
+		expect(r2).toBeDefined();
+		expect(r2.key).toBe('DayB');
+
+		const r3 = getTermRange(t, distinctRanges, 3) as any;
+		expect(r3).toBeDefined();
+		expect(r3.key).toBe('DayC');
+	});
+
 	it('should sort mixed span-backed and schema-based ranges by resolved chronological start', () => {
 		const t = new Tempo('2024-06-15T12:00:00Z');
 		const rEarlier = {
@@ -181,5 +203,47 @@ describe('Term Dispatch Refactor', () => {
 		expect(snappedEnd.hh).toBe(23);
 		expect(snappedEnd.mi).toBe(59);
 		expect(snappedEnd.ss).toBe(59);
+	});
+
+	it('should shift forward from the exact start time when multiple ranges share the same key on the same day', () => {
+		Tempo.use(defineTerm({
+			key: 'slot',
+			scope: 'timeSlot',
+			resolve() {
+				return [
+					{ key: 'Session', year: 2024, month: 6, day: 15, hour: 9, minute: 0 },
+					{ key: 'Session', year: 2024, month: 6, day: 15, hour: 14, minute: 0 },
+					{ key: 'Session', year: 2024, month: 6, day: 15, hour: 18, minute: 0 },
+				];
+			},
+			define(keyOnly?: boolean) {
+				const ranges = [
+					{ key: 'Session', year: 2024, month: 6, day: 15, hour: 9, minute: 0 },
+					{ key: 'Session', year: 2024, month: 6, day: 15, hour: 14, minute: 0 },
+					{ key: 'Session', year: 2024, month: 6, day: 15, hour: 18, minute: 0 },
+				];
+				return getTermRange(this, ranges, keyOnly);
+			}
+		}));
+
+		// At 14:00 on June 15, the active range is the 14:00 session.
+		// Shifting forward by 1 advances to the start of the 18:00 session.
+		const t14 = new Tempo('2024-06-15T14:00:00Z');
+		const shifted14 = t14.add({ '#slot': 1 });
+		expect(shifted14.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2024-06-15 18:00');
+
+		// At 15:00 (1 hour into the 14:00 session), shifting forward by 1 advances
+		// to 1 hour into the 18:00 session (19:00).
+		const t15 = new Tempo('2024-06-15T15:00:00Z');
+		const shifted15 = t15.add({ '#slot': 1 });
+		expect(shifted15.format('{yyyy}-{mm}-{dd} {hh}:{mi}')).toBe('2024-06-15 19:00');
+	});
+
+	it('should parse numeric term index on day 2 correctly without falling back to day 1', () => {
+		const anchor = new Tempo('2026-01-02T14:00:00Z');
+		// 1st period of Jan 2 is Midnight (00:00 on Jan 2)
+		const parsed = ParseEngine.parse('1', anchor.toDateTime(), '#timeOfDay') as Temporal.ZonedDateTime;
+		expect(parsed.toPlainDate().toString({ calendarName: 'never' })).toBe('2026-01-02');
+		expect(parsed.hour).toBe(0);
 	});
 });

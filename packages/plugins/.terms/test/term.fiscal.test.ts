@@ -157,6 +157,59 @@ describe('FiscalTerm Plugin', () => {
 				warnSpy.mockRestore();
 			}
 		});
+
+		it('warns and returns undefined when explicit country is unrecognized, without falling through to locale', () => {
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				const t = new Tempo('2025-05-15', {
+					locale: 'en-GB',
+					pluginOptions: { fiscal: { country: 'AUS' } }
+				});
+				expect(t.term.fiscal).toBeUndefined();
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining("FiscalTerm received unrecognized country 'AUS'")
+				);
+			} finally {
+				warnSpy.mockRestore();
+			}
+		});
+
+		it('rejects inherited prototype names as country without treating them as start months', () => {
+			const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			try {
+				const t = new Tempo('2025-05-15', {
+					pluginOptions: { fiscal: { country: 'toString' } }
+				});
+				expect(t.term.fiscal).toBeUndefined();
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining("FiscalTerm received unrecognized country 'toString'")
+				);
+			} finally {
+				warnSpy.mockRestore();
+			}
+		});
+
+		it('resolves Gregorian fiscal quarters and fiscalYear even when Tempo uses a non-ISO calendar', () => {
+			// In Hebrew calendar, 2025-08-15 Gregorian is in year 5785.
+			// With AU fiscal settings (startMonth = 7), it should resolve to Gregorian FQ1 of FY2026.
+			const tHebrew = new Tempo('2025-08-15T12:00:00Z', {
+				calendar: 'hebrew',
+				pluginOptions: { fiscal: { country: 'AU' } }
+			});
+			expect(tHebrew.term.fqtr).toBe('FQ1');
+			expect(tHebrew.term.fiscal?.fiscalYear).toBe(2026);
+			expect(tHebrew.term.fiscal?.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2025-07-01');
+			expect(tHebrew.term.fiscal?.span.end.format('{yyyy}-{mm}-{dd}')).toBe('2025-10-01');
+
+			// Also verify when anchor is passed directly as a non-ISO Temporal.ZonedDateTime
+			const zdtHebrew = tHebrew.toDateTime();
+			const tBase = new Tempo('2025-01-01T00:00:00Z', { pluginOptions: { fiscal: { country: 'AU' } } });
+			const scopeAnchor = (FiscalTerm as any).define.call(tBase, false, zdtHebrew);
+			expect(scopeAnchor).toBeDefined();
+			expect(scopeAnchor.key).toBe('FQ1');
+			expect(scopeAnchor.fiscalYear).toBe(2026);
+			expect(scopeAnchor.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2025-07-01');
+		});
 	});
 
 	describe('Formatting & Term Hooks', () => {
@@ -174,6 +227,17 @@ describe('FiscalTerm Plugin', () => {
 			const t = new Tempo('2025-08-15');
 			expect(t.term.fqtr).toBe('FQ1');
 			expect(t.term.fiscal.fiscalYear).toBe(2026);
+		});
+
+		it('reads fiscal factory options from a derived Tempo class plugin state', () => {
+			class CorpTempo extends Tempo {}
+			CorpTempo.init();
+			CorpTempo.use(FiscalTerm({ startMonth: 10 })); // October start (e.g. US Federal)
+
+			const tCorp = new CorpTempo('2025-11-15');
+			// November is in FQ1 of FY2026 for October start
+			expect(tCorp.term.fqtr).toBe('FQ1');
+			expect(tCorp.term.fiscal.fiscalYear).toBe(2026);
 		});
 	});
 });
