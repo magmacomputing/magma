@@ -57,6 +57,11 @@ describe('FiscalTerm Plugin', () => {
 			const tNext = new Tempo('2026-07-01T00:00:00Z', config);
 			expect(tNext.term.fiscal.key).toBe('FQ1');
 			expect(tNext.term.fiscal.fiscalYear).toBe(2027);
+
+			// Querying named 'FQ1' from February 2026 selects the FQ1 of the active cycle (July 2025), not July 2026
+			const fq1FromFeb = FiscalTerm.define!.call(t3, 'FQ1') as any;
+			expect(fq1FromFeb.key).toBe('FQ1');
+			expect(fq1FromFeb.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2025-07-01');
 		});
 	});
 
@@ -108,6 +113,16 @@ describe('FiscalTerm Plugin', () => {
 
 				expect(warnSpy).toHaveBeenCalledWith(
 					expect.stringContaining('FiscalTerm ignoring invalid startMonth 13; expected an integer from 1 to 12.')
+				);
+
+				// Fractional startMonth (e.g. 7.9) should also be rejected
+				warnSpy.mockClear();
+				const tFrac = new Tempo('2025-08-01', {
+					pluginOptions: { fiscal: { country: 'AU', startMonth: 7.9 } }
+				});
+				expect(tFrac.term.fiscal.key).toBe('FQ1');
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining('FiscalTerm ignoring invalid startMonth 7.9; expected an integer from 1 to 12.')
 				);
 			} finally {
 				warnSpy.mockRestore();

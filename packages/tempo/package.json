@@ -181,6 +181,11 @@
       "import": "./dist/term/term.timeline.js",
       "default": "./dist/term/term.timeline.js"
     },
+    "./terms/fiscal": {
+      "types": "./dist/term/term.fiscal.d.ts",
+      "import": "./dist/term/term.fiscal.js",
+      "default": "./dist/term/term.fiscal.js"
+    },
     "./term/*": {
       "types": "./dist/plugin/term/term.*.d.ts",
       "import": "./dist/plugin/term/term.*.js",
@@ -215,6 +220,11 @@
       "types": "./dist/term/term.timeline.d.ts",
       "import": "./dist/term/term.timeline.js",
       "default": "./dist/term/term.timeline.js"
+    },
+    "./term/fiscal": {
+      "types": "./dist/term/term.fiscal.d.ts",
+      "import": "./dist/term/term.fiscal.js",
+      "default": "./dist/term/term.fiscal.js"
     },
     "./plugin": {
       "types": "./dist/plugin/plugin.index.d.ts",
@@ -293,7 +303,7 @@
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
     "repl:lite": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
     "repl:core": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/core.ts",
-    "parse": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/parse.ts",
+    "repl:parse": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/parse.ts",
     "build": "npm run clean && node ../../node_modules/typescript-7/bin/tsc -b src --force && npm run build:bundle && npm run build:resolve",
     "build:bundle": "rollup -c",
     "build:resolve": "tsx bin/resolve-types.ts",

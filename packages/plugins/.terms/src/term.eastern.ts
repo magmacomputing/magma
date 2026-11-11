@@ -1,4 +1,5 @@
 import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { isNumber } from '@magmacomputing/library';
 import { getChineseZodiac as getChineseZodiacFn } from '@magmacomputing/tempo-fns';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -19,16 +20,20 @@ export interface LunarZodiacVariants {
 export const EASTERN_ANIMAL_KEYS = Object.freeze([
 	'Rat',
 	'Ox',
+	'Water Buffalo',
 	'Tiger',
 	'Rabbit',
+	'Cat',
 	'Dragon',
 	'Snake',
 	'Horse',
 	'Goat',
+	'Sheep',
 	'Monkey',
 	'Rooster',
 	'Dog',
 	'Pig',
+	'Wild Boar',
 ] as const);
 
 export type EasternAnimalKey = (typeof EASTERN_ANIMAL_KEYS)[number];
@@ -137,8 +142,7 @@ const BASE_EMOJI_MAP: Record<string, string> = {
  * @internal
  */
 function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
-	const refTempo = anchor ?? t;
-	const year = anchor?.year ?? refTempo.yy;
+	const year = anchor?.year ?? anchor?.yy ?? (isNumber(anchor) ? anchor : t.yy);
 	const res = getChineseZodiacFn(year);
 
 	const animal = res.animal;
@@ -152,7 +156,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	};
 
 	// Determine key string based on optional locale config
-	const locale = (refTempo as any).config?.locale ?? (refTempo as any).locale;
+	const locale = (anchor as any)?.config?.locale ?? (anchor as any)?.locale ?? (t as any).config?.locale ?? (t as any).locale;
 	let key = animal;
 	let emoji = baseEmoji;
 
@@ -164,7 +168,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		else if (loc.startsWith('zh') || loc === 'cn') { key = variants.cn.animal; emoji = variants.cn.emoji; }
 	}
 
-	const timeZone = refTempo.tz ?? 'UTC';
+	const timeZone = (anchor as any)?.tz ?? (anchor as any)?.timeZoneId ?? (typeof (anchor as any)?.toDateTime === 'function' ? (anchor as any).toDateTime().timeZoneId : undefined) ?? t.tz ?? 'UTC';
 	const start = new (t.constructor as any)(`${year}-01-01T00:00:00`, { timeZone });
 	const nextYear = year + 1;
 	const end = new (t.constructor as any)(`${nextYear}-01-01T00:00:00`, { timeZone });
@@ -178,7 +182,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		variants,
 		group: 'lunar-zodiac',
 		keys: EASTERN_ANIMAL_KEYS,
-		span: defineSpan(refTempo, start, end),
+		span: defineSpan(t, start, end, anchor),
 	};
 }
 

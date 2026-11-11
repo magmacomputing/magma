@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import { isNumber, isString, isDefined, isUndefined, asArray } from '@magmacomputing/library';
+import { isString, isDefined, isUndefined, isInteger, asArray } from '@magmacomputing/library';
 import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -70,8 +70,8 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 	const rawStartMonth = opts.startMonth;
 	const rawCountry = opts.country;
 
-	const validStartMonth = (isNumber(rawStartMonth) && rawStartMonth >= 1 && rawStartMonth <= 12)
-		? Math.trunc(rawStartMonth)
+	const validStartMonth = isInteger(rawStartMonth) && rawStartMonth >= 1 && rawStartMonth <= 12
+		? rawStartMonth
 		: undefined;
 	if (isDefined(rawStartMonth) && isUndefined(validStartMonth)) {
 		logWarn(`[tempo] FiscalTerm ignoring invalid startMonth ${rawStartMonth}; expected an integer from 1 to 12.`, config);

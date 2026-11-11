@@ -105,4 +105,13 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 			warnSpy.mockRestore();
 		}
 	});
+
+	it('should accept a Tempo instance as anchor in AstroTerm.define without throwing', () => {
+		const base = new Tempo('2026-01-01T00:00:00Z', { sphere: 'north' });
+		const anchor = new Tempo('2026-06-21T23:00:00Z', { sphere: 'north' });
+		const res = AstroTerm.define!.call(base, false, anchor) as any;
+		expect(res).toBeDefined();
+		expect(res.key).toBe('Summer');
+		expect(res.span).toBeDefined();
+	});
 });

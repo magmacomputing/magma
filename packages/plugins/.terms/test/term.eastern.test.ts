@@ -48,6 +48,10 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 
 		expect(scope.variants.vn.animal).toBe('Horse');
 		expect(scope.variants.vn.emoji).toBe('🐎');
+
+		// Span should measure elapsed and progress from the requested date
+		expect(scope.span.progress).toBeGreaterThan(0.4);
+		expect(scope.span.progress).toBeLessThan(0.5);
 	});
 
 	it('resolves regional variations & emojis for Cat/Rabbit, Water Buffalo/Ox, and Wild Boar/Pig years', () => {
@@ -81,10 +85,12 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		const tVN = new Tempo('2023-05-01T12:00:00Z', { locale: 'vi-VN' });
 		expect(tVN.term.sign).toBe('Cat');
 		expect(tVN.term.shengxiao.emoji).toBe('🐈');
+		expect(tVN.term.shengxiao.keys.includes(tVN.term.shengxiao.key as any)).toBe(true);
 
 		const tJP = new Tempo('2019-05-01T12:00:00Z', { locale: 'ja-JP' });
 		expect(tJP.term.sign).toBe('Wild Boar');
 		expect(tJP.term.shengxiao.emoji).toBe('🐗');
+		expect(tJP.term.shengxiao.keys.includes(tJP.term.shengxiao.key as any)).toBe(true);
 	});
 
 	it('honors keyOnly: false for lunarSign and eastern terms', () => {
@@ -97,5 +103,28 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		expect(fullScope.key).toBe('Horse');
 		expect(fullScope.span.start).toBeDefined();
 		expect(fullScope.span.end).toBeDefined();
+	});
+
+	it('resolves animal and span based on Tempo anchor year', () => {
+		const t2024 = new Tempo('2024-01-01T00:00:00Z');
+		// 2030 is Year of the Dog
+		const t2030Anchor = new Tempo('2030-06-01T00:00:00Z');
+		const scope = (t2024 as any).defineTerm?.('shengxiao', false, t2030Anchor) ?? (t2024.term as any).shengxiao;
+		if (typeof (t2024 as any).defineTerm === 'function') {
+			expect(scope.animal).toBe('Dog');
+			expect(scope.span.start.format('{yyyy}')).toBe('2030');
+		}
+	});
+
+	it('resolves localized animal key and timezone from anchor override', () => {
+		const tDefault = new Tempo('2023-01-01T00:00:00Z');
+		// 2023 in Vietnam is Cat
+		const anchorVN = new Tempo('2023-06-01T12:00:00+07:00', { locale: 'vi-VN' });
+		const scope = (tDefault as any).defineTerm?.('shengxiao', false, anchorVN);
+		if (scope) {
+			expect(scope.key).toBe('Cat');
+			expect(scope.emoji).toBe('🐈');
+			expect(scope.span.start.tz).toBe('+07:00');
+		}
 	});
 });

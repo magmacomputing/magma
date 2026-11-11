@@ -442,8 +442,7 @@ When authoring a custom Term plugin that partitions time into ranges or named st
          fiscalQuarter: {
            key: FiscalKey;
            keys: readonly FiscalKey[];
-           start: Tempo;
-           end: Tempo;
+           span: TermSpan;
            // ...
          };
        }

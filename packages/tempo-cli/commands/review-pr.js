@@ -396,7 +396,20 @@ mutation($threadId: ID!) {
   }
 }`;
 		try {
-			runGh(['api', 'graphql', '-f', `query=${mutation}`, '-f', `threadId=${targetThreadId}`]);
+			const res = runGh(['api', 'graphql', '-f', `query=${mutation}`, '-f', `threadId=${targetThreadId}`]);
+			let parsed = null;
+			try {
+				parsed = JSON.parse(res);
+			} catch { }
+			if (parsed?.errors?.length) {
+				const errMsg = parsed.errors.map(e => e.message).join('; ');
+				console.error(`Error resolving review thread ${targetThreadId}: ${errMsg}`);
+				process.exit(1);
+			}
+			if (!parsed?.data?.resolveReviewThread?.thread) {
+				console.error(`Error resolving review thread ${targetThreadId}: Unexpected response payload`);
+				process.exit(1);
+			}
 			console.log(`✅ Successfully resolved review thread ${targetThreadId}`);
 			return;
 		} catch (err) {
@@ -420,7 +433,20 @@ mutation($threadId: ID!, $body: String!) {
   }
 }`;
 		try {
-			runGh(['api', 'graphql', '-f', `query=${mutation}`, '-f', `threadId=${targetThreadId}`, '-f', `body=${body}`]);
+			const res = runGh(['api', 'graphql', '-f', `query=${mutation}`, '-f', `threadId=${targetThreadId}`, '-f', `body=${body}`]);
+			let parsed = null;
+			try {
+				parsed = JSON.parse(res);
+			} catch { }
+			if (parsed?.errors?.length) {
+				const errMsg = parsed.errors.map(e => e.message).join('; ');
+				console.error(`Error replying to review thread ${targetThreadId}: ${errMsg}`);
+				process.exit(1);
+			}
+			if (!parsed?.data?.addPullRequestReviewThreadReply?.comment) {
+				console.error(`Error replying to review thread ${targetThreadId}: Unexpected response payload`);
+				process.exit(1);
+			}
 			console.log(`✅ Successfully replied to review thread ${targetThreadId}`);
 			return;
 		} catch (err) {

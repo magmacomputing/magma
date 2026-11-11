@@ -84,8 +84,15 @@ const toZdt = (v: any): Temporal.ZonedDateTime => isTempo(v) ? v.toDateTime() : 
 /**
  * Internal helper to construct a ZonedDateTime from a raw term item
  */
-const toZdtItem = (item: any, defaultYear: number, tz: string, cal: string): Temporal.ZonedDateTime =>
-	toZonedDateTime({
+const toZdtItem = (item: any, defaultYear: number, tz: string, cal: string): Temporal.ZonedDateTime => {
+	if (item?.span?.start) {
+		const startZdt = typeof item.span.start.toDateTime === 'function'
+			? item.span.start.toDateTime()
+			: item.span.start;
+		return startZdt.withTimeZone(tz).withCalendar(cal);
+	}
+
+	return toZonedDateTime({
 		year: item.year ?? defaultYear,
 		month: item.month ?? 1,
 		day: item.day ?? 1,
@@ -98,10 +105,11 @@ const toZdtItem = (item: any, defaultYear: number, tz: string, cal: string): Tem
 		timeZone: tz,
 		calendar: cal
 	});
+};
 
 /**
  * Resolves a mutation (start/mid/end/add) against a Tempo Term.
- * 
+ *
  * @param Tempo - The Tempo constructor (for static access)
  * @param instance - The calling Tempo instance
  * @param mutate - The mutation type: 'set' | 'add' | 'start' | 'mid' | 'end'
@@ -382,9 +390,11 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 			const resolved = chronological.map((c, idx) => {
 				if (c.start && c.end) return c;
-				const start = resolveRangeZdt(c);
+				const start = c.start ?? resolveRangeZdt(c);
 				const nextC = chronological[idx + 1];
-				const end = nextC ? resolveRangeZdt(nextC) : start.add({ years: 1 });
+				const end = c.end
+					?? (c.span?.end ? (typeof c.span.end.toDateTime === 'function' ? c.span.end.toDateTime().withTimeZone(tz).withCalendar(cal) : c.span.end) : undefined)
+					?? (nextC ? resolveRangeZdt(nextC) : start.add({ years: 1 }));
 				return { ...c, start, end };
 			});
 
@@ -418,7 +428,7 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 				// otherwise pick the nearest future start
 				const next = candidates
-					.filter(it => (toZdt(it.start).epochNanoseconds as bigint) > (zdt.epochNanoseconds))
+					.filter(it => toZdt(it.start).epochNanoseconds > zdt.epochNanoseconds)
 					.sort((a, b) => {
 						const sa = toZdt(a.start).epochNanoseconds;
 						const sb = toZdt(b.start).epochNanoseconds;
@@ -443,10 +453,10 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 			if (numericOnly && iterations > 1) {
 				const candidates = resolved
 					.filter(c => rKey ? c.key?.toLowerCase() === rKey.toLowerCase() : true)
-					.filter(it => (toZdt(it.start).epochNanoseconds as bigint) > (jump.epochNanoseconds as bigint))
+					.filter(it => toZdt(it.start).epochNanoseconds > jump.epochNanoseconds)
 					.sort((a, b) => {
-						const sa = toZdt(a.start).epochNanoseconds as bigint;
-						const sb = toZdt(b.start).epochNanoseconds as bigint;
+						const sa = toZdt(a.start).epochNanoseconds;
+						const sb = toZdt(b.start).epochNanoseconds;
 						return sa === sb ? 0 : (sa < sb ? -1 : 1);
 					});
 

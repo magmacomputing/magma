@@ -154,6 +154,12 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect(shortWetRange?.label).toBe('Short Wet');
 			expect(shortWetRange?.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2024-10-01');
 
+			// When a key occurs twice (e.g. 'Wet'), define('Wet') should prefer the range containing the anchor
+			const wetFromShortWet = SeasonTerm.define!.call(tShortWet as any, 'Wet') as any;
+			expect(wetFromShortWet?.key).toBe('Wet');
+			expect(wetFromShortWet?.label).toBe('Short Wet');
+			expect(wetFromShortWet?.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2024-10-01');
+
 			const tEast = new Tempo(testDate, { catch: true, sphere: 'east' });
 			expect(tEast.term.quarter.key).toBe('Q2'); // Quarters are universal
 			expect(tEast.term.season).toBeUndefined(); // Seasons require valid sphere

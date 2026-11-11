@@ -37,6 +37,11 @@ describe('isSameFiscalQuarter', () => {
 
 		// Same ISO quarter (Q2), different Fiscal quarters (FQ1 vs FQ2) -> false
 		expect(isSameFiscalQuarter(tApr, tMay)).toBe(false);
+
+		// Same physical quarter start (April 1) but different fiscal calendars (startMonth 1: FQ2 vs startMonth 4: FQ1) -> false
+		const tCal1 = new FiscalTempo('2025-04-15', { pluginOptions: { fiscal: { startMonth: 1 } } });
+		const tCal4 = new FiscalTempo('2025-04-15', { pluginOptions: { fiscal: { startMonth: 4 } } });
+		expect(isSameFiscalQuarter(tCal1, tCal4)).toBe(false);
 	});
 
 	it('should throw when FiscalTerm resolves for only one of the two dates', () => {
@@ -57,5 +62,22 @@ describe('isSameFiscalQuarter', () => {
 		} finally {
 			warnSpy.mockRestore();
 		}
+	});
+
+	it('should return true for dates in the same ISO quarter even across differing time zones', () => {
+		const tUtc = new Tempo('2026-02-15T12:00:00Z', { timeZone: 'UTC' });
+		const tNy = new Tempo('2026-02-15T12:00:00-05:00', { timeZone: 'America/New_York' });
+
+		expect(isSameFiscalQuarter(tUtc, tNy)).toBe(true);
+	});
+
+	it('should return true for dates in the same fiscal quarter even across differing time zones', () => {
+		const FiscalTempo = Tempo.derive();
+		FiscalTempo.use(FiscalTerm);
+
+		const tUtc = new FiscalTempo('2026-08-15T12:00:00Z', { timeZone: 'UTC', pluginOptions: { fiscal: { country: 'AU' } } });
+		const tNy = new FiscalTempo('2026-08-15T12:00:00-04:00', { timeZone: 'America/New_York', pluginOptions: { fiscal: { country: 'AU' } } });
+
+		expect(isSameFiscalQuarter(tUtc, tNy)).toBe(true);
 	});
 });

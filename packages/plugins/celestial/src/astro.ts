@@ -68,7 +68,7 @@ function resolve(t: Tempo, anchor?: any) {
 	const isSouth = sphere === 'south';
 	const compassSphere = isSouth ? COMPASS.South : COMPASS.North;
 	const year = anchor?.yy ?? anchor?.year ?? t.yy;
-	const timeZone = anchor?.timeZoneId ?? t.tz ?? 'UTC';
+	const timeZone = anchor?.tz ?? anchor?.timeZoneId ?? (typeof anchor?.toDateTime === 'function' ? anchor.toDateTime().timeZoneId : undefined) ?? t.tz ?? 'UTC';
 	const list: any[] = [];
 
 	const labels = isSouth
@@ -139,7 +139,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 		const filterType = alias === 'equinox' ? 'Equinox' : (alias === 'solstice' ? 'Solstice' : undefined);
 		const strictList = resolveFiltered(this, anchor, filterType);
 		const dateBoundaryList = resolveDateBoundaryFiltered(this, anchor, filterType);
-		const zdt = anchor ?? (this instanceof Tempo ? this.toDateTime() : new Tempo(this).toDateTime());
+		const zdt = (anchor instanceof Tempo ? anchor.toDateTime() : anchor) ?? (this instanceof Tempo ? this.toDateTime() : new Tempo(this).toDateTime());
 
 		if (keyOnly === true || keyOnly === undefined) {
 			const result = getTermRange(this, dateBoundaryList, true, anchor);

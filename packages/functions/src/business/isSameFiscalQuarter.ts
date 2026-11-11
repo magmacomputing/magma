@@ -14,7 +14,7 @@ export const isSameFiscalQuarter = (date1: Tempo, date2: Tempo): boolean => {
 	if (Boolean(f1) !== Boolean(f2))
 		throw new Error("FiscalTerm resolved for only one date; configure fiscal options for both dates.");
 	if (f1 && f2)
-		return f1.span.start.epoch.ns === f2.span.start.epoch.ns;
+		return f1.key === f2.key && f1.fiscalYear === f2.fiscalYear && f1.span.start.format('{yyyy}-{mm}-{dd}') === f2.span.start.format('{yyyy}-{mm}-{dd}');
 
 	const q1 = date1.term.quarter;
 	const q2 = date2.term.quarter;
@@ -22,6 +22,6 @@ export const isSameFiscalQuarter = (date1: Tempo, date2: Tempo): boolean => {
 	if (!q1 || !q2)
 		throw new Error("QuarterTerm or FiscalTerm plugin must be loaded to calculate fiscal quarters.");
 
-	// Compare the exact start timestamps to ensure they are the exact same quarter in the same year
-	return q1.span.start.epoch.ns === q2.span.start.epoch.ns;
+	// Compare the calendar dates of the start boundaries to handle differing time zones cleanly
+	return q1.span.start.format('{yyyy}-{mm}-{dd}') === q2.span.start.format('{yyyy}-{mm}-{dd}');
 }

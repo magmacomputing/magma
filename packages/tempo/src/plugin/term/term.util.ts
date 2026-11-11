@@ -149,8 +149,7 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
  * @internal
  */
 export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any): string | ResolvedRange | undefined | null {
-	const chronological = sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
-	if (chronological.length === 0) return undefined;
+	if (list.length === 0) return undefined;
 
 	let zdt = isTempo(anchor)
 		? anchor.toDateTime()
@@ -165,6 +164,9 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const rolloverUnit = SCHEMA[rolloverIndex][0];
 
 	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
+		if (range.span?.start)
+			return range.span.start;
+		
 		const obj: any = {};
 		for (let i = 0; i < SCHEMA.length; i++) {
 			const [u] = SCHEMA[i];
@@ -184,7 +186,17 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 
 		// @ts-ignore
 		return new (getHost(tempo))(resZdt, (tempo as any).config);
-	}
+	};
+
+	const hasSpans = list.some(r => r.span?.start);
+	const chronological = hasSpans
+		? [...list].sort((a, b) => {
+			const aNs = (a.span?.start ?? resolve(a, zdt)).epoch.ns as bigint;
+			const bNs = (b.span?.start ?? resolve(b, zdt)).epoch.ns as bigint;
+			return aNs < bNs ? -1 : (aNs > bNs ? 1 : 0);
+		})
+		: sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
+	if (chronological.length === 0) return undefined;
 
 	const matchIndex = chronological.findLastIndex(range => {
 		const date = resolve(range, zdt);
@@ -201,61 +213,105 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const buildResolvedRange = (matchItem: any, start: Tempo, end: Tempo): ResolvedRange => {
 		const meta: Record<string, any> = {};
 		for (const [k, v] of Object.entries(matchItem)) {
-			if (!SCHEMA_KEYS.has(k))
+			if (!SCHEMA_KEYS.has(k) && k !== 'span')
 				meta[k] = v;
 		}
 
+		const resolvedStart = matchItem.span?.start ?? start;
+		const resolvedEnd = matchItem.span?.end ?? end;
+
 		return {
 			...meta,
-			span: defineSpan(hostTempo, start, end, zdt)
+			span: defineSpan(hostTempo, resolvedStart, resolvedEnd, zdt)
 		} as ResolvedRange;
 	};
 
-	if (isNumber(keyOnly)) {
-		const cycle = Math.floor(chronological.length / 3);
-		if (cycle === 0 || !Number.isInteger(keyOnly) || keyOnly < 1 || keyOnly > cycle) return undefined;
+	const deriveCycleLength = (): number => {
+		const len = chronological.length;
+		if (len <= 2) return len;
+		if (len % 3 === 0) {
+			const third = len / 3;
+			const r0 = chronological[0];
+			const r1 = chronological[third];
+			const r2 = chronological[third * 2];
 
-		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
+			const y0 = r0?.span?.start?.yy ?? r0?.year;
+			const y1 = r1?.span?.start?.yy ?? r1?.year;
+			const y2 = r2?.span?.start?.yy ?? r2?.year;
+
+			// Require evidence of successive cycle years before reducing the list length
+			if (isNumber(y0) && isNumber(y1) && isNumber(y2) && y1 === y0 + 1 && y2 === y1 + 1) {
+				return third;
+			}
+		}
+		return len;
+	};
+
+	if (isNumber(keyOnly)) {
+		if (!Number.isInteger(keyOnly) || keyOnly < 1) return undefined;
+
+		const cycle = deriveCycleLength();
+		if (cycle === 0 || keyOnly > cycle) return undefined;
+
+		const offset = (cycle === chronological.length)
+			? 0
+			: (matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle);
 		const match = chronological[offset + (keyOnly - 1)];
 		if (!match) return undefined;
 
-		const start = resolve(match, zdt);
+		const start = match.span?.start ?? resolve(match, zdt);
 		let end: Tempo;
-		const i = offset + (keyOnly - 1);
-		const next = chronological[i + 1];
-
-		if (next) {
-			end = resolve(next, zdt);
+		if (match.span?.end) {
+			end = match.span.end;
 		} else {
-			const roll = { ...match };
-			if (isNumber(roll.year)) roll.year++;
-			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			const i = offset + (keyOnly - 1);
+			const next = chronological[i + 1];
+
+			if (next) {
+				end = next.span?.start ?? resolve(next, zdt);
+			} else {
+				const roll = { ...match };
+				if (isNumber(roll.year)) roll.year++;
+				end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			}
 		}
 
 		return buildResolvedRange(match, start, end);
 	}
 
 	if (isText(keyOnly)) {
-		const cycle = Math.floor(chronological.length / 3);
-		const offset = matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle;
-		const cycleSlice = cycle > 0 ? chronological.slice(offset, offset + cycle) : chronological;
+		const cycle = deriveCycleLength();
+		const offset = (cycle === 0 || cycle === chronological.length)
+			? 0
+			: (matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle);
+		const cycleSlice = cycle > 0 && cycle < chronological.length ? chronological.slice(offset, offset + cycle) : chronological;
 		const lowKey = keyOnly.toLowerCase();
-		const match = chronological.find(r => r.year === zdt.year && (r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey))
-			?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey)
-			?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey);
+
+		const currentMatch = matchIndex >= 0 ? chronological[matchIndex] : undefined;
+		const match = (currentMatch && (currentMatch.label?.toLowerCase() === lowKey || currentMatch.key?.toLowerCase() === lowKey))
+			? currentMatch
+			: (cycleSlice.find(r => r.label?.toLowerCase() === lowKey)
+				?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey)
+				?? chronological.find(r => r.year === zdt.year && r.label?.toLowerCase() === lowKey)
+				?? chronological.find(r => r.year === zdt.year && r.key?.toLowerCase() === lowKey)
+				?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey));
 		if (!match) return undefined;
 
-		const start = resolve(match, zdt);
-		const i = chronological.indexOf(match);
-		const next = chronological[i + 1];
+		const start = match.span?.start ?? resolve(match, zdt);
 		let end: Tempo;
-
-		if (next) {
-			end = resolve(next, zdt);
+		if (match.span?.end) {
+			end = match.span.end;
 		} else {
-			const roll = { ...match };
-			if (isNumber(roll.year)) roll.year++;
-			end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			const i = chronological.indexOf(match);
+			const next = chronological[i + 1];
+
+			if (next) {
+				end = next.span?.start ?? resolve(next, zdt);
+			} else {
+				const roll = { ...match };
+				if (isNumber(roll.year)) roll.year++;
+				end = resolve(roll, zdt.add({ [`${rolloverUnit}s`]: 1 } as any));
+			}
 		}
 
 		return buildResolvedRange(match, start, end);
@@ -267,11 +323,13 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const i = chronological.indexOf(match);
 	const next = chronological[i + 1];
 
-	const start = resolve(match, zdt);
+	const start = match.span?.start ?? resolve(match, zdt);
 	let end: Tempo;
 
-	if (next) {
-		end = resolve(next, zdt);
+	if (match.span?.end) {
+		end = match.span.end;
+	} else if (next) {
+		end = next.span?.start ?? resolve(next, zdt);
 	} else {
 		const roll = { ...match };
 		if (isNumber(roll.year)) roll.year++;
@@ -407,6 +465,9 @@ export function resolveTermShift(tempo: Tempo, source: readonly any[], offset: s
 	// find index in list (matching key and major components for identity)
 	const idx = list.findIndex(r => {
 		if (r.key !== range.key) return false;
+		if (r.span?.start && targetStart) {
+			return r.span.start.epoch.ns === targetStart.epoch.ns;
+		}
 		if (targetStart) {
 			return (isUndefined(r.year) || r.year === targetStart.yy) &&
 				(isUndefined(r.month) || r.month === targetStart.mm) &&
@@ -452,7 +513,13 @@ type resolveOptions = {
  * @internal
  */
 export function resolveTermHost(source: Tempo | any, anchor?: any): Tempo | any {
-	if (isTempo(source)) return source;
+	if (isTempo(source)) {
+		if (isNotNullish(anchor)) {
+			const Host = getHost(source);
+			return Host ? new Host(anchor, (source as any).config) : source;
+		}
+		return source;
+	}
 	if (isObject(source) && 'pluginsDb' in source && 'config' in source) {
 		const Host = (source as any).tempoInstance?.constructor ?? getHost(source);
 		const safeConfig = { ...(source as any).config };

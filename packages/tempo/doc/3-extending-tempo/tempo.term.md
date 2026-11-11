@@ -111,7 +111,8 @@ t.term.zodiac
 // → { key: 'Pisces', symbol: 'Fish', emoji: '♓', group: 'western', keys: [...], span: { ... } }
 t.term.zodiac.keys  // → ['Aries', 'Taurus', ..., 'Pisces']
 
-t.term.eastern.key  // → 'Snake'
+t.term.eastern       // → 'Snake'
+t.term.shengxiao.key // → 'Snake'
 ```
 
 ### `tod` / `timeOfDay` — Daily Time Periods
@@ -133,7 +134,7 @@ Classifies the time of day into a named period based on a pre-defined range.
 const t = new Tempo('1pm');
 
 t.term.tod            // → 'Midday'
-t.term.timeOfDay      // → { key: 'Midday', hour: 12, group: 'standard', keys: [...] }
+t.term.timeOfDay      // → { key: 'Midday', group: 'standard', keys: [...], span: { ... } }
 t.term.timeOfDay.keys // → ['Midnight', 'Early', 'Morning', 'Midmorning', 'Midday', 'Afternoon', 'Evening', 'Night']
 ```
 
