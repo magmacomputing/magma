@@ -337,7 +337,12 @@ const _ParseEngine = {
 			const terms = state.pluginsDb.terms;
 
 			const val = dateTime ?? state.anchor ?? state.config.anchor ?? (isTempo(tempo) ? (tempo as any).toDateTime() : (isZonedDateTime(tempo) ? tempo : (isInstant(tempo) ? tempo.toZonedDateTimeISO(config.timeZone) : undefined)));
-			const [tz, cal] = getTemporalIds(config.timeZone, config.calendar);
+			const anchorZdt = isTempo(val) ? (val as any).toDateTime() : (isZonedDateTime(val) ? val : undefined);
+			const hasExplicitTz = hasOwn(state.options ?? {}, 'timeZone');
+			const [tz, cal] = getTemporalIds(
+				(!hasExplicitTz && anchorZdt) ? anchorZdt.timeZoneId : config.timeZone,
+				(!hasOwn(state.options ?? {}, 'calendar') && anchorZdt) ? anchorZdt.calendarId : config.calendar
+			);
 
 			let basis: Temporal.ZonedDateTime;
 			if (isTempo(val)) basis = (val as any).toDateTime();
