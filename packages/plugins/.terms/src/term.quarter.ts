@@ -14,6 +14,23 @@ const groups = defineRange([
 ]);
 
 /**
+ * Projects a Tempo or anchor instance into the ISO 8601 calendar,
+ * preserving the target instant and time zone.
+ */
+function toIsoTempo(target: any, fallback: Tempo): Tempo {
+	const ref = target ?? fallback;
+	if (typeof ref?.toDateTime === 'function') {
+		const zdt = ref.toDateTime();
+		if (zdt.calendarId !== 'iso8601') {
+			const isoZdt = zdt.withCalendar('iso8601');
+			const Host = fallback.constructor as any;
+			return new Host(isoZdt, { ...(fallback as any).config, calendar: 'iso8601' });
+		}
+	}
+	return ref;
+}
+
+/**
  * Resolves calendar quarter candidates.
  *
  * @param t - The source Tempo instance
@@ -22,7 +39,8 @@ const groups = defineRange([
  * @internal
  */
 function resolve(t: Tempo, anchor?: any): any[] {
-	return resolveCycleWindow(t, groups, { anchor });
+	const isoHost = toIsoTempo(anchor, t);
+	return resolveCycleWindow(isoHost, groups, { anchor: isoHost });
 }
 
 /**
@@ -42,8 +60,9 @@ export const QuarterTerm = defineTerm({
 
 	/** determine where the current Tempo instance fits within the above range */
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
+		const isoHost = toIsoTempo(anchor, this);
 		const res = resolve(this, anchor);
-		const scope = getTermRange(this, asArray(res), keyOnly as any, anchor) as any;
+		const scope = getTermRange(isoHost, asArray(res), keyOnly as any, isoHost) as any;
 		return (scope && typeof scope === 'object') ? { ...scope, keys: QUARTER_KEYS } : scope;
 	},
 

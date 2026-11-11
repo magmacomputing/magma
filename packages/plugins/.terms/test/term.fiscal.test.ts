@@ -167,5 +167,13 @@ describe('FiscalTerm Plugin', () => {
 			expect(t.format('{#fiscal.fiscalYear}')).toBe('2026');
 			expect(t.format('{#fiscal.span.start}')).toBe('2025-07-01');
 		});
+
+		it('applies registered factory options when FiscalTerm is registered with options', () => {
+			Tempo.init();
+			Tempo.use(FiscalTerm({ startMonth: 7 }));
+			const t = new Tempo('2025-08-15');
+			expect(t.term.fqtr).toBe('FQ1');
+			expect(t.term.fiscal.fiscalYear).toBe(2026);
+		});
 	});
 });

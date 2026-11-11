@@ -298,5 +298,14 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect((t.term.shengxiao as any).animals).toBeUndefined();
 			expect((t.term.shengxiao as any).signs).toBeUndefined();
 		});
+
+		it('QuarterTerm resolves ISO calendar quarters even when Tempo uses a non-ISO calendar', () => {
+			Tempo.use(QuarterTerm);
+			// 2026-02-15 is ISO Q1
+			const tHebrew = new Tempo('2026-02-15T12:00:00Z', { calendar: 'hebrew' });
+			expect(tHebrew.term.qtr).toBe('Q1');
+			expect(tHebrew.term.quarter.span.start.format('{yyyy}-{mm}-{dd}')).toBe('2026-01-01');
+			expect(tHebrew.term.quarter.span.end.format('{yyyy}-{mm}-{dd}')).toBe('2026-04-01');
+		});
 	});
 });

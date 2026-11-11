@@ -179,12 +179,14 @@ In v5.0.0, the Term system undergoes a breaking architectural refinement to alig
 
 ```typescript
 // ❌ v4.x (Quarter was hemisphere-dependent; root start/end and leaked template keys)
-const t = new Tempo('2026-02-15', { sphere: 'south' });
-t.term.qtr; // 'Q3' (in v4 southern hemisphere)
-t.term.quarter.start; // Root getter
-t.term.quarter.fiscal; // Legacy fiscal year string/number
-t.term.quarter.month; // Leaked template matching schema key
+const t4 = new Tempo('2026-02-15', { sphere: 'south' });
+t4.term.qtr; // 'Q3' (in v4 southern hemisphere)
+t4.term.quarter.start; // Root getter
+t4.term.quarter.fiscal; // Legacy fiscal year string/number
+t4.term.quarter.month; // Leaked template matching schema key
+```
 
+```typescript
 // ✅ v5.0.0 (Quarter is ISO 8601-2; boundaries and progress encapsulated in .span)
 const t = new Tempo('2026-02-15', { sphere: 'south' });
 t.term.qtr; // 'Q1' (strictly ISO 8601-2 calendar quarter everywhere)

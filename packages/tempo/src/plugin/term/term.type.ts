@@ -147,11 +147,11 @@ export interface TermSpan {
 	/** End boundary of the term range (frozen Tempo instance) */
 	end: Tempo;
 	/** Total duration of the range from start to end */
-	total: Duration;
+	total: Duration | Temporal.Duration;
 	/** Duration elapsed from start to current instant */
-	elapsed: Duration;
+	elapsed: Duration | Temporal.Duration;
 	/** Duration remaining from current instant until end */
-	remaining: Duration;
+	remaining: Duration | Temporal.Duration;
 	/** Normalized progress ratio through the range (0.0 .. 1.0) */
 	progress: number;
 }

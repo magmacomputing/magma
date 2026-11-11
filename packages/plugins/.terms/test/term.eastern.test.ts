@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { CulturalTerms } from '../src/index.js';
+import { CulturalTerms, EasternTerm } from '../src/index.js';
 
 describe('Eastern Zodiac & Western Zodiac Terms', () => {
 	beforeEach(() => {
@@ -126,5 +126,14 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 			expect(scope.emoji).toBe('🐈');
 			expect(scope.span.start.tz).toBe('+07:00');
 		}
+	});
+
+	it('interprets numeric anchor 0 as epoch 1970 instead of year 0', () => {
+		const t = new Tempo('2024-01-01T00:00:00Z');
+		// 1970 is Year of the Dog
+		const scope = (EasternTerm as any).define.call(t, false, 0);
+		expect(scope).toBeDefined();
+		expect(scope.animal).toBe('Dog');
+		expect(scope.span.start.format('{yyyy}')).toBe('1970');
 	});
 });

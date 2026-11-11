@@ -142,7 +142,10 @@ const BASE_EMOJI_MAP: Record<string, string> = {
  * @internal
  */
 function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
-	const year = anchor?.year ?? anchor?.yy ?? (isNumber(anchor) ? anchor : t.yy);
+	const refTempo = isNumber(anchor)
+		? new (t.constructor as any)(new Date(anchor), (t as any).config)
+		: anchor;
+	const year = refTempo?.year ?? refTempo?.yy ?? t.yy;
 	const res = getChineseZodiacFn(year);
 
 	const animal = res.animal;
@@ -156,7 +159,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	};
 
 	// Determine key string based on optional locale config
-	const locale = (anchor as any)?.config?.locale ?? (anchor as any)?.locale ?? (t as any).config?.locale ?? (t as any).locale;
+	const locale = (refTempo as any)?.config?.locale ?? (refTempo as any)?.locale ?? (t as any).config?.locale ?? (t as any).locale;
 	let key = animal;
 	let emoji = baseEmoji;
 
@@ -168,7 +171,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		else if (loc.startsWith('zh') || loc === 'cn') { key = variants.cn.animal; emoji = variants.cn.emoji; }
 	}
 
-	const timeZone = (anchor as any)?.tz ?? (anchor as any)?.timeZoneId ?? (typeof (anchor as any)?.toDateTime === 'function' ? (anchor as any).toDateTime().timeZoneId : undefined) ?? t.tz ?? 'UTC';
+	const timeZone = (refTempo as any)?.tz ?? (refTempo as any)?.timeZoneId ?? (typeof (refTempo as any)?.toDateTime === 'function' ? (refTempo as any).toDateTime().timeZoneId : undefined) ?? t.tz ?? 'UTC';
 	const start = new (t.constructor as any)(`${year}-01-01T00:00:00`, { timeZone });
 	const nextYear = year + 1;
 	const end = new (t.constructor as any)(`${nextYear}-01-01T00:00:00`, { timeZone });
@@ -182,7 +185,7 @@ function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 		variants,
 		group: 'lunar-zodiac',
 		keys: EASTERN_ANIMAL_KEYS,
-		span: defineSpan(t, start, end, anchor),
+		span: defineSpan(t, start, end, refTempo),
 	};
 }
 

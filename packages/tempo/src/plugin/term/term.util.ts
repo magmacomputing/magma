@@ -103,6 +103,12 @@ export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any)
 		total = start.until(end);
 		elapsed = start.until(refTempo);
 		remaining = refTempo.until(end);
+	} else if (isFunction((getHost(hostTempo) as any)?.duration)) {
+		const startZdt = start.toDateTime();
+		const endZdt = end.toDateTime();
+		total = (getHost(hostTempo) as any).duration(startZdt.until(endZdt));
+		elapsed = (getHost(hostTempo) as any).duration(startZdt.until(refZdt));
+		remaining = (getHost(hostTempo) as any).duration(refZdt.until(endZdt));
 	} else {
 		const startZdt = start.toDateTime();
 		const endZdt = end.toDateTime();
@@ -286,15 +292,22 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 			: (matchIndex === -1 ? cycle : Math.floor(matchIndex / cycle) * cycle);
 		const cycleSlice = cycle > 0 && cycle < chronological.length ? chronological.slice(offset, offset + cycle) : chronological;
 		const lowKey = keyOnly.toLowerCase();
+		const isFiscal = chronological.some(r => (r as any)._startMonth !== undefined && (r as any)._startMonth !== 1);
 
 		const currentMatch = matchIndex >= 0 ? chronological[matchIndex] : undefined;
 		const match = (currentMatch && (currentMatch.label?.toLowerCase() === lowKey || currentMatch.key?.toLowerCase() === lowKey))
 			? currentMatch
-			: (cycleSlice.find(r => r.label?.toLowerCase() === lowKey)
-				?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey)
-				?? chronological.find(r => r.year === zdt.year && r.label?.toLowerCase() === lowKey)
-				?? chronological.find(r => r.year === zdt.year && r.key?.toLowerCase() === lowKey)
-				?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey));
+			: (isFiscal
+				? (cycleSlice.find(r => r.label?.toLowerCase() === lowKey)
+					?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.year === zdt.year && r.label?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.year === zdt.year && r.key?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey))
+				: (chronological.find(r => r.year === zdt.year && r.label?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.year === zdt.year && r.key?.toLowerCase() === lowKey)
+					?? cycleSlice.find(r => r.label?.toLowerCase() === lowKey)
+					?? cycleSlice.find(r => r.key?.toLowerCase() === lowKey)
+					?? chronological.find(r => r.key?.toLowerCase() === lowKey || r.label?.toLowerCase() === lowKey)));
 		if (!match) return undefined;
 
 		const start = match.span?.start ?? resolve(match, zdt);

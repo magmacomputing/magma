@@ -35,7 +35,7 @@ The `<key>` and `<scope>` are defined by the plugin author, where the intent of 
 ## Provided Plugin
 
 ::: info
-Meteorological Seasons assume a Northern Hemisphere configuration (`sphere: 'north'`) by default, and also support Southern Hemisphere (`'south'`) and equatorial tropical cycles (`'equator'`). Calendar Quarters are strictly decoupled from hemisphere.
+Meteorological Seasons require an explicit sphere configuration (`sphere: 'north'`, `'south'`, or `'equator'`). Calendar Quarters are strictly decoupled from hemisphere.
 :::
 
 ### `qtr` / `quarter` — Calendar Quarters (ISO 8601-2)
@@ -80,9 +80,9 @@ tCustom.term.fiscal.key    // → 'FQ4'
 Maps the current date to the appropriate meteorological season. Supports Northern Hemisphere (`'north'`), Southern Hemisphere (`'south'`), and equatorial tropical cycles (`'equator'`: `Wet` and `Dry` seasons).
 
 ```ts
-const t = new Tempo('01-Jul-2025');
+const t = new Tempo('01-Jul-2025', { sphere: 'north' });
 
-t.term.szn               // → 'Summer'  (northern hemisphere default)
+t.term.szn               // → 'Summer'  (Northern Hemisphere)
 t.term.season.keys       // → ['Spring', 'Summer', 'Autumn', 'Winter', 'Dry', 'Wet']
 t.term.season.span.start // → Tempo('2025-06-01T00:00:00')
 ```

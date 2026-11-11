@@ -1,4 +1,4 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import { isString, isDefined, isUndefined, isInteger, asArray } from '@magmacomputing/library';
 import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
@@ -52,6 +52,14 @@ export const FISCAL_COUNTRY_DEFAULTS: Record<string, number> = Object.freeze({
 	NO: 1,
 });
 
+function getFiscalOptions(t: Tempo, callOptions?: FiscalTermOptions): FiscalTermOptions {
+	const termObj = findTermPlugin('fqtr', (t as any).state);
+	const registeredOpts = (termObj as any)?.options;
+	const config = (t as any).config ?? {};
+	const pluginOpts = config.pluginOptions?.fiscal ?? config.fiscal ?? {};
+	return { ...registeredOpts, ...pluginOpts, ...callOptions };
+}
+
 /**
  * Resolves the start month for the fiscal year based on explicit options,
  * country presets, geographical coordinates, or locale regional identification.
@@ -64,8 +72,7 @@ export const FISCAL_COUNTRY_DEFAULTS: Record<string, number> = Object.freeze({
  */
 export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOptions): number | undefined {
 	const config = (t as any).config ?? {};
-	const pluginOpts = config.pluginOptions?.fiscal ?? config.fiscal ?? {};
-	const opts = { ...pluginOpts, ...callOptions };
+	const opts = getFiscalOptions(t, callOptions);
 
 	const rawStartMonth = opts.startMonth;
 	const rawCountry = opts.country;
@@ -160,11 +167,11 @@ export const FiscalTerm = defineTerm<any, FiscalTermOptions>({
 	keys: FISCAL_KEYS,
 
 	resolve(this: Tempo, anchor?: any) {
-		return resolve(this, anchor, (this as any).options);
+		return resolve(this, anchor, getFiscalOptions(this, (this as any).options));
 	},
 
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
-		const res = resolve(this, anchor, (this as any).options);
+		const res = resolve(this, anchor, getFiscalOptions(this, (this as any).options));
 		if (!res || res.length === 0) return undefined;
 
 		const scope = getTermRange(this, asArray(res), keyOnly as any, anchor) as any;
