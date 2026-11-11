@@ -11,9 +11,10 @@ export const isSameFiscalQuarter = (date1: Tempo, date2: Tempo): boolean => {
 
 	const f1 = (date1.term as any).fiscal;
 	const f2 = (date2.term as any).fiscal;
-	if (f1 && f2) {
+	if (Boolean(f1) !== Boolean(f2))
+		throw new Error("FiscalTerm resolved for only one date; configure fiscal options for both dates.");
+	if (f1 && f2)
 		return f1.span.start.epoch.ns === f2.span.start.epoch.ns;
-	}
 
 	const q1 = date1.term.quarter;
 	const q2 = date2.term.quarter;

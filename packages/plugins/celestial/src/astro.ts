@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere, logWarn } from '@magmacomputing/tempo/plugin/sdk';
+import { enums, getTermRange, defineTerm, enumify, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere, logWarn, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from '@magmacomputing/tempo-fns';
 
 const ASTRO = enumify({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
@@ -7,6 +7,19 @@ type ASTRO = ValueOf<typeof ASTRO>;
 
 export const ASTRO_KEYS = Object.freeze(['Vernal', 'Summer', 'Autumnal', 'Winter'] as const);
 export type AstroKey = (typeof ASTRO_KEYS)[number];
+
+export interface AstronomyScope {
+	key: AstroKey;
+	strict: AstroKey;
+	season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
+	sphere: Tempo.COMPASS;
+	event: 'Equinox' | 'Solstice';
+	keys: readonly AstroKey[];
+	group: 'astronomy';
+	span: TermSpan;
+}
+
+export type AstroScope = AstronomyScope;
 
 const { COMPASS } = enums;
 const key = 'astro';
@@ -139,12 +152,13 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 		const dateScoped = getTermRange(this, dateBoundaryList, false, anchor) as any;
 		if (!dateScoped) return scoped;
 
-		const strictBoundary = strictList.find((item: any) =>
+		const dateStart = dateScoped.span?.start?.toDateTime?.().withCalendar('iso8601');
+		const strictBoundary = dateStart ? strictList.find((item: any) =>
 			item.key === dateScoped.key &&
-			item.year === dateScoped.year &&
-			item.month === dateScoped.month &&
-			item.day === dateScoped.day
-		);
+			item.year === dateStart.year &&
+			item.month === dateStart.month &&
+			item.day === dateStart.day
+		) : undefined;
 
 		if (!strictBoundary) {
 			return {
@@ -276,3 +290,12 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 		return undefined;
 	},
 });
+
+declare module '@magmacomputing/tempo' {
+	interface TempoTermRegistry {
+		astro: AstroKey;
+		equinox: 'Vernal' | 'Autumnal';
+		solstice: 'Summer' | 'Winter';
+		astronomy: AstronomyScope;
+	}
+}

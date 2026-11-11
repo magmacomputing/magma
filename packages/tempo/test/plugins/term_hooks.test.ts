@@ -170,7 +170,7 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	});
 
 	it('should resolve natural ordinals via [TermHook.ordinal] on standard QuarterTerm (#qtr)', () => {
-		const anchor = new Tempo('2026-01-15T00:00:00Z', { sphere: 'north' });
+		const anchor = new Tempo('2026-01-15T00:00:00Z');
 
 		// 1st day of #qtr.2 -> 2026-04-01
 		const t1st = Tempo.from('1st day of #qtr.2', { anchor });
@@ -232,8 +232,8 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	});
 
 	it('should calculate cycle diffs via [TermHook.diff] on standard QuarterTerm (#qtr)', () => {
-		const t1 = new Tempo('2026-02-15T00:00:00Z', { sphere: 'north' });
-		const t2 = new Tempo('2026-11-20T00:00:00Z', { sphere: 'north' });
+		const t1 = new Tempo('2026-02-15T00:00:00Z');
+		const t2 = new Tempo('2026-11-20T00:00:00Z');
 
 		// Q1 to Q4 = 3 quarters
 		expect(t1.until(t2, '#qtr')).toBe(3);
@@ -241,7 +241,7 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(t1.until(t1, '#qtr')).toBe(0);
 
 		// Across calendar years: Q1 2026 to Q2 2027 = 5 quarters
-		const t3 = new Tempo('2027-05-10T00:00:00Z', { sphere: 'north' });
+		const t3 = new Tempo('2027-05-10T00:00:00Z');
 		expect(t1.until(t3, '#qtr')).toBe(5);
 		expect(t3.since(t1, '#qtr')).toBe('-5 #qtr');
 	});
@@ -260,7 +260,7 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		Tempo.use([ZodiacTerm, EasternTerm, TimelineTerm]);
 
 		// QuarterTerm format
-		const tQ1 = new Tempo('2026-02-15T00:00:00Z', { sphere: 'north' });
+		const tQ1 = new Tempo('2026-02-15T00:00:00Z');
 		expect(tQ1.format('Quarter: {#qtr}')).toBe('Quarter: Q1');
 		expect(tQ1.format('Label: {#qtr.label}')).toBe('Label: First Quarter');
 		expect(tQ1.format('Upper: {#qtr.label:upper}')).toBe('Upper: FIRST QUARTER');

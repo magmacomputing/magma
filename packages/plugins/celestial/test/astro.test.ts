@@ -41,6 +41,20 @@ describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => 
 		expect(springSouth.term.astronomy.season).toBe('Spring');
 	});
 
+	it('should preserve the exact sub-day astronomical event instant in span boundaries', () => {
+		// 2026-06-21T23:00:00Z is on the June solstice date after the solstice instant (~08:24Z)
+		const onSolsticeDate = new Tempo('2026-06-21T23:00:00Z', { sphere: 'north' });
+		const start = onSolsticeDate.term.astronomy.span.start;
+
+		expect(onSolsticeDate.term.astronomy.key).toBe('Summer');
+		expect(start.format('{yyyy}-{mm}-{dd}')).toBe('2026-06-21');
+		// Should match the exact astronomical instant rather than falling back to 00:00:00.000
+		expect(start.hh * 3600 + start.mi * 60 + start.ss).toBeGreaterThan(0);
+
+		const boundStart = AstroTerm[TermHook.bound]('start', 'astro', onSolsticeDate);
+		expect(boundStart.epoch.ns).toBe(start.epoch.ns);
+	});
+
 	it('should allow standalone use of AstroTerm', () => {
 		Tempo.init();
 		Tempo.use(AstroTerm);

@@ -55,7 +55,7 @@ t.term.quarter.span.progress // → 0.5055 (normalized 0.0 .. 1.0)
 
 ### `fqtr` / `fiscal` — Fiscal Quarters
 
-Divides corporate or governmental financial cycles into four fiscal quarters (`FQ1`, `FQ2`, `FQ3`, `FQ4`). Supports configurable start months or automated jurisdictional defaults (e.g., Australia starting July 1, UK/India starting April 1, US federal starting October 1). Provides numeric `fiscalYear: number` for direct financial arithmetic.
+Divides corporate or governmental financial cycles into four fiscal quarters (`FQ1`, `FQ2`, `FQ3`, `FQ4`). Supports configurable start months or automated jurisdictional defaults (e.g., Australia starting July 1, UK/India starting April 1; `'US'`, `geo.country: 'US'`, and `en-US` select January 1, whereas US federal reporting uses `country: 'US_FED'` or `startMonth: 10` for an October 1 start). Provides numeric `fiscalYear: number` for direct financial arithmetic.
 
 ```ts
 import { FiscalTerm } from '@magmacomputing/tempo/terms';
@@ -67,12 +67,12 @@ tAU.term.fqtr              // → 'FQ3'
 tAU.term.fiscal.fiscalYear // → 2026
 tAU.term.fiscal.span.start // → Tempo('2026-01-01T00:00:00')
 
-// Or via GeoConfig or call-site options
+// Or via GeoConfig or custom startMonth in pluginOptions
 const tGeoAU = new Tempo('15-Feb-2026', { geo: { country: 'AU' } });
 tGeoAU.term.fqtr           // → 'FQ3'
 
-const tCustom = new Tempo('15-Feb-2026');
-tCustom.term.fiscal({ startMonth: 4 }).key // → 'FQ4'
+const tCustom = new Tempo('15-Feb-2026', { pluginOptions: { fiscal: { startMonth: 4 } } });
+tCustom.term.fiscal.key    // → 'FQ4'
 ```
 
 ### `szn` / `season` — Meteorological Seasons
@@ -98,19 +98,20 @@ tTropics.term.season.label // → 'Long Wet' ('Long Wet', 'Long Dry', 'Short Wet
 
 ### `zdc` / `zodiac` — Astrological Zodiac
 
-Determines the Western astrological sign for the date.
-The full `zodiac` scope also includes the **Chinese zodiac** (animal, element, Yin/Yang) derived from the year.
+Determines the Western astrological sign for the date when `ZodiacTerm` is registered (`EasternTerm` provides the Chinese/lunar zodiac).
 
 ```ts
+import { ZodiacTerm, EasternTerm } from '@magmacomputing/tempo/terms';
+Tempo.use([ZodiacTerm, EasternTerm]);
+
 const t = new Tempo('14-Mar-2025');
 
 t.term.zdc          // → 'Pisces'
 t.term.zodiac
-// → { key: 'Pisces', day: 19, month: 2, symbol: 'Fish', longitude: 330, planet: 'Neptune', keys: [...] }
+// → { key: 'Pisces', symbol: 'Fish', emoji: '♓', group: 'western', keys: [...], span: { ... } }
 t.term.zodiac.keys  // → ['Aries', 'Taurus', ..., 'Pisces']
 
-t.term.zodiac.CN
-// → { animal: 'Snake', traits: 'Wise, intuitive', element: 'Wood', yinYang: 'Yin' }
+t.term.eastern.key  // → 'Snake'
 ```
 
 ### `tod` / `timeOfDay` — Daily Time Periods
@@ -143,7 +144,7 @@ The static `Tempo.terms` getter returns a read-only list of all registered plugi
 ```ts
 Tempo.terms
 // → [
-//     { key: 'qtr', scope: 'quarter',  description: 'Fiscal Quarter' },
+//     { key: 'qtr', scope: 'quarter',  description: 'Calendar Quarter' },
 //     { key: 'szn', scope: 'season',   description: 'Meteorological season' },
 //     { key: 'zdc', scope: 'zodiac',   description: 'Astrological Zodiac sign' },
 //     { key: 'tod', scope: 'timeOfDay',   description: 'Daily time period' },

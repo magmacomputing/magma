@@ -1,8 +1,8 @@
 import { Tempo } from '#tempo/core';
-import '#tempo/parse';
+import { ParseEngine } from '#tempo/parse';
 import '#tempo/mutate';
 import '#tempo/format';
-import '#tempo/term';
+import { defineTerm } from '#tempo/term';
 import { QuarterTerm } from '#tempo/terms';
 
 describe('Term Dispatch Refactor', () => {
@@ -44,5 +44,36 @@ describe('Term Dispatch Refactor', () => {
 		// Q1 is Jan, Feb, Mar. Mid should be midpoint of range.
 		// Approx Feb 15
 		expect(t2.format('{yyyy}-{mm}')).toBe('2024-02');
+	});
+
+	it('should preserve resolved range start when ParseEngine parses a bare term name', () => {
+		const anchor = new Tempo('2024-05-15T12:00:00Z');
+		const parsed = ParseEngine.parse('#quarter', anchor.toDateTime(), '#quarter') as Temporal.ZonedDateTime;
+		expect(parsed.toPlainDate().toString({ calendarName: 'never' })).toBe('2024-04-01');
+	});
+
+	it('should advance across empty match windows using currentRes.span forward and backward', () => {
+		Tempo.use(defineTerm({
+			key: 'win',
+			scope: 'windowTerm',
+			resolve(anchor: any) {
+				const y = anchor?.year ?? this.yy;
+				return [
+					{ key: 'WinA', year: y, month: 1, day: 1 },
+					{ key: 'WinB', year: y, month: 7, day: 1 },
+				];
+			},
+			define() {
+				return undefined;
+			},
+		}));
+
+		// Forward empty-matches jump (2024-08-01 is in WinB -> jumps via currentRes.span.end to 2025-07-01)
+		const tLate = new Tempo('2024-08-01T12:00:00Z');
+		expect(tLate.set({ start: '#win.>WinB' }).format('{yyyy}-{mm}-{dd}')).toBe('2025-07-01');
+
+		// Backward empty-matches jump (2024-02-15 is in WinA -> jumps via currentRes.span.start - 1ns into 2023)
+		const tEarly = new Tempo('2024-02-15T12:00:00Z');
+		expect(tEarly.set({ start: '#win.<WinA' }).format('{yyyy}-{mm}-{dd}')).toBe('2023-01-01');
 	});
 });

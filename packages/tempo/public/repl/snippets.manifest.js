@@ -52,14 +52,14 @@ return \`Today is \${today.format('{www}')}. Weekend in US? \${us.intl.info.week
 	},
 
 	quarters: {
-		label: 'Preset: Fiscal Quarters & Math (Core)',
-		code: `// 💼 Fiscal Quarters and Tempo Math
-const t = new Tempo('2026-02-15', { sphere: 'north' });
+		label: 'Preset: Calendar Quarters & Math (Core)',
+		code: `// 📅 Calendar Quarters and Tempo Math
+const t = new Tempo('2026-02-15');
 
 console.log('Quarter Key:', t.term.qtr); // "Q1"
 console.log('Quarter Label:', t.term.quarter.label); // "First Quarter"
-console.log('Quarter Start:', t.term.quarter.start.format('{yyyy}-{mm}-{dd}'));
-console.log('Quarter End:', t.term.quarter.end.format('{yyyy}-{mm}-{dd}'));
+console.log('Quarter Start:', t.term.quarter.span.start.format('{yyyy}-{mm}-{dd}'));
+console.log('Quarter End:', t.term.quarter.span.end.format('{yyyy}-{mm}-{dd}'));
 
 // Chainable Semantic Term Mutation:
 const nextQtr = t.add({ '#quarter': 1 });

@@ -4,7 +4,7 @@ import { FiscalTerm } from '@magmacomputing/tempo/terms';
 
 describe('isSameFiscalQuarter', () => {
 	beforeAll(() => {
-		Tempo.init({ sphere: 'north' });
+		Tempo.init();
 	});
 
 	it('should return true for dates in the same ISO quarter when FiscalTerm is not loaded', () => {
@@ -37,5 +37,25 @@ describe('isSameFiscalQuarter', () => {
 
 		// Same ISO quarter (Q2), different Fiscal quarters (FQ1 vs FQ2) -> false
 		expect(isSameFiscalQuarter(tApr, tMay)).toBe(false);
+	});
+
+	it('should throw when FiscalTerm resolves for only one of the two dates', () => {
+		const FiscalTempo = Tempo.derive();
+		FiscalTempo.use(FiscalTerm);
+
+		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		try {
+			const tConfigured = new FiscalTempo('2026-07-15', { pluginOptions: { fiscal: { startMonth: 7 } } });
+			const tUnconfigured = new FiscalTempo('2026-08-15', { locale: 'en' });
+
+			expect(() => isSameFiscalQuarter(tConfigured, tUnconfigured)).toThrow(
+				/FiscalTerm resolved for only one date/
+			);
+			expect(() => isSameFiscalQuarter(tUnconfigured, tConfigured)).toThrow(
+				/FiscalTerm resolved for only one date/
+			);
+		} finally {
+			warnSpy.mockRestore();
+		}
 	});
 });

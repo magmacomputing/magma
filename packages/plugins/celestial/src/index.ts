@@ -28,7 +28,7 @@ import type {
 import { LunarTerm, type LunarPhaseOptions, type LunarPhaseResult } from './lunar.js';
 import { SolarTerm, type SolarPhaseState } from './solar.js';
 import { TidalTerm } from './tidal.js';
-import { AstroTerm, ASTRO_KEYS, type AstroKey, type AstroTermOptions } from './astro.js';
+import { AstroTerm, ASTRO_KEYS, type AstroKey, type AstroTermOptions, type AstronomyScope, type AstroScope } from './astro.js';
 
 export type {
 	LunarPhaseKey,
@@ -49,6 +49,8 @@ export type {
 	SolarPhaseState,
 	AstroKey,
 	AstroTermOptions,
+	AstronomyScope,
+	AstroScope,
 };
 
 export {
@@ -182,29 +184,10 @@ declare module '@magmacomputing/tempo' {
 			start: Tempo;
 			end: Tempo;
 		};
-		astro: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
+		astro: AstroKey;
 		equinox: 'Vernal' | 'Autumnal';
 		solstice: 'Summer' | 'Winter';
-		astronomy: {
-			key: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-			strict: 'Vernal' | 'Summer' | 'Autumnal' | 'Winter';
-			season: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
-			sphere: Tempo.COMPASS;
-			event: 'Equinox' | 'Solstice';
-			keys: readonly AstroKey[];
-			group: 'astronomy';
-			year: number;
-			month: number;
-			day: number;
-			hour: number;
-			minute: number;
-			second: number;
-			millisecond: number;
-			microsecond: number;
-			nanosecond: number;
-			start: Tempo;
-			end: Tempo;
-		};
+		astronomy: AstronomyScope;
 	}
 }
 

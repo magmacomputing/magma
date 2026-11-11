@@ -78,7 +78,6 @@ describe('Localized Modifiers', () => {
 	test('should map shorthand localized terms correctly', () => {
 		const config = defineConfig({
 			timeZone: 'UTC',
-			sphere: 'north',
 			registry: {
 				modifiers: {
 					'>': ['prochain']

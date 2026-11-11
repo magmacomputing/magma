@@ -1,5 +1,5 @@
-import { vi } from 'vitest';
 import { Tempo } from '#tempo';
+import { defineSpan, cast } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	QuarterTerm,
 	QUARTER_KEYS,
@@ -15,7 +15,7 @@ import {
 } from '../src/index.js';
 
 describe('Term Unified Logic (Mutation & Identity)', () => {
-	// 2024-05-15 is in Q2 (Apr-Jun) in Northern hemisphere
+	// 2024-05-15 is in Q2 (Apr-Jun)
 	const testDate = '2024-05-15T12:00:00+10:00[Australia/Sydney]';
 
 	beforeEach(() => {
@@ -23,19 +23,19 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	});
 
 	it('should jump to the start of a term using #term syntax in set()', () => {
-		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+		const t = new Tempo(testDate, { catch: true });
 		const start = t.set({ start: '#quarter' });
 		expect(start.format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
 	});
 
 	it('should support short keys as synonyms in set()', () => {
-		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+		const t = new Tempo(testDate, { catch: true });
 		const start = t.set({ start: '#qtr' });
 		expect(start.format('{yyyy}-{mm}-{dd}')).toBe('2024-04-01');
 	});
 
 	it('should jump to the end of a term using set()', () => {
-		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+		const t = new Tempo(testDate, { catch: true });
 		const end = t.set({ end: '#quarter' });
 		// End of Q2 is 2024-06-30 23:59:59...
 		expect(end.format('{yyyy}-{mm}-{dd}')).toBe('2024-06-30');
@@ -45,7 +45,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	});
 
 	it('should jump to the mid-point of a term using set()', () => {
-		const t = new Tempo('2024-05-15', { catch: true, sphere: 'north' }); // Q2: Apr, May, Jun (91 days)
+		const t = new Tempo('2024-05-15', { catch: true }); // Q2: Apr, May, Jun (91 days)
 		const mid = t.set({ mid: '#quarter' });
 		// Mid of 91 days (Apr 1 to Jun 30)
 		// Apr(30) + May(15.5) -> May 16
@@ -54,7 +54,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	});
 
 	it('should format labels using {#qtr} (Key) and {#quarter} (Scope)', () => {
-		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+		const t = new Tempo(testDate, { catch: true });
 		// Default Quarter plugin doesn't have a label, so both should return Q2
 		expect(t.format('{#qtr}')).toBe('Q2');
 		expect(t.format('{#quarter}')).toBe('Second Quarter');
@@ -81,12 +81,12 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 	});
 
 	it('should return the original placeholder for unknown terms in format()', () => {
-		const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+		const t = new Tempo(testDate, { catch: true });
 		expect(t.format('{#nonexistent}')).toBe('{#nonexistent}');
 	});
 
 	it('should throw an error for invalid terms when catch is false', () => {
-		const t = new Tempo(testDate, { catch: false, sphere: 'north', silent: true });
+		const t = new Tempo(testDate, { catch: false, silent: true });
 		expect(() => t.set({ start: '#invalid' })).toThrow(/Unknown Term identifier\: #invalid/);
 	});
 
@@ -168,7 +168,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 
 	describe('Term Range Boundaries & TermSpan (Fluent & Immutable)', () => {
 		it('should return start, end, durations, and progress inside .span', () => {
-			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			const t = new Tempo(testDate, { catch: true });
 			const q = t.term.quarter;
 
 			expect(q.span.start).toBeInstanceOf(Tempo);
@@ -190,12 +190,47 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 		});
 
 		it('should ensure the Range object and its boundaries are frozen', () => {
-			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			const t = new Tempo(testDate, { catch: true });
 			const q = t.term.quarter;
 
 			expect(Object.isFrozen(q)).toBe(true);
 			expect(Object.isFrozen(q.span.start)).toBe(true);
 			expect(Object.isFrozen(q.span.end)).toBe(true);
+		});
+
+		it('should compute elapsed, remaining, and progress consistently from anchor when anchor differs from tempo', () => {
+			const tQ1 = new Tempo('2024-02-01T00:00:00Z');
+			const q2Start = new Tempo('2024-04-01T00:00:00Z');
+			const q2End = new Tempo('2024-07-01T00:00:00Z');
+			const anchorMid = new Tempo('2024-05-16T12:00:00Z');
+
+			const spanFromTempoAnchor = defineSpan(
+				cast(tQ1),
+				cast(q2Start),
+				cast(q2End),
+				cast(anchorMid),
+			);
+			const spanFromZdtAnchor = defineSpan(
+				cast(tQ1),
+				cast(q2Start),
+				cast(q2End),
+				cast(anchorMid.toDateTime()),
+			);
+
+			// Elapsed should be positive from q2Start to anchorMid (~45.5 days), not negative from q2Start to tQ1
+			expect(spanFromTempoAnchor.elapsed.toString()).toBe(q2Start.until(anchorMid).toString());
+			expect(spanFromTempoAnchor.remaining.toString()).toBe(anchorMid.until(q2End).toString());
+			expect(spanFromTempoAnchor.progress).toBe(0.5);
+
+			expect(spanFromZdtAnchor.elapsed.toString()).toBe(spanFromTempoAnchor.elapsed.toString());
+			expect(spanFromZdtAnchor.remaining.toString()).toBe(spanFromTempoAnchor.remaining.toString());
+			expect(spanFromZdtAnchor.progress).toBe(0.5);
+
+			const anchoredQuarter = QuarterTerm.define!.call(cast(tQ1), false, cast(anchorMid.toDateTime())) as any;
+			expect(anchoredQuarter.key).toBe('Q2');
+			expect(anchoredQuarter.span.elapsed.toString()).toBe(spanFromTempoAnchor.elapsed.toString());
+			expect(anchoredQuarter.span.remaining.toString()).toBe(spanFromTempoAnchor.remaining.toString());
+			expect(anchoredQuarter.span.progress).toBe(0.5);
 		});
 	});
 
@@ -205,7 +240,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect((QuarterTerm as any).quarters).toBeUndefined();
 			expect(Object.isFrozen(QUARTER_KEYS)).toBe(true);
 
-			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			const t = new Tempo(testDate, { catch: true });
 			expect(t.term.quarter.keys).toBe(QUARTER_KEYS);
 			expect((t.term.quarter as any).quarters).toBeUndefined();
 		});
@@ -226,7 +261,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect((TimelineTerm as any).timesOfDay).toBeUndefined();
 			expect(Object.isFrozen(TIMEOFDAY_KEYS)).toBe(true);
 
-			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			const t = new Tempo(testDate, { catch: true });
 			expect(t.term.timeOfDay.keys).toBe(TIMEOFDAY_KEYS);
 			expect((t.term.timeOfDay as any).periods).toBeUndefined();
 			expect((t.term.timeOfDay as any).timesOfDay).toBeUndefined();
@@ -239,7 +274,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect((ZodiacTerm as any).zodiacs).toBeUndefined();
 			expect(Object.isFrozen(ZODIAC_KEYS)).toBe(true);
 
-			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			const t = new Tempo(testDate, { catch: true });
 			expect(t.term.zodiac.keys).toBe(ZODIAC_KEYS);
 			expect((t.term.zodiac as any).signs).toBeUndefined();
 			expect((t.term.zodiac as any).zodiacs).toBeUndefined();
@@ -252,7 +287,7 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect((EasternTerm as any).signs).toBeUndefined();
 			expect(Object.isFrozen(EASTERN_ANIMAL_KEYS)).toBe(true);
 
-			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
+			const t = new Tempo(testDate, { catch: true });
 			expect(t.term.shengxiao.keys).toBe(EASTERN_ANIMAL_KEYS);
 			expect((t.term.shengxiao as any).animals).toBeUndefined();
 			expect((t.term.shengxiao as any).signs).toBeUndefined();

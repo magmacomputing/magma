@@ -16,7 +16,7 @@ import { selectLayoutPatterns } from '../engine/engine.planner.js';
 import { compose } from '../engine/engine.composer.js';
 import { normalizeMatch, accumulateResult } from '../engine/engine.normalizer.js';
 
-import { getRange, getTermRange, findTermPlugin } from '../plugin/term/term.util.js';
+import { getRange, getTermRange, findTermPlugin, resolveTermHost } from '../plugin/term/term.util.js';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import type { Range, ResolvedRange, TermParseContext } from '../plugin/term/term.type.js';
 
@@ -397,9 +397,12 @@ const _ParseEngine = {
 				}
 
 				if (tempo === term) {
-					const range = termObj.define.call(state as any, false, today);
+					const host = resolveTermHost(state, today);
+					const range = termObj.define.call(host as any, false, today);
 					const list = isUndefined(range) ? [] : asArray(range as Range | Range[]);
-					const current = getTermRange(state as any, list, false, today) as ResolvedRange | undefined;
+					const current = !Array.isArray(range) && isObject(range) && 'span' in range
+						? range as ResolvedRange
+						: getTermRange(host as any, list, false, today) as ResolvedRange | undefined;
 					const start = current?.span?.start;
 					if (start) return { type: 'Temporal.ZonedDateTime', value: start.toDateTime().withTimeZone(tz).withCalendar(cal), zone: tz, calendar: cal };
 				}
@@ -569,7 +572,8 @@ const _ParseEngine = {
 			}
 
 			if (value.startsWith('#')) {
-				const res = resolveTermValue(TempoClass, state as any, value, dateTime);
+				const host = resolveTermHost(state, dateTime);
+				const res = resolveTermValue(TempoClass, host as any, value, dateTime);
 				if (isZonedDateTime(res)) return { type: 'Temporal.ZonedDateTime', value: res, zone: res.timeZoneId };
 				return { type: 'Void', value: undefined as any };
 			}

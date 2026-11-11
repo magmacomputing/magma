@@ -9,14 +9,14 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 
 	describe('.set() shorthand', () => {
 		test('set("#timeOfDay.Morning") sets to the start of morning', () => {
-			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
+			const t = new Tempo('2026-01-01T12:00:00')
 			const res = t.set('#timeOfDay.Morning')
 			expect(res.hh).toBe(8)
 			expect(res.mi).toBe(0)
 		})
 
 		test('set("#zodiac.aries") sets to the start of the current Aries (prev year)', () => {
-			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
+			const t = new Tempo('2026-01-01T12:00:00')
 			const res = t.set('#zodiac.aries')
 			expect(res.yy).toBe(2025)
 			expect(res.mm).toBe(3)
@@ -24,7 +24,7 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 		})
 
 		test('set("#qtr.q3") sets to the start of the current Q3 (prev year)', () => {
-			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
+			const t = new Tempo('2026-01-01T12:00:00')
 			const res = t.set('#qtr.q3')
 			expect(res.yy).toBe(2025)
 			expect(res.mm).toBe(7)
@@ -32,7 +32,7 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 		})
 
 		test('set({ start: "#timeOfDay.Night" }) sets explicitly to start of current night', () => {
-			const t = new Tempo('2026-01-01T12:00:00', { sphere: 'north' })
+			const t = new Tempo('2026-01-01T12:00:00')
 			const res = t.set({ start: '#timeOfDay.Night' })
 			// Jan 1 12:00. The current night started at Jan 1 20:00 (since it hasn't happened yet today, it looks back)
 			// Wait, the logic for 'current range' should find the range that contains the current time, or the last one if we are between.
@@ -44,7 +44,7 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 
 	describe('.add() shorthand', () => {
 		test('add("#qtr.q1") moves to the next Q1', () => {
-			const t = new Tempo('2026-06-01', { sphere: 'north' })	// 2 months into Q2 (starts Apr 1)
+			const t = new Tempo('2026-06-01')	// 2 months into Q2 (starts Apr 1)
 			const res = t.add('#qtr.q1')						// Should find 2027-01-01 and apply 2mo offset
 			expect(res.yy).toBe(2027)
 			expect(res.mm).toBe(3)
@@ -52,7 +52,7 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 		})
 
 		test('add({ "#timeOfDay.Morning": 2 }) moves two mornings ahead', () => {
-			const t = new Tempo('2026-01-01T09:00:00', { sphere: 'north' })	// 1 hr into morning (starts 08:00)
+			const t = new Tempo('2026-01-01T09:00:00')	// 1 hr into morning (starts 08:00)
 			const res = t.add({ '#timeOfDay.Morning': 2 })
 			// Jan 2 08:00 + 1hr = Jan 2 09:00
 			// Jan 3 08:00 + 1hr = Jan 3 09:00
@@ -61,7 +61,7 @@ describe('Tempo Term Literacy (Namespace Shorthand)', () => {
 		})
 
 		test('add({ "#zodiac.aries": -1 }) moves one cycle back from current Aries', () => {
-			const t = new Tempo('2026-06-01', { sphere: 'north' })
+			const t = new Tempo('2026-06-01')
 			// 11 days into Gemini (starts May 21)
 			// Move -1 Aries from Gemini context hits Aries 2026 (Mar 21)
 			// Apply 11 days offset -> April 1st 2026

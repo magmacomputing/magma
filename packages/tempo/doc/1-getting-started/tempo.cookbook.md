@@ -191,7 +191,7 @@ const sa = new Tempo({ locale: 'ar-SA' });
 const isSaWeekend = sa.intl.info.weekend.includes(sa.dow);
 ```
 
-### What Fiscal Quarter are we in?
+### What Calendar Quarter are we in?
 Using the `qtr` Term plugin (`term.qtr` is a convenient alias for the full `term.quarter` property).
 ```typescript
 const t = new Tempo();

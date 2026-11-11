@@ -90,26 +90,26 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
  */
 export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
 	const hostTempo = isTempo(tempo) ? tempo : start;
+	const Host = getHost(hostTempo);
+	const refTempo = isTempo(anchor)
+		? anchor
+		: (isZonedDateTime(anchor) && Host ? new Host(anchor, (hostTempo as any).config) : hostTempo);
+	const refZdt = refTempo.toDateTime();
 	let total: any;
 	let elapsed: any;
 	let remaining: any;
 
 	if (ensureModule(hostTempo, 'DurationModule', true)) {
 		total = start.until(end);
-		elapsed = start.until(hostTempo);
-		remaining = hostTempo.until(end);
+		elapsed = start.until(refTempo);
+		remaining = refTempo.until(end);
 	} else {
 		const startZdt = start.toDateTime();
 		const endZdt = end.toDateTime();
-		const hostZdt = hostTempo.toDateTime();
 		total = startZdt.until(endZdt);
-		elapsed = startZdt.until(hostZdt);
-		remaining = hostZdt.until(endZdt);
+		elapsed = startZdt.until(refZdt);
+		remaining = refZdt.until(endZdt);
 	}
-
-	const refZdt = isTempo(anchor)
-		? anchor.toDateTime()
-		: (isZonedDateTime(anchor) ? anchor : hostTempo.toDateTime());
 
 	const totalNs = (end.toDateTime().epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
 	const elapsedNs = (refZdt.epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
@@ -443,9 +443,36 @@ type resolveOptions = {
  * @returns Detached range copies representing the previous, current, and next periods.
  * @internal
  */
+/**
+ * Coerces a Tempo instance, internal state, or date-time source into a valid Tempo host.
+ *
+ * @param source - Tempo instance, internal parser state, or date-time input
+ * @param anchor - Optional date-time anchor when resolving from internal state
+ * @returns A Tempo host instance, or `source` unchanged if no constructor is available
+ * @internal
+ */
+export function resolveTermHost(source: Tempo | any, anchor?: any): Tempo | any {
+	if (isTempo(source)) return source;
+	if (isObject(source) && 'pluginsDb' in source && 'config' in source) {
+		const Host = (source as any).tempoInstance?.constructor ?? getHost(source);
+		const safeConfig = { ...(source as any).config };
+		delete safeConfig.anchor;
+		delete safeConfig.scope;
+		if (safeConfig.registry && Object.keys(safeConfig.registry).length === 0)
+			delete safeConfig.registry;
+		const basis = anchor ?? (source as any).tempoInstance ?? (source as any).parse?.anchor;
+		return Host ? new Host(basis, safeConfig) : source;
+	}
+	if (isNotNullish(source)) {
+		const Host = getHost(source);
+		return Host ? new Host(source) : source;
+	}
+	return source;
+}
+
 export function resolveCycleWindow(source: Tempo | any, template: Range[] | readonly Range[] | Record<string, Range[] | readonly Range[]> | Record<PropertyKey, any>, { anchor, groupBy = [], ...options }: resolveOptions = {}): Range[] {
 	// ensure we have a valid Tempo instance to work with
-	const t = (isTempo(source) ? source : (isNotNullish(source) ? new (getHost(source))(source) : source)) as Tempo;
+	const t = resolveTermHost(source, anchor) as Tempo;
 	if (!isTempo(t)) return [];
 
 	// 1. Resolve Template (supporting optional dynamic grouping)

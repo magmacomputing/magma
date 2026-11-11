@@ -368,11 +368,11 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				list = list.filter(r => r.key?.toLowerCase() === rKey.toLowerCase());
 			}
 
-			const toZdt = (item: ValueOf<typeof rawList>): Temporal.ZonedDateTime =>
+			const resolveRangeZdt = (item: ValueOf<typeof rawList>): Temporal.ZonedDateTime =>
 				toZdtItem(item, jump.year, tz, cal);
 
 			const toEpochNs = (item: ValueOf<typeof rawList>): bigint =>
-				toZdt(item).epochNanoseconds as bigint;
+				resolveRangeZdt(item).epochNanoseconds as bigint;
 
 			const chronological = [...rawList].sort((a, b) => {
 				const sa = toEpochNs(a);
@@ -382,9 +382,9 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 
 			const resolved = chronological.map((c, idx) => {
 				if (c.start && c.end) return c;
-				const start = toZdt(c);
+				const start = resolveRangeZdt(c);
 				const nextC = chronological[idx + 1];
-				const end = nextC ? toZdt(nextC) : start.add({ years: 1 });
+				const end = nextC ? resolveRangeZdt(nextC) : start.add({ years: 1 });
 				return { ...c, start, end };
 			});
 
@@ -540,8 +540,8 @@ export function resolveTermMutation(Tempo: TempoTermType, instance: Tempo, mutat
 				jump = (direction > 0) ? toZdt(target.end) : toZdt(target.start).subtract({ nanoseconds: 1 });
 			} else {
 				const currentRes = (getTermRange(instance, rawList, false, jump) as any);
-				if (!currentRes) { jump = (direction > 0) ? jump.add({ days: 30 }) : jump.subtract({ days: 30 }); continue; }
-				jump = (direction > 0) ? toZdt(currentRes.end) : toZdt(currentRes.start).subtract({ nanoseconds: 1 });
+				if (!currentRes?.span) { jump = (direction > 0) ? jump.add({ days: 30 }) : jump.subtract({ days: 30 }); continue; }
+				jump = (direction > 0) ? toZdt(currentRes.span.end) : toZdt(currentRes.span.start).subtract({ nanoseconds: 1 });
 			}
 		}
 
