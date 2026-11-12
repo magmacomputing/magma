@@ -1,4 +1,4 @@
-import { formatCurrency, getDateTimeFormat, getHemisphere, getLC, getLI, hasIntl, getDTF, probeMDY, formatList, getRelativeTime, canonicalLocales, resolveLocale, isEnglish, getLanguage, cleanLocaleTag, getPR, formatNumber } from '#library/international.library.js';
+import { formatCurrency, getDateTimeFormat, getHemisphere, getLC, getLI, hasIntl, getDTF, probeMDY, formatList, getRelativeTime, canonicalLocales, resolveLocale, isEnglish, getLanguage, cleanLocaleTag, getPR, formatNumber, getCountryFromTimeZone } from '#library/international.library.js';
 
 describe('International Library', () => {
 	describe('formatCurrency', () => {
@@ -383,6 +383,29 @@ describe('International Library', () => {
 			expect(cleanLocaleTag(loc)).toContain('h23');
 			const dtf = getDTF(loc, { hour: 'numeric' });
 			expect(dtf.resolvedOptions().hourCycle).toBe('h23');
+		});
+	});
+
+	describe('getCountryFromTimeZone', () => {
+		it('should deduce ISO country codes for canonical and legacy IANA zones', () => {
+			expect(getCountryFromTimeZone('America/New_York')).toBe('US');
+			expect(getCountryFromTimeZone('US/Eastern')).toBe('US');
+			expect(getCountryFromTimeZone('Australia/Sydney')).toBe('AU');
+			expect(getCountryFromTimeZone('Europe/London')).toBe('GB');
+			expect(getCountryFromTimeZone('Asia/Tokyo')).toBe('JP');
+		});
+
+		it('should support restricting lookup to candidate regions', () => {
+			expect(getCountryFromTimeZone('America/New_York', ['AU', 'GB', 'US'])).toBe('US');
+			expect(getCountryFromTimeZone('Asia/Tokyo', ['AU', 'GB', 'US'])).toBeUndefined();
+		});
+
+		it('should return undefined for UTC, empty, or invalid zones', () => {
+			expect(getCountryFromTimeZone('UTC')).toBeUndefined();
+			expect(getCountryFromTimeZone('Etc/UTC')).toBeUndefined();
+			expect(getCountryFromTimeZone('')).toBeUndefined();
+			expect(getCountryFromTimeZone(undefined)).toBeUndefined();
+			expect(getCountryFromTimeZone('Invalid/Zone')).toBeUndefined();
 		});
 	});
 });

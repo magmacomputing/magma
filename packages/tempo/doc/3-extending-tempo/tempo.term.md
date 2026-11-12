@@ -55,7 +55,7 @@ t.term.quarter.span.progress // → 0.5055 (normalized 0.0 .. 1.0)
 
 ### `fqtr` / `fiscal` — Fiscal Quarters
 
-Divides corporate or governmental financial cycles into four fiscal quarters (`FQ1`, `FQ2`, `FQ3`, `FQ4`). Supports configurable start months or automated jurisdictional defaults (e.g., Australia starting July 1, UK/India starting April 1; `'US'`, `geo.country: 'US'`, and `en-US` select January 1, whereas US federal reporting uses `country: 'US_FED'` or `startMonth: 10` for an October 1 start). Provides numeric `fiscalYear: number` for direct financial arithmetic.
+Divides corporate or governmental financial cycles into four fiscal quarters (`FQ1`, `FQ2`, `FQ3`, `FQ4`). Supports configurable start months (and optional `startDay`, e.g. `6` for the UK April 6 personal tax year) or automated jurisdictional defaults (e.g., Australia starting July 1, UK/India starting April 1; `'US'`, `geo.country: 'US'`, and `en-US` select January 1, whereas US federal reporting uses `country: 'US_FED'` or `startMonth: 10` for an October 1 start). Provides numeric `year: number` for direct financial arithmetic.
 
 ```ts
 import { FiscalTerm } from '@magmacomputing/tempo/terms';
@@ -64,7 +64,7 @@ Tempo.use(FiscalTerm);
 // Jurisdictional lookup via pluginOptions or geo.country
 const tAU = new Tempo('15-Feb-2026', { pluginOptions: { fiscal: { country: 'AU' } } });
 tAU.term.fqtr              // → 'FQ3'
-tAU.term.fiscal.fiscalYear // → 2026
+tAU.term.fiscal.year       // → 2026
 tAU.term.fiscal.span.start // → Tempo('2026-01-01T00:00:00')
 
 // Or via GeoConfig or custom startMonth in pluginOptions

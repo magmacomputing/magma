@@ -79,7 +79,7 @@ The purpose of this plan is to consolidate Tempo's fiscal and business calendar 
 
 ---
 
-### Phase 1: `FiscalTerm` Enhancements (`packages/plugins/.terms/src/term.fiscal.ts`)
+### Phase 1: `FiscalTerm` Enhancements (`packages/plugins/.terms/src/term.fiscal.ts`) — ✅ Complete
 
 1. **Extend `FiscalTermOptions`**:
    ```typescript
@@ -146,7 +146,7 @@ The purpose of this plan is to consolidate Tempo's fiscal and business calendar 
 
 ---
 
-### Phase 2: Monorepo Package Deletion & Catalog Pruning
+### Phase 2: Monorepo Package Deletion & Catalog Pruning ✅ (Completed)
 
 1. **Delete Package Directory**:
    - Remove `packages/plugins/finance/` (11 tracked files).
@@ -238,7 +238,7 @@ Refactor documentation pages currently showcasing `@magmacomputing/tempo-plugin-
 ## 4. Verification & Readiness Checklist
 
 - [x] `packages/tempo/test/core/static.methods.test.ts` (and instance equality tests) pass for `Tempo.compare(..., unit?)`, `Tempo.equals`, and `t.equals`.
-- [ ] `packages/plugins/.terms/test/term.fiscal.test.ts` passes with `year`, `startDay`, and `t.equals(f.span.start, 'day')` boundary tests.
+- [x] `packages/plugins/.terms/test/term.fiscal.test.ts` passes with `year`, `startDay`, and `t.equals(f.span.start, 'day')` boundary tests.
 - [ ] `npm run catalog:sync` runs cleanly with no orphan warnings.
 - [ ] `node --check` succeeds on all manifest files.
 - [ ] `npm run docs:build` generates VitePress documentation without broken links or missing sidebar items.

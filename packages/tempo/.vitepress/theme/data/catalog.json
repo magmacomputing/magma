@@ -18,15 +18,6 @@
     "version": "1.2.1"
   },
   {
-    "id": "finance",
-    "name": "Finance Plugin",
-    "description": "Tempo Community Plugin: Finance namespace and fiscal year utilities",
-    "packageName": "@magmacomputing/tempo-plugin-finance",
-    "plan": "community",
-    "status": "active",
-    "version": "1.1.0"
-  },
-  {
     "id": "snap",
     "name": "Snap Plugin",
     "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UIs, time-pickers, and telemetry aggregation",

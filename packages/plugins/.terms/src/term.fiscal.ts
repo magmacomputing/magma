@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, $Internal, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import { isString, isDefined, isUndefined, isInteger, isNumber, asArray } from '@magmacomputing/library';
+import { isString, isDefined, isUndefined, isInteger, isNumber, asArray, getCountryFromTimeZone, getLC } from '@magmacomputing/library';
 import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
@@ -15,6 +15,8 @@ export type FiscalKey = (typeof FISCAL_KEYS)[number];
 export interface FiscalTermOptions {
 	/** Starting month of the fiscal year (1 to 12) */
 	startMonth?: number;
+	/** Starting day of the fiscal year month (1 to 28) */
+	startDay?: number;
 	/** ISO 3166-1 alpha-2 country code (e.g. 'AU', 'GB', 'US', 'JP') */
 	country?: string;
 }
@@ -52,6 +54,8 @@ export const FISCAL_COUNTRY_DEFAULTS: Record<string, number> = Object.freeze({
 	NO: 1,
 });
 
+const FISCAL_REGION_KEYS = Object.freeze(Object.keys(FISCAL_COUNTRY_DEFAULTS).filter(k => /^[A-Z]{2}$/.test(k)));
+
 function getFiscalOptions(t: Tempo, callOptions?: FiscalTermOptions): FiscalTermOptions {
 	const state = (t as any)?.[$Internal]?.() ?? (t?.constructor as any)?.[$Internal]?.() ?? (t as any)?.state;
 	const termObj = findTermPlugin('fqtr', state);
@@ -69,6 +73,16 @@ function getCountryDefaultMonth(code: string | undefined): number | undefined {
 		return isNumber(val) ? val : undefined;
 	}
 	return undefined;
+}
+
+function getLocaleRegion(t: Tempo): string | undefined {
+	const config = (t as any).config ?? {};
+	const locale = (t as any).locale ?? config.locale;
+	return isString(locale) ? getLC(locale)?.region : undefined;
+}
+
+function getExplicitOptions(t: Tempo): Record<string, any> {
+	return ((t as any)?.[$Internal]?.()?.options as Record<string, any>) ?? {};
 }
 
 /**
@@ -125,22 +139,95 @@ export function resolveFiscalStartMonth(t: Tempo, callOptions?: FiscalTermOption
 		if (isDefined(month)) return month;
 	}
 
-	// 4. Regional subtag from t.locale
-	const locale = (t as any).locale ?? config.locale;
-	if (isString(locale)) {
-		try {
-			const region = new Intl.Locale(locale).region;
-			if (region) {
-				const month = getCountryDefaultMonth(region);
-				if (isDefined(month)) return month;
-			}
-		} catch {
-			// Ignore invalid locale string
+	const explicitOpts = getExplicitOptions(t);
+	const hasExplicitLocale = isDefined(explicitOpts.locale ?? explicitOpts.Locale);
+	const hasExplicitTimeZone = isDefined(explicitOpts.timeZone ?? explicitOpts.timezone ?? explicitOpts.TimeZone);
+
+	// 4. Explicit instance locale regional subtag
+	if (hasExplicitLocale) {
+		const region = getLocaleRegion(t);
+		if (region) {
+			const month = getCountryDefaultMonth(region);
+			if (isDefined(month)) return month;
 		}
 	}
 
-	// 5. Refuse to guess
+	// 5. Explicit instance timeZone (e.g. 'America/New_York' -> 'US')
+	if (hasExplicitTimeZone) {
+		const tzCountry = getCountryFromTimeZone((t as any).timeZone ?? config.timeZone, FISCAL_REGION_KEYS);
+		if (isString(tzCountry)) {
+			const month = getCountryDefaultMonth(tzCountry);
+			if (isDefined(month)) return month;
+		}
+	}
+
+	// 6. Ambient/default locale regional subtag (when locale was not explicitly provided)
+	if (!hasExplicitLocale) {
+		const region = getLocaleRegion(t);
+		if (region) {
+			const month = getCountryDefaultMonth(region);
+			if (isDefined(month)) return month;
+		}
+	}
+
+	// 7. Refuse to guess
 	logWarn(`[tempo] FiscalTerm requires an explicit country, startMonth, or locale region to determine fiscal quarters.`, config);
+	return undefined;
+}
+
+/**
+ * Resolves the starting day-of-month for the fiscal year (1 to 28, defaulting to 1).
+ *
+ * @param t - Source Tempo instance
+ * @param callOptions - Options passed at call site or factory
+ * @returns Validated start day (1..28)
+ * @internal
+ */
+export function resolveFiscalStartDay(t: Tempo, callOptions?: FiscalTermOptions): number {
+	const config = (t as any).config ?? {};
+	const opts = getFiscalOptions(t, callOptions);
+	const rawStartDay = opts.startDay;
+
+	if (isUndefined(rawStartDay)) return 1;
+	if (isInteger(rawStartDay) && rawStartDay >= 1 && rawStartDay <= 28) return rawStartDay;
+
+	logWarn(`[tempo] FiscalTerm ignoring invalid startDay ${rawStartDay}; expected an integer from 1 to 28.`, config);
+	return 1;
+}
+
+function resolveFiscalCountry(t: Tempo, opts: FiscalTermOptions, startMonth: number): string | undefined {
+	const rawCountry = opts.country;
+	if (isString(rawCountry)) {
+		return getCountryDefaultMonth(rawCountry) === startMonth ? rawCountry.toUpperCase() : undefined;
+	}
+
+	const rawStartMonth = opts.startMonth;
+	if (isInteger(rawStartMonth) && rawStartMonth >= 1 && rawStartMonth <= 12) return undefined;
+
+	const geoCountry = (t as any).geo?.country;
+	if (isString(geoCountry) && getCountryDefaultMonth(geoCountry) === startMonth) {
+		return geoCountry.toUpperCase();
+	}
+
+	const config = (t as any).config ?? {};
+	const explicitOpts = getExplicitOptions(t);
+	const hasExplicitLocale = isDefined(explicitOpts.locale ?? explicitOpts.Locale);
+	const hasExplicitTimeZone = isDefined(explicitOpts.timeZone ?? explicitOpts.timezone ?? explicitOpts.TimeZone);
+
+	if (hasExplicitLocale) {
+		const region = getLocaleRegion(t);
+		if (region && getCountryDefaultMonth(region) === startMonth) return region.toUpperCase();
+	}
+
+	if (hasExplicitTimeZone) {
+		const tzCountry = getCountryFromTimeZone((t as any).timeZone ?? config.timeZone, FISCAL_REGION_KEYS);
+		if (isString(tzCountry) && getCountryDefaultMonth(tzCountry) === startMonth) return tzCountry;
+	}
+
+	if (!hasExplicitLocale) {
+		const region = getLocaleRegion(t);
+		if (region && getCountryDefaultMonth(region) === startMonth) return region.toUpperCase();
+	}
 	return undefined;
 }
 
@@ -181,11 +268,12 @@ function resolve(t: Tempo, anchor?: any, options?: FiscalTermOptions): any[] {
 	const startMonth = resolveFiscalStartMonth(t, options);
 	if (isUndefined(startMonth)) return [];
 
+	const startDay = resolveFiscalStartDay(t, options);
 	const rawRanges = [
-		{ key: 'FQ1', day: 1, month: ((startMonth - 1 + 0) % 12) + 1, year: Math.floor((startMonth - 1 + 0) / 12), label: 'First Fiscal Quarter', _startMonth: startMonth },
-		{ key: 'FQ2', day: 1, month: ((startMonth - 1 + 3) % 12) + 1, year: Math.floor((startMonth - 1 + 3) / 12), label: 'Second Fiscal Quarter', _startMonth: startMonth },
-		{ key: 'FQ3', day: 1, month: ((startMonth - 1 + 6) % 12) + 1, year: Math.floor((startMonth - 1 + 6) / 12), label: 'Third Fiscal Quarter', _startMonth: startMonth },
-		{ key: 'FQ4', day: 1, month: ((startMonth - 1 + 9) % 12) + 1, year: Math.floor((startMonth - 1 + 9) / 12), label: 'Fourth Fiscal Quarter', _startMonth: startMonth },
+		{ key: 'FQ1', day: startDay, month: ((startMonth - 1 + 0) % 12) + 1, year: Math.floor((startMonth - 1 + 0) / 12), label: 'First Fiscal Quarter', _startMonth: startMonth, _startDay: startDay },
+		{ key: 'FQ2', day: startDay, month: ((startMonth - 1 + 3) % 12) + 1, year: Math.floor((startMonth - 1 + 3) / 12), label: 'Second Fiscal Quarter', _startMonth: startMonth, _startDay: startDay },
+		{ key: 'FQ3', day: startDay, month: ((startMonth - 1 + 6) % 12) + 1, year: Math.floor((startMonth - 1 + 6) / 12), label: 'Third Fiscal Quarter', _startMonth: startMonth, _startDay: startDay },
+		{ key: 'FQ4', day: startDay, month: ((startMonth - 1 + 9) % 12) + 1, year: Math.floor((startMonth - 1 + 9) / 12), label: 'Fourth Fiscal Quarter', _startMonth: startMonth, _startDay: startDay },
 	];
 
 	const groups = defineRange(rawRanges);
@@ -209,18 +297,26 @@ export const FiscalTerm = defineTerm<any, FiscalTermOptions>({
 
 	define(this: Tempo, keyOnly?: boolean | number | string, anchor?: any) {
 		const isoHost = toIsoTempo(anchor, this);
-		const res = resolve(this, anchor, getFiscalOptions(this, (this as any).options));
+		const opts = getFiscalOptions(this, (this as any).options);
+		const res = resolve(this, anchor, opts);
 		if (!res || res.length === 0) return undefined;
 
-		const scope = getTermRange(isoHost, asArray(res), keyOnly as any, isoHost) as any;
+		const startMonth = res[0]?._startMonth ?? 1;
+		const startDay = res[0]?._startDay ?? 1;
+		const country = resolveFiscalCountry(this, opts, startMonth);
+		const scope = getTermRange(isoHost, asArray(res), keyOnly as any, isoHost, {
+			startMonth,
+			startDay,
+			country,
+		}) as any;
 		if (scope && typeof scope === 'object') {
-			const startMonth = res[0]?._startMonth ?? 1;
 			const start = scope.span.start;
-			const fiscalYear = (startMonth > 1 && start.mm >= startMonth) ? start.yy + 1 : start.yy;
-			const { _startMonth, ...cleanScope } = scope;
+			const isPastStart = (start.mm > startMonth) || (start.mm === startMonth && start.dd >= startDay);
+			const year = (startMonth > 1 || startDay > 1) && isPastStart ? start.yy + 1 : start.yy;
+			const { _startMonth, _startDay, ...cleanScope } = scope;
 			return {
 				...cleanScope,
-				fiscalYear,
+				year,
 				keys: FISCAL_KEYS,
 			};
 		}
@@ -246,9 +342,14 @@ declare module '@magmacomputing/tempo' {
 		fiscal: {
 			key: FiscalKey;
 			label: 'First Fiscal Quarter' | 'Second Fiscal Quarter' | 'Third Fiscal Quarter' | 'Fourth Fiscal Quarter';
-			fiscalYear: number;
+			year: number;
 			keys: readonly FiscalKey[];
 			span: TermSpan;
+			config?: Readonly<{
+				startMonth: number;
+				startDay: number;
+				country?: string;
+			}>;
 		} | undefined;
 	}
 }

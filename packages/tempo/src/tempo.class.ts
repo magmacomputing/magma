@@ -1719,6 +1719,7 @@ export class Tempo {
 		if (classState.config.registry) this.#local.config.registry = Object.create(classState.config.registry);
 
 		Object.assign(this.#local.config, { scope: 'local' });
+		this.#local.userProvidedKeys = new Set(classState.userProvidedKeys);
 
 		// Evaluate and snapshot dynamic context suppliers for this specific Tempo instance
 		const rawTz = options.timeZone ?? (options as any).timezone ?? (options as any).TimeZone;
@@ -1728,6 +1729,7 @@ export class Tempo {
 		if (isNotNullish(evaluatedTz)) {
 			resolvedZone = Tempo.#resolveTimeZone(this.constructor as typeof Tempo, classState, evaluatedTz);
 			setProperty(this.#local.config, 'timeZone', resolvedZone);
+			if (isNotNullish(explicitTz)) this.#local.userProvidedKeys.add('timeZone');
 		}
 
 		const rawCal = options.calendar ?? (options as any).Calendar;
@@ -1743,9 +1745,8 @@ export class Tempo {
 		if (isNotNullish(evaluatedLoc)) {
 			finalLocale = resolveLocale(evaluatedLoc);
 			if (finalLocale) setProperty(this.#local.config, 'locale', finalLocale);
+			if (isNotNullish(explicitLoc)) this.#local.userProvidedKeys.add('locale');
 		}
-
-		this.#local.userProvidedKeys = new Set();
 
 		let explicitSphere: t.COMPASS | undefined;
 		let evalSphere: t.COMPASS | undefined;
@@ -1787,7 +1788,6 @@ export class Tempo {
 		this.#local.parse.event = { ...classState.parse.event };
 		this.#local.parse.period = { ...classState.parse.period };
 		this.#local.parse.snippet = { ...classState.parse.snippet };
-		this.#local.userProvidedKeys = new Set(classState.userProvidedKeys);
 		this.#local.parse.planner = {
 			...(classState.parse.planner.layoutOrder ? { layoutOrder: [...asArray<string | symbol>(classState.parse.planner.layoutOrder)] } : {}),
 			...(isNotNullish(classState.parse.planner.preFilter) ? { preFilter: Boolean(classState.parse.planner.preFilter) } : {}),

@@ -146,16 +146,27 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
 }
 
 /**
+ * Normalizes an optional term configuration object, dropping `undefined` entries
+ * and returning `undefined` when no configuration details are present.
+ */
+function defineTermConfig(config?: Record<string, any>): Readonly<Record<string, any>> | undefined {
+	if (!isPlainObject(config)) return undefined;
+	const entries = Object.entries(config).filter(([, value]) => !isUndefined(value));
+	return entries.length > 0 ? Object.freeze(Object.fromEntries(entries)) : undefined;
+}
+
+/**
  * Resolves the range containing a Tempo instance.
  *
  * @param tempo - The Tempo instance to locate
  * @param list - The ranges to search
  * @param keyOnly - Controls the result: `true` returns the range key, a positive integer returns the corresponding cycle range, and `false` returns the resolved range
  * @param anchor - Optional temporal anchor used to resolve range boundaries
+ * @param config - Optional resolved configuration metadata to attach when non-empty
  * @returns The matching range key, resolved range, or `undefined` when no range is available
  * @internal
  */
-export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any): string | ResolvedRange | undefined | null {
+export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any, config?: Record<string, any>): string | ResolvedRange | undefined | null {
 	if (list.length === 0) return undefined;
 
 	let zdt = isTempo(anchor)
@@ -220,16 +231,18 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const buildResolvedRange = (matchItem: any, start: Tempo, end: Tempo): ResolvedRange => {
 		const meta: Record<string, any> = {};
 		for (const [k, v] of Object.entries(matchItem)) {
-			if (!SCHEMA_KEYS.has(k) && k !== 'span')
+			if (!SCHEMA_KEYS.has(k) && k !== 'span' && k !== 'config')
 				meta[k] = v;
 		}
 
 		const resolvedStart = matchItem.span?.start ?? start;
 		const resolvedEnd = matchItem.span?.end ?? end;
+		const resolvedConfig = defineTermConfig(config ?? matchItem.config);
 
 		return {
 			...meta,
-			span: defineSpan(hostTempo, resolvedStart, resolvedEnd, zdt)
+			span: defineSpan(hostTempo, resolvedStart, resolvedEnd, zdt),
+			...(resolvedConfig ? { config: resolvedConfig } : {}),
 		} as ResolvedRange;
 	};
 

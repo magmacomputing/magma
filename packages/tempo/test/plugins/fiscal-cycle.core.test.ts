@@ -19,7 +19,7 @@ describe('Calendar Quarter and Fiscal Cycle', () => {
 		const t1 = new Tempo('2026-04-01', { pluginOptions: { fiscal: { country: 'AU' } } });
 		// In July-start fiscal cycle, April 1st is FQ4 of FY26
 		expect(t1.term.fqtr).toBe('FQ4');
-		expect(t1.term.fiscal.fiscalYear).toBe(2026);
+		expect(t1.term.fiscal.year).toBe(2026);
 	});
 
 	it('should back-date to FQ2 of the same fiscal cycle', () => {

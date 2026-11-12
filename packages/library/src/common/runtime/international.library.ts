@@ -781,3 +781,54 @@ export const probeMDY = memoizeFunction((locale?: LocaleInput): boolean => {
 		return false;
 	}
 });
+
+const getTimeZoneCountryMap = memoizeFunction((regionKey: string): Map<string, string> => {
+	const map = new Map<string, string>();
+	if (!hasIntl('Locale') || typeof (Intl.Locale.prototype as any).getTimeZones !== 'function') return map;
+
+	const codes: string[] = [];
+	if (regionKey === '*') {
+		for (let a = 65; a <= 90; a++) {
+			for (let b = 65; b <= 90; b++)
+				codes.push(String.fromCharCode(a, b));
+		}
+	} else {
+		for (const raw of regionKey.split(','))
+			if (RE_REGION_SUBTAG.test(raw)) codes.push(raw.toUpperCase());
+	}
+
+	for (const code of codes) {
+		try {
+			const zones: string[] | undefined = (new Intl.Locale(`und-${code}`) as any).getTimeZones?.();
+			if (!zones) continue;
+			for (const z of zones)
+				if (!map.has(z)) map.set(z, code);
+		} catch {
+			// Ignore unsupported region subtags
+		}
+	}
+	return map;
+});
+
+/**
+ * Deduces an ISO 3166-1 alpha-2 country/region code from an IANA time zone identifier
+ * using `Intl.Locale.prototype.getTimeZones()` and `Intl.DateTimeFormat` canonicalization.
+ *
+ * @param timeZone - IANA time zone identifier (e.g. `'America/New_York'`, `'US/Eastern'`)
+ * @param regions - Optional candidate ISO 3166-1 alpha-2 region codes to index
+ * @returns Uppercase ISO region code (e.g. `'US'`), or `undefined` for neutral/unknown zones (e.g. `'UTC'`)
+ */
+export function getCountryFromTimeZone(timeZone?: string, regions?: readonly string[]): string | undefined {
+	if (!isString(timeZone) || isEmpty(timeZone)) return undefined;
+	let canonicalZone = timeZone.trim();
+	if (!canonicalZone) return undefined;
+
+	try {
+		canonicalZone = getDTF('en-US', { timeZone: canonicalZone }).resolvedOptions().timeZone || canonicalZone;
+	} catch {
+		return undefined;
+	}
+
+	const key = regions && regions.length > 0 ? regions.map(r => r.toUpperCase()).join(',') : '*';
+	return getTimeZoneCountryMap(key).get(canonicalZone);
+}
