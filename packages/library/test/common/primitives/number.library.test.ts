@@ -1,4 +1,4 @@
-import { toHex, suffix, split, fix, asTime, toRoman, fromRoman, TIMEOUT_MAX } from '#library/number.library.js';
+import { toHex, suffix, split, fix, asTime, toRoman, fromRoman, compare, TIMEOUT_MAX } from '#library/number.library.js';
 
 describe('Number Library', () => {
 	describe('TIMEOUT_MAX', () => {
@@ -102,6 +102,29 @@ describe('Number Library', () => {
 			for (const num of [1, 4, 9, 44, 99, 400, 944, 1984, 2026, 3999]) {
 				expect(fromRoman(toRoman(num))).toBe(num);
 			}
+		});
+	});
+
+	describe('compare', () => {
+		it('should perform three-way comparison for numbers', () => {
+			expect(compare(1, 2)).toBe(-1);
+			expect(compare(2, 2)).toBe(0);
+			expect(compare(5, 2)).toBe(1);
+			expect(compare(-5, -2)).toBe(-1);
+			expect(compare(-0, +0)).toBe(0);
+		});
+
+		it('should perform exact three-way comparison for bigints beyond MAX_SAFE_INTEGER', () => {
+			const base = BigInt(Number.MAX_SAFE_INTEGER);
+			expect(compare(base + 1n, base + 2n)).toBe(-1);
+			expect(compare(base + 2n, base + 2n)).toBe(0);
+			expect(compare(base + 3n, base + 2n)).toBe(1);
+		});
+
+		it('should throw TypeError for mismatched or non-numeric types', () => {
+			expect(() => (compare as any)(1, 2n)).toThrow(TypeError);
+			expect(() => (compare as any)(1n, 2)).toThrow(TypeError);
+			expect(() => (compare as any)('1', '2')).toThrow(TypeError);
 		});
 	});
 });

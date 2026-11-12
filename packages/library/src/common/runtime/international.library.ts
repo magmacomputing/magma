@@ -1,4 +1,4 @@
-import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
+import { getOffsets, getTemporalIds, getISOWeekOfYear } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { isFunction, isNotNullish, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
@@ -712,46 +712,6 @@ type input = {
 	weekOfYear?: number | undefined, yearOfWeek?: number | undefined
 }
 type result = { weekOfYear: number, yearOfWeek: number };
-/**
- * Polyfill fallback for ISO 8601 Week of Year and Year of Week calculations.
- * 
- * Introduced because highly experimental native browser implementations of the Temporal API 
- * (e.g., Chrome/Firefox behind flags) currently return `undefined` for `weekOfYear` and `yearOfWeek` 
- * on ZonedDateTime objects. The TC39 spec moved toward calendar-dependent definitions, 
- * causing divergence between the @js-temporal/polyfill (which returns numbers) and native browsers (which return undefined).
- * 
- * @param zdt - The ZonedDateTime or matching input object
- * @returns An object containing the weekOfYear and yearOfWeek
- * @example
- * ```ts
- * const { weekOfYear } = getISOWeekOfYear(Temporal.Now.zonedDateTimeISO());
- * ```
- */
-export function getISOWeekOfYear(zdt: input): result {
-	const calId = (zdt as any).calendarId ?? (zdt as any).calendar?.id;
-	if (calId === 'iso8601' && isNotNullish(zdt.weekOfYear) && isNotNullish(zdt.yearOfWeek))
-		return { weekOfYear: zdt.weekOfYear, yearOfWeek: zdt.yearOfWeek };
-
-	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
-	// to avoid crossing daylight saving boundaries when adding/subtracting days.
-	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
-	const pd = (hasKey(zdt, 'toPlainDate', isFunction<Temporal.PlainDate>) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
-	if (isNotNullish(pd.weekOfYear) && isNotNullish(pd.yearOfWeek))
-		return { weekOfYear: pd.weekOfYear, yearOfWeek: pd.yearOfWeek };
-
-	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.
-	// Find the nearest Thursday to the current date.
-	const shift = 4 - pd.dayOfWeek;
-	const nearestThursday = shift >= 0 ? pd.add({ days: shift }) : pd.subtract({ days: -shift });
-
-	// The calendar year of that nearest Thursday is the ISO week-numbering year
-	const yearOfWeek = nearestThursday.year;
-
-	// The week number is exactly the nearest Thursday's dayOfYear divided by 7
-	const weekOfYear = Math.ceil(nearestThursday.dayOfYear / 7);
-
-	return { weekOfYear, yearOfWeek };
-}
 
 /**
  * Calculates the week-of-year and week-numbering year for a given date according to locale-specific week rules.

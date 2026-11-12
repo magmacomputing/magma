@@ -2,8 +2,7 @@ import { evaluate } from '#library/evaluation.library.js';
 import { isNotNullish, isNumber, isObject, isString, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
 import { asArray, ifNumeric } from '#library/coercion.library.js';
 import { singular } from '#library/string.library.js';
-import { normaliseFractionalDurations } from '#library/temporal.library.js';
-import { getISOWeekOfYear } from '#library/international.library.js';
+import { normaliseFractionalDurations, getISOWeekOfYear } from '#library/temporal.library.js';
 
 import { sym, enums, Enum, logError, Match } from '#tempo/support';
 import { SLICK_KEYS } from '#tempo/support/support.default.js';

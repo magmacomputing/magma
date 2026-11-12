@@ -189,6 +189,120 @@ describe(`${label} compare`, () => {
     expect(Tempo.compare(past)).toBe(-1);
   })
 
+  test('supports unit granularity (year, month, week, day/date, time, hour..nanosecond)', () => {
+    const t1 = new Tempo('2025-07-01T09:15:30.123456789');
+    const t2SameDay = new Tempo('2025-07-01T17:45:00.000000000');
+    const t3SameMonth = new Tempo('2025-07-20T09:15:30.123456789');
+    const t4SameYear = new Tempo('2025-11-05T09:15:30.000000000');
+
+    expect(Tempo.compare(t1, t2SameDay, 'day')).toBe(0);
+    expect(Tempo.compare(t1, t2SameDay, 'date')).toBe(0);
+    expect(Tempo.compare(t1, t2SameDay, 'hour')).toBe(-1);
+    expect(Tempo.compare(t1, t3SameMonth, 'day')).toBe(-1);
+    expect(Tempo.compare(t1, t3SameMonth, 'month')).toBe(0);
+    expect(Tempo.compare(t1, t4SameYear, 'month')).toBe(-1);
+    expect(Tempo.compare(t1, t4SameYear, 'year')).toBe(0);
+
+    // 'time' compares wall-clock time regardless of calendar date
+    expect(Tempo.compare(t1, t3SameMonth, 'time')).toBe(0);
+    expect(Tempo.compare(t1, t2SameDay, 'time')).toBe(-1);
+
+    // ISO week across year boundary (2024-12-30 Mon .. 2025-01-05 Sun = 2025-W01)
+    expect(Tempo.compare('2024-12-30', '2025-01-02', 'week')).toBe(0);
+    expect(Tempo.compare('2024-12-29', '2025-01-02', 'week')).toBe(-1);
+
+    // Plurals and Element shorthand tokens
+    const h1 = new Tempo('2025-07-01T09:15:30.123456789');
+    const h2 = new Tempo('2025-07-01T09:15:30.123999000');
+    expect(Tempo.compare(h1, h2, 'days')).toBe(0);
+    expect(Tempo.compare(h1, h2, 'hours')).toBe(0);
+    expect(Tempo.compare(h1, h2, 'mi')).toBe(0);
+    expect(Tempo.compare(h1, h2, 'ss')).toBe(0);
+    expect(Tempo.compare(h1, h2, 'ms')).toBe(0);
+    expect(Tempo.compare(h1, h2, 'us')).toBe(-1);
+    expect(Tempo.compare(h1, h2, 'ns')).toBe(-1);
+  })
+
+  test('inherits target timezone for raw inputs and handles fractional UTC offsets', () => {
+    const ny = new Tempo('2025-07-01T22:00:00', { timeZone: 'America/New_York' });
+    expect(Tempo.compare(ny, '2025-07-01', 'day')).toBe(0);
+    expect(Tempo.compare(ny, '2025-07-02T02:30:00Z', 'hour')).toBe(0);
+
+    const ist1 = new Tempo('2025-07-01T14:15:00', { timeZone: 'Asia/Kolkata' });
+    const ist2 = new Tempo('2025-07-01T14:45:00', { timeZone: 'Asia/Kolkata' });
+    expect(Tempo.compare(ist1, ist2, 'hour')).toBe(0);
+    expect(Tempo.compare(ist1, ist2, 'minute')).toBe(-1);
+
+    // Explicit timeZone: undefined on options/bag should still inherit the target zone
+    expect(Tempo.compare(ny, { value: '2025-07-01T00:30', timeZone: undefined }, 'day')).toBe(0);
+  })
+
+  test('throws TypeError for invalid comparison unit', () => {
+    expect(() => Tempo.compare('2025-07-01', '2025-07-01', 'century' as any)).toThrow(TypeError);
+    expect(() => Tempo.compare('2025-07-01', '2025-07-01', 123 as any)).toThrow(TypeError);
+    expect(() => Tempo.compare('2025-07-01', '2025-07-01', null as any)).toThrow(TypeError);
+    expect(() => Tempo.equals('2025-07-01', '2025-07-01', { unit: 'century' } as any)).toThrow(TypeError);
+  })
+
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tempo.equals() & t.equals()
+// ─────────────────────────────────────────────────────────────────────────────
+describe(`${label} equals`, () => {
+
+  test('checks instant equality when unit is omitted (matching Tempo.compare)', () => {
+    const ny = new Tempo('2025-07-01T00:00:00', { timeZone: 'America/New_York' });
+    const utcSameInstant = new Tempo('2025-07-01T04:00:00', { timeZone: 'UTC' });
+    const nyLater = new Tempo('2025-07-01T09:00:00', { timeZone: 'America/New_York' });
+
+    expect(Tempo.equals(ny, utcSameInstant)).toBe(true);
+    expect(ny.equals(utcSameInstant)).toBe(true);
+    expect(ny.equals(utcSameInstant, {})).toBe(true);
+    expect(ny.equals(nyLater)).toBe(false);
+    expect(Tempo.equals(ny, nyLater)).toBe(false);
+  })
+
+  test('checks unit-level equality via static and instance .equals() (unit string or options)', () => {
+    const morning = new Tempo('2025-07-01T09:00:00');
+    const evening = new Tempo('2025-07-01T18:30:00');
+    const nextWeek = new Tempo('2025-07-08T09:00:00');
+
+    expect(morning.equals(evening, 'day')).toBe(true);
+    expect(morning.equals(evening, { unit: 'days' })).toBe(true);
+    expect(morning.equals(evening, 'date')).toBe(true);
+    expect(morning.equals(evening, 'hour')).toBe(false);
+    expect(morning.equals(evening, { unit: 'hour' })).toBe(false);
+    expect(morning.equals(nextWeek, 'month')).toBe(true);
+    expect(morning.equals(nextWeek, 'week')).toBe(false);
+    expect(morning.equals(nextWeek, 'time')).toBe(true);
+    expect(Tempo.equals('2025-07-01', evening, 'day')).toBe(true);
+    expect(Tempo.equals('2025-07-01', evening, { unit: 'days' })).toBe(true);
+    expect(Tempo.compare(morning, evening, { unit: 'day' })).toBe(0);
+    expect(Tempo.compare(morning, evening, { unit: 'hour' })).toBe(-1);
+  })
+
+  test('returns false for invalid instances in catch mode', () => {
+    const valid = new Tempo('2025-07-01');
+    const invalid = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Strict, timeZone: 'Invalid/Zone', catch: true, silent: true });
+
+    expect(invalid.isValid).toBe(false);
+    expect(Tempo.equals(invalid, valid)).toBe(false);
+    expect(valid.equals(invalid, 'day')).toBe(false);
+    expect(invalid.equals(invalid, 'day')).toBe(false);
+  })
+
+  test('supports derived Tempo sandboxes', () => {
+    const Sub = Tempo.derive({ timeZone: 'Australia/Sydney' });
+    const a = new Sub('2025-07-01T08:00:00');
+    const b = new Sub('2025-07-01T20:00:00');
+
+    expect(Sub.compare(a, b, 'day')).toBe(0);
+    expect(Sub.equals(a, b, 'day')).toBe(true);
+    expect(a.equals(b, 'day')).toBe(true);
+    expect(a.equals('2025-07-01', 'day')).toBe(true);
+  })
+
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

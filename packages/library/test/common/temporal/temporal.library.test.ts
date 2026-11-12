@@ -1,4 +1,4 @@
-import { toZonedDateTime, toPlainDate, getOffsets, resolveTwoDigitYear, resolveFractionalSeconds } from '#library/temporal.library.js';
+import { toZonedDateTime, toPlainDate, getOffsets, resolveTwoDigitYear, resolveFractionalSeconds, compareByUnit } from '#library/temporal.library.js';
 
 describe('Temporal Library Helpers', () => {
 	describe('toZonedDateTime', () => {
@@ -148,6 +148,38 @@ describe('Temporal Library Helpers', () => {
 
 		it('should truncate fractions longer than 9 digits', () => {
 			expect(resolveFractionalSeconds('123456789999')).toEqual({ millisecond: 123, microsecond: 456, nanosecond: 789 });
+		});
+	});
+
+	describe('compareByUnit', () => {
+		it('should compare ZonedDateTime values at calendar and time unit boundaries', () => {
+			const a = toZonedDateTime('2026-03-15T09:30:15[UTC]');
+			const b = toZonedDateTime('2026-03-20T09:30:45[UTC]');
+			const c = toZonedDateTime('2026-04-01T09:30:15[UTC]');
+
+			expect(compareByUnit(a, b, 'year')).toBe(0);
+			expect(compareByUnit(a, b, 'month')).toBe(0);
+			expect(compareByUnit(a, c, 'month')).toBe(-1);
+			expect(compareByUnit(a, b, 'day')).toBe(-1);
+			expect(compareByUnit(a, c, 'time')).toBe(0);
+			expect(compareByUnit(a, b, 'minute')).toBe(-1);
+		});
+
+		it('should project the second operand into the first timezone before comparing', () => {
+			const sydney = toZonedDateTime('2026-01-01T23:30:00+11:00[Australia/Sydney]');
+			const utc = toZonedDateTime('2026-01-01T12:30:00[UTC]');
+			expect(compareByUnit(sydney, utc, 'day')).toBe(0);
+			expect(compareByUnit(sydney, utc, 'time')).toBe(0);
+		});
+
+		it('should compare calendar year and month without splitting on era transitions', () => {
+			const heisei = toZonedDateTime('2019-04-30T12:00:00[UTC][u-ca=japanese]');
+			const reiwa = toZonedDateTime('2019-05-01T12:00:00[UTC][u-ca=japanese]');
+			expect(compareByUnit(heisei, reiwa, 'year')).toBe(0);
+
+			const showaJan = toZonedDateTime('1989-01-07T12:00:00[UTC][u-ca=japanese]');
+			const heiseiJan = toZonedDateTime('1989-01-08T12:00:00[UTC][u-ca=japanese]');
+			expect(compareByUnit(showaJan, heiseiJan, 'month')).toBe(0);
 		});
 	});
 });

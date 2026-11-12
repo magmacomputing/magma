@@ -12,7 +12,6 @@ export { enumify, Enum } from '#library/enumerate.library.js';
 export { stringify, objectify, cloneify } from '#library/serialize.library.js';
 export { parseJSONC, stripJSONC, cleanify, isJSON, rawJSON, isRawJSON } from '#library/json.library.js';
 export { getContext, CONTEXT, deepFreeze } from '#library/utility.library.js';
-export { getISOWeekOfYear } from '#library/international.library.js';
 export { Interval } from '#library/scheduling/interval.class.js';
 
 export * from '#library/proxy.library.js';

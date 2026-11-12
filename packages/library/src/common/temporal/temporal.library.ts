@@ -4,7 +4,9 @@
 */
 
 import '#library/temporal.polyfill.js';											// ensure Temporal is available
-import { isNumber, isObject, isString, isText, isNotNullish, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { isFunction, isNumber, isObject, isString, isText, isNotNullish, isUndefined, isZonedDateTime } from '#library/assertion.library.js';
+import { compare } from '#library/number.library.js';
+import { hasKey } from '#library/primitive.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 const offsetCache = new Map<string, { jan: number; jul: number }>();
@@ -296,4 +298,90 @@ export function resolveFractionalSeconds(raw?: string): SubsecondParts {
 		nanosecond: parseInt(padded.slice(6, 9), 10),
 	};
 }
+
+type ISOWeekInput = {
+	year: number, month: number, day: number, dayOfWeek: number,
+	weekOfYear?: number | undefined, yearOfWeek?: number | undefined
+};
+type ISOWeekResult = { weekOfYear: number, yearOfWeek: number };
+
+/**
+ * Polyfill fallback for ISO 8601 Week of Year and Year of Week calculations.
+ *
+ * Introduced because highly experimental native browser implementations of the Temporal API
+ * (e.g., Chrome/Firefox behind flags) currently return `undefined` for `weekOfYear` and `yearOfWeek`
+ * on ZonedDateTime objects. The TC39 spec moved toward calendar-dependent definitions,
+ * causing divergence between the @js-temporal/polyfill (which returns numbers) and native browsers (which return undefined).
+ *
+ * @param zdt - The ZonedDateTime or matching input object
+ * @returns An object containing the weekOfYear and yearOfWeek
+ * @example
+ * ```ts
+ * const { weekOfYear } = getISOWeekOfYear(Temporal.Now.zonedDateTimeISO());
+ * ```
+ */
+export function getISOWeekOfYear(zdt: ISOWeekInput): ISOWeekResult {
+	const calId = (zdt as any).calendarId ?? (zdt as any).calendar?.id;
+	if (calId === 'iso8601' && isNotNullish(zdt.weekOfYear) && isNotNullish(zdt.yearOfWeek))
+		return { weekOfYear: zdt.weekOfYear, yearOfWeek: zdt.yearOfWeek };
+
+	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
+	// to avoid crossing daylight saving boundaries when adding/subtracting days.
+	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
+	const pd = (hasKey(zdt, 'toPlainDate', isFunction<Temporal.PlainDate>) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
+	if (isNotNullish(pd.weekOfYear) && isNotNullish(pd.yearOfWeek))
+		return { weekOfYear: pd.weekOfYear, yearOfWeek: pd.yearOfWeek };
+
+	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.
+	// Find the nearest Thursday to the current date.
+	const shift = 4 - pd.dayOfWeek;
+	const nearestThursday = shift >= 0 ? pd.add({ days: shift }) : pd.subtract({ days: -shift });
+
+	// The calendar year of that nearest Thursday is the ISO week-numbering year
+	const yearOfWeek = nearestThursday.year;
+
+	// The week number is exactly the nearest Thursday's dayOfYear divided by 7
+	const weekOfYear = Math.ceil(nearestThursday.dayOfYear / 7);
+
+	return { weekOfYear, yearOfWeek };
+}
+
+/** Valid unit granularities accepted by `compareByUnit`. */
+export type TemporalCompareUnit = Temporal.DateUnit | Temporal.TimeUnit | 'time';
+
+/**
+ * Compares two `Temporal.ZonedDateTime` instants at the specified calendar or time unit granularity.
+ * The second value is projected into the first value's time zone and calendar before comparison.
+ *
+ * @param first - Reference zoned date-time (its time zone and calendar govern unit boundaries)
+ * @param second - Target zoned date-time to compare against `first`
+ * @param unit - Calendar/time unit or `'time'`
+ * @returns `-1` if `first < second`, `0` if equal at that unit, or `1` if `first > second`
+ */
+export function compareByUnit(first: Temporal.ZonedDateTime, second: Temporal.ZonedDateTime, unit: TemporalCompareUnit): -1 | 0 | 1 {
+	const z2 = second.withTimeZone(first.timeZoneId).withCalendar(first.calendarId);
+
+	switch (unit) {
+		case 'year':
+			return compare(first.year, z2.year);
+		case 'month':
+			return compare(first.year, z2.year) || compare(first.month, z2.month);
+		case 'week': {
+			const w1 = getISOWeekOfYear(first);
+			const w2 = getISOWeekOfYear(z2);
+			return compare(w1.yearOfWeek, w2.yearOfWeek) || compare(w1.weekOfYear, w2.weekOfYear);
+		}
+		case 'day':
+			return Temporal.PlainDate.compare(first.toPlainDate(), z2.toPlainDate()) as -1 | 0 | 1;
+		case 'time':
+			return Temporal.PlainTime.compare(first.toPlainTime(), z2.toPlainTime()) as -1 | 0 | 1;
+		default: {
+			// Sub-day units ('hour' .. 'nanosecond') truncate within Temporal.ZonedDateTime
+			const r1 = first.round({ smallestUnit: unit as Temporal.TimeUnit, roundingMode: 'trunc' });
+			const r2 = z2.round({ smallestUnit: unit as Temporal.TimeUnit, roundingMode: 'trunc' });
+			return Temporal.ZonedDateTime.compare(r1, r2) as -1 | 0 | 1;
+		}
+	}
+}
+
 

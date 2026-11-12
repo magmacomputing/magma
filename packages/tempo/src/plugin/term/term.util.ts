@@ -2,6 +2,7 @@ import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/te
 import { isNotNullish, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
+import { compare } from '#library/number.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { cast } from '#library/type.library.js';
@@ -199,7 +200,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		? [...list].sort((a, b) => {
 			const aNs = (a.span?.start ?? resolve(a, zdt)).epoch.ns as bigint;
 			const bNs = (b.span?.start ?? resolve(b, zdt)).epoch.ns as bigint;
-			return aNs < bNs ? -1 : (aNs > bNs ? 1 : 0);
+			return compare(aNs, bNs);
 		})
 		: sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;

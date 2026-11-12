@@ -137,6 +137,9 @@ export interface Options extends Partial<Internal.BaseOptions> {
 /** Configuration to use for #until() and #since() argument */
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
 export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element | `#${string}`
+export type CompareUnit = DateTimeUnit | Plural<DateTimeUnit> | Element | 'date' | 'time'
+export interface CompareOptions { unit?: CompareUnit }
+export type EqualOptions = CompareOptions
 export type Units = Plural<DateTimeUnit>
 export type BaseDuration = Record<Units, number>
 /**
