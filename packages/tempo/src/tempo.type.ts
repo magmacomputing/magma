@@ -138,6 +138,7 @@ export interface Options extends Partial<Internal.BaseOptions> {
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
 export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element | `#${string}`
 export type CompareUnit = DateTimeUnit | Plural<DateTimeUnit> | Element | 'date' | 'time'
+export type CompareUnit = DateTimeUnit | Plural<DateTimeUnit> | Element | 'date' | 'dates' | 'time' | 'times'
 export interface CompareOptions { unit?: CompareUnit }
 export type EqualOptions = CompareOptions
 export type Units = Plural<DateTimeUnit>
