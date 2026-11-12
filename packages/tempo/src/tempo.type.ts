@@ -138,7 +138,16 @@ export interface Options extends Partial<Internal.BaseOptions> {
 export type DateTimeUnit = Temporal.DateUnit | Temporal.TimeUnit
 export type Unit = DateTimeUnit | Plural<DateTimeUnit> | Element | `#${string}`
 export type CompareUnit = DateTimeUnit | Plural<DateTimeUnit> | Element | 'date' | 'dates' | 'time' | 'times'
-export interface CompareOptions { unit?: CompareUnit }
+export interface CompareOptions {
+	/** Unit granularity for comparison (if omitted, compares exact instants) */
+	unit?: CompareUnit;
+	/** Reference timezone used when coercing raw inputs and evaluating unit boundaries */
+	timeZone?: Evaluable<Temporal.TimeZoneLike | undefined>;
+	/** Reference calendar used when coercing raw inputs and evaluating unit boundaries */
+	calendar?: Evaluable<Temporal.CalendarLike | undefined>;
+	/** Reference Tempo or date-time value whose resolved timezone and calendar anchor the comparison */
+	anchor?: DateTime | Options;
+}
 export type EqualOptions = CompareOptions
 export type Units = Plural<DateTimeUnit>
 export type BaseDuration = Record<Units, number>
@@ -388,8 +397,8 @@ export namespace Internal {
 		/** catch or throw Errors */														catch?: boolean | undefined;
 		/** suppress console output during catch */							silent?: boolean | undefined;
 		/** convenience error handling policy preset */					error?: 'throw' | 'catch' | 'silent' | 'log' | undefined;
-		/** Temporal timeZone */																timeZone?: Evaluable<Temporal.TimeZoneLike> | undefined;
-		/** Temporal calendar */																calendar?: Evaluable<Temporal.CalendarLike> | undefined;
+		/** Temporal timeZone */																timeZone?: Evaluable<Temporal.TimeZoneLike | undefined> | undefined;
+		/** Temporal calendar */																calendar?: Evaluable<Temporal.CalendarLike | undefined> | undefined;
 		/** locale (e.g. en-AU) */															locale?: Evaluable<string | readonly string[]> | undefined;
 		/** pivot year for two-digit years */										pivot?: number | undefined;
 		/** hemisphere for term.qtr or term.szn */							sphere?: Evaluable<enums.COMPASS | undefined> | undefined;

@@ -815,41 +815,119 @@ export class Tempo {
 		return state.patternCompiler.compileRegExp(layout, snippet as any);
 	}
 
-	/** @internal */
-	static #coerceComparePair(host: typeof Tempo, tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options, inheritTargetZone = false): [Tempo, Tempo] {
-		const one: Tempo = host.isTempo(tempo1) ? tempo1 : new host(tempo1 as t.DateTime);
-		if (host.isTempo(tempo2)) return [one, tempo2];
+	/** @internal Resolve a timezone value/alias against a Tempo host using `#setLocal` dictionary precedence. */
+	static #resolveTimeZone(host: typeof Tempo, classState: any, evaluatedTz: Temporal.TimeZoneLike): string {
+		const tzString = isObject(evaluatedTz) ? getTemporalIds(evaluatedTz)[0] : String(evaluatedTz);
+		const zone = tzString.toLowerCase();
+		return (host as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(tzString);
+	}
 
-		if (inheritTargetZone && !isZonedDateTime(tempo2)) {
-			const explicitZone = isPlainObject(tempo2)
-				? ((tempo2 as any).timeZone ?? (tempo2 as any).timezone ?? (tempo2 as any).TimeZone)
-				: undefined;
-			if (!isNotNullish(explicitZone)) {
-				const z1 = one.toDateTime();
-				const two = isPlainObject(tempo2) && isOptionsObject(tempo2)
-					? new host({ ...omit(tempo2, 'timeZone', 'timezone', 'TimeZone'), timeZone: z1.timeZoneId, calendar: (tempo2 as any).calendar ?? z1.calendarId })
-					: new host((isPlainObject(tempo2) ? omit(tempo2, 'timeZone', 'timezone', 'TimeZone') : tempo2) as t.DateTime, { timeZone: z1.timeZoneId, calendar: z1.calendarId });
-				return [one, two];
-			}
+	/** @internal Normalize `CompareUnit | CompareOptions` into unit granularity plus optional reference timezone/calendar frame. */
+	static #resolveCompareFrame(host: typeof Tempo, unitOrOptions?: t.CompareUnit | t.CompareOptions) {
+		const unit = resolveCompareUnit(unitOrOptions);
+		if (!isPlainObject(unitOrOptions)) return { unit, timeZone: undefined as string | undefined, calendar: undefined as string | undefined, anchor: undefined as Tempo | undefined };
+
+		const opts = unitOrOptions as t.CompareOptions & Record<string, any>;
+		const anchor = isNotNullish(opts.anchor)
+			? (host.isTempo(opts.anchor) ? opts.anchor : new host(opts.anchor as t.DateTime))
+			: undefined;
+
+		let anchorTz: string | undefined;
+		let anchorCal: string | undefined;
+		if (anchor && anchor.isValid) {
+			[anchorTz, anchorCal] = getTemporalIds(anchor.toDateTime());
 		}
 
-		return [one, new host(tempo2 as t.DateTime)];
+		const evalTz = evaluate<Temporal.TimeZoneLike>(opts.timeZone ?? opts.timezone ?? opts.TimeZone);
+		const evalCal = evaluate<Temporal.CalendarLike>(opts.calendar ?? opts.Calendar);
+		const timeZone = isNotNullish(evalTz) ? Tempo.#resolveTimeZone(host, (host as any)[$Internal](), evalTz) : anchorTz;
+		const calendar = isNotNullish(evalCal) ? String(evalCal) : anchorCal;
+
+		return { unit, timeZone, calendar, anchor };
+	}
+
+	/** @internal Coerce one comparison operand while honoring explicit zone/calendar vs fallback frame inheritance. */
+	static #coerceCompareOperand(
+		host: typeof Tempo,
+		input: t.DateTime | t.Options | undefined,
+		frameZone?: string,
+		frameCal?: string,
+		targetZone?: string,
+		targetCal?: string,
+	): Tempo {
+		if (host.isTempo(input)) return input;
+		if ((!frameZone && !frameCal && !targetZone && !targetCal) || isZonedDateTime(input)) return new host(input as t.DateTime);
+
+		const plain = isPlainObject(input);
+		const explicitZone = plain ? evaluate((input as any).timeZone ?? (input as any).timezone ?? (input as any).TimeZone) : undefined;
+		const hasExplicitZone = isNotNullish(explicitZone);
+		const fallbackZone = frameZone ?? targetZone;
+		// Only inherit the 1st operand's calendar automatically when no explicit timezone was supplied on `input`
+		const fallbackCal = frameCal ?? (hasExplicitZone ? undefined : targetCal);
+
+		if (isOptionsObject(input)) {
+			const explicitCal = evaluate((input as any).calendar ?? (input as any).Calendar);
+			const tz = hasExplicitZone ? explicitZone : fallbackZone;
+			const cal = isNotNullish(explicitCal) ? explicitCal : fallbackCal;
+			return new host({
+				...omit(input as Record<string, any>, 'timeZone', 'timezone', 'TimeZone', 'calendar', 'Calendar'),
+				...(isNotNullish(tz) ? { timeZone: tz } : {}),
+				...(isNotNullish(cal) ? { calendar: cal } : {}),
+			} as t.DateTime);
+		}
+
+		if (!hasExplicitZone && (fallbackZone || fallbackCal)) {
+			const cleaned = plain ? omit(input as Record<string, any>, 'timeZone', 'timezone', 'TimeZone') : input;
+			return new host(cleaned as t.DateTime, {
+				...(fallbackZone ? { timeZone: fallbackZone } : {}),
+				...(fallbackCal ? { calendar: fallbackCal } : {}),
+			});
+		}
+
+		return new host(input as t.DateTime);
+	}
+
+	/** @internal */
+	static #coerceComparePair(
+		host: typeof Tempo,
+		tempo1?: t.DateTime | t.Options,
+		tempo2?: t.DateTime | t.Options,
+		inheritTargetZone = false,
+		frameZone?: string,
+		frameCal?: string,
+	): [Tempo, Tempo] {
+		const one = Tempo.#coerceCompareOperand(host, tempo1, frameZone, frameCal);
+		if (host.isTempo(tempo2)) return [one, tempo2];
+
+		const z1 = (inheritTargetZone && !isZonedDateTime(tempo2) && one.isValid) ? one.toDateTime() : undefined;
+		const two = Tempo.#coerceCompareOperand(host, tempo2, frameZone, frameCal, z1?.timeZoneId, z1?.calendarId);
+		return [one, two];
+	}
+
+	/** @internal Evaluate comparison against an already-coerced pair and resolved frame. */
+	static #compareWithFrame(one: Tempo, two: Tempo, frame: { unit: ReturnType<typeof resolveCompareUnit>; timeZone?: string | undefined; calendar?: string | undefined; anchor?: Tempo | undefined }): -1 | 0 | 1 {
+		if (!frame.unit) return compareValues(one.epoch.ns, two.epoch.ns);
+
+		let z1 = one.toDateTime();
+		if (frame.timeZone) z1 = z1.withTimeZone(frame.timeZone);
+		if (frame.calendar) z1 = z1.withCalendar(frame.calendar);
+
+		return compareByUnit(z1, two.toDateTime(), frame.unit);
 	}
 
 	/**
 	 * Compares two `Tempo` instances or date-time values. Returns `-1` (earlier), `0` (equal), or `1` (later).
-	 * When `unit` (or `{ unit }`) is provided, compares at that calendar/time granularity (e.g. `'day'`, `'month'`, `'time'`).
+	 * When `unit` (or `{ unit, timeZone, calendar, anchor }`) is provided, compares at that calendar/time granularity (e.g. `'day'`, `'month'`, `'time'`).
 	 */
 	static compare(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): -1 | 0 | 1 {
 		const host: typeof Tempo = isCallable((this as any)?.isTempo) ? this : Tempo;
-		const resolvedUnit = resolveCompareUnit(unit);
-		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(resolvedUnit));
-
-		if (!resolvedUnit) {
-			return compareValues(one.epoch.ns, two.epoch.ns);
+		const frame = Tempo.#resolveCompareFrame(host, unit);
+		if (frame.anchor && !frame.anchor.isValid) {
+			throw new RangeError('Invalid anchor date-time for Tempo.compare().');
 		}
+		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
 
-		return compareByUnit(one.toDateTime(), two.toDateTime(), resolvedUnit);
+		return Tempo.#compareWithFrame(one, two, frame);
 	}
 
 	/**
@@ -857,13 +935,13 @@ export class Tempo {
 	 */
 	static equals(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): boolean {
 		const host: typeof Tempo = isCallable((this as any)?.isTempo) ? this : Tempo;
-		const resolvedUnit = resolveCompareUnit(unit);
-		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(resolvedUnit));
+		const frame = Tempo.#resolveCompareFrame(host, unit);
+		if (frame.anchor && !frame.anchor.isValid) return false;
 
+		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
 		if (!one.isValid || !two.isValid) return false;
-		if (!resolvedUnit) return one.epoch.ns === two.epoch.ns;
 
-		return compareByUnit(one.toDateTime(), two.toDateTime(), resolvedUnit) === 0;
+		return Tempo.#compareWithFrame(one, two, frame) === 0;
 	}
 
 	/** global Tempo configuration */
@@ -1638,9 +1716,7 @@ export class Tempo {
 		const evaluatedTz = explicitTz ?? evaluate<Temporal.TimeZoneLike>(classState.config.timeZone);
 		let resolvedZone: string | undefined;
 		if (isNotNullish(evaluatedTz)) {
-			const tzString = isObject(evaluatedTz) ? getTemporalIds(evaluatedTz)[0] : String(evaluatedTz);
-			const zone = tzString.toLowerCase();
-			resolvedZone = (this.constructor as any).timeZones?.[zone] ?? classState.config.timeZones?.[zone] ?? enums.TIMEZONE[zone] ?? normalizeUtcOffset(tzString);
+			resolvedZone = Tempo.#resolveTimeZone(this.constructor as typeof Tempo, classState, evaluatedTz);
 			setProperty(this.#local.config, 'timeZone', resolvedZone);
 		}
 

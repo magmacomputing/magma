@@ -345,13 +345,27 @@ const pdt = new Tempo().toPlainDate();   // Temporal.PlainDate
 ```
 
 ### Sorting an array of Tempos
+`Tempo.compare` compares exact instants on the timeline, so standard sorting automatically handles any mix of timezones and calendars with zero manual alignment:
 ```typescript
-const dates = [new Tempo('tomorrow'), new Tempo('yesterday'), new Tempo('today')];
-dates.sort(Tempo.compare); // Sorts chronologically by exact instant
+const dates = [
+  new Tempo('2026-05-11T09:00:00', { timeZone: 'Asia/Tokyo' }),       // May 11 00:00 UTC
+  new Tempo('2026-05-10T18:00:00', { timeZone: 'America/New_York' }), // May 10 22:00 UTC (2h earlier)
+  new Tempo('2026-05-10T23:00:00', { timeZone: 'Europe/London' }),    // May 10 22:00 UTC (same instant as NYC)
+];
+
+dates.sort(Tempo.compare); // Chronological order across mixed timezones
 ```
 
-To sort or compare at a coarser granularity (such as `'day'` or `'month'`), pass a unit string or `{ unit }` options object as the third argument to `Tempo.compare(a, b, unit)`:
+When sorting at a coarser **unit** granularity (such as `'day'` or `'month'`), pass an `anchor` or explicit `timeZone` / `calendar` in `CompareOptions` so Tempo evaluates every pair against one consistent reference frame:
 ```typescript
-dates.sort((a, b) => Tempo.compare(a, b, 'day'));
+// Option A: Anchor mixed items to a reference Tempo (e.g. dates[0])
+dates.sort((a, b) => Tempo.compare(a, b, { unit: 'day', anchor: dates[0] }));
+
+// Option B: Normalize evaluations to an explicit fixed timezone & calendar (order-independent)
+dates.sort((a, b) => Tempo.compare(a, b, { unit: 'day', timeZone: 'UTC', calendar: 'iso8601' }));
 ```
+
+::: info Granular Sorting: `anchor` vs. Fixed Frame
+Without `anchor` or `timeZone` / `calendar`, `Tempo.compare(a, b, 'day')` evaluates in `a`'s timezone and calendar—which is asymmetric if `.sort()` swaps mixed-zone elements freely. Passing `anchor: dates[0]` is convenient when the first item defines your reference zone, though different initial array orders can change which element acts as the anchor; specifying a fixed `{ timeZone, calendar }` guarantees deterministic results regardless of input order.
+:::
 

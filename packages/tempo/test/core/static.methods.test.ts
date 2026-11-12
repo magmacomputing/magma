@@ -235,8 +235,10 @@ describe(`${label} compare`, () => {
     expect(Tempo.compare(ist1, ist2, 'hour')).toBe(0);
     expect(Tempo.compare(ist1, ist2, 'minute')).toBe(-1);
 
-    // Explicit timeZone: undefined on options/bag should still inherit the target zone
+    // Explicit timeZone: undefined (and supplier returning undefined) should inherit target zone & calendar
     expect(Tempo.compare(ny, { value: '2025-07-01T00:30', timeZone: undefined }, 'day')).toBe(0);
+    expect(Tempo.compare(ny, { value: '2025-07-01T22:00', timeZone: () => undefined, calendar: () => undefined }, 'hour')).toBe(0);
+    expect(Tempo.compare(ny, { value: '2025-07-01T22:00', timeZone: () => 'UTC' }, 'hour')).toBe(1);
 
     // Cross-module branded Tempo instance without local private brand should still classify options objects cleanly
     const nyZdt = ny.toDateTime();
@@ -255,6 +257,43 @@ describe(`${label} compare`, () => {
     expect(() => Tempo.compare('2025-07-01', '2025-07-01', 123 as any)).toThrow(TypeError);
     expect(() => Tempo.compare('2025-07-01', '2025-07-01', null as any)).toThrow(TypeError);
     expect(() => Tempo.equals('2025-07-01', '2025-07-01', { unit: 'century' } as any)).toThrow(TypeError);
+  })
+
+  test('supports explicit timeZone, calendar, and anchor reference frames in CompareOptions', () => {
+    // 2026-01-01T23:00Z vs 2026-01-02T02:00+02:00 (= 2026-01-02T00:00Z): asymmetric without a shared frame
+    const utcLate = new Tempo('2026-01-01T23:00:00', { timeZone: 'UTC' });
+    const plus2Early = new Tempo('2026-01-02T02:00:00', { timeZone: '+02:00' });
+
+    // Explicit UTC frame makes both operands project to UTC (Jan 1 vs Jan 2), guaranteeing antisymmetry
+    const utcOpts: Tempo.CompareOptions = { unit: 'day', timeZone: 'UTC', calendar: 'iso8601' };
+    expect(Tempo.compare(utcLate, plus2Early, utcOpts)).toBe(-1);
+    expect(Tempo.compare(plus2Early, utcLate, utcOpts)).toBe(1);
+
+    // Anchor frame projects both operands into the anchor's timezone & calendar (Jan 2 01:00+02 vs Jan 2 02:00+02 -> equal day)
+    const anchorOpts: Tempo.CompareOptions = { unit: 'day', anchor: plus2Early };
+    expect(Tempo.compare(utcLate, plus2Early, anchorOpts)).toBe(0);
+    expect(Tempo.compare(plus2Early, utcLate, anchorOpts)).toBe(0);
+
+    // Explicit timeZone overrides anchor's timezone while retaining anchor's calendar (and suppliers resolving to undefined fall back to anchor)
+    expect(Tempo.compare(utcLate, plus2Early, { unit: 'day', anchor: plus2Early, timeZone: 'UTC' })).toBe(-1);
+    expect(Tempo.compare(utcLate, plus2Early, { unit: 'day', anchor: plus2Early, timeZone: () => undefined })).toBe(0);
+
+    // Works for array sorting across mixed zones with deterministic frame
+    const mixed = [
+      new Tempo('2026-05-11T09:00:00', { timeZone: 'Asia/Tokyo' }),       // May 11 00:00Z (May 10 20:00 EDT)
+      new Tempo('2026-05-10T18:00:00', { timeZone: 'America/New_York' }), // May 10 22:00Z (May 10 18:00 EDT)
+    ];
+    const sortedUtc = [...mixed].sort((a, b) => Tempo.compare(a, b, { unit: 'day', timeZone: 'UTC' }));
+    expect(sortedUtc.map(d => d.tz)).toEqual(['America/New_York', 'Asia/Tokyo']);
+    const sortedInNy = [...mixed].sort((a, b) => Tempo.compare(a, b, { unit: 'day', anchor: mixed[1] }));
+    expect(sortedInNy.every((d, i, arr) => i === 0 || Tempo.compare(arr[i - 1], d, { unit: 'day', anchor: mixed[1] }) <= 0)).toBe(true);
+
+    // Raw strings lacking a timezone inherit explicit CompareOptions timeZone
+    expect(Tempo.compare('2026-05-10', mixed[0], { unit: 'day', timeZone: 'America/New_York' })).toBe(0);
+
+    // Invalid catch-mode anchor must be rejected rather than silently dropping the frame
+    const invalidAnchor = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Strict, timeZone: 'Invalid/Zone', catch: true, silent: true });
+    expect(() => Tempo.compare(utcLate, plus2Early, { unit: 'day', anchor: invalidAnchor })).toThrow(RangeError);
   })
 
 })
@@ -303,6 +342,18 @@ describe(`${label} equals`, () => {
     expect(Tempo.equals(invalid, valid)).toBe(false);
     expect(valid.equals(invalid, 'day')).toBe(false);
     expect(invalid.equals(invalid, 'day')).toBe(false);
+    expect(Tempo.equals(invalid, '2025-07-01', 'day')).toBe(false);
+    expect(Tempo.equals(valid, valid, { unit: 'day', anchor: invalid })).toBe(false);
+  })
+
+  test('supports timeZone, calendar, and anchor in EqualOptions via static and instance .equals()', () => {
+    const nyLate = new Tempo('2026-05-10T22:00:00', { timeZone: 'America/New_York' }); // May 11 02:00 UTC
+    const utcSameDayInNy = new Tempo('2026-05-10T23:00:00', { timeZone: 'UTC' });    // May 10 19:00 EDT
+
+    expect(nyLate.equals(utcSameDayInNy, 'day')).toBe(true);
+    expect(nyLate.equals(utcSameDayInNy, { unit: 'day', timeZone: 'UTC', calendar: 'iso8601' })).toBe(false);
+    expect(Tempo.equals(nyLate, utcSameDayInNy, { unit: 'day', anchor: nyLate })).toBe(true);
+    expect(utcSameDayInNy.equals(nyLate, { unit: 'day', anchor: nyLate })).toBe(true);
   })
 
   test('supports derived Tempo sandboxes', () => {

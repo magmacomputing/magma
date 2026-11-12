@@ -122,10 +122,11 @@ Both unit strings and `{ unit }` objects accept singular or plural unit names as
 
 Passing a non-string unit or unrecognized unit string throws a `TypeError`.
 
-### Timezone Projection & Catch-Mode Behavior
+### Timezone Projection, Anchor Frame & Catch-Mode Behavior
 
-- **Timezone Alignment**: When a unit is specified and `tempo2` is coerced from a raw string or options object without an explicit timezone, it inherits `tempo1`'s timezone and calendar. When comparing across explicit timezones at unit granularity (e.g., `'day'`), `tempo2` is projected into `tempo1`'s timezone and calendar before evaluating the unit boundary.
-- **Invalid Dates (Catch Mode)**: If either operand is invalid in catch mode (`!t.isValid`), `Tempo.equals()` and `t.equals()` return `false` without throwing.
+- **Timezone Alignment**: By default, when a unit is specified and `tempo2` is coerced from a raw string or options object without an explicit timezone, it inherits `tempo1`'s timezone and calendar, and unit boundaries are evaluated in `tempo1`'s timezone and calendar.
+- **Explicit Frame (`timeZone`, `calendar`, `anchor`)**: `CompareOptions` (and `EqualOptions`) accept optional `anchor`, `timeZone`, and `calendar` properties to evaluate both operands against a single fixed reference frame (explicit `timeZone`/`calendar` override `anchor` fields when combined)—useful when comparing or sorting mixed-timezone arrays at unit granularity (e.g. `{ unit: 'day', anchor: dates[0] }` or `{ unit: 'day', timeZone: 'UTC', calendar: 'iso8601' }`).
+- **Invalid Dates (Catch Mode)**: If either operand (or `anchor`) is invalid in catch mode (`!t.isValid`), `Tempo.equals()` and `t.equals()` return `false` without throwing.
 
 ---
 
