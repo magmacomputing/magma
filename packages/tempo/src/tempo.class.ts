@@ -826,7 +826,7 @@ export class Tempo {
 				: undefined;
 			if (!isNotNullish(explicitZone)) {
 				const z1 = one.toDateTime();
-				const two = isPlainObject(tempo2) && one.#isOptions(tempo2)
+				const two = isPlainObject(tempo2) && isOptionsObject(tempo2)
 					? new host({ ...omit(tempo2, 'timeZone', 'timezone', 'TimeZone'), timeZone: z1.timeZoneId, calendar: (tempo2 as any).calendar ?? z1.calendarId })
 					: new host((isPlainObject(tempo2) ? omit(tempo2, 'timeZone', 'timezone', 'TimeZone') : tempo2) as t.DateTime, { timeZone: z1.timeZoneId, calendar: z1.calendarId });
 				return [one, two];
@@ -1789,31 +1789,31 @@ export class Tempo {
 			if (hasMapped) mappedTempo = record as t.DateTime;
 		}
 
-		return this.#isOptions(mappedTempo)
+		return isOptionsObject(mappedTempo)
 			? [mappedTempo.value, Object.assign({}, mappedTempo)]
 			: [mappedTempo, options];
 	}
 
-	/** check if we've been given a Tempo Options object */
-	#isOptions(arg: any): arg is t.Options {
-		if (!isPlainObject(arg)) return false;
+}
 
-		const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
-		if (keys.some(key => Enum.has(enums.MUTATION, key)))
-			return false;
+/** Check if we've been given a Tempo Options object */
+function isOptionsObject(arg: any): arg is t.Options {
+	if (!isPlainObject(arg)) return false;
 
-		// 2. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
-		if (keys.some(key => (Enum.has(enums.ZONED_DATE_TIME, key) && !Enum.has(enums.CONFIG, key)) || Enum.has(enums.DURATIONS, key)))
-			return false;
+	const keys = ownKeys(arg);															// if it contains any 'mutation' keys, then it's not (just) an options object
+	if (keys.some(key => Enum.has(enums.MUTATION, key)))
+		return false;
 
-		// 3. If it contains any recognized Config or Parse keys, it's definitely an options object
-		if (keys.some(key => Enum.has(enums.CONFIG, key) || Enum.has(enums.PARSE, key)))
-			return true;
+	// 2. If it contains any recognized Date/Time value keys (e.g. year, month, day, hours, minutes), it's likely an input value
+	if (keys.some(key => (Enum.has(enums.ZONED_DATE_TIME, key) && !Enum.has(enums.CONFIG, key)) || Enum.has(enums.DURATIONS, key)))
+		return false;
 
-		// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object
+	// 3. If it contains any recognized Config or Parse keys, it's definitely an options object
+	if (keys.some(key => Enum.has(enums.CONFIG, key) || Enum.has(enums.PARSE, key)))
 		return true;
-	}
 
+	// 4. Otherwise, it is a plain object (possibly empty), so we treat it as an options object
+	return true;
 }
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

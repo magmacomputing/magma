@@ -49,7 +49,7 @@ The purpose of this plan is to consolidate Tempo's fiscal and business calendar 
 
 ## 3. Detailed Work Breakdown
 
-### Phase 0: Core Comparison & Equality (`packages/tempo/src/tempo.class.ts`, `tempo.type.ts`)
+### Phase 0: Core Comparison & Equality (`packages/tempo/src/tempo.class.ts`, `tempo.type.ts`) — ✅ Complete
 
 1. **Define `CompareUnit` Type (`packages/tempo/src/tempo.type.ts`)**:
    - Extend `DateTimeUnit` (`'year' | 'month' | 'week' | 'day' | 'hour' | 'minute' | 'second' | 'millisecond' | 'microsecond' | 'nanosecond'`), plurals, and `Element` abbreviations with `'date'` (alias for `'day'`) and `'time'` (wall-clock time slice).
@@ -237,7 +237,7 @@ Refactor documentation pages currently showcasing `@magmacomputing/tempo-plugin-
 
 ## 4. Verification & Readiness Checklist
 
-- [ ] `packages/tempo/test/core/static.methods.test.ts` (and instance equality tests) pass for `Tempo.compare(..., unit?)`, `Tempo.equals`, and `t.equals`.
+- [x] `packages/tempo/test/core/static.methods.test.ts` (and instance equality tests) pass for `Tempo.compare(..., unit?)`, `Tempo.equals`, and `t.equals`.
 - [ ] `packages/plugins/.terms/test/term.fiscal.test.ts` passes with `year`, `startDay`, and `t.equals(f.span.start, 'day')` boundary tests.
 - [ ] `npm run catalog:sync` runs cleanly with no orphan warnings.
 - [ ] `node --check` succeeds on all manifest files.

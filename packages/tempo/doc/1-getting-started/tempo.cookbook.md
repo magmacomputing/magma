@@ -139,6 +139,29 @@ const t = new Tempo('yesterday');
 console.log(t.since()); // "1d ago"
 ```
 
+### Comparing & Checking Equality (`compare`, `equals`)
+Compare two dates chronologically—even across different timezones—or test equality at instant or unit precision:
+```typescript
+const nyc    = new Tempo('2026-05-10T18:00:00', { timeZone: 'America/New_York' }); // 22:00 UTC
+const london = new Tempo('2026-05-10T23:00:00', { timeZone: 'Europe/London' });    // 22:00 UTC (same instant)
+const tokyo  = new Tempo('2026-05-11T09:00:00', { timeZone: 'Asia/Tokyo' });       // 00:00 UTC (May 10 20:00 in NYC)
+
+// Exact instant comparison (returns -1 | 0 | 1)
+Tempo.compare(nyc, london);              // 0  (same instant across timezones)
+Tempo.compare(nyc, tokyo);               // -1 (nyc is 2 hours earlier)
+Tempo.compare(nyc);                      // Compare `nyc` against now (omitted 2nd arg)
+
+// Granular comparison projected into the 1st operand's timezone
+Tempo.compare(nyc, tokyo, 'day');        // 0  (both fall on May 10 in America/New_York; 'date' also accepted)
+Tempo.compare(nyc, tokyo, { unit: 'hour' }); // -1 (18:00 vs 20:00 in New York)
+
+// Exact instant & unit-level equality
+Tempo.equals(nyc, london);               // true (same instant across timezones)
+nyc.equals(tokyo, 'day');                // true (same calendar day in New York)
+nyc.equals('2026-05-10T23:00:00', { unit: 'day' }); // true (raw string inherits nyc's timezone)
+```
+👉 **Learn More:** See [Comparing & Checking Equality](../2-core-concepts/tempo.getters.md#comparing--checking-equality) for supported units, `{ unit }` options, and timezone projection rules.
+
 ---
 
 ## Timezones and Locales
@@ -324,6 +347,11 @@ const pdt = new Tempo().toPlainDate();   // Temporal.PlainDate
 ### Sorting an array of Tempos
 ```typescript
 const dates = [new Tempo('tomorrow'), new Tempo('yesterday'), new Tempo('today')];
-dates.sort(Tempo.compare); // Sorts chronologically
+dates.sort(Tempo.compare); // Sorts chronologically by exact instant
+```
+
+To sort or compare at a coarser granularity (such as `'day'` or `'month'`), pass a unit string or `{ unit }` options object as the third argument to `Tempo.compare(a, b, unit)`:
+```typescript
+dates.sort((a, b) => Tempo.compare(a, b, 'day'));
 ```
 

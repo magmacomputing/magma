@@ -193,6 +193,7 @@ export function fromRoman(roman: string): number {
  * @param b - Second numeric or bigint value
  * @returns `-1` if `a < b`, `0` if `a === b`, or `1` if `a > b`
  * @throws {TypeError} If either value is not a `number`/`bigint` or if `a` and `b` have mismatched types
+ * @throws {RangeError} If either numeric argument is `NaN`
  * @example
  * ```ts
  * compare(1, 2);   // -1
@@ -205,7 +206,9 @@ export function compare(a: bigint, b: bigint): -1 | 0 | 1;
 export function compare(a: number | bigint, b: number | bigint): -1 | 0 | 1 {
 	if ((typeof a !== 'number' && typeof a !== 'bigint') || typeof a !== typeof b)
 		throw new TypeError(`Cannot compare ${typeof a} with ${typeof b}; expected two numbers or two bigints.`);
-	
+	if (typeof a === 'number' && (Number.isNaN(a) || Number.isNaN(b as number)))
+		throw new RangeError('Cannot compare NaN values.');
+
 	return a > b ? 1 : a < b ? -1 : 0;
 }
 

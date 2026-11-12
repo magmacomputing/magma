@@ -359,7 +359,8 @@ export type TemporalCompareUnit = Temporal.DateUnit | Temporal.TimeUnit | 'time'
  * @returns `-1` if `first < second`, `0` if equal at that unit, or `1` if `first > second`
  */
 export function compareByUnit(first: Temporal.ZonedDateTime, second: Temporal.ZonedDateTime, unit: TemporalCompareUnit): -1 | 0 | 1 {
-	const z2 = second.withTimeZone(first.timeZoneId).withCalendar(first.calendarId);
+	const [timeZone, calendar] = getTemporalIds(first);
+	const z2 = second.withTimeZone(timeZone).withCalendar(calendar);
 
 	switch (unit) {
 		case 'year':

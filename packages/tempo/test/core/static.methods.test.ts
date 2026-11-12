@@ -197,6 +197,7 @@ describe(`${label} compare`, () => {
 
     expect(Tempo.compare(t1, t2SameDay, 'day')).toBe(0);
     expect(Tempo.compare(t1, t2SameDay, 'date')).toBe(0);
+    expect(Tempo.compare(t1, t2SameDay, 'dates')).toBe(0);
     expect(Tempo.compare(t1, t2SameDay, 'hour')).toBe(-1);
     expect(Tempo.compare(t1, t3SameMonth, 'day')).toBe(-1);
     expect(Tempo.compare(t1, t3SameMonth, 'month')).toBe(0);
@@ -205,6 +206,7 @@ describe(`${label} compare`, () => {
 
     // 'time' compares wall-clock time regardless of calendar date
     expect(Tempo.compare(t1, t3SameMonth, 'time')).toBe(0);
+    expect(Tempo.compare(t1, t3SameMonth, 'times')).toBe(0);
     expect(Tempo.compare(t1, t2SameDay, 'time')).toBe(-1);
 
     // ISO week across year boundary (2024-12-30 Mon .. 2025-01-05 Sun = 2025-W01)
@@ -235,6 +237,17 @@ describe(`${label} compare`, () => {
 
     // Explicit timeZone: undefined on options/bag should still inherit the target zone
     expect(Tempo.compare(ny, { value: '2025-07-01T00:30', timeZone: undefined }, 'day')).toBe(0);
+
+    // Cross-module branded Tempo instance without local private brand should still classify options objects cleanly
+    const nyZdt = ny.toDateTime();
+    const foreignTempo = {
+      [Symbol.for('$LibraryIdentity')]: true,
+      isValid: true,
+      toDateTime: () => nyZdt,
+      epoch: ny.epoch,
+    } as unknown as Tempo;
+    expect(Tempo.compare(foreignTempo, { value: '2025-07-01T00:30' }, 'day')).toBe(0);
+    expect(Tempo.equals(foreignTempo, { value: '2025-07-01T00:30' }, 'day')).toBe(true);
   })
 
   test('throws TypeError for invalid comparison unit', () => {

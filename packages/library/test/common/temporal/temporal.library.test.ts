@@ -181,5 +181,22 @@ describe('Temporal Library Helpers', () => {
 			const heiseiJan = toZonedDateTime('1989-01-08T12:00:00[UTC][u-ca=japanese]');
 			expect(compareByUnit(showaJan, heiseiJan, 'month')).toBe(0);
 		});
+
+		it('should resolve nested timeZone.id and calendar.id shapes via getTemporalIds', () => {
+			const base = toZonedDateTime('2026-01-01T23:30:00+11:00[Australia/Sydney]');
+			const nestedFirst = new Proxy(base, {
+				get(target, prop) {
+					if (prop === 'timeZoneId' || prop === 'calendarId') return undefined;
+					if (prop === 'timeZone') return { id: 'Australia/Sydney' };
+					if (prop === 'calendar') return { id: 'iso8601' };
+					const value = Reflect.get(target, prop, target);
+					return typeof value === 'function' ? value.bind(target) : value;
+				}
+			}) as Temporal.ZonedDateTime;
+			const utc = toZonedDateTime('2026-01-01T12:30:00[UTC]');
+
+			expect(compareByUnit(nestedFirst, utc, 'day')).toBe(0);
+			expect(compareByUnit(nestedFirst, utc, 'time')).toBe(0);
+		});
 	});
 });

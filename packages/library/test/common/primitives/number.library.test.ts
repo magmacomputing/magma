@@ -126,5 +126,11 @@ describe('Number Library', () => {
 			expect(() => (compare as any)(1n, 2)).toThrow(TypeError);
 			expect(() => (compare as any)('1', '2')).toThrow(TypeError);
 		});
+
+		it('should throw RangeError for NaN inputs', () => {
+			expect(() => compare(NaN, 4)).toThrow(RangeError);
+			expect(() => compare(4, NaN)).toThrow(RangeError);
+			expect(() => compare(NaN, NaN)).toThrow(RangeError);
+		});
 	});
 });
