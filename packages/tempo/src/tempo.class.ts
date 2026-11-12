@@ -37,7 +37,7 @@ import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
 import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, resolveCompareUnit, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, isCompareUnit, resolveCompareUnit, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -860,15 +860,16 @@ export class Tempo {
 
 		const plain = isPlainObject(input);
 		const explicitZone = plain ? evaluate((input as any).timeZone ?? (input as any).timezone ?? (input as any).TimeZone) : undefined;
+		const explicitCal = plain ? evaluate((input as any).calendar ?? (input as any).Calendar) : undefined;
 		const hasExplicitZone = isNotNullish(explicitZone);
+		const hasExplicitCal = isNotNullish(explicitCal);
 		const fallbackZone = frameZone ?? targetZone;
 		// Only inherit the 1st operand's calendar automatically when no explicit timezone was supplied on `input`
 		const fallbackCal = frameCal ?? (hasExplicitZone ? undefined : targetCal);
 
 		if (isOptionsObject(input)) {
-			const explicitCal = evaluate((input as any).calendar ?? (input as any).Calendar);
 			const tz = hasExplicitZone ? explicitZone : fallbackZone;
-			const cal = isNotNullish(explicitCal) ? explicitCal : fallbackCal;
+			const cal = hasExplicitCal ? explicitCal : fallbackCal;
 			return new host({
 				...omit(input as Record<string, any>, 'timeZone', 'timezone', 'TimeZone', 'calendar', 'Calendar'),
 				...(isNotNullish(tz) ? { timeZone: tz } : {}),
@@ -876,11 +877,12 @@ export class Tempo {
 			} as t.DateTime);
 		}
 
-		if (!hasExplicitZone && (fallbackZone || fallbackCal)) {
-			const cleaned = plain ? omit(input as Record<string, any>, 'timeZone', 'timezone', 'TimeZone') : input;
+		const inheritCal = !hasExplicitCal ? fallbackCal : undefined;
+		if ((!hasExplicitZone && fallbackZone) || inheritCal) {
+			const cleaned = (!hasExplicitZone && plain) ? omit(input as Record<string, any>, 'timeZone', 'timezone', 'TimeZone') : input;
 			return new host(cleaned as t.DateTime, {
-				...(fallbackZone ? { timeZone: fallbackZone } : {}),
-				...(fallbackCal ? { calendar: fallbackCal } : {}),
+				...(!hasExplicitZone && fallbackZone ? { timeZone: fallbackZone } : {}),
+				...(inheritCal ? { calendar: inheritCal } : {}),
 			});
 		}
 
@@ -926,6 +928,8 @@ export class Tempo {
 			throw new RangeError('Invalid anchor date-time for Tempo.compare().');
 		}
 		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
+		if (!one.isValid || !two.isValid)
+			throw new RangeError('Cannot compare an invalid Tempo date-time.');
 
 		return Tempo.#compareWithFrame(one, two, frame);
 	}
@@ -1672,10 +1676,16 @@ export class Tempo {
 	/** @hidden */																						minus(tempo?: t.MutateAdd, options?: t.Options): Tempo { return this.subtract(tempo, options); }
 	/** returns a new `Tempo` with specific offsets. */				set(tempo?: t.MutateSet, options?: t.Options): Tempo { return this.#resolve(() => interpret(this, 'MutateModule', 'set', false, tempo, options) ?? this); }
 
+	/** checks whether this `Tempo` matches `now` at the requested unit or options precision. */
+	equals(unitOrOptions: t.CompareUnit | t.CompareOptions): boolean;
 	/** checks whether this `Tempo` matches another date-time value (at full instant or optional unit precision). */
-	equals(other?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): boolean {
+	equals(other?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): boolean;
+	equals(otherOrUnit?: t.DateTime | t.Options | t.CompareUnit | t.CompareOptions, unit?: t.CompareUnit | t.CompareOptions): boolean {
 		const host: typeof Tempo = isCallable((this?.constructor as any)?.equals) ? (this.constructor as typeof Tempo) : Tempo;
-		return host.equals(this, other, unit);
+		if (isUndefined(unit) && (isCompareUnit(otherOrUnit) || (isPlainObject(otherOrUnit) && 'unit' in otherOrUnit && !('value' in otherOrUnit)))) {
+			return host.equals(this, undefined, otherOrUnit as t.CompareUnit | t.CompareOptions);
+		}
+		return host.equals(this, otherOrUnit as t.DateTime | t.Options, unit);
 	}
 
 	/** returns the underlying Temporal.ZonedDateTime */			toDateTime() { return this.#resolve() as Temporal.ZonedDateTime; }

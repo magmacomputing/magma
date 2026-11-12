@@ -22,6 +22,28 @@ const COMPARE_UNITS = new Set([
 	'time'
 ]);
 
+/** @internal Normalizes a candidate comparison unit string without throwing. */
+function normalizeCompareUnit(unit: string): TemporalCompareUnit | undefined {
+	const raw = unit.trim().toLowerCase();
+	let normalized = raw;
+	if (Enum.has(enums.ELEMENT, raw)) {
+		normalized = enums.ELEMENT[raw as t.Element];
+	} else if (raw === 'date' || raw === 'dates') {
+		normalized = 'day';
+	} else if (raw === 'time' || raw === 'times') {
+		normalized = 'time';
+	} else {
+		normalized = singular(raw);
+	}
+
+	return COMPARE_UNITS.has(normalized) ? (normalized as TemporalCompareUnit) : undefined;
+}
+
+/** @internal Type guard checking whether `value` is a valid `CompareUnit` string. */
+export function isCompareUnit(value: unknown): value is t.CompareUnit {
+	return isString(value) && normalizeCompareUnit(value) !== undefined;
+}
+
 /**
  * @internal Normalizes a `Tempo` comparison unit or options object (`{ unit }`, canonical units, plurals, `'date'`/`'time'`, or `ELEMENT` tokens)
  * into a unit accepted by `compareByUnit`.
@@ -38,22 +60,11 @@ export function resolveCompareUnit(unitOrOptions?: t.CompareUnit | t.CompareOpti
 	if (!isString(unit))
 		throw new TypeError(`Invalid comparison unit: expected a string, received ${typeof unit}.`);
 
-	const raw = unit.trim().toLowerCase();
-	let normalized = raw;
-	if (Enum.has(enums.ELEMENT, raw)) {
-		normalized = enums.ELEMENT[raw as t.Element];
-	} else if (raw === 'date' || raw === 'dates') {
-		normalized = 'day';
-	} else if (raw === 'time' || raw === 'times') {
-		normalized = 'time';
-	} else {
-		normalized = singular(raw);
-	}
-
-	if (!COMPARE_UNITS.has(normalized))
+	const normalized = normalizeCompareUnit(unit);
+	if (!normalized)
 		throw new TypeError(`Invalid comparison unit: '${unit}'. Expected a calendar/time unit (e.g. 'year', 'month', 'week', 'day', 'date', 'time', 'hour', 'minute', 'second').`);
 
-	return normalized as TemporalCompareUnit;
+	return normalized;
 }
 
 /** @internal normalize layout-order options into a clean string array */

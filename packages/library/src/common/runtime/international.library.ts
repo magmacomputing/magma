@@ -1,6 +1,6 @@
 import { getOffsets, getTemporalIds, getISOWeekOfYear } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isNotNullish, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { isFunction, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { cast } from '#library/type.library.js';
@@ -14,9 +14,9 @@ const RE_REGION_SUBTAG = /^[a-zA-Z]{2}$|^\d{3}$/;
 export type LocaleInput = string | Intl.Locale | undefined;
 export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
 
-/** 
+/**
  * Guard check for runtime Intl namespace and constructor availability.
- * @internal 
+ * @internal
  */
 export const hasIntl = (feature?: LooseUnion<keyof typeof Intl>): boolean =>
 	typeof Intl !== 'undefined' && (!feature || hasOwn(Intl, feature, isCallable));
@@ -48,7 +48,7 @@ const getLF = memoizeFunction((locale?: LocaleInput, options?: Intl.ListFormatOp
 	return new Intl.ListFormat(cleanLocaleTag(locale), options);
 });
 
-/** 
+/**
  * Memoized helper for Intl.DateTimeFormat instances.
  * @internal
  */
@@ -56,7 +56,7 @@ export const getDTF = memoizeFunction((locale?: LocaleInput, options?: Intl.Date
 	return new Intl.DateTimeFormat(cleanLocaleTag(locale), options);
 });
 
-/** 
+/**
  * Memoized helper for Intl.PluralRules instances.
  * @internal
  */
@@ -182,11 +182,11 @@ export interface TempoIntlNamespace {
 
 /**
  * Legacy Heuristic Fallback Tables
- * 
+ *
  * NOTE FOR MAINTAINERS:
  * These static sets are strictly "best-effort" fallbacks for legacy, headless, or stripped
  * environments that lack ECMA-402 Intl.Locale Info support (i.e. `loc.getWeekInfo()` and `loc.getTextInfo()`).
- * 
+ *
  * - In modern runtimes (Node 18.19+, Node 20+, Chrome, Safari, Firefox), these tables are completely
  *   bypassed because the host engine provides full, live CLDR data directly from ICU.
  * - This minimal coverage (focusing on major regional cohorts like US, CA, and Middle East) was
@@ -246,9 +246,9 @@ function getFallbackDirection(loc?: Intl.Locale, language?: string): 'ltr' | 'rt
 	return (script && RTL_SCRIPTS.has(script)) || (language && RTL_LANGUAGES.has(language)) ? 'rtl' : 'ltr';
 }
 
-/** 
+/**
  * Memoized helper for Intl.Locale instances.
- * @internal 
+ * @internal
  */
 export const getLC = memoizeFunction((localeTag?: LocaleInput): Intl.Locale | undefined => {
 	if (isLocale(localeTag)) return localeTag;
@@ -261,7 +261,7 @@ export const getLC = memoizeFunction((localeTag?: LocaleInput): Intl.Locale | un
 	}
 });
 
-/** 
+/**
  * Memoized helper for Intl.Locale and LocaleInfo resolution.
  * @internal
  */
@@ -426,7 +426,7 @@ export function isolateBidi(text: string, direction?: 'ltr' | 'rtl'): string {
 }
 
 /**
- * International Cookbook  
+ * International Cookbook
  * (using 'Intl' namespace objects)
  */
 
@@ -440,7 +440,7 @@ const FALLBACK_DTF_OPTIONS: Readonly<Intl.ResolvedDateTimeFormatOptions> = Objec
 /**
  * Retrieves the system's current TimeZone, Calendar, and Locale information
  * by resolving the default `Intl.DateTimeFormat` options.
- * 
+ *
  * @returns The resolved DateTimeFormat options
  * @example
  * ```ts
@@ -456,7 +456,7 @@ export const getDateTimeFormat = memoizeFunction((): Readonly<Intl.ResolvedDateT
 /**
  * Returns the canonicalized locale string, or undefined if the locale is invalid.
  * Uses `Intl.getCanonicalLocales` for strict validation.
- * 
+ *
  * @param locale - The locale string to validate (e.g., 'en_US' or 'en-US')
  * @returns The canonical locale string, or undefined on failure
  * @example
@@ -482,7 +482,7 @@ const canonicalLocale = memoizeFunction((locale?: LocaleInput) => {
 /**
  * Canonicalizes an array or single locale input into a list of valid BCP 47 locale strings.
  * Gracefully ignores malformed locales and strips invalid/falsy values without throwing.
- * 
+ *
  * @param locales - Single or multiple locale identifiers or Intl.Locale instances
  * @returns An array of canonical BCP 47 locale strings
  * @example
@@ -499,7 +499,7 @@ export const canonicalLocales = memoizeFunction((locales?: unknown): readonly st
 /**
  * Resolves a locale or list of locales into a standardized configuration format:
  * a single string for one valid locale, a string array for multiple, or undefined if none.
- * 
+ *
  * @param locales - Single or multiple locale identifiers or Intl.Locale instances
  * @returns A single canonical string, an array of strings, or undefined
  * @example
@@ -517,7 +517,7 @@ export function resolveLocale(locales?: unknown): string | readonly string[] | u
 
 /**
  * Checks whether all resolved locales in the input belong to the English language family ('en-*').
- * 
+ *
  * @param locales - Single or multiple locale identifiers
  * @returns True if at least one valid locale exists and all resolved locales are English
  * @example
@@ -535,7 +535,7 @@ export function isEnglish(locales?: unknown): boolean {
 /**
  * Extracts the primary language subtag (e.g., 'en', 'fr') from a locale or list of locales.
  * Defaults to 'en' if not determinable.
- * 
+ *
  * @param locale - Locale identifier or list of locales
  * @param fallback - Fallback language subtag (default: 'en')
  * @returns The lowercase language subtag
@@ -554,7 +554,7 @@ export function getLanguage(locale?: unknown, fallback = 'en'): string {
 /**
  * Returns a localized relative time string using `Intl.RelativeTimeFormat`.
  * Falls back to a basic string representation if formatting fails.
- * 
+ *
  * @param value - The numeric value to format (e.g., 2)
  * @param unit - The time unit (e.g., 'days', 'hours')
  * @param locale - Optional locale string or Intl.Locale
@@ -577,7 +577,7 @@ export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit
 /**
  * Returns a localized list string using `Intl.ListFormat`.
  * Falls back to a simple comma-joined string if formatting fails.
- * 
+ *
  * @param list - The array of strings to format
  * @param locale - Optional locale string or Intl.Locale
  * @param type - The list format type (default: 'conjunction')
@@ -599,7 +599,7 @@ export function formatList(list: readonly string[], locale?: LocaleInput, type: 
 /**
  * Returns a localized duration string using `Intl.DurationFormat`.
  * Note: Requires an environment that supports `Intl.DurationFormat`.
- * 
+ *
  * @param duration - The duration object or value to format
  * @param locale - Optional locale string
  * @param options - Optional format configuration
@@ -611,7 +611,7 @@ export function formatDuration(duration: any, locale?: LocaleInput, options?: an
 
 /**
  * Returns a localized number string using `Intl.NumberFormat`.
- * 
+ *
  * @param value - The numeric value to format
  * @param locale - Optional locale string
  * @param options - Optional format configuration
@@ -663,9 +663,9 @@ export function formatUnit(value: number, unit: string, locale?: LocaleInput, un
 	}
 }
 
-/** 
+/**
  * Formats a numeric value as a localized currency string.
- * 
+ *
  * @param str - The numeric value or string to format
  * @param scale - The maximum number of fractional digits (default: 2)
  * @param currency - The ISO 4217 currency code (default: 'AUD')
@@ -684,9 +684,9 @@ export function formatCurrency(str: string | number, scale = 2, currency = 'AUD'
 	}
 }
 
-/** 
+/**
  * Try to infer hemisphere using the timezone's daylight-savings setting.
- * @remarks This implementation intentionally differs from the version in `tempo-fns` 
+ * @remarks This implementation intentionally differs from the version in `tempo-fns`
  * (including specific fallback and return behaviors). Do not directly synchronize them.
  */
 export const getHemisphere = memoizeFunction((timeZone: string = getDateTimeFormat().timeZone): 'north' | 'south' | undefined => {
@@ -762,7 +762,7 @@ export function getLocaleWeekOfYear(
 /**
  * Probes the runtime to see if the locale defaults to Month-Day-Year (MDY) order.
  * Useful for resolving ambiguous dates like '12/11/2024'.
- * 
+ *
  * @param locale - The locale string to probe
  * @returns True if the locale uses MDY format, false otherwise
  * @example

@@ -43,7 +43,7 @@ export { getRuntime, resetRuntime, TempoRuntime, _lifecycle, ClassStates } from 
 export { usePlugin } from './support.plugin.js';
 export { createSandbox } from './support.sandbox.js';
 export { Match, Snippet, Layout, Event, Period, Ignore, Guard, Default } from './support.default.js';
-export { SCHEMA, getLargestUnit, resolveCompareUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo, hasNativeFormatBraces, MOMENT_DIALECTS, LDML_DIALECTS, raise } from './support.util.js';
+export { SCHEMA, getLargestUnit, isCompareUnit, resolveCompareUnit, logError, logWarn, logDebug, logTrace, setLogLevel, logTempo, hasNativeFormatBraces, MOMENT_DIALECTS, LDML_DIALECTS, raise } from './support.util.js';
 export { setPatterns } from '../engine/engine.pattern.js';
 export { init, extendState } from './support.init.js';
 export { TempoError } from './support.error.js';

@@ -291,9 +291,15 @@ describe(`${label} compare`, () => {
     // Raw strings lacking a timezone inherit explicit CompareOptions timeZone
     expect(Tempo.compare('2026-05-10', mixed[0], { unit: 'day', timeZone: 'America/New_York' })).toBe(0);
 
-    // Invalid catch-mode anchor must be rejected rather than silently dropping the frame
+    // Date-time property bag with explicit timeZone but no calendar inherits CompareOptions.calendar
+    const thai2568 = new Tempo('2025-01-01T00:00:00', { timeZone: 'Asia/Bangkok', calendar: 'buddhist' });
+    expect(Tempo.compare(thai2568, { year: 2568, month: 1, day: 1, timeZone: 'Asia/Bangkok' }, { unit: 'day', calendar: 'buddhist' })).toBe(0);
+
+    // Invalid catch-mode anchor and operands must be rejected rather than comparing fallback values
     const invalidAnchor = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Strict, timeZone: 'Invalid/Zone', catch: true, silent: true });
     expect(() => Tempo.compare(utcLate, plus2Early, { unit: 'day', anchor: invalidAnchor })).toThrow(RangeError);
+    expect(() => Tempo.compare(invalidAnchor, utcLate)).toThrow(RangeError);
+    expect(() => Tempo.compare(utcLate, invalidAnchor, 'day')).toThrow(RangeError);
   })
 
 })
@@ -354,6 +360,27 @@ describe(`${label} equals`, () => {
     expect(nyLate.equals(utcSameDayInNy, { unit: 'day', timeZone: 'UTC', calendar: 'iso8601' })).toBe(false);
     expect(Tempo.equals(nyLate, utcSameDayInNy, { unit: 'day', anchor: nyLate })).toBe(true);
     expect(utcSameDayInNy.equals(nyLate, { unit: 'day', anchor: nyLate })).toBe(true);
+  })
+
+  test('supports single-argument unit/options shorthand defaulting comparator to now', () => {
+    const now = Tempo.now();
+    const past = new Tempo('2000-01-01T00:00:00');
+    const utcNow = Tempo.now({ timeZone: 'UTC' });
+
+    expect(now.equals('day')).toBe(true);
+    expect(now.equals('week')).toBe(true);
+    expect(now.equals('month')).toBe(true);
+    expect(now.equals('year')).toBe(true);
+    expect(now.equals({ unit: 'week' })).toBe(true);
+    expect(utcNow.equals({ unit: 'day', timeZone: 'UTC' })).toBe(true);
+
+    expect(past.equals('year')).toBe(false);
+    expect(past.equals('week')).toBe(false);
+    expect(past.equals({ unit: 'day' })).toBe(false);
+
+    // Date-like strings and non-unit Options objects still compare against the explicit target / now
+    expect(past.equals('2000-01-01T00:00:00')).toBe(true);
+    expect(past.equals({ timeZone: 'UTC' })).toBe(false);
   })
 
   test('supports derived Tempo sandboxes', () => {

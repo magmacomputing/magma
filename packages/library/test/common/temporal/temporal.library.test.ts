@@ -198,5 +198,23 @@ describe('Temporal Library Helpers', () => {
 			expect(compareByUnit(nestedFirst, utc, 'day')).toBe(0);
 			expect(compareByUnit(nestedFirst, utc, 'time')).toBe(0);
 		});
+
+		it('should compare week across an ISO week-year boundary when weekOfYear and yearOfWeek are unavailable', () => {
+			const hideIsoWeek = (zdt: Temporal.ZonedDateTime) => new Proxy(zdt, {
+				get(target, prop) {
+					if (prop === 'weekOfYear' || prop === 'yearOfWeek') return undefined;
+					const value = Reflect.get(target, prop, target);
+					return typeof value === 'function' ? value.bind(target) : value;
+				}
+			}) as Temporal.ZonedDateTime;
+
+			const jan1 = hideIsoWeek(toZonedDateTime('2021-01-01T12:00:00[UTC]')); // 2020-W53
+			const jan2 = hideIsoWeek(toZonedDateTime('2021-01-02T12:00:00[UTC]')); // 2020-W53
+			const jan4 = hideIsoWeek(toZonedDateTime('2021-01-04T12:00:00[UTC]')); // 2021-W01
+
+			expect(compareByUnit(jan1, jan2, 'week')).toBe(0);
+			expect(compareByUnit(jan1, jan4, 'week')).toBe(-1);
+			expect(compareByUnit(jan4, jan1, 'week')).toBe(1);
+		});
 	});
 });

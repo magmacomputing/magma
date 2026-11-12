@@ -90,7 +90,7 @@ Tempo provides unified static and instance methods for ordering and equality che
 | :--- | :--- | :--- | :--- |
 | **`Tempo.compare()`** | `(tempo1?, tempo2?, unitOrOptions?)` | `-1 \| 0 \| 1` | Compares two dates chronologically (`tempo2` defaults to now when omitted; usable directly in `Array.prototype.sort(Tempo.compare)`). |
 | **`Tempo.equals()`** | `(tempo1?, tempo2?, unitOrOptions?)` | `boolean` | Returns `true` when both values are valid and match at exact instant or at the requested unit boundary. |
-| **`t.equals()`** | `(other?, unitOrOptions?)` | `boolean` | Instance shorthand delegating to `Tempo.equals(t, other, unitOrOptions)`. |
+| **`t.equals()`** | `(other?, unitOrOptions?)` / `(unitOrOptions)` | `boolean` | Instance shorthand delegating to `Tempo.equals(t, other, unitOrOptions)`, or comparing `t` against now when passed a single unit / `{ unit }` options argument. |
 
 ### Exact Instant vs. Unit Granularity
 
@@ -109,6 +109,7 @@ Tempo.compare(morning, evening, { unit: 'hour' }); // -1
 Tempo.equals(morning, evening);                // false
 Tempo.equals(morning, evening, 'day');         // true
 morning.equals(evening, { unit: 'month' });    // true
+morning.equals('week');                        // compares `morning` against now at ISO week granularity
 morning.equals(new Tempo('2026-05-11T08:00:00'), 'time'); // true (08:00:00 wall-clock time)
 ```
 
@@ -126,7 +127,7 @@ Passing a non-string unit or unrecognized unit string throws a `TypeError`.
 
 - **Timezone Alignment**: By default, when a unit is specified and `tempo2` is coerced from a raw string or options object without an explicit timezone, it inherits `tempo1`'s timezone and calendar, and unit boundaries are evaluated in `tempo1`'s timezone and calendar.
 - **Explicit Frame (`timeZone`, `calendar`, `anchor`)**: `CompareOptions` (and `EqualOptions`) accept optional `anchor`, `timeZone`, and `calendar` properties to evaluate both operands against a single fixed reference frame (explicit `timeZone`/`calendar` override `anchor` fields when combined)—useful when comparing or sorting mixed-timezone arrays at unit granularity (e.g. `{ unit: 'day', anchor: dates[0] }` or `{ unit: 'day', timeZone: 'UTC', calendar: 'iso8601' }`).
-- **Invalid Dates (Catch Mode)**: If either operand (or `anchor`) is invalid in catch mode (`!t.isValid`), `Tempo.equals()` and `t.equals()` return `false` without throwing.
+- **Invalid Dates (Catch Mode)**: If either operand (or `anchor`) is invalid in catch mode (`!t.isValid`), `Tempo.equals()` and `t.equals()` return `false` without throwing, whereas `Tempo.compare()` throws a `RangeError`.
 
 ---
 

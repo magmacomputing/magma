@@ -159,6 +159,7 @@ Tempo.compare(nyc, tokyo, { unit: 'hour' }); // -1 (18:00 vs 20:00 in New York)
 Tempo.equals(nyc, london);               // true (same instant across timezones)
 nyc.equals(tokyo, 'day');                // true (same calendar day in New York)
 nyc.equals('2026-05-10T23:00:00', { unit: 'day' }); // true (raw string inherits nyc's timezone)
+nyc.equals('week');                      // Is `nyc` in the current ISO week? (compares against now)
 ```
 👉 **Learn More:** See [Comparing & Checking Equality](../2-core-concepts/tempo.getters.md#comparing--checking-equality) for supported units, `{ unit }` options, and timezone projection rules.
 
