@@ -25,6 +25,7 @@ export * from '#library/array.library.js';
 export * from '#library/string.library.js';
 export * from '#library/number.library.js';
 export * from '#library/temporal.library.js';
+export { getCountryFromTimeZone, getLC } from '#library/international.library.js';
 export * from '#library/calendar.library.js';
 export * from '#library/rrule.library.js';
 export * from '#library/cron.library.js';

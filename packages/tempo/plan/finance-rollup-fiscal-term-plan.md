@@ -161,7 +161,7 @@ The purpose of this plan is to consolidate Tempo's fiscal and business calendar 
 
 ---
 
-### Phase 3: REPL, Showcase & Site Integration
+### Phase 3: REPL, Showcase & Site Integration ✅ (Completed)
 
 1. **Snippets Manifest (`snippets.manifest.js`)**:
    - Remove `finance` preset block from:
@@ -200,7 +200,7 @@ The purpose of this plan is to consolidate Tempo's fiscal and business calendar 
 
 ---
 
-### Phase 4: CI & Release Workflows
+### Phase 4: CI & Release Workflows ✅ (Completed)
 
 1. **Continuous Integration (`.github/workflows/ci.yml`)**:
    - Remove `--workspace=@magmacomputing/tempo-plugin-finance` from the test matrix step (line ~88).
@@ -210,7 +210,7 @@ The purpose of this plan is to consolidate Tempo's fiscal and business calendar 
 
 ---
 
-### Phase 5: Documentation Alignment
+### Phase 5: Documentation Alignment ✅ (Completed)
 
 Refactor documentation pages currently showcasing `@magmacomputing/tempo-plugin-finance` to use self-contained pedagogical namespaces:
 
@@ -239,9 +239,9 @@ Refactor documentation pages currently showcasing `@magmacomputing/tempo-plugin-
 
 - [x] `packages/tempo/test/core/static.methods.test.ts` (and instance equality tests) pass for `Tempo.compare(..., unit?)`, `Tempo.equals`, and `t.equals`.
 - [x] `packages/plugins/.terms/test/term.fiscal.test.ts` passes with `year`, `startDay`, and `t.equals(f.span.start, 'day')` boundary tests.
-- [ ] `npm run catalog:sync` runs cleanly with no orphan warnings.
-- [ ] `node --check` succeeds on all manifest files.
-- [ ] `npm run docs:build` generates VitePress documentation without broken links or missing sidebar items.
+- [x] `npm run catalog:sync` runs cleanly with no orphan warnings.
+- [x] `node --check` succeeds on all manifest files.
+- [x] `npm run docs:build` generates VitePress documentation without broken links or missing sidebar items.
 - [ ] `npm deprecate @magmacomputing/tempo-plugin-finance "..."` published on npm registry upon release.
 - [ ] `git diff --name-only origin/main...HEAD | wc -l` stays strictly within PR budget for the subsequent PR.
 - [ ] All workspaces in `npm test` execute with zero failures across supported timezones (`America/New_York`, `UTC`).

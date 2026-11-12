@@ -35,7 +35,6 @@ const KNOWN_TITLES = {
   'astro.index': 'Astro (Seasons & Solstices)',
   'batch.index': 'Batch (Multi-Threaded SAB)',
   'celestial.index': 'Celestial (Solar & Lunar Ephemeris)',
-  'finance.index': 'Finance (Fiscal & Business)',
   'geo.index': 'Geo (IP & Location Lookup)',
   'snap.index': 'Snap (Block Rounding)',
   'sync.index': 'Sync (Thread Synchronization)',

@@ -169,11 +169,12 @@ In v5.0.0, the Term system undergoes a breaking architectural refinement to alig
 * **`QuarterTerm` (`qtr` / `quarter`) strictly ISO 8601-2 aligned:**
   * Calendar quarters strictly map to standard Gregorian calendar quarters (`Q1` = Jan 1, `Q2` = Apr 1, `Q3` = Jul 1, `Q4` = Oct 1) globally, completely decoupled from geographic hemisphere (`sphere`).
   * The legacy `fiscal` field on `QuarterTerm` scope has been removed.
-* **Dedicated `FiscalTerm` (`fqtr` / `fiscal`):**
-  * Financial, corporate, and jurisdictional fiscal quarters have moved to the dedicated `FiscalTerm` plugin.
-  * Standard range keys are `'FQ1'`, `'FQ2'`, `'FQ3'`, `'FQ4'`.
-  * Provides a direct numeric `fiscalYear: number` (e.g. `2026`) for user financial calculations.
-  * Supports configurable options `{ startMonth?: number, country?: string }` with automated jurisdictional defaults.
+* **Dedicated `FiscalTerm` (`fqtr` / `fiscal`) — Superseding `@magmacomputing/tempo-plugin-finance`:**
+  * Financial, corporate, and jurisdictional fiscal quarters have moved into the built-in `FiscalTerm` plugin (`@magmacomputing/tempo/terms`), superseding the standalone `@magmacomputing/tempo-plugin-finance` package.
+  * Standard range keys are `'FQ1'`, `'FQ2'`, `'FQ3'`, `'FQ4'` (replacing numeric `t.finance.fiscalQuarter` `1..4`).
+  * Provides a direct numeric `year: number` (e.g. `2026`, replacing `t.finance.taxYear`).
+  * Supports configurable options `{ startMonth?: number, startDay?: number, country?: string }` with automated jurisdictional defaults (including `timeZone` country inference) and resolved `config` metadata on `t.term.fiscal.config`.
+  * Year-start detection (`t.finance.isFiscalYearStart()`) is replaced by `f?.key === 'FQ1' && t.equals(f.span.start, 'day')` using the new `t.equals()` / `Tempo.equals()` / `Tempo.compare()` APIs.
 * **Encapsulated Range Metrics (`.span`):**
   * Temporal boundaries (`start`, `end`) and duration progress metrics (`total`, `elapsed`, `remaining`, `progress`) are now encapsulated within `span: TermSpan`.
   * The legacy root-level getters (`range.start`, `range.end`) have been removed.
@@ -219,8 +220,8 @@ Tempo.use(FiscalTerm);
 
 const tFiscal = new Tempo('2026-02-15', { pluginOptions: { fiscal: { country: 'AU' } } });
 tFiscal.term.fqtr; // 'FQ3'
-tFiscal.term.fiscal.fiscalYear; // 2026
-tFiscal.term.fiscal.span.start; // Tempo('2026-01-01T00:00:00')
+tFiscal.term.fiscal?.year; // 2026
+tFiscal.term.fiscal?.span.start; // Tempo('2026-01-01T00:00:00')
 ```
 
 ---

@@ -782,9 +782,47 @@ export const probeMDY = memoizeFunction((locale?: LocaleInput): boolean => {
 	}
 });
 
+const FALLBACK_COUNTRY_TIMEZONES: Record<string, readonly string[]> = {
+	AU: ['Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Perth', 'Australia/Adelaide', 'Australia/Hobart', 'Australia/Darwin', 'Australia/Lord_Howe', 'Australia/Eucla', 'Australia/Broken_Hill', 'Australia/Lindeman'],
+	BR: ['America/Sao_Paulo', 'America/Manaus', 'America/Fortaleza', 'America/Recife', 'America/Belem', 'America/Bahia', 'America/Cuiaba', 'America/Campo_Grande', 'America/Porto_Velho', 'America/Boa_Vista', 'America/Rio_Branco', 'America/Noronha'],
+	CA: ['America/Toronto', 'America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Halifax', 'America/St_Johns', 'America/Regina', 'America/Whitehorse', 'America/Yellowknife', 'America/Iqaluit', 'America/Moncton'],
+	CH: ['Europe/Zurich'],
+	CN: ['Asia/Shanghai', 'Asia/Urumqi'],
+	DE: ['Europe/Berlin', 'Europe/Busingen'],
+	DK: ['Europe/Copenhagen'],
+	ES: ['Europe/Madrid', 'Atlantic/Canary', 'Africa/Ceuta'],
+	FR: ['Europe/Paris'],
+	GB: ['Europe/London'],
+	HK: ['Asia/Hong_Kong'],
+	IE: ['Europe/Dublin'],
+	IN: ['Asia/Kolkata'],
+	IT: ['Europe/Rome'],
+	JP: ['Asia/Tokyo'],
+	KR: ['Asia/Seoul'],
+	MX: ['America/Mexico_City', 'America/Cancun', 'America/Monterrey', 'America/Tijuana', 'America/Merida', 'America/Chihuahua', 'America/Mazatlan', 'America/Hermosillo'],
+	NL: ['Europe/Amsterdam'],
+	NO: ['Europe/Oslo'],
+	NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
+	SE: ['Europe/Stockholm'],
+	SG: ['Asia/Singapore'],
+	TW: ['Asia/Taipei'],
+	US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'America/Anchorage', 'America/Juneau', 'America/Sitka', 'America/Metlakatla', 'America/Yakutat', 'America/Nome', 'America/Adak', 'America/Detroit', 'America/Boise', 'America/Indiana/Indianapolis', 'Pacific/Honolulu'],
+	ZA: ['Africa/Johannesburg'],
+};
+
 const getTimeZoneCountryMap = memoizeFunction((regionKey: string): Map<string, string> => {
 	const map = new Map<string, string>();
-	if (!hasIntl('Locale') || typeof (Intl.Locale.prototype as any).getTimeZones !== 'function') return map;
+	const hasGetTimeZones = hasIntl('Locale') && typeof (Intl.Locale.prototype as any).getTimeZones === 'function';
+
+	if (!hasGetTimeZones) {
+		const allowed = regionKey === '*' ? null : new Set(regionKey.split(',').map(r => r.toUpperCase()));
+		for (const [code, zones] of Object.entries(FALLBACK_COUNTRY_TIMEZONES)) {
+			if (allowed && !allowed.has(code)) continue;
+			for (const z of zones)
+				if (!map.has(z)) map.set(z, code);
+		}
+		return map;
+	}
 
 	const codes: string[] = [];
 	if (regionKey === '*') {

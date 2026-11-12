@@ -238,19 +238,21 @@ console.log('March 20 Equinox:', equinox.term.equinox);
 return \`Sydney: \${sydney.term.szn} | London: \${london.term.szn}\`;`,
 	},
 
-	finance: {
-		label: 'Preset: Fiscal & Financial Math',
-		plugin: 'finance',
-		code: `// 💼 Fiscal & Financial Math Demo (@magmacomputing/tempo-plugin-finance)
-const { FinanceNamespace } = await import('@magmacomputing/tempo-plugin-finance');
-Tempo.use(FinanceNamespace);
+	fiscal: {
+		label: 'Preset: Fiscal Quarters & Tax Years (Terms)',
+		plugin: '_terms',
+		code: `// 💼 Fiscal Quarters and Tax Years (@magmacomputing/tempo/terms)
+const { FiscalTerm } = await import('@magmacomputing/tempo/terms');
+Tempo.use(FiscalTerm);
 
-const t = new Tempo('2026-07-15');
-console.log('Fiscal Quarter:', t.finance.fiscalQuarter);
-console.log('Tax Year:', t.finance.taxYear);
-console.log('Is Fiscal Year Start?', t.finance.isFiscalYearStart());
+const t = new Tempo('2025-08-15', { pluginOptions: { fiscal: { country: 'AU' } } });
+const fiscal = t.term.fiscal;
+console.log('Fiscal Quarter:', t.term.fqtr); // 'FQ1'
+console.log('Fiscal Year:', fiscal?.year); // 2026
+console.log('Quarter Start:', fiscal?.span.start.format('{yyyy}-{mm}-{dd}')); // '2025-07-01'
+console.log('Is Fiscal Year Start?', fiscal ? t.equals(fiscal.span.start, 'day') && fiscal.key === 'FQ1' : false); // false
 
-return \`Fiscal Q\${t.finance.fiscalQuarter} (Tax Year \${t.finance.taxYear})\`;`,
+return \`Fiscal \${t.term.fqtr} (FY\${fiscal?.year})\`;`,
 	},
 
 	snap: {

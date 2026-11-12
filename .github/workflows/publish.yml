@@ -31,10 +31,6 @@ on:
         description: 'tempo-plugin-dialects'
         type: boolean
         default: false
-      plugin_finance:
-        description: 'tempo-plugin-finance'
-        type: boolean
-        default: false
       plugin_geo:
         description: 'tempo-plugin-geo'
         type: boolean
@@ -116,7 +112,6 @@ jobs:
           INPUT_PLUGIN_BATCH: ${{ inputs.plugin_batch }}
           INPUT_PLUGIN_CELESTIAL: ${{ inputs.plugin_celestial }}
           INPUT_PLUGIN_DIALECTS: ${{ inputs.plugin_dialects }}
-          INPUT_PLUGIN_FINANCE: ${{ inputs.plugin_finance }}
           INPUT_PLUGIN_GEO: ${{ inputs.plugin_geo }}
           INPUT_PLUGIN_HOLIDAYS: ${{ inputs.plugin_holidays }}
           INPUT_PLUGIN_NTP: ${{ inputs.plugin_ntp }}
@@ -136,7 +131,6 @@ jobs:
               "@magmacomputing/tempo-plugin-celestial"
               "@magmacomputing/tempo-plugin-ai"
               "@magmacomputing/tempo-plugin-batch"
-              "@magmacomputing/tempo-plugin-finance"
               "@magmacomputing/tempo-plugin-geo"
               "@magmacomputing/tempo-plugin-holidays"
               "@magmacomputing/tempo-plugin-ntp"
@@ -154,7 +148,6 @@ jobs:
             [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
             [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-celestial")
             [ "$INPUT_PLUGIN_DIALECTS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-dialects")
-            [ "$INPUT_PLUGIN_FINANCE" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-finance")
             [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-geo")
             [ "$INPUT_PLUGIN_HOLIDAYS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-holidays")
             [ "$INPUT_PLUGIN_NTP" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ntp")

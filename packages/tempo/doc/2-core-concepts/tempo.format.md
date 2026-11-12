@@ -260,7 +260,7 @@ t.format('{wkd:lower} afternoon');
 
 ## 📍 Dynamic Namespace & Spatial Tokens (`{namespace.key}`)
 
-Tempo's format engine dynamically resolves bracketed dot-notated tokens (`{namespace.key}`) against any active plugin namespace or property container on the `Tempo` instance (such as `t.geo`, `t.finance`, `t.astro`, `t.term`, or custom attached metadata).
+Tempo's format engine dynamically resolves bracketed dot-notated tokens (`{namespace.key}`) against any active plugin namespace or property container on the `Tempo` instance (such as `t.geo`, `t.audit`, `t.astro`, `t.term`, or custom attached metadata).
 
 ### Geographic Tokens (`{geo.*}`)
 When geographic coordinates or metadata are attached to a Tempo instance (via `options.geo`, `new Tempo('...', { geo: { city: 'Sydney', country: 'AU', lat: -33.8688, lng: 151.2093 } })`, or resolved via `t.geoLocate()`), you can format location fields directly using `{geo.<property>}` tokens:
@@ -278,8 +278,11 @@ When geographic coordinates or metadata are attached to a Tempo instance (via `o
 Any namespace plugin mounted via `defineNamespace` or property object on the instance can be formatted directly:
 
 ```typescript
-// Plugin namespace (e.g. tempo-plugin-finance):
-t.format('Fiscal Quarter: Q{finance.fiscalQuarter} ({finance.taxYear})');
+// Term & custom namespace tokens:
+t.format('Fiscal Quarter: {#fqtr} ({#fiscal.year})');
+
+// Custom plugin namespace (e.g. AuditNamespace):
+t.format('Retention Period: {audit.retentionPeriod} ({audit.complianceYear})');
 
 // Term plugin (e.g. season or solar terms):
 t.format('Current Season: {term.season} · {geo.city:title}');

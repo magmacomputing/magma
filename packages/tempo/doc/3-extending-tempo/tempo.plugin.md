@@ -6,14 +6,14 @@ In the Tempo ecosystem, a **Plugin** is the universal overarching term for any f
 
 1. **`definePlugin`**: The standard factory for general-purpose features (e.g., adding prototype instance methods, static tools, or altering configuration).
 2. **`defineTerm`**: A specialized factory exclusively for defining temporal vocabulary constraints (a "Term" is technically just a highly-opinionated "Plugin" focused on date ranges and schedules).
-3. **`defineNamespace`**: A factory for creating lazily-evaluated property landing pads (e.g., `Tempo().finance.taxYear`).
+3. **`defineNamespace`**: A factory for creating lazily-evaluated property landing pads (e.g., `Tempo().audit.complianceYear`).
 4. **`defineProperties` / `defineProperty`**: Factories for defining custom instance getters (auto-memoized) and instance methods directly on Tempo or isolated sandboxes without manual prototype mutation.
 
 ## Naming Convention Standard
 To provide a consistent and intuitive developer experience, the exported symbol of your plugin should use a suffix that directly matches the factory used to construct it. This makes it instantly obvious to consumers how the extension will attach to the Tempo core:
 - Built with `definePlugin` ➡️ **`[Name]Plugin`** (e.g., `TickerPlugin`)
 - Built with `defineTerm` ➡️ **`[Name]Term`** (e.g., `FiscalTerm`)
-- Built with `defineNamespace` ➡️ **`[Name]Namespace`** (e.g., `FinanceNamespace`)
+- Built with `defineNamespace` ➡️ **`[Name]Namespace`** (e.g., `AuditNamespace`)
 - Built with `defineProperties` ➡️ **`[Name]Properties`** (e.g., `DateProperties`)
 
 *(Note: The `Module` suffix and `defineModule` factory are strictly reserved for Tempo's core internal injection APIs like `ParseModule` and should not be used by external plugins.)*

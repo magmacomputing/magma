@@ -1,16 +1,13 @@
 import type { Tempo } from '@magmacomputing/tempo';
-import { isString } from '@magmacomputing/tempo/library';
+import { isString, getCountryFromTimeZone, getLC } from '@magmacomputing/tempo/library';
+import { $Internal } from '@magmacomputing/tempo/plugin/sdk';
 import { getCalendarHolidays, normalizeCountryCode } from './registry.js';
 import type { HolidayItem, HolidayOptions, WorkingHoursOptions } from './types.js';
 
 function extractRegionFromLocale(locale?: string): string | undefined {
 	if (!isString(locale) || !locale) return undefined;
-	try {
-		const loc = new Intl.Locale(locale);
-		if (loc.region) return loc.region;
-	} catch {
-		// ignore
-	}
+	const region = getLC(locale)?.region;
+	if (region) return region;
 	if (locale.includes('-')) {
 		const parts = locale.split('-');
 		for (let i = 1; i < parts.length; i++) {
@@ -27,19 +24,28 @@ function extractRegionFromLocale(locale?: string): string | undefined {
  * Fallback Cascade:
  * 1. options.country (explicit override)
  * 2. tempo.geo.country (geographic location)
- * 3. tempo.intl.info.region (internationalization settings)
- * 4. tempo.locale region (e.g. 'en-AU' -> 'AU')
- * 5. Default fallback to 'US'
+ * 3. explicit tempo locale region (e.g. 'en-AU' -> 'AU')
+ * 4. explicit tempo timeZone country inference (e.g. 'Australia/Sydney' -> 'AU')
+ * 5. tempo.intl.info.region (internationalization settings)
+ * 6. tempo.locale region
+ * 7. Default fallback to 'US'
  *
  * @param tempo - Target Tempo instance
  * @param options - Explicit options overrides
  * @returns Fully resolved HolidayOptions
  */
 export function resolveHolidayOptions(tempo?: Tempo, options: HolidayOptions = {}): HolidayOptions {
+	const explicitOpts = (tempo as any)?.[$Internal]?.()?.options ?? {};
+	const explicitLocaleRegion = isString(explicitOpts.locale) ? extractRegionFromLocale(explicitOpts.locale) : undefined;
+	const explicitTzCountry = isString(explicitOpts.timeZone)
+		? getCountryFromTimeZone((tempo as any)?.timeZone ?? explicitOpts.timeZone)
+		: undefined;
 	const localeRegion = tempo && isString(tempo.locale) ? extractRegionFromLocale(tempo.locale) : undefined;
 
 	const resolvedCountry = options.country
 		?? tempo?.geo?.country
+		?? explicitLocaleRegion
+		?? explicitTzCountry
 		?? (tempo as any)?.intl?.info?.region
 		?? localeRegion
 		?? 'US';

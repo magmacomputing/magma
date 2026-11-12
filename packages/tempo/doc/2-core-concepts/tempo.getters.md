@@ -185,7 +185,7 @@ Tempo v5 intentionally avoids cluttering the top-level prototype with aliases or
 >     quarter: (t) => Math.ceil(t.mm / 3),
 >   }, 'DateExtensions'));
 >   ```
-> - **Structured Sub-Namespaces**: Mount entire custom namespaces (e.g. `t.finance.*` or `t.astro.*`) with automatic proxy resolution and caching using [`defineNamespace`](../3-extending-tempo/tempo.plugin.md).
+> - **Structured Sub-Namespaces**: Mount entire custom namespaces (e.g. `t.audit.*` or `t.astro.*`) with automatic proxy resolution and caching using [`defineNamespace`](../3-extending-tempo/tempo.plugin.md).
 > - **Reusable Lifecycle Plugins**: Package complex behaviors, prototype methods, and static tools using [`definePlugin`](../3-extending-tempo/tempo.plugin.md).
 >
 > Learn more in the comprehensive **[Extending Tempo with Plugins Guide](../3-extending-tempo/tempo.plugin.md)**.

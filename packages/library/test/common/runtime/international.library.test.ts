@@ -407,6 +407,22 @@ describe('International Library', () => {
 			expect(getCountryFromTimeZone(undefined)).toBeUndefined();
 			expect(getCountryFromTimeZone('Invalid/Zone')).toBeUndefined();
 		});
+
+		it('should fall back gracefully when Intl.Locale.prototype.getTimeZones is unavailable', () => {
+			const proto = Intl.Locale.prototype as any;
+			const origDesc = Object.getOwnPropertyDescriptor(proto, 'getTimeZones');
+			if (origDesc) delete proto.getTimeZones;
+			try {
+				expect(getCountryFromTimeZone('America/New_York', ['US', 'AU', 'GB', 'JP'])).toBe('US');
+				expect(getCountryFromTimeZone('US/Eastern', ['US', 'AU', 'GB', 'JP'])).toBe('US');
+				expect(getCountryFromTimeZone('Australia/Sydney', ['US', 'AU', 'GB', 'JP'])).toBe('AU');
+				expect(getCountryFromTimeZone('Europe/London', ['US', 'AU', 'GB', 'JP'])).toBe('GB');
+				expect(getCountryFromTimeZone('Asia/Tokyo', ['US', 'AU', 'GB', 'JP'])).toBe('JP');
+				expect(getCountryFromTimeZone('Europe/Paris', ['US', 'AU', 'GB', 'JP'])).toBeUndefined();
+			} finally {
+				if (origDesc) Object.defineProperty(proto, 'getTimeZones', origDesc);
+			}
+		});
 	});
 });
 
