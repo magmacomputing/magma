@@ -242,6 +242,7 @@ Refactor documentation pages currently showcasing `@magmacomputing/tempo-plugin-
 - [x] `npm run catalog:sync` runs cleanly with no orphan warnings.
 - [x] `node --check` succeeds on all manifest files.
 - [x] `npm run docs:build` generates VitePress documentation without broken links or missing sidebar items.
-- [ ] `npm deprecate @magmacomputing/tempo-plugin-finance "..."` published on npm registry upon release.
 - [ ] `git diff --name-only origin/main...HEAD | wc -l` stays strictly within PR budget for the subsequent PR.
 - [ ] All workspaces in `npm test` execute with zero failures across supported timezones (`America/New_York`, `UTC`).
+
+*(Note: The post-release `npm deprecate @magmacomputing/tempo-plugin-finance` step has been moved to `v5-master-plan.md` Phase 6.)*

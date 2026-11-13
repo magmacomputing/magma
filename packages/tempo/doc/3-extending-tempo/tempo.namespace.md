@@ -16,7 +16,7 @@ Let's build an `audit` plugin. We want to add an `.audit` namespace that provide
 ```typescript
 // audit.ts
 import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from '@magmacomputing/tempo/core';
 
 export const AuditNamespace = defineNamespace({
   // 1. Define the property name where this namespace will live on the Tempo instance
@@ -35,9 +35,7 @@ export const AuditNamespace = defineNamespace({
     
     // Methods return callable functions
     isRetentionExpired: (tempo: Tempo): ((years?: number) => boolean) => {
-      const recordYear = tempo.yy;
-      const currentYear = new Tempo().yy;
-      return (years: number = 7) => (currentYear - recordYear) >= years;
+      return (years: number = 7) => Tempo.compare(new Tempo(), tempo.add({ years })) >= 0;
     }
   }
 });
@@ -55,13 +53,12 @@ Let's zoom in on the `isRetentionExpired` method we defined above:
 isRetentionExpired: (tempo: Tempo) => {
   // 1. SETUP BLOCK (Runs exactly once per Tempo instance)
   // You can stash variables, run complex mathematical lookups, or build state here!
-  const recordYear = tempo.yy;
-  const currentYear = new Tempo().yy;
+  const recordDate = tempo;
 
   // 2. INNER CLOSURE (Runs every time the consumer calls the method)
   // The consumer can pass their company's retention policy (e.g., 7 years). Defaults to 7.
   return (years: number = 7): boolean => {
-    return (currentYear - recordYear) >= years;
+    return Tempo.compare(new Tempo(), recordDate.add({ years })) >= 0;
   };
 }
 ```
@@ -95,10 +92,11 @@ Developers can now import your plugin, register it once, and enjoy your clean, i
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
+import { MutateModule } from '@magmacomputing/tempo/mutate';
 import { AuditNamespace } from './audit.js';
 
 // Extend the core Tempo engine
-Tempo.use(AuditNamespace);
+Tempo.use(MutateModule, AuditNamespace);
 
 const t = new Tempo('2018-07-01');
 
@@ -127,8 +125,13 @@ A world-class plugin doesn't force developers to choose—it provides both! You 
 
 ```typescript
 // 1. The Pure Functions (The FP layer)
+import { Tempo } from '@magmacomputing/tempo/core';
+import { MutateModule } from '@magmacomputing/tempo/mutate';
+
+Tempo.use(MutateModule);
+
 export function isRetentionExpired(t: Tempo, years: number = 7): boolean {
-    return (new Tempo().yy - t.yy) >= years; 
+    return Tempo.compare(new Tempo(), t.add({ years })) >= 0; 
 }
 export function nextAuditDate(t: Tempo): Tempo { ... }
 

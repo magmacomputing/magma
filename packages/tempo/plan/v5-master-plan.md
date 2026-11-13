@@ -185,6 +185,11 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
   - `5.0.0-alpha.x`: Internal integration.
   - `5.0.0-rc.x`: Public release candidates and ecosystem testing.
   - `5.0.0`: Official General Availability (GA).
+- [ ] **Post-Release Package Deprecations**:
+  - Deprecate `@magmacomputing/tempo-plugin-finance` on npm upon `v5.0.0` GA release (superseded by `FiscalTerm` in `@magmacomputing/tempo/terms`):
+    ```bash
+    npm deprecate @magmacomputing/tempo-plugin-finance "Deprecated: fiscal quarters and tax-year calculations are now built into @magmacomputing/tempo v5.0.0+ via FiscalTerm (@magmacomputing/tempo/terms). Migrate t.finance.* to Tempo.use(FiscalTerm) + t.term.fiscal (see Tempo v5 Migration Guide)."
+    ```
 
 ---
 

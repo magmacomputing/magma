@@ -196,6 +196,20 @@ describe('FiscalTerm Plugin', () => {
 				expect(fiscal.year).toBe(2025);
 				expect(fiscal.config).toEqual({ startMonth: 1, startDay: 1, country: 'US' });
 			}
+
+			// Ambient locale (e.g. en-US) must not override explicit timeZone or leak into span.start provenance
+			Tempo.init({ locale: 'en-US' });
+			Tempo.use(FiscalTerm);
+			const au = new Tempo('2025-08-15', { timeZone: 'Australia/Sydney' });
+			const auFiscal = au.term.fiscal;
+			expect(auFiscal).toBeDefined();
+			if (auFiscal) {
+				expect(auFiscal.key).toBe('FQ1');
+				expect(auFiscal.year).toBe(2026);
+				expect(auFiscal.config).toEqual({ startMonth: 7, startDay: 1, country: 'AU' });
+				expect(auFiscal.span.start.term.fiscal?.key).toBe('FQ1');
+				expect(auFiscal.span.start.term.fiscal?.config).toEqual({ startMonth: 7, startDay: 1, country: 'AU' });
+			}
 		});
 
 		it('refuses to guess when jurisdiction cannot be resolved from bare locale', () => {

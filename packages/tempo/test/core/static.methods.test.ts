@@ -298,6 +298,9 @@ describe(`${label} compare`, () => {
     // Invalid catch-mode anchor and operands must be rejected rather than comparing fallback values
     const invalidAnchor = new Tempo('2024-01-01', { mode: Tempo.enums.MODE.Strict, timeZone: 'Invalid/Zone', catch: true, silent: true });
     expect(() => Tempo.compare(utcLate, plus2Early, { unit: 'day', anchor: invalidAnchor })).toThrow(RangeError);
+    expect(Tempo.equals(utcLate, null as any, 'day')).toBe(false);
+    expect(Tempo.equals(utcLate, 'not-a-date', 'day')).toBe(false);
+    expect(Tempo.equals(utcLate, utcLate, { unit: 'day', anchor: 'not-a-date' })).toBe(false);
     expect(() => Tempo.compare(invalidAnchor, utcLate)).toThrow(RangeError);
     expect(() => Tempo.compare(utcLate, invalidAnchor, 'day')).toThrow(RangeError);
   })

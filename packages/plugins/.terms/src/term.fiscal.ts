@@ -243,14 +243,14 @@ function toIsoTempo(target: any, fallback: Tempo): Tempo {
 
 	if (zdt) {
 		const Host = fallback.constructor as any;
+		const explicitOpts = getExplicitOptions(fallback);
 		if (zdt.calendarId !== 'iso8601') {
 			const isoZdt = zdt.withCalendar('iso8601');
-			return new Host(isoZdt, { ...(fallback as any).config, calendar: 'iso8601' });
+			return new Host(isoZdt, { ...explicitOpts, calendar: 'iso8601' });
 		}
-		if (!(ref instanceof fallback.constructor)) {
-			return new Host(zdt, (fallback as any).config);
+		if (!(ref instanceof fallback.constructor))
+			return new Host(zdt, explicitOpts);
 		}
-	}
 	return ref;
 }
 

@@ -9,7 +9,7 @@ import { cast } from '#library/type.library.js';
 
 import { TEMPO_VERSION } from '../../tempo.version.js';
 import { getHost, ensureModule } from '../plugin.util.js';
-import { sym, TermError, isTempo } from '../../support/support.symbol.js';
+import { sym, TermError, isTempo, $Internal } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
@@ -89,12 +89,16 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
  * @param anchor - Optional reference instant (defaults to `tempo`)
  * @returns Encapsulated TermSpan object
  */
+function getHostOptions(source: any) {
+	return source?.[$Internal]?.()?.options ?? source?.config;
+}
+
 export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
 	const hostTempo = isTempo(tempo) ? tempo : start;
 	const Host = getHost(hostTempo);
 	const refTempo = isTempo(anchor)
 		? anchor
-		: (isZonedDateTime(anchor) && Host ? new Host(anchor, (hostTempo as any).config) : hostTempo);
+		: (isZonedDateTime(anchor) && Host ? new Host(anchor, getHostOptions(hostTempo)) : hostTempo);
 	const refZdt = refTempo.toDateTime();
 	let total: any;
 	let elapsed: any;
@@ -203,7 +207,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		const resZdt = toZonedDateTime({ ...obj, timeZone, calendar });
 
 		// @ts-ignore
-		return new (getHost(tempo))(resZdt, (tempo as any).config);
+		return new (getHost(tempo))(resZdt, getHostOptions(tempo));
 	};
 
 	const hasSpans = list.some(r => r.span?.start);
@@ -226,7 +230,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		'minute', 'second', 'millisecond', 'microsecond', 'nanosecond'
 	]);
 
-	const hostTempo = isTempo(tempo) ? tempo : new (getHost(tempo))(zdt, (tempo as any)?.config);
+	const hostTempo = isTempo(tempo) ? tempo : new (getHost(tempo))(zdt, getHostOptions(tempo));
 
 	const buildResolvedRange = (matchItem: any, start: Tempo, end: Tempo): ResolvedRange => {
 		const meta: Record<string, any> = {};
@@ -412,7 +416,7 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): re
 
 	try {
 		if (isNotNullish(anchor)) {
-			const host = new (getHost(t))(anchor, (t as any).config);
+			const host = new (getHost(t))(anchor, getHostOptions(t));
 			res = isFunction(term.resolve) ? term.resolve.call(host, anchor) : term.define.call(host, false, anchor);
 		} else {
 			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, false);
@@ -483,7 +487,7 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 		const endNs = end.toDateTime().epochNanoseconds as bigint;
 		const midNs = startNs + (endNs - startNs) / 2n;
 		// @ts-ignore
-		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((start as any).tz).withCalendar((start as any).cal), (tempo as any).config);
+		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((start as any).tz).withCalendar((start as any).cal), getHostOptions(tempo));
 	}
 	if (mutate === 'end') return end.subtract({ nanoseconds: 1 });
 
@@ -581,7 +585,7 @@ export function resolveTermHost(source: Tempo | any, anchor?: any): Tempo | any 
 	if (isTempo(source)) {
 		if (isNotNullish(anchor)) {
 			const Host = getHost(source);
-			return Host ? new Host(anchor, (source as any).config) : source;
+			return Host ? new Host(anchor, getHostOptions(source)) : source;
 		}
 		return source;
 	}

@@ -790,6 +790,7 @@ const FALLBACK_COUNTRY_TIMEZONES: Record<string, readonly string[]> = {
 	CN: ['Asia/Shanghai', 'Asia/Urumqi'],
 	DE: ['Europe/Berlin', 'Europe/Busingen'],
 	DK: ['Europe/Copenhagen'],
+	EG: ['Africa/Cairo'],
 	ES: ['Europe/Madrid', 'Atlantic/Canary', 'Africa/Ceuta'],
 	FR: ['Europe/Paris'],
 	GB: ['Europe/London'],
@@ -798,15 +799,17 @@ const FALLBACK_COUNTRY_TIMEZONES: Record<string, readonly string[]> = {
 	IN: ['Asia/Kolkata'],
 	IT: ['Europe/Rome'],
 	JP: ['Asia/Tokyo'],
+	KE: ['Africa/Nairobi'],
 	KR: ['Asia/Seoul'],
 	MX: ['America/Mexico_City', 'America/Cancun', 'America/Monterrey', 'America/Tijuana', 'America/Merida', 'America/Chihuahua', 'America/Mazatlan', 'America/Hermosillo'],
 	NL: ['Europe/Amsterdam'],
 	NO: ['Europe/Oslo'],
 	NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
+	PK: ['Asia/Karachi'],
 	SE: ['Europe/Stockholm'],
 	SG: ['Asia/Singapore'],
 	TW: ['Asia/Taipei'],
-	US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'America/Anchorage', 'America/Juneau', 'America/Sitka', 'America/Metlakatla', 'America/Yakutat', 'America/Nome', 'America/Adak', 'America/Detroit', 'America/Boise', 'America/Indiana/Indianapolis', 'Pacific/Honolulu'],
+	US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'America/Anchorage', 'America/Juneau', 'America/Sitka', 'America/Metlakatla', 'America/Yakutat', 'America/Nome', 'America/Adak', 'America/Detroit', 'America/Boise', 'America/Indiana/Indianapolis', 'America/Indiana/Knox', 'Pacific/Honolulu'],
 	ZA: ['Africa/Johannesburg'],
 };
 
@@ -818,8 +821,15 @@ const getTimeZoneCountryMap = memoizeFunction((regionKey: string): Map<string, s
 		const allowed = regionKey === '*' ? null : new Set(regionKey.split(',').map(r => r.toUpperCase()));
 		for (const [code, zones] of Object.entries(FALLBACK_COUNTRY_TIMEZONES)) {
 			if (allowed && !allowed.has(code)) continue;
-			for (const z of zones)
+			for (const z of zones) {
 				if (!map.has(z)) map.set(z, code);
+				try {
+					const canonical = getDTF('en-US', { timeZone: z }).resolvedOptions().timeZone;
+					if (canonical && !map.has(canonical)) map.set(canonical, code);
+				} catch {
+					// Ignore unsupported zone in older runtimes
+				}
+			}
 		}
 		return map;
 	}

@@ -12,7 +12,7 @@ import { pad, trimAll } from '#library/string.library.js';
 import { compare as compareValues } from '#library/number.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
-import { isEmpty, isNotNullish, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber } from '#library/assertion.library.js';
+import { isEmpty, isNotNullish, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber, isNull } from '#library/assertion.library.js';
 import { instant, getTemporalIds, normalizeUtcOffset, compareByUnit, getISOWeekOfYear } from '#library/temporal.library.js';
 import { toJulianDay } from '#library/calendar.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
@@ -823,14 +823,25 @@ export class Tempo {
 	}
 
 	/** @internal Normalize `CompareUnit | CompareOptions` into unit granularity plus optional reference timezone/calendar frame. */
-	static #resolveCompareFrame(host: typeof Tempo, unitOrOptions?: t.CompareUnit | t.CompareOptions) {
+	static #resolveCompareFrame(host: typeof Tempo, unitOrOptions?: t.CompareUnit | t.CompareOptions, catchParse = false) {
 		const unit = resolveCompareUnit(unitOrOptions);
-		if (!isPlainObject(unitOrOptions)) return { unit, timeZone: undefined as string | undefined, calendar: undefined as string | undefined, anchor: undefined as Tempo | undefined };
+		if (!isPlainObject(unitOrOptions)) return { unit, timeZone: undefined as string | undefined, calendar: undefined as string | undefined, anchor: undefined as Tempo | undefined, anchorInvalid: false };
 
 		const opts = unitOrOptions as t.CompareOptions & Record<string, any>;
-		const anchor = isNotNullish(opts.anchor)
-			? (host.isTempo(opts.anchor) ? opts.anchor : new host(opts.anchor as t.DateTime))
-			: undefined;
+		let anchor: Tempo | undefined;
+		if (isNotNullish(opts.anchor)) {
+			if (host.isTempo(opts.anchor)) {
+				anchor = opts.anchor;
+			} else if (catchParse) {
+				try {
+					anchor = new host(opts.anchor as t.DateTime);
+				} catch {
+					return { unit, timeZone: undefined as string | undefined, calendar: undefined as string | undefined, anchor: undefined as Tempo | undefined, anchorInvalid: true };
+				}
+			} else {
+				anchor = new host(opts.anchor as t.DateTime);
+			}
+		}
 
 		let anchorTz: string | undefined;
 		let anchorCal: string | undefined;
@@ -843,7 +854,7 @@ export class Tempo {
 		const timeZone = isNotNullish(evalTz) ? Tempo.#resolveTimeZone(host, (host as any)[$Internal](), evalTz) : anchorTz;
 		const calendar = isNotNullish(evalCal) ? String(evalCal) : anchorCal;
 
-		return { unit, timeZone, calendar, anchor };
+		return { unit, timeZone, calendar, anchor, anchorInvalid: false };
 	}
 
 	/** @internal Coerce one comparison operand while honoring explicit zone/calendar vs fallback frame inheritance. */
@@ -855,6 +866,7 @@ export class Tempo {
 		targetZone?: string,
 		targetCal?: string,
 	): Tempo {
+		if (isNull(input)) throw new RangeError('Invalid date-time: null');
 		if (host.isTempo(input)) return input;
 		if ((!frameZone && !frameCal && !targetZone && !targetCal) || isZonedDateTime(input)) return new host(input as t.DateTime);
 
@@ -939,10 +951,16 @@ export class Tempo {
 	 */
 	static equals(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): boolean {
 		const host: typeof Tempo = isCallable((this as any)?.isTempo) ? this : Tempo;
-		const frame = Tempo.#resolveCompareFrame(host, unit);
-		if (frame.anchor && !frame.anchor.isValid) return false;
+		const frame = Tempo.#resolveCompareFrame(host, unit, true);
+		if (frame.anchorInvalid || (frame.anchor && !frame.anchor.isValid)) return false;
 
-		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
+		let one: Tempo;
+		let two: Tempo;
+		try {
+			[one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
+		} catch {
+			return false;
+		}
 		if (!one.isValid || !two.isValid) return false;
 
 		return Tempo.#compareWithFrame(one, two, frame) === 0;
