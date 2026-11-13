@@ -1,4 +1,4 @@
-import { formatCurrency, getDateTimeFormat, getHemisphere, getLC, getLI, hasIntl, getDTF, probeMDY, formatList, getRelativeTime, canonicalLocales, resolveLocale, isEnglish, getLanguage, cleanLocaleTag, getPR, formatNumber } from '#library/international.library.js';
+import { formatCurrency, getDateTimeFormat, getHemisphere, getLC, getLI, hasIntl, getDTF, probeMDY, formatList, getRelativeTime, canonicalLocales, resolveLocale, isEnglish, getLanguage, cleanLocaleTag, getPR, formatNumber, getCountryFromTimeZone } from '#library/international.library.js';
 
 describe('International Library', () => {
 	describe('formatCurrency', () => {
@@ -383,6 +383,49 @@ describe('International Library', () => {
 			expect(cleanLocaleTag(loc)).toContain('h23');
 			const dtf = getDTF(loc, { hour: 'numeric' });
 			expect(dtf.resolvedOptions().hourCycle).toBe('h23');
+		});
+	});
+
+	describe('getCountryFromTimeZone', () => {
+		it('should deduce ISO country codes for canonical and legacy IANA zones', () => {
+			expect(getCountryFromTimeZone('America/New_York')).toBe('US');
+			expect(getCountryFromTimeZone('US/Eastern')).toBe('US');
+			expect(getCountryFromTimeZone('Australia/Sydney')).toBe('AU');
+			expect(getCountryFromTimeZone('Europe/London')).toBe('GB');
+			expect(getCountryFromTimeZone('Asia/Tokyo')).toBe('JP');
+		});
+
+		it('should support restricting lookup to candidate regions', () => {
+			expect(getCountryFromTimeZone('America/New_York', ['AU', 'GB', 'US'])).toBe('US');
+			expect(getCountryFromTimeZone('Asia/Tokyo', ['AU', 'GB', 'US'])).toBeUndefined();
+		});
+
+		it('should return undefined for UTC, empty, or invalid zones', () => {
+			expect(getCountryFromTimeZone('UTC')).toBeUndefined();
+			expect(getCountryFromTimeZone('Etc/UTC')).toBeUndefined();
+			expect(getCountryFromTimeZone('')).toBeUndefined();
+			expect(getCountryFromTimeZone(undefined)).toBeUndefined();
+			expect(getCountryFromTimeZone('Invalid/Zone')).toBeUndefined();
+		});
+
+		it('should fall back gracefully when Intl.Locale.prototype.getTimeZones is unavailable', () => {
+			const proto = Intl.Locale.prototype as any;
+			const origDesc = Object.getOwnPropertyDescriptor(proto, 'getTimeZones');
+			if (origDesc) delete proto.getTimeZones;
+			try {
+				const regions = ['US', 'AU', 'GB', 'JP', 'EG', 'KE', 'PK'];
+				expect(getCountryFromTimeZone('America/New_York', regions)).toBe('US');
+				expect(getCountryFromTimeZone('US/Eastern', regions)).toBe('US');
+				expect(getCountryFromTimeZone('Australia/Sydney', regions)).toBe('AU');
+				expect(getCountryFromTimeZone('Europe/London', regions)).toBe('GB');
+				expect(getCountryFromTimeZone('Asia/Tokyo', regions)).toBe('JP');
+				expect(getCountryFromTimeZone('Africa/Cairo', regions)).toBe('EG');
+				expect(getCountryFromTimeZone('Africa/Nairobi', regions)).toBe('KE');
+				expect(getCountryFromTimeZone('Asia/Karachi', regions)).toBe('PK');
+				expect(getCountryFromTimeZone('Europe/Paris', regions)).toBeUndefined();
+			} finally {
+				if (origDesc) Object.defineProperty(proto, 'getTimeZones', origDesc);
+			}
 		});
 	});
 });

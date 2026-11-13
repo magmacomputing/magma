@@ -169,6 +169,8 @@ export type ResolvedRange = {
 	keys?: readonly string[];
 	/** The temporal boundary and progress span */
 	span: TermSpan;
+	/** Optional resolved configuration used to compute this range */
+	config?: Readonly<Record<string, any>>;
 	/** Scope or category of the term */
 	scope?: string;
 	/** Locale-specific translations */

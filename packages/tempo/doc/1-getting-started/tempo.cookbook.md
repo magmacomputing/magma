@@ -139,6 +139,30 @@ const t = new Tempo('yesterday');
 console.log(t.since()); // "1d ago"
 ```
 
+### Comparing & Checking Equality (`compare`, `equals`)
+Compare two dates chronologically—even across different timezones—or test equality at instant or unit precision:
+```typescript
+const nyc    = new Tempo('2026-05-10T18:00:00', { timeZone: 'America/New_York' }); // 22:00 UTC
+const london = new Tempo('2026-05-10T23:00:00', { timeZone: 'Europe/London' });    // 22:00 UTC (same instant)
+const tokyo  = new Tempo('2026-05-11T09:00:00', { timeZone: 'Asia/Tokyo' });       // 00:00 UTC (May 10 20:00 in NYC)
+
+// Exact instant comparison (returns -1 | 0 | 1)
+Tempo.compare(nyc, london);              // 0  (same instant across timezones)
+Tempo.compare(nyc, tokyo);               // -1 (nyc is 2 hours earlier)
+Tempo.compare(nyc);                      // Compare `nyc` against now (omitted 2nd arg)
+
+// Granular comparison projected into the 1st operand's timezone
+Tempo.compare(nyc, tokyo, 'day');        // 0  (both fall on May 10 in America/New_York; 'date' also accepted)
+Tempo.compare(nyc, tokyo, { unit: 'hour' }); // -1 (18:00 vs 20:00 in New York)
+
+// Exact instant & unit-level equality
+Tempo.equals(nyc, london);               // true (same instant across timezones)
+nyc.equals(tokyo, 'day');                // true (same calendar day in New York)
+nyc.equals('2026-05-10T23:00:00', { unit: 'day' }); // true (raw string inherits nyc's timezone)
+nyc.equals('week');                      // Is `nyc` in the current ISO week? (compares against now)
+```
+👉 **Learn More:** See [Comparing & Checking Equality](../2-core-concepts/tempo.getters.md#comparing--checking-equality) for supported units, `{ unit }` options, and timezone projection rules.
+
 ---
 
 ## Timezones and Locales
@@ -322,8 +346,27 @@ const pdt = new Tempo().toPlainDate();   // Temporal.PlainDate
 ```
 
 ### Sorting an array of Tempos
+`Tempo.compare` compares exact instants on the timeline, so standard sorting automatically handles any mix of timezones and calendars with zero manual alignment:
 ```typescript
-const dates = [new Tempo('tomorrow'), new Tempo('yesterday'), new Tempo('today')];
-dates.sort(Tempo.compare); // Sorts chronologically
+const dates = [
+  new Tempo('2026-05-11T09:00:00', { timeZone: 'Asia/Tokyo' }),       // May 11 00:00 UTC
+  new Tempo('2026-05-10T18:00:00', { timeZone: 'America/New_York' }), // May 10 22:00 UTC (2h earlier)
+  new Tempo('2026-05-10T23:00:00', { timeZone: 'Europe/London' }),    // May 10 22:00 UTC (same instant as NYC)
+];
+
+dates.sort(Tempo.compare); // Chronological order across mixed timezones
 ```
+
+When sorting at a coarser **unit** granularity (such as `'day'` or `'month'`), pass an `anchor` or explicit `timeZone` / `calendar` in `CompareOptions` so Tempo evaluates every pair against one consistent reference frame:
+```typescript
+// Option A: Anchor mixed items to a reference Tempo (e.g. dates[0])
+dates.sort((a, b) => Tempo.compare(a, b, { unit: 'day', anchor: dates[0] }));
+
+// Option B: Normalize evaluations to an explicit fixed timezone & calendar (order-independent)
+dates.sort((a, b) => Tempo.compare(a, b, { unit: 'day', timeZone: 'UTC', calendar: 'iso8601' }));
+```
+
+::: info Granular Sorting: `anchor` vs. Fixed Frame
+Without `anchor` or `timeZone` / `calendar`, `Tempo.compare(a, b, 'day')` evaluates in `a`'s timezone and calendar—which is asymmetric if `.sort()` swaps mixed-zone elements freely. Passing `anchor: dates[0]` is convenient when the first item defines your reference zone, though different initial array orders can change which element acts as the anchor; specifying a fixed `{ timeZone, calendar }` guarantees deterministic results regardless of input order.
+:::
 

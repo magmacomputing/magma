@@ -41,13 +41,13 @@ Use this mode when building long-lived domain services, multi-tenant app routers
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';
-import { FinancePlugin } from '@magmacomputing/tempo-plugin-finance';
+import { FiscalTerm } from '@magmacomputing/tempo/terms';
 
 // Create a specialized Sandbox for a Financial app
 const FinTempo = Tempo.derive({
-  plugins: [FinancePlugin],
+  plugins: [FiscalTerm],
   pluginOptions: {
-    finance: { fiscalYearStart: 7 } // July fiscal year
+    fiscal: { startMonth: 7 } // July fiscal year
   },
   registry: {
     periods: {

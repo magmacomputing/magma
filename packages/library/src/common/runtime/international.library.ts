@@ -1,6 +1,6 @@
-import { getOffsets, getTemporalIds } from '#library/temporal.library.js';
+import { getOffsets, getTemporalIds, getISOWeekOfYear } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isNotNullish, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { isFunction, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { cast } from '#library/type.library.js';
@@ -14,9 +14,9 @@ const RE_REGION_SUBTAG = /^[a-zA-Z]{2}$|^\d{3}$/;
 export type LocaleInput = string | Intl.Locale | undefined;
 export type TimeZoneInput = Temporal.TimeZoneLike | string | undefined;
 
-/** 
+/**
  * Guard check for runtime Intl namespace and constructor availability.
- * @internal 
+ * @internal
  */
 export const hasIntl = (feature?: LooseUnion<keyof typeof Intl>): boolean =>
 	typeof Intl !== 'undefined' && (!feature || hasOwn(Intl, feature, isCallable));
@@ -48,7 +48,7 @@ const getLF = memoizeFunction((locale?: LocaleInput, options?: Intl.ListFormatOp
 	return new Intl.ListFormat(cleanLocaleTag(locale), options);
 });
 
-/** 
+/**
  * Memoized helper for Intl.DateTimeFormat instances.
  * @internal
  */
@@ -56,7 +56,7 @@ export const getDTF = memoizeFunction((locale?: LocaleInput, options?: Intl.Date
 	return new Intl.DateTimeFormat(cleanLocaleTag(locale), options);
 });
 
-/** 
+/**
  * Memoized helper for Intl.PluralRules instances.
  * @internal
  */
@@ -182,11 +182,11 @@ export interface TempoIntlNamespace {
 
 /**
  * Legacy Heuristic Fallback Tables
- * 
+ *
  * NOTE FOR MAINTAINERS:
  * These static sets are strictly "best-effort" fallbacks for legacy, headless, or stripped
  * environments that lack ECMA-402 Intl.Locale Info support (i.e. `loc.getWeekInfo()` and `loc.getTextInfo()`).
- * 
+ *
  * - In modern runtimes (Node 18.19+, Node 20+, Chrome, Safari, Firefox), these tables are completely
  *   bypassed because the host engine provides full, live CLDR data directly from ICU.
  * - This minimal coverage (focusing on major regional cohorts like US, CA, and Middle East) was
@@ -246,9 +246,9 @@ function getFallbackDirection(loc?: Intl.Locale, language?: string): 'ltr' | 'rt
 	return (script && RTL_SCRIPTS.has(script)) || (language && RTL_LANGUAGES.has(language)) ? 'rtl' : 'ltr';
 }
 
-/** 
+/**
  * Memoized helper for Intl.Locale instances.
- * @internal 
+ * @internal
  */
 export const getLC = memoizeFunction((localeTag?: LocaleInput): Intl.Locale | undefined => {
 	if (isLocale(localeTag)) return localeTag;
@@ -261,7 +261,7 @@ export const getLC = memoizeFunction((localeTag?: LocaleInput): Intl.Locale | un
 	}
 });
 
-/** 
+/**
  * Memoized helper for Intl.Locale and LocaleInfo resolution.
  * @internal
  */
@@ -426,7 +426,7 @@ export function isolateBidi(text: string, direction?: 'ltr' | 'rtl'): string {
 }
 
 /**
- * International Cookbook  
+ * International Cookbook
  * (using 'Intl' namespace objects)
  */
 
@@ -440,7 +440,7 @@ const FALLBACK_DTF_OPTIONS: Readonly<Intl.ResolvedDateTimeFormatOptions> = Objec
 /**
  * Retrieves the system's current TimeZone, Calendar, and Locale information
  * by resolving the default `Intl.DateTimeFormat` options.
- * 
+ *
  * @returns The resolved DateTimeFormat options
  * @example
  * ```ts
@@ -456,7 +456,7 @@ export const getDateTimeFormat = memoizeFunction((): Readonly<Intl.ResolvedDateT
 /**
  * Returns the canonicalized locale string, or undefined if the locale is invalid.
  * Uses `Intl.getCanonicalLocales` for strict validation.
- * 
+ *
  * @param locale - The locale string to validate (e.g., 'en_US' or 'en-US')
  * @returns The canonical locale string, or undefined on failure
  * @example
@@ -482,7 +482,7 @@ const canonicalLocale = memoizeFunction((locale?: LocaleInput) => {
 /**
  * Canonicalizes an array or single locale input into a list of valid BCP 47 locale strings.
  * Gracefully ignores malformed locales and strips invalid/falsy values without throwing.
- * 
+ *
  * @param locales - Single or multiple locale identifiers or Intl.Locale instances
  * @returns An array of canonical BCP 47 locale strings
  * @example
@@ -499,7 +499,7 @@ export const canonicalLocales = memoizeFunction((locales?: unknown): readonly st
 /**
  * Resolves a locale or list of locales into a standardized configuration format:
  * a single string for one valid locale, a string array for multiple, or undefined if none.
- * 
+ *
  * @param locales - Single or multiple locale identifiers or Intl.Locale instances
  * @returns A single canonical string, an array of strings, or undefined
  * @example
@@ -517,7 +517,7 @@ export function resolveLocale(locales?: unknown): string | readonly string[] | u
 
 /**
  * Checks whether all resolved locales in the input belong to the English language family ('en-*').
- * 
+ *
  * @param locales - Single or multiple locale identifiers
  * @returns True if at least one valid locale exists and all resolved locales are English
  * @example
@@ -535,7 +535,7 @@ export function isEnglish(locales?: unknown): boolean {
 /**
  * Extracts the primary language subtag (e.g., 'en', 'fr') from a locale or list of locales.
  * Defaults to 'en' if not determinable.
- * 
+ *
  * @param locale - Locale identifier or list of locales
  * @param fallback - Fallback language subtag (default: 'en')
  * @returns The lowercase language subtag
@@ -554,7 +554,7 @@ export function getLanguage(locale?: unknown, fallback = 'en'): string {
 /**
  * Returns a localized relative time string using `Intl.RelativeTimeFormat`.
  * Falls back to a basic string representation if formatting fails.
- * 
+ *
  * @param value - The numeric value to format (e.g., 2)
  * @param unit - The time unit (e.g., 'days', 'hours')
  * @param locale - Optional locale string or Intl.Locale
@@ -577,7 +577,7 @@ export function getRelativeTime(value: number, unit: Intl.RelativeTimeFormatUnit
 /**
  * Returns a localized list string using `Intl.ListFormat`.
  * Falls back to a simple comma-joined string if formatting fails.
- * 
+ *
  * @param list - The array of strings to format
  * @param locale - Optional locale string or Intl.Locale
  * @param type - The list format type (default: 'conjunction')
@@ -599,7 +599,7 @@ export function formatList(list: readonly string[], locale?: LocaleInput, type: 
 /**
  * Returns a localized duration string using `Intl.DurationFormat`.
  * Note: Requires an environment that supports `Intl.DurationFormat`.
- * 
+ *
  * @param duration - The duration object or value to format
  * @param locale - Optional locale string
  * @param options - Optional format configuration
@@ -611,7 +611,7 @@ export function formatDuration(duration: any, locale?: LocaleInput, options?: an
 
 /**
  * Returns a localized number string using `Intl.NumberFormat`.
- * 
+ *
  * @param value - The numeric value to format
  * @param locale - Optional locale string
  * @param options - Optional format configuration
@@ -663,9 +663,9 @@ export function formatUnit(value: number, unit: string, locale?: LocaleInput, un
 	}
 }
 
-/** 
+/**
  * Formats a numeric value as a localized currency string.
- * 
+ *
  * @param str - The numeric value or string to format
  * @param scale - The maximum number of fractional digits (default: 2)
  * @param currency - The ISO 4217 currency code (default: 'AUD')
@@ -684,9 +684,9 @@ export function formatCurrency(str: string | number, scale = 2, currency = 'AUD'
 	}
 }
 
-/** 
+/**
  * Try to infer hemisphere using the timezone's daylight-savings setting.
- * @remarks This implementation intentionally differs from the version in `tempo-fns` 
+ * @remarks This implementation intentionally differs from the version in `tempo-fns`
  * (including specific fallback and return behaviors). Do not directly synchronize them.
  */
 export const getHemisphere = memoizeFunction((timeZone: string = getDateTimeFormat().timeZone): 'north' | 'south' | undefined => {
@@ -712,46 +712,6 @@ type input = {
 	weekOfYear?: number | undefined, yearOfWeek?: number | undefined
 }
 type result = { weekOfYear: number, yearOfWeek: number };
-/**
- * Polyfill fallback for ISO 8601 Week of Year and Year of Week calculations.
- * 
- * Introduced because highly experimental native browser implementations of the Temporal API 
- * (e.g., Chrome/Firefox behind flags) currently return `undefined` for `weekOfYear` and `yearOfWeek` 
- * on ZonedDateTime objects. The TC39 spec moved toward calendar-dependent definitions, 
- * causing divergence between the @js-temporal/polyfill (which returns numbers) and native browsers (which return undefined).
- * 
- * @param zdt - The ZonedDateTime or matching input object
- * @returns An object containing the weekOfYear and yearOfWeek
- * @example
- * ```ts
- * const { weekOfYear } = getISOWeekOfYear(Temporal.Now.zonedDateTimeISO());
- * ```
- */
-export function getISOWeekOfYear(zdt: input): result {
-	const calId = (zdt as any).calendarId ?? (zdt as any).calendar?.id;
-	if (calId === 'iso8601' && isNotNullish(zdt.weekOfYear) && isNotNullish(zdt.yearOfWeek))
-		return { weekOfYear: zdt.weekOfYear, yearOfWeek: zdt.yearOfWeek };
-
-	// Since Temporal.ZonedDateTime is passed in, we can safely extract the PlainDate
-	// to avoid crossing daylight saving boundaries when adding/subtracting days.
-	// Normalize to ISO 8601 calendar because properties like dayOfYear/dayOfWeek are calendar-dependent.
-	const pd = (hasKey(zdt, 'toPlainDate', isFunction<Temporal.PlainDate>) ? zdt.toPlainDate() : Temporal.PlainDate.from(zdt)).withCalendar('iso8601');
-	if (isNotNullish(pd.weekOfYear) && isNotNullish(pd.yearOfWeek))
-		return { weekOfYear: pd.weekOfYear, yearOfWeek: pd.yearOfWeek };
-
-	// ISO week date algorithm: weeks start on Monday, and the first week of the year contains the first Thursday.
-	// Find the nearest Thursday to the current date.
-	const shift = 4 - pd.dayOfWeek;
-	const nearestThursday = shift >= 0 ? pd.add({ days: shift }) : pd.subtract({ days: -shift });
-
-	// The calendar year of that nearest Thursday is the ISO week-numbering year
-	const yearOfWeek = nearestThursday.year;
-
-	// The week number is exactly the nearest Thursday's dayOfYear divided by 7
-	const weekOfYear = Math.ceil(nearestThursday.dayOfYear / 7);
-
-	return { weekOfYear, yearOfWeek };
-}
 
 /**
  * Calculates the week-of-year and week-numbering year for a given date according to locale-specific week rules.
@@ -802,7 +762,7 @@ export function getLocaleWeekOfYear(
 /**
  * Probes the runtime to see if the locale defaults to Month-Day-Year (MDY) order.
  * Useful for resolving ambiguous dates like '12/11/2024'.
- * 
+ *
  * @param locale - The locale string to probe
  * @returns True if the locale uses MDY format, false otherwise
  * @example
@@ -821,3 +781,102 @@ export const probeMDY = memoizeFunction((locale?: LocaleInput): boolean => {
 		return false;
 	}
 });
+
+const FALLBACK_COUNTRY_TIMEZONES: Record<string, readonly string[]> = {
+	AU: ['Australia/Sydney', 'Australia/Melbourne', 'Australia/Brisbane', 'Australia/Perth', 'Australia/Adelaide', 'Australia/Hobart', 'Australia/Darwin', 'Australia/Lord_Howe', 'Australia/Eucla', 'Australia/Broken_Hill', 'Australia/Lindeman'],
+	BR: ['America/Sao_Paulo', 'America/Manaus', 'America/Fortaleza', 'America/Recife', 'America/Belem', 'America/Bahia', 'America/Cuiaba', 'America/Campo_Grande', 'America/Porto_Velho', 'America/Boa_Vista', 'America/Rio_Branco', 'America/Noronha'],
+	CA: ['America/Toronto', 'America/Vancouver', 'America/Edmonton', 'America/Winnipeg', 'America/Halifax', 'America/St_Johns', 'America/Regina', 'America/Whitehorse', 'America/Yellowknife', 'America/Iqaluit', 'America/Moncton'],
+	CH: ['Europe/Zurich'],
+	CN: ['Asia/Shanghai', 'Asia/Urumqi'],
+	DE: ['Europe/Berlin', 'Europe/Busingen'],
+	DK: ['Europe/Copenhagen'],
+	EG: ['Africa/Cairo'],
+	ES: ['Europe/Madrid', 'Atlantic/Canary', 'Africa/Ceuta'],
+	FR: ['Europe/Paris'],
+	GB: ['Europe/London'],
+	HK: ['Asia/Hong_Kong'],
+	IE: ['Europe/Dublin'],
+	IN: ['Asia/Kolkata'],
+	IT: ['Europe/Rome'],
+	JP: ['Asia/Tokyo'],
+	KE: ['Africa/Nairobi'],
+	KR: ['Asia/Seoul'],
+	MX: ['America/Mexico_City', 'America/Cancun', 'America/Monterrey', 'America/Tijuana', 'America/Merida', 'America/Chihuahua', 'America/Mazatlan', 'America/Hermosillo'],
+	NL: ['Europe/Amsterdam'],
+	NO: ['Europe/Oslo'],
+	NZ: ['Pacific/Auckland', 'Pacific/Chatham'],
+	PK: ['Asia/Karachi'],
+	SE: ['Europe/Stockholm'],
+	SG: ['Asia/Singapore'],
+	TW: ['Asia/Taipei'],
+	US: ['America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles', 'America/Phoenix', 'America/Anchorage', 'America/Juneau', 'America/Sitka', 'America/Metlakatla', 'America/Yakutat', 'America/Nome', 'America/Adak', 'America/Detroit', 'America/Boise', 'America/Indiana/Indianapolis', 'America/Indiana/Knox', 'Pacific/Honolulu'],
+	ZA: ['Africa/Johannesburg'],
+};
+
+const getTimeZoneCountryMap = memoizeFunction((regionKey: string): Map<string, string> => {
+	const map = new Map<string, string>();
+	const hasGetTimeZones = hasIntl('Locale') && typeof (Intl.Locale.prototype as any).getTimeZones === 'function';
+
+	if (!hasGetTimeZones) {
+		const allowed = regionKey === '*' ? null : new Set(regionKey.split(',').map(r => r.toUpperCase()));
+		for (const [code, zones] of Object.entries(FALLBACK_COUNTRY_TIMEZONES)) {
+			if (allowed && !allowed.has(code)) continue;
+			for (const z of zones) {
+				if (!map.has(z)) map.set(z, code);
+				try {
+					const canonical = getDTF('en-US', { timeZone: z }).resolvedOptions().timeZone;
+					if (canonical && !map.has(canonical)) map.set(canonical, code);
+				} catch {
+					// Ignore unsupported zone in older runtimes
+				}
+			}
+		}
+		return map;
+	}
+
+	const codes: string[] = [];
+	if (regionKey === '*') {
+		for (let a = 65; a <= 90; a++) {
+			for (let b = 65; b <= 90; b++)
+				codes.push(String.fromCharCode(a, b));
+		}
+	} else {
+		for (const raw of regionKey.split(','))
+			if (RE_REGION_SUBTAG.test(raw)) codes.push(raw.toUpperCase());
+	}
+
+	for (const code of codes) {
+		try {
+			const zones: string[] | undefined = (new Intl.Locale(`und-${code}`) as any).getTimeZones?.();
+			if (!zones) continue;
+			for (const z of zones)
+				if (!map.has(z)) map.set(z, code);
+		} catch {
+			// Ignore unsupported region subtags
+		}
+	}
+	return map;
+});
+
+/**
+ * Deduces an ISO 3166-1 alpha-2 country/region code from an IANA time zone identifier
+ * using `Intl.Locale.prototype.getTimeZones()` and `Intl.DateTimeFormat` canonicalization.
+ *
+ * @param timeZone - IANA time zone identifier (e.g. `'America/New_York'`, `'US/Eastern'`)
+ * @param regions - Optional candidate ISO 3166-1 alpha-2 region codes to index
+ * @returns Uppercase ISO region code (e.g. `'US'`), or `undefined` for neutral/unknown zones (e.g. `'UTC'`)
+ */
+export function getCountryFromTimeZone(timeZone?: string, regions?: readonly string[]): string | undefined {
+	if (!isString(timeZone) || isEmpty(timeZone)) return undefined;
+	let canonicalZone = timeZone.trim();
+	if (!canonicalZone) return undefined;
+
+	try {
+		canonicalZone = getDTF('en-US', { timeZone: canonicalZone }).resolvedOptions().timeZone || canonicalZone;
+	} catch {
+		return undefined;
+	}
+
+	const key = regions && regions.length > 0 ? regions.map(r => r.toUpperCase()).join(',') : '*';
+	return getTimeZoneCountryMap(key).get(canonicalZone);
+}

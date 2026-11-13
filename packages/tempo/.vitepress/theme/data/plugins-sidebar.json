@@ -327,15 +327,5 @@
         "link": "/doc/9-plugins/ticker.use-cases-and-patterns"
       }
     ]
-  },
-  {
-    "text": "Single-Feature Community Plugins",
-    "collapsed": true,
-    "items": [
-      {
-        "text": "Finance (Fiscal & Business)",
-        "link": "/doc/9-plugins/finance.index"
-      }
-    ]
   }
 ]

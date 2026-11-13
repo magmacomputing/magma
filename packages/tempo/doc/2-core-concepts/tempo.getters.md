@@ -82,6 +82,53 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 
 </small>
 
+## ⚖️ Comparing & Checking Equality {#comparing--checking-equality}
+
+Tempo provides unified static and instance methods for ordering and equality checks without manual timestamp math:
+
+| Method | Signature | Returns | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`Tempo.compare()`** | `(tempo1?, tempo2?, unitOrOptions?)` | `-1 \| 0 \| 1` | Compares two dates chronologically (`tempo2` defaults to now when omitted; usable directly in `Array.prototype.sort(Tempo.compare)`). |
+| **`Tempo.equals()`** | `(tempo1?, tempo2?, unitOrOptions?)` | `boolean` | Returns `true` when both values are valid and match at exact instant or at the requested unit boundary. |
+| **`t.equals()`** | `(other?, unitOrOptions?)` / `(unitOrOptions)` | `boolean` | Instance shorthand delegating to `Tempo.equals(t, other, unitOrOptions)`, or comparing `t` against now when passed a single unit / `{ unit }` options argument. |
+
+### Exact Instant vs. Unit Granularity
+
+When the third argument (`unitOrOptions`) is omitted, Tempo compares exact nanosecond instants (`epoch.ns`). Unlike native `Temporal.ZonedDateTime.prototype.equals()`—which returns `false` if timezones or calendars differ—`Tempo.equals(a, b)` treats matching instants across different timezones as equal.
+
+Passing a `CompareUnit` string or `CompareOptions` object (`{ unit }`) evaluates both operands at that boundary instead:
+
+```typescript
+const morning = new Tempo('2026-05-10T08:00:00');
+const evening = new Tempo('2026-05-10T20:15:00');
+
+Tempo.compare(morning, evening);               // -1 (earlier instant)
+Tempo.compare(morning, evening, 'day');        // 0  (same calendar day)
+Tempo.compare(morning, evening, { unit: 'hour' }); // -1
+
+Tempo.equals(morning, evening);                // false
+Tempo.equals(morning, evening, 'day');         // true
+morning.equals(evening, { unit: 'month' });    // true
+morning.equals('week');                        // compares `morning` against now at ISO week granularity
+morning.equals(new Tempo('2026-05-11T08:00:00'), 'time'); // true (08:00:00 wall-clock time)
+```
+
+### Supported Units (`CompareUnit`)
+
+Both unit strings and `{ unit }` objects accept singular or plural unit names as well as shorthand tokens:
+
+- **Calendar boundaries**: `'year'` (`'years'`, `'yy'`), `'month'` (`'months'`, `'mm'`), `'week'` (`'weeks'`, `'ww'`, ISO week-year & week), `'day'` / `'date'` (`'days'`, `'dates'`, `'dd'`)
+- **Time boundaries**: `'hour'` (`'hours'`, `'hh'`), `'minute'` (`'minutes'`, `'mi'`), `'second'` (`'seconds'`, `'ss'`), `'millisecond'` (`'milliseconds'`, `'ms'`), `'microsecond'` (`'microseconds'`, `'us'`), `'nanosecond'` (`'nanoseconds'`, `'ns'`)
+- **Wall-clock time slice**: `'time'` (`'times'`) — compares only time-of-day (`HH:MM:SS.fffffffff`), ignoring the calendar date
+
+Passing a non-string unit or unrecognized unit string throws a `TypeError`.
+
+### Timezone Projection, Anchor Frame & Catch-Mode Behavior
+
+- **Timezone Alignment**: By default, when a unit is specified and `tempo2` is coerced from a raw string or options object without an explicit timezone, it inherits `tempo1`'s timezone and calendar, and unit boundaries are evaluated in `tempo1`'s timezone and calendar.
+- **Explicit Frame (`timeZone`, `calendar`, `anchor`)**: `CompareOptions` (and `EqualOptions`) accept optional `anchor`, `timeZone`, and `calendar` properties to evaluate both operands against a single fixed reference frame (explicit `timeZone`/`calendar` override `anchor` fields when combined)—useful when comparing or sorting mixed-timezone arrays at unit granularity (e.g. `{ unit: 'day', anchor: dates[0] }` or `{ unit: 'day', timeZone: 'UTC', calendar: 'iso8601' }`).
+- **Invalid Dates (Catch Mode)**: If either operand (or `anchor`) is invalid in catch mode (`!t.isValid`), `Tempo.equals()` and `t.equals()` return `false` without throwing, whereas `Tempo.compare()` throws a `RangeError`.
+
 ---
 
 ## 🗂️ Structured Namespaces {#structured-namespaces}
@@ -138,7 +185,7 @@ Tempo v5 intentionally avoids cluttering the top-level prototype with aliases or
 >     quarter: (t) => Math.ceil(t.mm / 3),
 >   }, 'DateExtensions'));
 >   ```
-> - **Structured Sub-Namespaces**: Mount entire custom namespaces (e.g. `t.finance.*` or `t.astro.*`) with automatic proxy resolution and caching using [`defineNamespace`](../3-extending-tempo/tempo.plugin.md).
+> - **Structured Sub-Namespaces**: Mount entire custom namespaces (e.g. `t.audit.*` or `t.astro.*`) with automatic proxy resolution and caching using [`defineNamespace`](../3-extending-tempo/tempo.plugin.md).
 > - **Reusable Lifecycle Plugins**: Package complex behaviors, prototype methods, and static tools using [`definePlugin`](../3-extending-tempo/tempo.plugin.md).
 >
 > Learn more in the comprehensive **[Extending Tempo with Plugins Guide](../3-extending-tempo/tempo.plugin.md)**.

@@ -2,17 +2,19 @@ import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/te
 import { isNotNullish, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
+import { compare } from '#library/number.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { cast } from '#library/type.library.js';
 
 import { TEMPO_VERSION } from '../../tempo.version.js';
 import { getHost, ensureModule } from '../plugin.util.js';
-import { sym, TermError, isTempo } from '../../support/support.symbol.js';
+import { sym, TermError, isTempo, $Internal } from '../../support/support.symbol.js';
 import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, TermSpan, TermFactory } from './term.type.js';
+import { evaluate } from '#library/evaluation.library.js';
 
 /**
  * ## defineTerm
@@ -88,12 +90,28 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
  * @param anchor - Optional reference instant (defaults to `tempo`)
  * @returns Encapsulated TermSpan object
  */
+function getHostOptions(source: any) {
+	const explicit = source?.[$Internal]?.()?.options;
+	const cfg = source?.config;
+	if (!explicit || !cfg) return explicit ?? cfg;
+	const out: Record<string, any> = { ...cfg, ...explicit };
+	if (explicit.locale === undefined && explicit.Locale === undefined) delete out.locale;
+	const hasExplicitTz = explicit.timeZone !== undefined || explicit.timezone !== undefined || explicit.TimeZone !== undefined;
+	if (!hasExplicitTz) {
+		const defaultTz = evaluate(getHost(source)?.config?.timeZone);
+		const tz = evaluate(source?.tz, cfg.timeZone);
+		if (tz && tz !== defaultTz) out.timeZone = tz;
+		else delete out.timeZone;
+	}
+	return out;
+}
+
 export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
 	const hostTempo = isTempo(tempo) ? tempo : start;
 	const Host = getHost(hostTempo);
 	const refTempo = isTempo(anchor)
 		? anchor
-		: (isZonedDateTime(anchor) && Host ? new Host(anchor, (hostTempo as any).config) : hostTempo);
+		: (isZonedDateTime(anchor) && Host ? new Host(anchor, getHostOptions(hostTempo)) : hostTempo);
 	const refZdt = refTempo.toDateTime();
 	let total: any;
 	let elapsed: any;
@@ -145,16 +163,27 @@ export function defineRange<T extends Range>(ranges: T[], ...keys: (keyof T)[]) 
 }
 
 /**
+ * Normalizes an optional term configuration object, dropping `undefined` entries
+ * and returning `undefined` when no configuration details are present.
+ */
+function defineTermConfig(config?: Record<string, any>): Readonly<Record<string, any>> | undefined {
+	if (!isPlainObject(config)) return undefined;
+	const entries = Object.entries(config).filter(([, value]) => !isUndefined(value));
+	return entries.length > 0 ? Object.freeze(Object.fromEntries(entries)) : undefined;
+}
+
+/**
  * Resolves the range containing a Tempo instance.
  *
  * @param tempo - The Tempo instance to locate
  * @param list - The ranges to search
  * @param keyOnly - Controls the result: `true` returns the range key, a positive integer returns the corresponding cycle range, and `false` returns the resolved range
  * @param anchor - Optional temporal anchor used to resolve range boundaries
+ * @param config - Optional resolved configuration metadata to attach when non-empty
  * @returns The matching range key, resolved range, or `undefined` when no range is available
  * @internal
  */
-export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any): string | ResolvedRange | undefined | null {
+export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], keyOnly: boolean | number | string = true, anchor?: any, config?: Record<string, any>): string | ResolvedRange | undefined | null {
 	if (list.length === 0) return undefined;
 
 	let zdt = isTempo(anchor)
@@ -172,7 +201,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
 		if (range.span?.start)
 			return range.span.start;
-		
+
 		const obj: any = {};
 		for (let i = 0; i < SCHEMA.length; i++) {
 			const [u] = SCHEMA[i];
@@ -191,7 +220,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		const resZdt = toZonedDateTime({ ...obj, timeZone, calendar });
 
 		// @ts-ignore
-		return new (getHost(tempo))(resZdt, (tempo as any).config);
+		return new (getHost(tempo))(resZdt, getHostOptions(tempo));
 	};
 
 	const hasSpans = list.some(r => r.span?.start);
@@ -199,7 +228,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		? [...list].sort((a, b) => {
 			const aNs = (a.span?.start ?? resolve(a, zdt)).epoch.ns as bigint;
 			const bNs = (b.span?.start ?? resolve(b, zdt)).epoch.ns as bigint;
-			return aNs < bNs ? -1 : (aNs > bNs ? 1 : 0);
+			return compare(aNs, bNs);
 		})
 		: sortKey([...list], 'year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond');
 	if (chronological.length === 0) return undefined;
@@ -214,21 +243,23 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 		'minute', 'second', 'millisecond', 'microsecond', 'nanosecond'
 	]);
 
-	const hostTempo = isTempo(tempo) ? tempo : new (getHost(tempo))(zdt, (tempo as any)?.config);
+	const hostTempo = isTempo(tempo) ? tempo : new (getHost(tempo))(zdt, getHostOptions(tempo));
 
 	const buildResolvedRange = (matchItem: any, start: Tempo, end: Tempo): ResolvedRange => {
 		const meta: Record<string, any> = {};
 		for (const [k, v] of Object.entries(matchItem)) {
-			if (!SCHEMA_KEYS.has(k) && k !== 'span')
+			if (!SCHEMA_KEYS.has(k) && k !== 'span' && k !== 'config')
 				meta[k] = v;
 		}
 
 		const resolvedStart = matchItem.span?.start ?? start;
 		const resolvedEnd = matchItem.span?.end ?? end;
+		const resolvedConfig = defineTermConfig(config ?? matchItem.config);
 
 		return {
 			...meta,
-			span: defineSpan(hostTempo, resolvedStart, resolvedEnd, zdt)
+			span: defineSpan(hostTempo, resolvedStart, resolvedEnd, zdt),
+			...(resolvedConfig ? { config: resolvedConfig } : {}),
 		} as ResolvedRange;
 	};
 
@@ -398,7 +429,7 @@ export function getRange(entry: any, t: Tempo, anchor?: any, group?: string): re
 
 	try {
 		if (isNotNullish(anchor)) {
-			const host = new (getHost(t))(anchor, (t as any).config);
+			const host = new (getHost(t))(anchor, getHostOptions(t));
 			res = isFunction(term.resolve) ? term.resolve.call(host, anchor) : term.define.call(host, false, anchor);
 		} else {
 			res = isFunction(term.resolve) ? term.resolve.call(t) : term.define.call(t, false);
@@ -469,7 +500,7 @@ export function resolveTermAnchor(tempo: Tempo, terms: any[], offset: string, mu
 		const endNs = end.toDateTime().epochNanoseconds as bigint;
 		const midNs = startNs + (endNs - startNs) / 2n;
 		// @ts-ignore
-		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((start as any).tz).withCalendar((start as any).cal), (tempo as any).config);
+		return new tempo.constructor(toInstant(midNs).toZonedDateTimeISO((start as any).tz).withCalendar((start as any).cal), getHostOptions(tempo));
 	}
 	if (mutate === 'end') return end.subtract({ nanoseconds: 1 });
 
@@ -567,7 +598,7 @@ export function resolveTermHost(source: Tempo | any, anchor?: any): Tempo | any 
 	if (isTempo(source)) {
 		if (isNotNullish(anchor)) {
 			const Host = getHost(source);
-			return Host ? new Host(anchor, (source as any).config) : source;
+			return Host ? new Host(anchor, getHostOptions(source)) : source;
 		}
 		return source;
 	}

@@ -346,6 +346,19 @@ describe('@magmacomputing/tempo-plugin-holidays', () => {
 			expect(jpLocale.holidays.name).toBe('Mountain Day');
 		});
 
+		it('infers country from explicit timeZone when geo and explicit locale are omitted', () => {
+			const auTz = new Tempo('2026-01-26', { timeZone: 'Australia/Sydney' });
+			expect(auTz.holidays.country).toBe('AU');
+			expect(auTz.holidays.isHoliday()).toBe(true);
+			expect(auTz.holidays.name).toBe('Australia Day');
+
+			// Explicit locale takes precedence over explicit timeZone
+			const gbLocaleAuTz = new Tempo('2026-05-04', { locale: 'en-GB', timeZone: 'Australia/Sydney' });
+			expect(gbLocaleAuTz.holidays.country).toBe('GB');
+			expect(gbLocaleAuTz.holidays.isHoliday()).toBe(true);
+			expect(gbLocaleAuTz.holidays.name).toBe('Early May Bank Holiday');
+		});
+
 		it('falls back to US when neither geo nor locale region is provided', () => {
 			// Jan 19, 2026 is MLK Day in US when locale has no region tag (e.g. 'en')
 			const nonRegionalTempo = new Tempo('2026-01-19', { locale: 'en' });

@@ -5,7 +5,7 @@ While [Term Plugins](./tempo.term.md) are excellent for providing static, memoiz
 This guide will teach you the "Tempo-way" of authoring a custom plugin by building a classic, real-world example: **The Business Days Plugin**.
 
 > [!TIP] Adding a group of properties?
-> If you are building a plugin that adds multiple related properties or methods (like `.finance.taxYear` and `.finance.fiscalQuarter`), you should use the `defineNamespace` factory instead! It automatically lazy-loads your methods and prevents prototype pollution. 
+> If you are building a plugin that adds multiple related properties or methods (like `.audit.complianceYear` and `.audit.retentionPeriod`), you should use the `defineNamespace` factory instead! It automatically lazy-loads your methods and prevents prototype pollution. 
 > 👉 **[Read the Namespace Guide](./tempo.namespace.md)**
 
 > [!TIP] Adding Custom Getters or Methods?

@@ -9,7 +9,7 @@ export const TIMEOUT_MAX = 2 ** 31 - 1;
 /**
  * Converts a number or array of numbers into a contiguous hexadecimal string.
  * Flattens nested arrays and filters out non-integers.
- * 
+ *
  * @param num - The number(s) to convert
  * @param len - Optional maximum length of the resulting string
  * @returns The hexadecimal string representation
@@ -21,7 +21,7 @@ export const TIMEOUT_MAX = 2 ** 31 - 1;
 export const toHex = (num: TValues<number> = [], len?: number) =>
 	asArray(num)																							// ensure array
 		.flat(1_000_000)																				// flatten any arrays to arbitrary depth
-		.filter(Number.isInteger)																// ensure integers	
+		.filter(Number.isInteger)																// ensure integers
 		.map(val => (val + 0x100).toString(16).slice(-2))
 		.join('')
 		.toLowerCase()
@@ -29,7 +29,7 @@ export const toHex = (num: TValues<number> = [], len?: number) =>
 
 /**
  * Appends an ordinal suffix (st, nd, rd, th) to a number.
- * 
+ *
  * @param idx - The number to format (defaults to 0)
  * @returns The number formatted as a string with its ordinal suffix
  * @example
@@ -58,7 +58,7 @@ export const suffix = (idx: number = 0): string => {
 
 /**
  * Splits a number or string by a delimiter and parses the chunks.
- * 
+ *
  * @param nbr - The value to split
  * @param chr - The delimiter character (default: '.')
  * @param zero - Whether to strip leading zeros during numeric conversion (default: true)
@@ -77,7 +77,7 @@ export function split<T extends string | number>(nbr?: T, chr: string = '.', zer
 
 /**
  * Formats a number to a fixed number of decimal places.
- * 
+ *
  * @param nbr - The number or string to format
  * @param max - The maximum number of decimal places (default: 2)
  * @returns The fixed-precision string representation
@@ -91,7 +91,7 @@ export const fix = (nbr: string | number = 0, max = 2) =>
 
 /**
  * Removes the colon from an HH:MI time string and returns it as a number.
- * 
+ *
  * @param hhmi - The time string (e.g., '14:30')
  * @returns The numeric representation (e.g., 1430)
  * @example
@@ -132,7 +132,7 @@ const RE_ROMAN_NUMERALS = /^M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3
 
 /**
  * Converts a positive integer into its Roman numeral string representation.
- * 
+ *
  * @param num - An integer from 1 through 3999
  * @returns Uppercase subtractive Roman numerals, or an empty string for non-integers or values outside that range
  * @example
@@ -186,4 +186,29 @@ export function fromRoman(roman: string): number {
 	return total;
 }
 
+/**
+ * Performs a three-way comparison between two numbers or two bigints.
+ *
+ * @param a - First numeric or bigint value
+ * @param b - Second numeric or bigint value
+ * @returns `-1` if `a < b`, `0` if `a === b`, or `1` if `a > b`
+ * @throws {TypeError} If either value is not a `number`/`bigint` or if `a` and `b` have mismatched types
+ * @throws {RangeError} If either numeric argument is `NaN`
+ * @example
+ * ```ts
+ * compare(1, 2);   // -1
+ * compare(5n, 5n); // 0
+ * compare(9, 4);   // 1
+ * ```
+ */
+export function compare(a: number, b: number): -1 | 0 | 1;
+export function compare(a: bigint, b: bigint): -1 | 0 | 1;
+export function compare(a: number | bigint, b: number | bigint): -1 | 0 | 1 {
+	if ((typeof a !== 'number' && typeof a !== 'bigint') || typeof a !== typeof b)
+		throw new TypeError(`Cannot compare ${typeof a} with ${typeof b}; expected two numbers or two bigints.`);
+	if (typeof a === 'number' && (Number.isNaN(a) || Number.isNaN(b as number)))
+		throw new RangeError('Cannot compare NaN values.');
+
+	return a > b ? 1 : a < b ? -1 : 0;
+}
 

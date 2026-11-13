@@ -2,7 +2,7 @@
 
 When building plugins that provide multiple related features, adding them directly to the `Tempo` prototype can clutter the root interface and increase the risk of naming collisions.
 
-To solve this, Tempo provides the `defineNamespace` factory. This allows you to mount an entire suite of related tools under a single property (e.g., `Tempo().finance.taxYear`).
+To solve this, Tempo provides the `defineNamespace` factory. This allows you to mount an entire suite of related tools under a single property (e.g., `Tempo().audit.complianceYear`).
 
 ## The Lazy-Evaluation Advantage
 
@@ -11,34 +11,31 @@ When a user extends Tempo with your namespace plugin, it adds exactly **0 CPU cy
 
 ## 1. The `defineNamespace` Factory
 
-Let's build a `finance` plugin. We want to add a `.finance` namespace that provides tools like `fiscalQuarter` and `isFiscalYearStart()`.
+Let's build an `audit` plugin. We want to add an `.audit` namespace that provides tools like `complianceYear`, `retentionPeriod`, and `isRetentionExpired()`.
 
 ```typescript
-// finance.ts
+// audit.ts
 import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from '@magmacomputing/tempo/core';
 
-export const FinanceNamespace = defineNamespace({
+export const AuditNamespace = defineNamespace({
   // 1. Define the property name where this namespace will live on the Tempo instance
-  name: 'finance',
+  name: 'audit',
   
   // 2. Define the lazy-resolvers
   resolvers: {
     // Static properties return values directly
-    fiscalQuarter: (tempo: Tempo): number => {
-      const month = tempo.mm;
-      return Math.floor((month - 1) / 3) + 1;
+    retentionPeriod: (tempo: Tempo): string => {
+      return `${tempo.yy}-Q${Math.floor((tempo.mm - 1) / 3) + 1}`;
     },
     
-    taxYear: (tempo: Tempo): number => {
+    complianceYear: (tempo: Tempo): number => {
       return tempo.yy;
     },
     
     // Methods return callable functions
-    isFiscalYearStart: (tempo: Tempo): ((startMonth?: number) => boolean) => {
-      const currentMonth = tempo.mm;
-      const currentDay = tempo.dd;
-      return (startMonth: number = 1) => currentMonth === startMonth && currentDay === 1;
+    isRetentionExpired: (tempo: Tempo): ((years?: number) => boolean) => {
+      return (years: number = 7) => Tempo.compare(new Tempo(), tempo.add({ years })) >= 0;
     }
   }
 });
@@ -50,41 +47,40 @@ Notice how every resolver receives the current `Tempo` instance as its first arg
 
 One of the most powerful features of the `defineNamespace` architecture is that your resolvers are **memoized closures**. Because a resolver is only evaluated the *very first time* the property is accessed on that specific `Tempo` instance, you can use the outer block to execute expensive setup logic or stash variables.
 
-Let's zoom in on the `isFiscalYearStart` method we defined above:
+Let's zoom in on the `isRetentionExpired` method we defined above:
 
 ```typescript
-isFiscalYearStart: (tempo: Tempo) => {
+isRetentionExpired: (tempo: Tempo) => {
   // 1. SETUP BLOCK (Runs exactly once per Tempo instance)
   // You can stash variables, run complex mathematical lookups, or build state here!
-  const currentMonth = tempo.mm;
-  const currentDay = tempo.dd;
+  const recordDate = tempo;
 
   // 2. INNER CLOSURE (Runs every time the consumer calls the method)
-  // The consumer can pass their company's fiscal start month (e.g., 7 for July). Defaults to 1.
-  return (startMonth: number = 1): boolean => {
-    return currentMonth === startMonth && currentDay === 1;
+  // The consumer can pass their company's retention policy (e.g., 7 years). Defaults to 7.
+  return (years: number = 7): boolean => {
+    return Tempo.compare(new Tempo(), recordDate.add({ years })) >= 0;
   };
 }
 ```
 
-When a consumer types `t.finance.isFiscalYearStart(7)`, they are executing that returned inner function to check if the date is July 1st. This pattern allows you to write incredibly performant plugins with zero repeated overhead!
+When a consumer types `t.audit.isRetentionExpired(5)`, they are executing that returned inner function to check if the record is at least 5 years old. This pattern allows you to write incredibly performant plugins with zero repeated overhead!
 
 ## 2. TypeScript Module Augmentation
 
 Just like standard plugins, you must inform TypeScript about your new namespace so developers get full IDE autocomplete:
 
 ```typescript
-// finance.ts
+// audit.ts
 import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
 
-// ... (FinanceNamespace implementation) ...
+// ... (AuditNamespace implementation) ...
 
 declare module '@magmacomputing/tempo/core' {
   interface Tempo {
-    finance: {
-      fiscalQuarter: number;
-      taxYear: number;
-      isFiscalYearStart: (startMonth?: number) => boolean;
+    audit: {
+      retentionPeriod: string;
+      complianceYear: number;
+      isRetentionExpired: (years?: number) => boolean;
     }
   }
 }
@@ -96,18 +92,19 @@ Developers can now import your plugin, register it once, and enjoy your clean, i
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo/core';
-import { FinanceNamespace } from './finance.js';
+import { MutateModule } from '@magmacomputing/tempo/mutate';
+import { AuditNamespace } from './audit.js';
 
 // Extend the core Tempo engine
-Tempo.use(FinanceNamespace);
+Tempo.use(MutateModule, AuditNamespace);
 
-const t = new Tempo('2024-07-01');
+const t = new Tempo('2018-07-01');
 
 // Access the static property (Evaluated instantly and memoized!)
-console.log(t.finance.fiscalQuarter); // 3
+console.log(t.audit.retentionPeriod); // '2018-Q3'
 
-// Access the callable method (Checking if it's the start of the Australian fiscal year)
-console.log(t.finance.isFiscalYearStart(7)); // true
+// Access the callable method (Checking against a 7-year retention policy)
+console.log(t.audit.isRetentionExpired(7)); // true
 ```
 
 ---
@@ -116,10 +113,10 @@ console.log(t.finance.isFiscalYearStart(7)); // true
 
 When building a Namespace plugin, you'll naturally face a choice between **Object-Oriented Programming (OOP)** and **Functional Programming (FP)**. 
 
-*   **The Namespace (OOP)**: `t.finance.isFiscalYearStart()`
+*   **The Namespace (OOP)**: `t.audit.isRetentionExpired()`
     *   *Pros:* Incredible Developer Experience (DX). You get instant IDE autocomplete, and the `Tempo` object automatically carries your timezone and locale context.
     *   *Cons:* Extending Tempo means the entire namespace is attached to the prototype. It is not fully tree-shakeable.
-*   **The Functional Approach (FP)**: `isFiscalYearStart(t)`
+*   **The Functional Approach (FP)**: `isRetentionExpired(t)`
     *   *Pros:* 100% tree-shakeable. Developers only import exactly the functions they need. Zero prototype pollution.
     *   *Cons:* Less discoverable. Developers must pass the `Tempo` object as the first argument manually.
 
@@ -128,23 +125,28 @@ A world-class plugin doesn't force developers to choose—it provides both! You 
 
 ```typescript
 // 1. The Pure Functions (The FP layer)
-export function isFiscalYearStart(t: Tempo, startMonth: number = 1): boolean {
-    return t.mm === startMonth && t.dd === 1; 
+import { Tempo } from '@magmacomputing/tempo/core';
+import { MutateModule } from '@magmacomputing/tempo/mutate';
+
+Tempo.use(MutateModule);
+
+export function isRetentionExpired(t: Tempo, years: number = 7): boolean {
+    return Tempo.compare(new Tempo(), t.add({ years })) >= 0; 
 }
-export function nextTaxYear(t: Tempo): Tempo { ... }
+export function nextAuditDate(t: Tempo): Tempo { ... }
 
 // 2. The Namespace Wrapper (The OOP layer)
-export const FinanceNamespace = defineNamespace({
-    name: 'finance',
+export const AuditNamespace = defineNamespace({
+    name: 'audit',
     resolvers: {
         // We simply wrap our pure functions and inject the 'tempo' context!
-        isFiscalYearStart: (tempo: Tempo) => (startMonth?: number) => isFiscalYearStart(tempo, startMonth),
-        nextTaxYear: (tempo: Tempo) => () => nextTaxYear(tempo)
+        isRetentionExpired: (tempo: Tempo) => (years?: number) => isRetentionExpired(tempo, years),
+        nextAuditDate: (tempo: Tempo) => () => nextAuditDate(tempo)
     }
 });
 ```
 
-Because of this interleaving, developers can choose their preferred architecture based on their project needs (e.g. rapid prototyping with `t.finance.x` vs. strict bundle optimization with `isFiscalYearStart(t)`).
+Because of this interleaving, developers can choose their preferred architecture based on their project needs (e.g. rapid prototyping with `t.audit.x` vs. strict bundle optimization with `isRetentionExpired(t)`).
 
 ---
 

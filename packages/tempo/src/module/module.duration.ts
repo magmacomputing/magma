@@ -195,7 +195,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 		const [termPart] = unit.slice(1).split('.');
 		const termObj = findTermPlugin(termPart, (this as any)[sym.$Internal]?.());
 		if (termObj && isFunction((termObj as any)[TermHook.diff])) {
-			const targetTempo = isTempo(offset) ? offset : new (this.constructor as any)(offsetZdt, (this as any).config);
+			const targetTempo = isTempo(arg) ? arg : (isTempo(offset) ? offset : new (this.constructor as any)(offsetZdt, (this as any).config));
 			const diffRes = (termObj as any)[TermHook.diff](targetTempo, unit, this);
 			if (isNotNullish(diffRes))
 				return since ? `${diffRes} ${unit}` : diffRes;

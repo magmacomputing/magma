@@ -37,6 +37,12 @@ While `.add()` *shifts* a date, the `.set()` method *replaces* components.
 t.set({ year: 2026, month: 1 }); // Sets to January 2026
 ```
 
+::: tip Looking for `.with()`? Use `.set()`!
+If you are coming from native TC39 `Temporal`, you will not find a `.with()` method on `Tempo`—and that is intentional.
+
+While `Temporal`'s `.with(fields, { overflow })` accepts only field bags (with `.withTimeZone()` and `.withCalendar()` as separate methods), Tempo's `.set(value, options)` unifies plain field replacement, string shorthands, boundary keywords (`{ month: 'start' }`), Slick modifiers, and `{ timeZone }` / `{ calendar }` options under one consistent signature. Because their parameter and option alignments differ, Tempo keeps `.set()` rather than aliasing `.with()`.
+:::
+
 ### Navigating to Boundaries
 
 You can snap to boundaries using intuitive property-based `{ Term: Value }` assignment, or use [Slick Structural Keys](../4-advanced-reference/tempo.shorthand.md) to navigate custom terminology cycles:
