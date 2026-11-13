@@ -27,11 +27,10 @@ function toIsoTempo(target: any, fallback: Tempo): Tempo {
 		const Host = fallback.constructor as any;
 		if (zdt.calendarId !== 'iso8601') {
 			const isoZdt = zdt.withCalendar('iso8601');
-			return new Host(isoZdt, { ...(fallback as any).config, calendar: 'iso8601' });
+			return new Host(isoZdt, { ...(fallback as any).config, timeZone: zdt.timeZoneId, calendar: 'iso8601' });
 		}
-		if (!(ref instanceof fallback.constructor)) {
-			return new Host(zdt, (fallback as any).config);
-		}
+		if (!(ref instanceof fallback.constructor))
+			return new Host(zdt, { ...(fallback as any).config, timeZone: zdt.timeZoneId });
 	}
 	return ref;
 }

@@ -143,7 +143,7 @@ const BASE_EMOJI_MAP: Record<string, string> = {
  */
 function getEasternScope(t: Tempo, anchor?: any): EasternZodiacScope {
 	const refTempo = isNumber(anchor)
-		? new (t.constructor as any)(new Date(anchor), (t as any).config)
+		? new (t.constructor as any)(new Date(anchor), { ...(t as any).config, timeZone: t.tz ?? (t as any).config?.timeZone })
 		: anchor;
 	const year = refTempo?.year ?? refTempo?.yy ?? t.yy;
 	const res = getChineseZodiacFn(year);

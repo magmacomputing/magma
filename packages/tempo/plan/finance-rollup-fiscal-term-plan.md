@@ -243,6 +243,6 @@ Refactor documentation pages currently showcasing `@magmacomputing/tempo-plugin-
 - [x] `node --check` succeeds on all manifest files.
 - [x] `npm run docs:build` generates VitePress documentation without broken links or missing sidebar items.
 - [ ] `git diff --name-only origin/main...HEAD | wc -l` stays strictly within PR budget for the subsequent PR.
-- [ ] All workspaces in `npm test` execute with zero failures across supported timezones (`America/New_York`, `UTC`).
+- [x] All workspaces in `npm test` execute with zero failures across supported timezones (`America/New_York`, `UTC`).
 
 *(Note: The post-release `npm deprecate @magmacomputing/tempo-plugin-finance` step has been moved to `v5-master-plan.md` Phase 6.)*

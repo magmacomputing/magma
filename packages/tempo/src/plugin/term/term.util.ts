@@ -90,7 +90,19 @@ export function findTermPlugin(ident: string, state?: any): TermPlugin | undefin
  * @returns Encapsulated TermSpan object
  */
 function getHostOptions(source: any) {
-	return source?.[$Internal]?.()?.options ?? source?.config;
+	const explicit = source?.[$Internal]?.()?.options;
+	const cfg = source?.config;
+	if (!explicit || !cfg) return explicit ?? cfg;
+	const out: Record<string, any> = { ...cfg, ...explicit };
+	if (explicit.locale === undefined && explicit.Locale === undefined) delete out.locale;
+	const hasExplicitTz = explicit.timeZone !== undefined || explicit.timezone !== undefined || explicit.TimeZone !== undefined;
+	if (!hasExplicitTz) {
+		const defaultTz = getHost(source)?.config?.timeZone;
+		const tz = source?.tz ?? cfg.timeZone;
+		if (tz && tz !== defaultTz) out.timeZone = tz;
+		else delete out.timeZone;
+	}
+	return out;
 }
 
 export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
