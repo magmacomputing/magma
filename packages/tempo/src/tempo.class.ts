@@ -845,8 +845,21 @@ export class Tempo {
 
 		let anchorTz: string | undefined;
 		let anchorCal: string | undefined;
-		if (anchor && anchor.isValid) {
-			[anchorTz, anchorCal] = getTemporalIds(anchor.toDateTime());
+		if (anchor) {
+			let valid = false;
+			try {
+				valid = Boolean(anchor.isValid);
+			} catch (err) {
+				if (catchParse) {
+					return { unit, timeZone: undefined as string | undefined, calendar: undefined as string | undefined, anchor: undefined as Tempo | undefined, anchorInvalid: true };
+				}
+				throw err;
+			}
+			if (valid) {
+				[anchorTz, anchorCal] = getTemporalIds(anchor.toDateTime());
+			} else if (catchParse) {
+				return { unit, timeZone: undefined as string | undefined, calendar: undefined as string | undefined, anchor: undefined as Tempo | undefined, anchorInvalid: true };
+			}
 		}
 
 		const evalTz = evaluate<Temporal.TimeZoneLike>(opts.timeZone ?? opts.timezone ?? opts.TimeZone);
@@ -936,9 +949,9 @@ export class Tempo {
 	static compare(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): -1 | 0 | 1 {
 		const host: typeof Tempo = isCallable((this as any)?.isTempo) ? this : Tempo;
 		const frame = Tempo.#resolveCompareFrame(host, unit);
-		if (frame.anchor && !frame.anchor.isValid) {
+		if (frame.anchor && !frame.anchor.isValid)
 			throw new RangeError('Invalid anchor date-time for Tempo.compare().');
-		}
+
 		const [one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
 		if (!one.isValid || !two.isValid)
 			throw new RangeError('Cannot compare an invalid Tempo date-time.');
@@ -952,16 +965,16 @@ export class Tempo {
 	static equals(tempo1?: t.DateTime | t.Options, tempo2?: t.DateTime | t.Options, unit?: t.CompareUnit | t.CompareOptions): boolean {
 		const host: typeof Tempo = isCallable((this as any)?.isTempo) ? this : Tempo;
 		const frame = Tempo.#resolveCompareFrame(host, unit, true);
-		if (frame.anchorInvalid || (frame.anchor && !frame.anchor.isValid)) return false;
+		if (frame.anchorInvalid) return false;
 
 		let one: Tempo;
 		let two: Tempo;
 		try {
 			[one, two] = Tempo.#coerceComparePair(host, tempo1, tempo2, isNotNullish(frame.unit), frame.timeZone, frame.calendar);
+			if (!one.isValid || !two.isValid) return false;
 		} catch {
 			return false;
 		}
-		if (!one.isValid || !two.isValid) return false;
 
 		return Tempo.#compareWithFrame(one, two, frame) === 0;
 	}

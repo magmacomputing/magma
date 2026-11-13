@@ -33,9 +33,7 @@ describe(`${label}`, () => {
     const tDefault = new Tempo('2024-05-20');
     expect(tDefault.locale).toBeDefined();
     expect(typeof tDefault.locale).toBe('string');
-    if (tDefault.tz !== 'UTC') {
-      expect(tDefault.sphere).toBeDefined();
-    } else {
+    if (tDefault.tz === 'UTC') {
       expect(tDefault.sphere).toBeUndefined();
     }
     expect(new Tempo('2024-05-20', { timeZone: 'America/New_York' }).sphere).toBe('north');

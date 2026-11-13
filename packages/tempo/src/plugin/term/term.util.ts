@@ -14,6 +14,7 @@ import { getRuntime } from '../../support/support.runtime.js';
 import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, TermSpan, TermFactory } from './term.type.js';
+import { evaluate } from '#library/evaluation.library.js';
 
 /**
  * ## defineTerm
@@ -97,8 +98,8 @@ function getHostOptions(source: any) {
 	if (explicit.locale === undefined && explicit.Locale === undefined) delete out.locale;
 	const hasExplicitTz = explicit.timeZone !== undefined || explicit.timezone !== undefined || explicit.TimeZone !== undefined;
 	if (!hasExplicitTz) {
-		const defaultTz = getHost(source)?.config?.timeZone;
-		const tz = source?.tz ?? cfg.timeZone;
+		const defaultTz = evaluate(getHost(source)?.config?.timeZone);
+		const tz = evaluate(source?.tz, cfg.timeZone);
 		if (tz && tz !== defaultTz) out.timeZone = tz;
 		else delete out.timeZone;
 	}
@@ -200,7 +201,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
 		if (range.span?.start)
 			return range.span.start;
-		
+
 		const obj: any = {};
 		for (let i = 0; i < SCHEMA.length; i++) {
 			const [u] = SCHEMA[i];
