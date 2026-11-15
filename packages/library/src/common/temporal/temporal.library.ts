@@ -387,14 +387,20 @@ export function compareByUnit(first: Temporal.ZonedDateTime, second: Temporal.Zo
 
 /**
  * Resolves the canonical era identifier and positive era-year for a Temporal date-time,
- * falling back to `'ce'` / `'bce'` and astronomical year conversion when the active calendar
- * (such as `iso8601`) omits `era` / `eraYear`.
+ * normalizing legacy polyfill era names (`'gregory'` / `'gregory-inverse'`) and falling back
+ * to `'ce'` / `'bce'` and astronomical year conversion when the active calendar (such as `iso8601`)
+ * omits `era` / `eraYear`.
  *
  * @param dt - Temporal date/time value with `year` and optional `era` / `eraYear`
  * @returns An object containing `era` and `eraYear`
  */
 export function getTemporalEra(dt: { year: number; era?: string | undefined; eraYear?: number | undefined }): { era: string; eraYear: number } {
-	const era = dt.era ?? (dt.year <= 0 ? 'bce' : 'ce');
+	const rawEra = dt.era;
+	const era = rawEra === 'gregory'
+		? 'ce'
+		: rawEra === 'gregory-inverse'
+			? 'bce'
+			: (rawEra ?? (dt.year <= 0 ? 'bce' : 'ce'));
 	const eraYear = dt.eraYear ?? Math.abs(dt.year <= 0 ? dt.year - 1 : dt.year);
 	return { era, eraYear };
 }

@@ -1,16 +1,13 @@
 import { Tempo } from '#tempo';
+import { getTemporalEra } from '#library/temporal.library.js';
 
 describe('Era Parsing Engine', () => {
-	// Dual matchers supporting legacy @js-temporal/polyfill (Node < 26) and native TC39 Temporal (Node 26+)
-	const eraBCE = /^(?:bce|gregory-inverse)$/i;
-	const eraCE = /^(?:ce|gregory)$/i;
-
 	test('parses year and era (trailing BC)', () => {
 		const t = new Tempo('200 BC');
 		expect(t.yy).toBe(-199);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(1);
-		expect(t.era).toMatch(eraBCE);
+		expect(t.era).toBe('bce');
 	});
 
 	test('parses year and era (leading BC)', () => {
@@ -18,13 +15,13 @@ describe('Era Parsing Engine', () => {
 		expect(t.yy).toBe(-199);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(1);
-		expect(t.era).toMatch(eraBCE);
+		expect(t.era).toBe('bce');
 	});
 
 	test('parses year and era (trailing BCE)', () => {
 		const t = new Tempo('200 BCE');
 		expect(t.yy).toBe(-199);
-		expect(t.era).toMatch(eraBCE);
+		expect(t.era).toBe('bce');
 	});
 
 	test('parses year and era (trailing AD)', () => {
@@ -32,25 +29,25 @@ describe('Era Parsing Engine', () => {
 		expect(t.yy).toBe(1);
 		expect(t.mm).toBe(1);
 		expect(t.dd).toBe(1);
-		expect(t.era).toMatch(eraCE);
+		expect(t.era).toBe('ce');
 	});
 
 	test('parses year and era (trailing b.c.)', () => {
 		const t = new Tempo('200 b.c.');
 		expect(t.yy).toBe(-199);
-		expect(t.era).toMatch(eraBCE);
+		expect(t.era).toBe('bce');
 	});
 
 	test('parses year and era (trailing a.d.)', () => {
 		const t = new Tempo('1 a.d.');
 		expect(t.yy).toBe(1);
-		expect(t.era).toMatch(eraCE);
+		expect(t.era).toBe('ce');
 	});
 
 	test('parses year and era (trailing CE)', () => {
 		const t = new Tempo('2026 CE');
 		expect(t.yy).toBe(2026);
-		expect(t.era).toMatch(eraCE);
+		expect(t.era).toBe('ce');
 	});
 
 	test('parses 1 BC as Astronomical Year 0', () => {
@@ -63,7 +60,7 @@ describe('Era Parsing Engine', () => {
 		expect(t.yy).toBe(-43);
 		expect(t.mm).toBe(3);
 		expect(t.dd).toBe(15);
-		expect(t.era).toMatch(eraBCE);
+		expect(t.era).toBe('bce');
 	});
 
 	test('implicit defaults assume CE when omitted', () => {
@@ -95,5 +92,10 @@ describe('Era Parsing Engine', () => {
 		expect(bce.yy).toBe(-43);
 		expect(bce.era).toBe('bce');
 		expect(bce.eon).toBe(44);
+	});
+
+	test('normalizes legacy polyfill gregory and gregory-inverse era identifiers', () => {
+		expect(getTemporalEra({ year: 2026, era: 'gregory', eraYear: 2026 })).toEqual({ era: 'ce', eraYear: 2026 });
+		expect(getTemporalEra({ year: -199, era: 'gregory-inverse', eraYear: 200 })).toEqual({ era: 'bce', eraYear: 200 });
 	});
 });
