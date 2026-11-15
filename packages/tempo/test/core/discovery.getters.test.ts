@@ -1,5 +1,6 @@
 import { Tempo } from '#tempo';
 import { ZodiacTerm } from '#tempo/terms';
+import { defineTerm } from '#tempo/plugin/term/term.util.js';
 
 const label = 'discovery.getters:';
 
@@ -99,5 +100,29 @@ describe(`${label} instance t.meta.ranges`, () => {
     Tempo.use(ZodiacTerm);
     expect(t.meta.terms.zodiac).toContain('Aries');
     expect(t.meta.ranges.zodiac).toBe('Aries');
+  });
+
+  test('includes scope-less terms returning a Range object and preserves undefined when inactive', () => {
+    const ActiveScopelessTerm = defineTerm({
+      key: 'scopelessActive',
+      ranges: [{ key: 'spring', label: 'Spring' }] as any,
+      define() {
+        return { key: 'spring', label: 'Spring' } as any;
+      }
+    });
+    const InactiveScopelessTerm = defineTerm({
+      key: 'scopelessInactive',
+      ranges: [{ key: 'none', label: 'None' }] as any,
+      define() {
+        return undefined;
+      }
+    });
+
+    Tempo.use(ActiveScopelessTerm);
+    Tempo.use(InactiveScopelessTerm);
+    const t = new Tempo('2024-04-15');
+
+    expect(t.meta.ranges.scopelessActive).toBe('spring');
+    expect(t.meta.ranges.scopelessInactive).toBeUndefined();
   });
 });

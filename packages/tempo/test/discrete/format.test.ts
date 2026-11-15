@@ -619,8 +619,8 @@ describe('Tempo.format() refinements', () => {
       const zdtSyd = tSyd.toDateTime();
 
       expect(format(zdtSyd, '{iso}')).toBe(tSyd.format('{iso}'));
-      expect(format(zdtSyd, '{sphere}')).toBe('south');
-      expect(format(zdtSyd, '{sphere}')).toBe(tSyd.format('{sphere}'));
+      expect(format(zdtSyd, '{sphere}', { timeZone: 'Australia/Sydney' })).toBe('south');
+      expect(format(zdtSyd, '{sphere}', { timeZone: 'Australia/Sydney' })).toBe(tSyd.format('{sphere}'));
 
       expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe('north');
       expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe(tSyd.format('{sphere}', { sphere: 'north' }));

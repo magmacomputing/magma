@@ -1625,7 +1625,8 @@ export class Tempo {
 				const base: Record<string, string> = {};
 				terms.forEach(term => {
 					const val = (self as Tempo).term[term.key];														// access the term-delegate (forces evaluation)
-					if (isString(val)) base[term.key] = val;
+					const key = isString(val) ? val : (isObject(val) && isString((val as any).key) ? (val as any).key : undefined);
+					if (isString(key)) base[term.key] = key;
 				});
 
 				const value = Tempo.#delegateTermMap(base);
