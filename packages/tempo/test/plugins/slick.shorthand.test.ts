@@ -14,7 +14,7 @@ describe('Slick Shorthand Resolution', () => {
     expect(nextQ2.yy).toBe(2025);
     expect(nextQ2.mm).toBe(4);
     expect(nextQ2.dd).toBe(1);
-    expect(nextQ2.ranges.qtr).toBe('Q2');
+    expect(nextQ2.meta.ranges.qtr).toBe('Q2');
   });
 
   test('inclusive current quarter (#qtr.>=q2)', () => {

@@ -1,5 +1,5 @@
 /**
- * Temporal Cookbook  
+ * Temporal Cookbook
  * (using 'Temporal' namespace object)
 */
 
@@ -13,7 +13,7 @@ const offsetCache = new Map<string, { jan: number; jul: number }>();
 
 /**
  * Returns the current instant in time using `Temporal.Now.instant()`.
- * 
+ *
  * @returns The current Temporal.Instant
  */
 export function instant() {
@@ -22,7 +22,7 @@ export function instant() {
 
 /**
  * Returns the current plain date (ISO calendar) for the given timezone.
- * 
+ *
  * @param timeZone - The time zone to use (default: system local timezone)
  * @returns The current Temporal.PlainDate
  */
@@ -32,7 +32,7 @@ export function today(timeZone: string = Intl.DateTimeFormat().resolvedOptions()
 
 /**
  * Returns the current Unix timestamp in seconds.
- * 
+ *
  * @returns The current Unix timestamp (seconds)
  */
 export function unix() {
@@ -41,7 +41,7 @@ export function unix() {
 
 /**
  * Returns the current Unix timestamp in nanoseconds.
- * 
+ *
  * @returns The current Unix timestamp (nanoseconds)
  */
 export function epoch() {
@@ -68,9 +68,9 @@ export function getOffsets(timeZone: string, year = 2024): Readonly<{ jan: numbe
 	return offsets;
 }
 
-/** 
+/**
  * Determines whether the given (or current) date is observing Daylight Saving Time.
- * 
+ *
  * @param date - Optional ZonedDateTime or ISO string to check
  * @param timeZone - The timezone to use if creating a new date (default: system local)
  * @returns True if the date is in DST, false otherwise
@@ -89,7 +89,7 @@ export function isDST(date?: Temporal.ZonedDateTime | string, timeZone: string =
  * Temporal rejects fractional Duration values (e.g., `{ seconds: 0.1 }`),
  * so this function converts them (e.g., to `{ milliseconds: 100 }`).
  * Mutates the provided duration object.
- * 
+ *
  * @param payload - The record object containing duration properties
  * @returns The mutated duration record
  */
@@ -135,7 +135,7 @@ const plainDateCache = new WeakCache<string, Temporal.PlainDate>();
 /**
  * Creates a `Temporal.ZonedDateTime` from a property-bag or ISO string.
  * Automatically injects the specified timezone if missing from the string.
- * 
+ *
  * @param bag - The property bag or ISO string to convert
  * @param tz - The fallback timezone (default: 'UTC')
  * @returns The created Temporal.ZonedDateTime
@@ -165,7 +165,7 @@ export function toZonedDateTime(bag: Temporal.ZonedDateTimeLike | string, tz: Te
 
 /**
  * Creates a `Temporal.PlainDate` from a property-bag or ISO string.
- * 
+ *
  * @param bag - The property bag or ISO string to convert
  * @returns The created Temporal.PlainDate
  */
@@ -177,7 +177,7 @@ export function toPlainDate(bag: Temporal.PlainDateLike | string): Temporal.Plai
 
 /**
  * Creates a `Temporal.Instant` from epoch nanoseconds.
- * 
+ *
  * @param epochNanoseconds - The bigint representing nanoseconds since the UNIX epoch
  * @returns The created Temporal.Instant
  */
@@ -189,7 +189,7 @@ export function toInstant(epochNanoseconds: bigint): Temporal.Instant {
  * Normalizes TimeZone and Calendar inputs into a `[timeZoneId, calendarId]` tuple.
  * Accepts either `(tz, cal)` strings or a single ZonedDateTime-like object.
  * Supports both spec-final (flat) and V8 harmony (nested) Temporal structures.
- * 
+ *
  * @param tzOrZdt - The TimeZone string, Calendar string, or ZonedDateTime object
  * @param cal - The optional Calendar string if `tzOrZdt` is a timezone
  * @returns A tuple of `[timeZoneId, calendarId]`
@@ -230,7 +230,7 @@ export function getTemporalIds(tzOrZdt?: Temporal.ZonedDateTime | Temporal.TimeZ
  * Converts informal UTC offset strings into the `±HH:MM` format required by Temporal.
  * Accepts forms like `'UTC+8'`, `'UTC-9'`, `'UTC+08:00'`, `'UTC-05:30'`.
  * Returns the input unchanged if it does not match the UTC± pattern.
- * 
+ *
  * @param zone - The informal offset string
  * @returns The normalized offset string
  */
@@ -385,4 +385,17 @@ export function compareByUnit(first: Temporal.ZonedDateTime, second: Temporal.Zo
 	}
 }
 
+/**
+ * Resolves the canonical era identifier and positive era-year for a Temporal date-time,
+ * falling back to `'ce'` / `'bce'` and astronomical year conversion when the active calendar
+ * (such as `iso8601`) omits `era` / `eraYear`.
+ *
+ * @param dt - Temporal date/time value with `year` and optional `era` / `eraYear`
+ * @returns An object containing `era` and `eraYear`
+ */
+export function getTemporalEra(dt: { year: number; era?: string | undefined; eraYear?: number | undefined }): { era: string; eraYear: number } {
+	const era = dt.era ?? (dt.year <= 0 ? 'bce' : 'ce');
+	const eraYear = dt.eraYear ?? Math.abs(dt.year <= 0 ? dt.year - 1 : dt.year);
+	return { era, eraYear };
+}
 

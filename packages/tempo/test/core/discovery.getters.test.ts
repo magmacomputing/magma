@@ -40,36 +40,36 @@ describe(`${label} static Tempo.terms`, () => {
   });
 });
 
-describe(`${label} instance t.terms`, () => {
+describe(`${label} instance t.meta.terms`, () => {
   beforeEach(() => { Tempo.init() });
 
   test('returns available range keys for qtr', () => {
     const t = new Tempo();
-    expect(t.terms.qtr).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
+    expect(t.meta.terms.qtr).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
   });
 
   test('returns available range keys for zodiac (flattened groups)', () => {
     Tempo.use(ZodiacTerm);
     const t = new Tempo();
-    expect(t.terms.zodiac).toContain('Aries');
-    expect(t.terms.zodiac).toContain('Pisces');
+    expect(t.meta.terms.zodiac).toContain('Aries');
+    expect(t.meta.terms.zodiac).toContain('Pisces');
   });
 
   test('returns available range keys for timeOfDay (Timeline)', () => {
     const t = new Tempo();
-    expect(t.terms.timeOfDay).toContain('Morning');
-    expect(t.terms.timeOfDay).toContain('Night');
+    expect(t.meta.terms.timeOfDay).toContain('Morning');
+    expect(t.meta.terms.timeOfDay).toContain('Night');
   });
 });
 
-describe(`${label} instance t.ranges`, () => {
+describe(`${label} instance t.meta.ranges`, () => {
   beforeEach(() => { Tempo.init() });
 
   test('reports current active ranges for fixed date (North-sphere)', () => {
     Tempo.init({ sphere: 'north' });										// Lock to North for deterministic results
     Tempo.use(ZodiacTerm);
     const t = new Tempo('2024-04-15');
-    const ranges = t.ranges;
+    const ranges = t.meta.ranges;
 
     expect(ranges.qtr).toBe('Q2');
     expect(ranges.quarter).toBe('Q2');
@@ -82,8 +82,22 @@ describe(`${label} instance t.ranges`, () => {
   test('forces lazy evaluation of terms', () => {
     const t = new Tempo();
     // Initially, the raw delegator target is empty
-    // accessing .ranges should fill it
-    const summary = t.ranges;
+    // accessing .meta.ranges should fill it
+    const summary = t.meta.ranges;
     expect(Object.keys(summary).length).toBeGreaterThan(0);
+  });
+
+  test('is frozen, memoized, and invalidates on late-registered Term', () => {
+    const t = new Tempo('2024-04-15');
+    expect(Object.isFrozen(t.meta)).toBe(true);
+    expect(t.meta).toBe(t.meta);
+    expect(t.meta.terms).toBe(t.meta.terms);
+    expect(t.meta.ranges).toBe(t.meta.ranges);
+    expect(t.meta.terms.zodiac).toBeUndefined();
+    expect(t.meta.ranges.zodiac).toBeUndefined();
+
+    Tempo.use(ZodiacTerm);
+    expect(t.meta.terms.zodiac).toContain('Aries');
+    expect(t.meta.ranges.zodiac).toBe('Aries');
   });
 });

@@ -145,6 +145,9 @@ Tempo.use(FormatModule);
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
 
+> [!NOTE]
+> **Why `t.yy` returns `2026` while `{yy}` formats `'26'`**: Instance getters return full data values so arithmetic and comparisons never lose century information (`t.yy === 2026`). Format tokens, by contrast, follow universal date-formatting conventions where `{yy}` outputs a 2-digit year (`'26'`) and `{yyyy}` outputs a 4-digit year (`'2026'`). If you reach for `{yy}` and want all four digits, use `{yyyy}` or `{yy:long}`.
+
 ### 🎛️ Token Modifiers
 You can append modifiers to any token using a colon (`:`) to transform its output. Multiple modifiers can be chained together (e.g., `{mon:locale:title}`).
 
@@ -188,7 +191,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 > You can pass any integer width directly as a modifier (e.g. `{doy:3}`, `{yyyy:-3}`, `{yow:-2}`, `{ns:6}`).
 > * **Positive width (`+N`)**: Zero-pads integers to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
 > * **Negative width (`-N`)**: Slices the last $N$ characters from the right (`slice(-N)`). Ideal for year variations such as 3-digit year (`{yyyy:-3}` → `'026'`), 1-digit year (`{yyyy:-1}` → `'6'`), or 2-digit ISO week-year (`{yow:-2}` / `{yow:short}` → `'26'`).
-> * **Fractional seconds (`{ff}`)**: Slices the 9-digit fractional second string to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds).
+> * **Fractional seconds (`{ff}`)**: Emits the 9-character zero-padded fractional digit string without a leading `0.` (designed to follow a literal `.` as in `{hh}:{mi}:{ss}.{ff}`), and slices left-to-right to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds). By contrast, the `t.ff` getter returns a `[0, 1)` floating-point number (`0.123456789`) for numeric/second math such as `t.ss + t.ff`.
 
 > [!TIP]
 > **Specialized Tokens, Calendrical Counters & Designed Composability**  

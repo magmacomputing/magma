@@ -2,15 +2,16 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix, toRoman } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isNotNullish, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isNotNullish, isFunction, isSafeKey, isNullish, isNumber, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
-import { getISOWeekOfYear } from '#library/temporal.library.js';
-import { formatDayPeriod, getDTF, getPR, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
+import { getISOWeekOfYear, getTemporalEra } from '#library/temporal.library.js';
+import { formatDayPeriod, getDTF, getPR, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi, getHemisphere } from '#library/international.library.js';
+import { getStashedGeo } from '#library/mapper.library.js';
 import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 
-import { isTempo, enums, Enum, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise } from '#tempo/support';
+import { isTempo, enums, Enum, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise, Default } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -303,7 +304,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
-			case 'yy': res = pad(zdt.year % 100); break;
+			case 'yy': res = normMods.includes('long') ? pad(zdt.year, 4) : pad(zdt.year % 100); break;
 			case 'yow': {
 				const yow = normMods.includes('locale')
 					? getLocaleWeekOfYear(zdt, li).yearOfWeek
@@ -352,7 +353,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'eon':
-				res = (zdt.eraYear ?? Math.abs(zdt.year <= 0 ? zdt.year - 1 : zdt.year)).toString();
+				res = getTemporalEra(zdt).eraYear.toString();
 				break;
 			case 'cen': case 'century':
 				res = pad(Math.abs(Math.floor(zdt.year / 100)), 2);
@@ -510,12 +511,46 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}
 				break;
 			}
-			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
-				? Math.trunc(zdt.epochMilliseconds / 1000).toString()
-				: zdt.epochMilliseconds.toString(); break;
+			case 'ts': {
+				switch (config?.timeStamp ?? 'ms') {
+					case 'ss': res = Math.trunc(zdt.epochMilliseconds / 1_000).toString(); break;
+					case 'us': res = Number(zdt.epochNanoseconds / 1_000n).toString(); break;
+					case 'ns': res = zdt.epochNanoseconds.toString(); break;
+					default: res = zdt.epochMilliseconds.toString(); break;
+				}
+				break;
+			}
 			case 'nano': res = zdt.epochNanoseconds.toString(); break;
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
+			case 'iso':
+				res = (isTempo(obj) && !options?.timeZone && !options?.calendar)
+					? (obj as any).iso
+					: zdt.toInstant().toString();
+				break;
+			case 'sphere': {
+				const s = (isTempo(obj) && !options?.sphere && !options?.geo && !options?.timeZone)
+					? (obj as any).sphere
+					: (() => {
+						const globalTz = state?.config?.timeZone;
+						const zdtTz = zdt.timeZoneId;
+						const hasTzOverride = isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(zdtTz).toLowerCase() !== String(globalTz).toLowerCase());
+						const rawGeo = options?.geo ?? config?.geo ?? getStashedGeo();
+						const lat = rawGeo?.latitude;
+						return evaluate(
+							options && hasOwn(options, 'sphere') ? options.sphere : undefined,
+							rawGeo?.sphere,
+							isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
+							hasTzOverride ? () => getHemisphere(String(zdtTz)) : undefined,
+							isTempo(obj) ? (obj as any).sphere : undefined,
+							() => (isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' ? getHemisphere(String(zdtTz)) : undefined),
+							state?.config?.sphere,
+							Default.sphere
+						);
+					})();
+				res = isNotNullish(s) ? String(s) : '{sphere}';
+				break;
+			}
 			default: {
 				const customTokens = (config?.registry as any)?.tokens ?? {};
 				const customTokenFn = customTokens[token];

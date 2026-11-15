@@ -22,8 +22,8 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 | **`.mm`**<br>`zdt.month` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
 | **`.dd`**<br>`zdt.day` | `number` | Day of the month (1–31) | `24` |
 | **`.dim`**<br>`zdt.daysInMonth` | `number` | Total days in the month (28–31) | `31` |
-| **`.era`**<br>`zdt.era` | `string \| undefined` | Calendar era identifier | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
-| **`.eon`**<br>`zdt.eraYear` | `number \| undefined` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> | `2026`, `4` |
+| **`.era`**<br>`zdt.era` | `string` | Canonical calendar era identifier (falls back to `'ce'` / `'bce'` on `iso8601`; use `t.zdt.era` for raw Temporal) | `'ce'`, `'bce'`, `'reiwa'` |
+| **`.eon`**<br>`zdt.eraYear` | `number` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> (use `t.zdt.eraYear` for raw Temporal) | `2026`, `4` |
 | **`.jj`** | `number` | Integer Julian Day number for the local ISO date (ignoring time of day) <sup>[[2]](#fn-jj)</sup> | `2461331` |
 
 <small>
@@ -153,8 +153,7 @@ Beyond date-time properties, `Tempo` instances expose read-only inspection gette
 | :--- | :--- | :--- | :--- |
 | **`.config`** | `Readonly<Config>` | Active configuration proxy reflecting resolved global defaults and local instance overrides. | `t.config.timeZone` |
 | **`.parse`** | `Internal.Parse` | Shadowed view of internal parse state, including active `mode`, `anchor`, and matched AST tokens (`.result`). | `t.parse.anchor`<br>`t.parse.result` |
-| **`.terms`** | `Readonly<Record<...>>` | Dictionary of all registered `TermPlugin` scopes and their available range keys. | `t.terms.season` → `['summer', 'autumn', ...]` |
-| **`.ranges`** | `Readonly<Record<...>>` | Dictionary mapping every registered term key to its *currently active* range value for this date. | `t.ranges` → `{ season: 'summer', quarter: 'Q1' }` |
+| **`.meta`** | `Readonly<{ terms, ranges }>` | Frozen metadata namespace with lazy `.terms` (registered `TermPlugin` keys and available range keys) and `.ranges` (active range values for this date). | `t.meta.terms.season` → `['summer', ...]`<br>`t.meta.ranges` → `{ season: 'summer', qtr: 'Q1' }` |
 
 ---
 

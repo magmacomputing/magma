@@ -74,5 +74,26 @@ describe('Era Parsing Engine', () => {
 		// Actually, testing implicit CE on a full date string:
 		const tFull = new Tempo('15 March 2026');
 		expect(tFull.yy).toBe(2026);
+		expect(tFull.era).toBe('ce');
+		expect(tFull.eon).toBe(2026);
+	});
+
+	test('provides humanized era and eon fallbacks on iso8601 calendar', () => {
+		const ce = new Tempo('2026-10-24T12:00:00Z', { calendar: 'iso8601' });
+		expect(ce.cal).toBe('iso8601');
+		expect(ce.era).toBe('ce');
+		expect(ce.eon).toBe(2026);
+		expect(ce.zdt.era).toBeUndefined();
+		expect(ce.zdt.eraYear).toBeUndefined();
+
+		const yearZero = new Tempo('0000-01-01T00:00:00Z', { calendar: 'iso8601' });
+		expect(yearZero.yy).toBe(0);
+		expect(yearZero.era).toBe('bce');
+		expect(yearZero.eon).toBe(1);
+
+		const bce = new Tempo('-000043-03-15T00:00:00Z', { calendar: 'iso8601' });
+		expect(bce.yy).toBe(-43);
+		expect(bce.era).toBe('bce');
+		expect(bce.eon).toBe(44);
 	});
 });

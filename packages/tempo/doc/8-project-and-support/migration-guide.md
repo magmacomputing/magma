@@ -68,6 +68,9 @@ const nanoVal = t.epoch.ns;
 const copy = Tempo.from(t, t.config);
 ```
 
+> [!NOTE]
+> **Humanized `t.era` & `t.eon` on `iso8601`**: In v5.0.0, `t.era` (`'ce'` / `'bce'`) and `t.eon` (positive era year) always resolve even on the `iso8601` calendar instead of returning `undefined`. If you need the raw TC39 Temporal behavior where `iso8601` omits eras, access `t.zdt.era` and `t.zdt.eraYear`.
+
 ---
 
 ### 4. Static `Tempo.now()` Transition to Instance Factory

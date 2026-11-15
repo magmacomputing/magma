@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { format } from '#tempo/format';
 
 describe('Tempo.format() refinements', () => {
   const t = new Tempo('2024-05-20T10:00:00Z');
@@ -294,6 +295,8 @@ describe('Tempo.format() refinements', () => {
 
     it('supports positive numeric modifiers for minimum zero padding', () => {
       expect(dt.format('{yyyy:6}')).toBe('002026');
+      expect(dt.format('{yy}')).toBe('26');
+      expect(dt.format('{yy:long}')).toBe('2026');
       expect(dt.format('{dd:3}')).toBe('005');
       expect(dt.format('{mi:4}')).toBe('0007');
     })
@@ -606,6 +609,33 @@ describe('Tempo.format() refinements', () => {
         expect(withToken).toBe('token-override');
       } finally {
         delete (Tempo.prototype as any).customTag;
+      }
+    });
+  });
+
+  describe('standalone format(zdt, ...) parity for {iso} and {sphere}', () => {
+    it('resolves {iso} and {sphere} identically for native ZonedDateTime and Tempo instances', () => {
+      const tSyd = new Tempo('2026-06-15T12:00:00', { timeZone: 'Australia/Sydney' });
+      const zdtSyd = tSyd.toDateTime();
+
+      expect(format(zdtSyd, '{iso}')).toBe(tSyd.format('{iso}'));
+      expect(format(zdtSyd, '{sphere}')).toBe('south');
+      expect(format(zdtSyd, '{sphere}')).toBe(tSyd.format('{sphere}'));
+
+      expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe('north');
+      expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe(tSyd.format('{sphere}', { sphere: 'north' }));
+    });
+  });
+
+  describe('{ts} formatting across all TimeStamp units', () => {
+    it('honours ss, ms, us, and ns via instance config and format options, matching t.ts', () => {
+      const units = ['ss', 'ms', 'us', 'ns'] as const;
+      for (const timeStamp of units) {
+        const tUnit = new Tempo('2026-06-15T12:34:56.789123456Z', { timeStamp });
+        const zdt = tUnit.toDateTime();
+
+        expect(tUnit.format('{ts}')).toBe(String(tUnit.ts));
+        expect(format(zdt, '{ts}', { timeStamp })).toBe(String(tUnit.ts));
       }
     });
   });

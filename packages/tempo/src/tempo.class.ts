@@ -13,7 +13,7 @@ import { compare as compareValues } from '#library/number.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isNotNullish, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber, isNull } from '#library/assertion.library.js';
-import { instant, getTemporalIds, normalizeUtcOffset, compareByUnit, getISOWeekOfYear } from '#library/temporal.library.js';
+import { instant, getTemporalIds, normalizeUtcOffset, compareByUnit, getISOWeekOfYear, getTemporalEra } from '#library/temporal.library.js';
 import { toJulianDay } from '#library/calendar.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
@@ -132,6 +132,15 @@ export class Tempo {
 	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
+	/** cached term metadata keyed by #terms array ref/length */ static #termsMetaCache?: { ref: TermPlugin[]; len: number; value: Readonly<Record<string, readonly string[]>> };
+	/** wraps a term-keyed map in a delegate supporting key/scope/alias lookup */
+	static #delegateTermMap<V>(base: Record<string, V>): Readonly<Record<string, V>> {
+		return delegate(base, (key) => {
+			if (!isString(key)) return undefined;
+			const term = Tempo.#terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
+			return term ? base[term.key] : undefined;
+		});
+	}
 	/** tracks invalid locales already warned about to avoid log spam */		static #warnedLocales: Set<string> = new Set();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
@@ -1179,8 +1188,7 @@ export class Tempo {
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized instance properties */
 	#memo: {
-		tz?: string;
-		cal?: string;
+		tzCal?: [string, string];
 		sphere?: t.COMPASS | undefined;
 		geo?: t.GeoConfig | undefined;
 		fmt?: Record<string, string | undefined>;
@@ -1188,6 +1196,8 @@ export class Tempo {
 		epoch?: Readonly<{ ss: number; ms: number; us: number; ns: bigint }>;
 		iso?: string;
 		isoWeek?: { weekOfYear: number; yearOfWeek: number };
+		eraInfo?: { era: string; eraYear: number };
+		meta?: Readonly<{ terms: Readonly<Record<string, readonly string[]>>; ranges: Readonly<Record<string, string>> }>;
 		config?: Readonly<t.Internal.Config>;
 	} = {};
 	/** indicator that the instance failed to parse */				#errored = false;
@@ -1330,14 +1340,6 @@ export class Tempo {
 	/** @internal check if a module is loaded */
 	hasModule(name: string): boolean {
 		return (this.constructor as typeof Tempo).hasModule(name);
-	}
-
-	/** returns a [timezone, calendar] tuple derived from the underlying date-time. */
-	#temporalIds(): [string, string] {
-		if (!this.#memo.tz || !this.#memo.cal) {
-			[this.#memo.tz, this.#memo.cal] = getTemporalIds(this.toDateTime());
-		}
-		return [this.#memo.tz, this.#memo.cal];
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1524,10 +1526,6 @@ export class Tempo {
 	}
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
-	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
-	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** 4-digit ISO week-numbering year */										get yow() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
-	/** ISO week number of the year */												get woy() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1537,8 +1535,12 @@ export class Tempo {
 	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
 	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
-	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
-	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
+	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return (this.#memo.tzCal ??= getTemporalIds(this.toDateTime()))[0] }
+	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return (this.#memo.tzCal ??= getTemporalIds(this.toDateTime()))[1] }
+	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return (this.#memo.eraInfo ??= getTemporalEra(this.toDateTime())).era; }
+	/** Year within the era (positive integer) */							get eon() { return (this.#memo.eraInfo ??= getTemporalEra(this.toDateTime())).eraYear; }
+	/** 4-digit ISO week-numbering year */										get yow() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
+	/** ISO week number of the year */												get woy() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
 	/** Internationalization namespace (info, locale) */			get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	#getRawGeo(): t.GeoConfig | undefined {
@@ -1591,37 +1593,46 @@ export class Tempo {
 	/** Standard ISO 8601 string in UTC */										get iso() { return (this.#memo.iso ??= this.toDateTime().toInstant().toString()); }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
-	/** list of registered terms and their available range keys */
-	get terms(): Readonly<Record<string, readonly string[]>> {
-		const base: Record<string, string[]> = {};
-		Tempo.terms.forEach(term => {
-			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
-			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
-			const ranges = [...new Set(list.map(r => r.key).filter(isString))];				// collect unique range keys
-			base[term.key] = ranges;
-		});
+	/** Frozen metadata namespace for registered terms and active ranges */
+	get meta(): Readonly<{
+		terms: Readonly<Record<string, readonly string[]>>;
+		ranges: Readonly<Record<string, string>>;
+	}> {
+		const self = this;
+		let cachedRanges: { ref: TermPlugin[]; len: number; value: Readonly<Record<string, string>> } | undefined;
+		return (this.#memo.meta ??= Object.freeze({
+			get terms(): Readonly<Record<string, readonly string[]>> {
+				const terms = Tempo.#terms;
+				if (Tempo.#termsMetaCache && Tempo.#termsMetaCache.ref === terms && Tempo.#termsMetaCache.len === terms.length)
+					return Tempo.#termsMetaCache.value;
 
-		return delegate(base, (key) => {
-			if (!isString(key)) return undefined;
-			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
-			return term ? base[term.key] : undefined;
-		});
-	}
+				const base: Record<string, string[]> = {};
+				terms.forEach(term => {
+					const source = (term as any).ranges || (term as any).groups || [];			// check both ranges and groups
+					const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
+					base[term.key] = [...new Set(list.map(r => r.key).filter(isString))];		// collect unique range keys
+				});
 
-	/** current range key for every registered term */
-	get ranges(): Readonly<Record<string, string>> {
-		const base: Record<string, string> = {};
+				const value = Tempo.#delegateTermMap(base);
+				Tempo.#termsMetaCache = { ref: terms, len: terms.length, value };
+				return value;
+			},
+			get ranges(): Readonly<Record<string, string>> {
+				const terms = Tempo.#terms;
+				if (cachedRanges && cachedRanges.ref === terms && cachedRanges.len === terms.length)
+					return cachedRanges.value;
 
-		Tempo.terms.forEach(term => {
-			const val = (this as Tempo).term[term.key];						// access the term-delegate (forces evaluation)
-			if (isString(val)) base[term.key] = val;
-		});
+				const base: Record<string, string> = {};
+				terms.forEach(term => {
+					const val = (self as Tempo).term[term.key];														// access the term-delegate (forces evaluation)
+					if (isString(val)) base[term.key] = val;
+				});
 
-		return delegate(base, (key) => {
-			if (!isString(key)) return undefined;
-			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
-			return term ? base[term.key] : undefined;
-		});
+				const value = Tempo.#delegateTermMap(base);
+				cachedRanges = { ref: terms, len: terms.length, value };
+				return value;
+			}
+		}));
 	}
 
 	/** current Tempo configuration */
