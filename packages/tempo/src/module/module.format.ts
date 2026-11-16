@@ -143,8 +143,8 @@ export function format(obj: any, fmt: string | symbol, options?: any): string;
  * Formats a supported date-time value using a named format, template, or internationalization options.
  * Scoped day/week time fields count wall-clock units from local midnight or Monday, independent of offset transitions.
  * The roman modifier converts integers 1-3999 and leaves other values unchanged.
- * `{ww}` counts seven-day groups from the first day of the resolved date's calendar year, padded to two digits;
- * `{ww:raw}` removes padding.
+ * `{woy:cal}` counts seven-day groups from the first day of the resolved date's calendar year, padded to two digits;
+ * `{woy:cal:raw}` removes padding.
  *
  * @param obj - The value to format; omitted values use the current date and time.
  * @param fmt - A registered format name or literal format template.
@@ -328,16 +328,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				res = normMods.includes('short') ? pad(Math.abs(yow) % 100) : pad(yow, 4);
 				break;
 			}
-			case 'ww': {
-				if (normMods.includes('month')) {
-					const w = Math.ceil(zdt.day / 7);
-					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
-				} else {
-					const w = Math.ceil(zdt.dayOfYear / 7);
-					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
-				}
-				break;
-			}
 			case 'woy': {
 				if (normMods.includes('cal')) {
 					const w = Math.ceil(zdt.dayOfYear / 7);
@@ -354,11 +344,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}
 				break;
 			}
-			case 'wom': {
-				const w = Math.ceil(zdt.day / 7);
-				res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
-				break;
-			}
 			case 'era': {
 				const dtfOptions = (config?.intl?.dateTimeFormat || {}) as any;
 				res = getDTF(config?.locale, {
@@ -371,9 +356,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'eon':
 				res = getTemporalEra(zdt).eraYear.toString();
 				break;
-			case 'cen': case 'century':
-				res = pad(Math.abs(Math.floor(zdt.year / 100)), 2);
-				break;
 			case 'dim':
 				res = zdt.daysInMonth.toString();
 				break;
@@ -384,7 +366,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					: zdt.daysInYear.toString();
 				break;
 			}
-			case 'jj': case 'julian': {
+			case 'jj': {
 				const pd = zdt.toPlainDate().withCalendar('iso8601');
 				const epochDays = Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
 				res = (2440588 + epochDays).toString();
@@ -430,7 +412,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'wkd': res = Enum.keyOf(enums.WEEKDAYS, zdt.dayOfWeek); break;
 			case 'www': res = Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek); break;
-			case 'h24': case 'hh': {
+			case 'hh': {
 				if (normMods.includes('week')) {
 					res = ((zdt.dayOfWeek - 1) * 24 + zdt.hour).toString();
 				} else if (normMods.includes('locale') && token === 'hh') {
@@ -537,6 +519,17 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
+			case 'locale': {
+				const customLocale = getCustomTokenFn(config, token);
+				if (customLocale) {
+					res = customLocale(zdt, { modifiers, config });
+					break;
+				}
+				res = (isTempo(obj) && !options?.locale)
+					? (obj as any).locale
+					: getLC(canonicalLocales(config?.locale)[0]);
+				break;
+			}
 			case 'iso': {
 				const customIso = getCustomTokenFn(config, token);
 				if (customIso) {

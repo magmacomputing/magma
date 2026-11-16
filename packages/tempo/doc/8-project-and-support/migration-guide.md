@@ -116,9 +116,11 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
 * **Week & Week-Year Token Aliases (`{yw}` → `{yow}`, `{wy}` → `{woy}`):**
   * The legacy shorthand aliases `{yw}` (week-numbering year) and `{wy}` (week of year) have been removed.
   * Replace `{yw}` with `{yow}` (and `{yw:locale}` with `{yow:locale}`), and replace `{wy}` with `{woy}` (and `{wy:locale}` with `{woy:locale}`).
-* **Calendar Week vs. ISO / Locale Week Token (`{ww}` vs. `{woy}`):**
-  * In v5.0.0, `{ww}` formats the **Calendar Week of Year** starting on the first day of the calendar year (e.g., January 1st with range `01`–`53` in ISO calendars; lunisolar calendars may exceed `53`, matching Oracle `WW`), replacing the v4.7 transitional `{woy:cal}` modifier (which remains supported as an alias).
-  * Callers formatting **ISO 8601 Week of Year** or **Locale Week of Year** should use `{woy}` or `{woy:locale}` (replacing `{ww}` / `{ww:locale}`).
+* **Calendar Week, Week of Month & Century Tokens (`{ww}`, `{wom}`, `{cen}` Removed):**
+  * `{ww}` has been removed in favor of `{woy}` (for **ISO 8601 / Locale Week of Year**: `{woy}` / `{woy:locale}`) and `{woy:cal}` (for **Calendar Week of Year** starting on January 1st, matching Oracle `WW`).
+  * `{wom}` has been removed in favor of `{woy:month}` (week of month `1`–`5`).
+  * `{cen}` / `{century}` have been removed; compute century directly via `Math.floor(t.yy / 100)`.
+  * `{julian}` and `{h24}` aliases have been removed; use canonical `{jj}` and `{hh}` instead.
 * **Year Modifier Aliases (`:yy` and `:year`):**
   * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
   * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).

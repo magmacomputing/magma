@@ -130,7 +130,6 @@ function compileBracedPattern(fmt: string): RegExp {
 					pattern += group('dd', romanOr('\\d{1,2}(?:st|nd|rd|th)?'));
 					break;
 				case 'hh':
-				case 'h24':
 				case 'hour':
 					pattern += group('hh', romanOr('\\d{1,2}'));
 					break;

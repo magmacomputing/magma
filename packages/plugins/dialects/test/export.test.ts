@@ -244,30 +244,30 @@ describe('Dialect Export', () => {
 
 	it('exports Phase 4 specialized and scoped tokens to target dialects', () => {
 		// Oracle J, SSSSS, WW, W
-		const resOracle = Tempo.dialects.export('{jj} {ss:day} {ss:day:5} {ss:day:raw} {ww} {wom}', 'oracle');
+		const resOracle = Tempo.dialects.export('{jj} {ss:day} {ss:day:5} {ss:day:raw} {woy:cal} {woy:month}', 'oracle');
 		expect(resOracle.pattern).toBe('J SSSSS SSSSS FMSSSSSFM WW W');
 		expect(resOracle.unsupported).toHaveLength(0);
 
-		const resOracleRawWeek = Tempo.dialects.export('{ww:raw}', 'oracle');
+		const resOracleRawWeek = Tempo.dialects.export('{woy:cal:raw}', 'oracle');
 		expect(resOracleRawWeek.pattern).toBe('FMWWFM');
 		expect(resOracleRawWeek.unsupported).toEqual([]);
 
-		// Aliases julian, woy:cal, ww:cal, ww:month
-		const resOracleAliases = Tempo.dialects.export('{julian} {woy:cal} {ww:cal} {ww:month}', 'oracle');
-		expect(resOracleAliases.pattern).toBe('J WW WW W');
+		// Julian day and week-year aliases
+		const resOracleAliases = Tempo.dialects.export('{jj} {woy:jan1} {woy:month:raw}', 'oracle');
+		expect(resOracleAliases.pattern).toBe('J WW FMWFM');
 
 		// PHP t and z
 		const resPhp = Tempo.dialects.export('{dim} {doy:0} {dd:year:raw:0}', 'php');
 		expect(resPhp.pattern).toBe('t z z');
 		expect(resPhp.unsupported).toHaveLength(0);
 
-		// Strftime %C and %w
-		const resStrftime = Tempo.dialects.export('{cen} {dow:0}', 'strftime');
-		expect(resStrftime.pattern).toBe('%C %w');
+		// Strftime %w
+		const resStrftime = Tempo.dialects.export('{dow:0}', 'strftime');
+		expect(resStrftime.pattern).toBe('%w');
 		expect(resStrftime.unsupported).toHaveLength(0);
 
 		// LDML W
-		const resLdml = Tempo.dialects.export('{wom}', 'ldml');
+		const resLdml = Tempo.dialects.export('{woy:month}', 'ldml');
 		expect(resLdml.pattern).toBe('W');
 		expect(resLdml.unsupported).toHaveLength(0);
 	});

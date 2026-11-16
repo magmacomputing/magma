@@ -259,8 +259,6 @@ export interface TempoFormatTokens {
 	yyyy: true; yy: true; yow: true;
 	// ── week-of-year ─────────────────────────────────
 	woy: true;
-	/** Calendar week of year, starting January 1. */
-	ww: true;
 	// ── era / eon ─────────────────────────────────────
 	era: true; eon: true;
 	// ── month ─────────────────────────────────────────
@@ -268,16 +266,16 @@ export interface TempoFormatTokens {
 	// ── day ───────────────────────────────────────────
 	dd: true; dow: true; doy: true; wkd: true; www: true;
 	// ── hour / minute / second ────────────────────────
-	hh: true; h24: true; h12: true; mer: true;
+	hh: true; h12: true; mer: true;
 	mi: true; ss: true;
 	// ── sub-second ────────────────────────────────────
 	ms: true; us: true; ns: true; ff: true;
 	// ── composite date/time ───────────────────────────
 	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
-	ts: true; tz: true; cal: true; sphere: true; iso: true;
+	ts: true; tz: true; cal: true; locale: true; sphere: true; iso: true;
 	// ── specialized tokens & counters ─────────────────
-	cen: true; century: true; dim: true; diy: true; jj: true; julian: true; wom: true;
+	dim: true; diy: true; jj: true;
 }
 
 /** All statically-known base token names (derived from TempoFormatTokens). */

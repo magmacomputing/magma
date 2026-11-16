@@ -13,6 +13,7 @@ export const StandardTerms: readonly TermPlugin[];
 export const CivicTerms: readonly TermPlugin[];
 export const CulturalTerms: readonly TermPlugin[];
 export const QuarterTerm: TermPlugin & { keys: readonly string[] };
+export const FiscalTerm: TermPlugin & { keys: readonly string[] };
 export const SeasonTerm: TermPlugin & { keys: readonly string[] };
 export const TimelineTerm: TermPlugin & { keys: readonly string[] };
 export const ZodiacTerm: TermPlugin & { keys: readonly string[] };
