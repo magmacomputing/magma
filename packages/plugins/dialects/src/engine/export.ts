@@ -169,8 +169,6 @@ const V4_EXPORT_ALIASES: Readonly<Record<string, string>> = {
 	'woy:month:raw': 'woy:month:raw',
 	'woy:cal': 'woy:cal',
 	'woy:cal:raw': 'woy:cal:raw',
-	'woy:jan1': 'woy:cal',
-	'woy:jan1:raw': 'woy:cal:raw',
 	'yow:locale': 'yow:locale',
 	'yow:locale:short': 'yow:locale:short',
 	'yow:locale:-2': 'yow:locale:short',

@@ -119,7 +119,7 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
 * **Calendar Week, Week of Month & Century Tokens (`{ww}`, `{wom}`, `{cen}` Removed):**
   * `{ww}` has been removed in favor of `{woy}` (for **ISO 8601 / Locale Week of Year**: `{woy}` / `{woy:locale}`) and `{woy:cal}` (for **Calendar Week of Year** starting on January 1st, matching Oracle `WW`).
   * `{wom}` has been removed in favor of `{woy:month}` (week of month `1`–`5`).
-  * `{cen}` / `{century}` have been removed; compute century directly via `Math.floor(t.yy / 100)`.
+  * `{cen}` / `{century}` have been removed; compute century directly via `String(Math.abs(Math.floor(t.yy / 100))).padStart(2, '0')`.
   * `{julian}` and `{h24}` aliases have been removed; use canonical `{jj}` and `{hh}` instead.
 * **Year Modifier Aliases (`:yy` and `:year`):**
   * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.

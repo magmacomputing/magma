@@ -4,6 +4,7 @@ import { isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#
 import { ownKeys, ownValues, unwrap, hasOwn } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
+import type { Internal } from '../tempo.type.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, logWarn } from './support.util.js';
@@ -19,6 +20,18 @@ const resetHooks = (): Set<() => void> => rt.resetHooks;
 /** @internal Register a hook to be called when the registry is reset */
 export function onRegistryReset(hook: () => void) {
 	resetHooks().add(hook);
+}
+
+/** @internal Register a hook to be called when global configuration changes; returns an unsubscribe callback. */
+export function onConfigChange(hook: (config: Internal.Config) => void): () => void {
+	rt.configHooks.add(hook);
+	return () => { rt.configHooks.delete(hook); };
+}
+
+/** @internal Notify registered config-change hooks after a global configuration update. */
+export function notifyConfigChange(config: Internal.Config): void {
+	for (const hook of rt.configHooks)
+		hook(config);
 }
 
 /** Reset all extendable registries to their original built-in defaults */

@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { onConfigChange } from '#tempo/support';
 
 const label = 'static:';
 
@@ -30,6 +31,25 @@ describe(`${label}`, () => {
   test(`${label} get the durations`, () => {
     expect(Tempo.Enum.keys(Tempo.DURATIONS))
       .toEqual(['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds', 'nanoseconds'])
+  })
+
+  test(`${label} onConfigChange notifies on global Tempo.init and supports unsubscribe`, () => {
+    const seen: string[] = [];
+    const unsubscribe = onConfigChange((cfg) => {
+      if (cfg.locale) seen.push(String(cfg.locale));
+    });
+    try {
+      Tempo.init({ locale: 'fr-FR' });
+      new Tempo('2026-10-24', { locale: 'de-DE' }); // local scope must not fire global hook
+      expect(seen).toEqual(['fr-FR']);
+
+      unsubscribe();
+      Tempo.init({ locale: 'es-ES' });
+      expect(seen).toEqual(['fr-FR']);
+    } finally {
+      unsubscribe();
+      Tempo.init({ locale: undefined });
+    }
   })
 
 })

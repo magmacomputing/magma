@@ -52,6 +52,8 @@ export class TempoRuntime {
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
+	/** decentralized config-change hooks — fired when global Tempo.init() updates configuration */
+	readonly configHooks: Set<(config: Internal.Config) => void> = new Set();
 	/** mapping of registered terms by key and alias */
 	readonly termMap: Map<string, TermPlugin> = new Map();
 	/** registry of installed plugin versions */

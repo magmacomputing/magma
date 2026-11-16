@@ -286,3 +286,15 @@ We can review and decide on each proposal individually:
 2. **Approve / Defer Proposal 2 (`toRelativeSignal()`)**: Evaluate API naming (`toRelativeSignal()` vs. `toSignal({ relative: true })`).
 3. **Approve / Defer Proposal 3 (`Interval.toSignal()`)**: Evaluate desired properties (`isCurrent`, `isPast`, `isFuture`, `progress`).
 4. **Approve / Defer Proposal 4 (`Tempo.locale`)**: Confirm if `_global` configuration should be reactive by default.
+
+---
+
+## 5. Architectural Resolution: Defer to `@magmacomputing/tempo-plugin-signals`
+
+Following architectural review, **Core Tempo (`@magmacomputing/tempo`) will remain a static, immutable, zero-timer snapshot engine**, and reactive signal APIs are deferred to a dedicated **`@magmacomputing/tempo-plugin-signals`** plugin (alongside existing signal support in `@magmacomputing/tempo-plugin-ticker`) in a future release:
+
+- **Proposals 1 & 6 (`Tempo.live()`, stream → signal)**: Already covered by `Tempo.ticker.signal(...)` in `@magmacomputing/tempo-plugin-ticker` and `Reactive<T>.toSignal()` in `#library`. Any subscriber-driven lazy wake/sleep (`Signal.subtle.Watcher`) enhancement belongs in `Ticker` rather than duplicating a `Tempo.live()` API in core.
+- **Proposals 2 & 3 (`toRelativeSignal()`, `Interval.prototype.toSignal()`)**: Both are timer/scheduler-driven UI reactivity features (`setTimeout` boundary scheduling and active range observation) that belong in `@magmacomputing/tempo-plugin-signals` so Core Tempo stays lightweight, tree-shakeable, and free of background timers.
+- **Proposal 5 (Compiler DAG invalidation)**: Rejected (`WeakCache` remains faster for compiler lookups).
+- **Proposal 4 (`Tempo.locale` / `Tempo.timeZone` signals)**: Core Tempo v5.0 now exposes a lightweight `onConfigChange(hook)` lifecycle hook via `@magmacomputing/tempo/plugin/sdk` (fired on global `Tempo.init()`), so `@magmacomputing/tempo-plugin-signals` can observe and synchronize global `locale` / `timeZone` changes without any Signal dependency or v5.1 core bump.
+- **Packaging & Tree-Shaking (`tempo-plugin-ai` pattern)**: `@magmacomputing/tempo-plugin-signals` will follow [packages/plugins/ai](file:///home/michael/Project/magma/packages/plugins/ai/package.json) by exposing separate, tree-shakeable feature entrypoints/exports (e.g. standalone functional helpers from `.` with `"sideEffects": ["./dist/install.js"]` isolating prototype/plugin registration to `./install`).

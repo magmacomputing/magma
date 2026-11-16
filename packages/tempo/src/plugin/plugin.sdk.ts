@@ -20,3 +20,4 @@ export { defineTerm, defineRange, defineSpan, findTermPlugin, getTermRange, reso
 export { TermHook, sym, $Internal } from '../support/support.symbol.js';
 export { logError, logWarn, logDebug } from '../support/support.util.js';
 export { getRuntime } from '../support/support.runtime.js';
+export { onConfigChange } from '../support/support.register.js';

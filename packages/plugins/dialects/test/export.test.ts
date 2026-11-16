@@ -252,9 +252,10 @@ describe('Dialect Export', () => {
 		expect(resOracleRawWeek.pattern).toBe('FMWWFM');
 		expect(resOracleRawWeek.unsupported).toEqual([]);
 
-		// Julian day and week-year aliases
-		const resOracleAliases = Tempo.dialects.export('{jj} {woy:jan1} {woy:month:raw}', 'oracle');
+		// Julian day and week-year tokens (unsupported legacy woy:jan1 rejected)
+		const resOracleAliases = Tempo.dialects.export('{jj} {woy:cal} {woy:month:raw}', 'oracle');
 		expect(resOracleAliases.pattern).toBe('J WW FMWFM');
+		expect(Tempo.dialects.export('{woy:jan1}', 'oracle').unsupported).toContain('{woy:jan1}');
 
 		// PHP t and z
 		const resPhp = Tempo.dialects.export('{dim} {doy:0} {dd:year:raw:0}', 'php');

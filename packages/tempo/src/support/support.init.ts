@@ -16,6 +16,7 @@ import { BoundedCache, isBoundedCache } from '#library/cache.class.js';
 import { WeakCache } from '#library/weakcache.class.js';
 
 import { getRuntime } from './support.runtime.js';
+import { notifyConfigChange } from './support.register.js';
 import { setProperty, setProperties, create, collect, normalizeLayoutOrder, resolveMonthDay, logError, generateLocalizedSnippets } from './support.util.js';
 import { sym, Token } from './support.symbol.js';
 import { Match, Snippet, Layout, Event, Period, Ignore, Default } from './support.default.js';
@@ -632,6 +633,9 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			clearLocalization();
 		}
 	}
+
+	if (state.config?.scope === 'global')
+		notifyConfigChange(state.config);
 
 	return patternsDirty;
 }

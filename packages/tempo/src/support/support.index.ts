@@ -38,7 +38,7 @@ export { markConfig, markExtensible, markSymbol } from '#library/symbol.library.
 export { BoundedCache } from '#library/cache.class.js';
 export { sym, isTempo, isSandbox, Token, TermError, TermHook, type TempoBrand } from './support.symbol.js';
 export { $Tempo, $Register, $Interpreter, $guard, $errored, $Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Identity, $LogConfig, $Discover, $Sandbox } from './support.symbol.js';
-export { registryUpdate, registryReset, onRegistryReset } from './support.register.js';
+export { registryUpdate, registryReset, onRegistryReset, onConfigChange } from './support.register.js';
 export { getRuntime, resetRuntime, TempoRuntime, _lifecycle, ClassStates } from './support.runtime.js';
 export { usePlugin } from './support.plugin.js';
 export { createSandbox } from './support.sandbox.js';
