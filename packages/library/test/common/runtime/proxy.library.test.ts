@@ -143,6 +143,11 @@ describe('secure serialization', () => {
 		expect(inspect(first.proxy)).toContain("a: 'a-1'");
 		expect(inspect(second.proxy)).toContain("b: 'b-2'");
 
+		const combinedParent = proxify({ x: first.proxy, y: second.proxy }, true, false);
+		const combinedInspect = inspect(combinedParent);
+		expect(combinedInspect).toContain("a: 'a-1'");
+		expect(combinedInspect).toContain("b: 'b-2'");
+
 		first.revoke();
 		expect((second.proxy as any)[sym.$Inspect]()).toEqual({ b: 'b-2' });
 		expect(inspect(second.proxy)).toContain("b: 'b-2'");
@@ -196,6 +201,102 @@ describe('secure serialization', () => {
 		circArr.push(circArr);
 		const circArrOut = inspect(proxify(circArr, true, false), { depth: null });
 		expect(circArrOut).toContain('[Circular');
+
+		const child = delegator(['answer'], () => 42);
+		expect(inspect(proxify({ child }, true, false))).toContain('answer: 42');
+
+		const redacted = {
+			token: 'secret-xyz',
+			[sym.$Inspect]() {
+				return '[redacted]';
+			}
+		};
+		const redactedOut = inspect(proxify({ nested: redacted }, true, false));
+		expect(redactedOut).toContain('[redacted]');
+		expect(redactedOut).not.toContain('secret-xyz');
+
+		let deep: Record<string, any> = { leaf: true };
+		for (let i = 0; i < 20_000; i++) {
+			deep = { next: deep };
+		}
+		expect(() => inspect(proxify(deep, true, false), { depth: 0 })).not.toThrow();
+
+		const nestedArrOut = inspect(proxify({ child: proxify([1], true, false) }, true, false));
+		expect(nestedArrOut).toContain('[ 1 ]');
+
+		const keyedSecret = revocable({
+			token: 'secret-xyz',
+			[sym.$Inspect]() {
+				return '[redacted]';
+			}
+		}, { frozen: true, keys: ['token'] });
+		const nestedKeyedSecretOut = inspect(proxify({ nested: keyedSecret.proxy }, true, false));
+		expect(nestedKeyedSecretOut).toContain('[redacted]');
+		expect(nestedKeyedSecretOut).not.toContain('secret-xyz');
+		keyedSecret.revoke();
+
+		const selfTarget: Record<string, any> = {};
+		const selfProxy = proxify(selfTarget, true, false);
+		selfTarget.self = selfProxy;
+		expect(inspect(selfProxy, { depth: null })).toContain('[Circular');
+		expect(() => (selfProxy as any)[sym.$Inspect](null)).not.toThrow();
+
+		const nestedRev = revocable({ a: 1 }, { frozen: true });
+		const parentOfRevoked = proxify({ child: nestedRev.proxy }, true, false);
+		nestedRev.revoke();
+		expect(() => inspect(parentOfRevoked)).not.toThrow();
+
+		// Depth budget applies across chains of keyed proxies
+		let leafInspectCalls = 0;
+		const keyedLeaf = revocable({}, {
+			frozen: true,
+			keys: ['leaf'],
+			onGet: (k) => {
+				if (k === 'leaf') leafInspectCalls++;
+				return 'end';
+			},
+		});
+		const keyedMid = revocable({}, {
+			frozen: true,
+			keys: ['next'],
+			onGet: (k) => (k === 'next' ? keyedLeaf.proxy : undefined),
+		});
+		const keyedParent = proxify({ child: keyedMid.proxy }, true, false);
+		const shallowSnap = (keyedParent as any)[sym.$Inspect](1);
+		expect(shallowSnap.child.next).toBe(keyedLeaf.proxy);
+		expect(leafInspectCalls).toBe(0);
+		keyedLeaf.revoke();
+		keyedMid.revoke();
+
+		// Non-enumerable own properties suppress inherited enumerable snapshot properties
+		const baseProxy = proxify({ status: 'old', keep: 1 }, true, false);
+		const shadowedChild = Object.create(baseProxy);
+		Object.defineProperty(shadowedChild, 'status', {
+			value: 'new',
+			enumerable: false,
+			configurable: true,
+		});
+		const proxiedChild = proxify(shadowedChild, true, false);
+		const childSnap = (proxiedChild as any)[sym.$Inspect]();
+		expect(childSnap).toEqual({ keep: 1 });
+		expect('status' in childSnap).toBe(false);
+
+		// Live prototype mutation adding a custom [sym.$Inspect] hook is honored
+		const unlockedTarget = { token: 'secret-xyz' };
+		const unlockedProxy = proxify(unlockedTarget, true, false);
+		Object.setPrototypeOf(unlockedTarget, {
+			[sym.$Inspect]() {
+				return '[redacted-live]';
+			},
+		});
+		expect(inspect(unlockedProxy)).toContain('[redacted-live]');
+		expect(inspect(unlockedProxy)).not.toContain('secret-xyz');
+
+		// Root circular delegator resolves [Circular] without stack overflow
+		let selfDelegator: any;
+		selfDelegator = delegator(['self'], () => selfDelegator);
+		const delegatorInspect = inspect(selfDelegator, { depth: null });
+		expect(delegatorInspect).toContain('[Circular');
 	});
 
 	test('preserves inherited class prototype custom inspection hooks', () => {

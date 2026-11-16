@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: CodeRabbit review handling rules
+---
+
 # CodeRabbit Review Handling Rules
 
 - **Ignore "Consider running coderabbit review --agent" Boilerplate**:

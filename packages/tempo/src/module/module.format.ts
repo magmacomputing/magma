@@ -302,6 +302,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	}
 
 	const li = getLI(canonicalLocales(config?.locale)[0]);
+	let isoWeek: { weekOfYear: number; yearOfWeek: number } | undefined;
+	let localeWeek: { weekOfYear: number; yearOfWeek: number } | undefined;
+	const getIsoWeek = () => (isoWeek ??= (isTempo(obj) && zdt === (obj as any).toDateTime()
+		? { yearOfWeek: (obj as any).yow, weekOfYear: (obj as any).woy }
+		: getISOWeekOfYear(zdt)));
+	const getLocaleWeek = () => (localeWeek ??= getLocaleWeekOfYear(zdt, li));
 
 	const result = template.replace(RE_FORMAT_BRACES, (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
@@ -310,11 +316,15 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
-			case 'yy': res = normMods.includes('long') ? pad(zdt.year, 4) : pad(zdt.year % 100); break;
+			case 'yy':
+				res = normMods.includes('long')
+					? (zdt.year < 0 ? `-${pad(Math.abs(zdt.year), 4)}` : pad(zdt.year, 4))
+					: pad(zdt.year % 100);
+				break;
 			case 'yow': {
 				const yow = normMods.includes('locale')
-					? getLocaleWeekOfYear(zdt, li).yearOfWeek
-					: getISOWeekOfYear(zdt).yearOfWeek;
+					? getLocaleWeek().yearOfWeek
+					: getIsoWeek().yearOfWeek;
 				res = normMods.includes('short') ? pad(Math.abs(yow) % 100) : pad(yow, 4);
 				break;
 			}
@@ -336,10 +346,10 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					const w = Math.ceil(zdt.day / 7);
 					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
 				} else if (normMods.includes('locale')) {
-					const w = getLocaleWeekOfYear(zdt, li).weekOfYear;
+					const w = getLocaleWeek().weekOfYear;
 					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
 				} else {
-					const w = getISOWeekOfYear(zdt).weekOfYear;
+					const w = getIsoWeek().weekOfYear;
 					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
 				}
 				break;
@@ -558,8 +568,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
 							hasTzOverride ? () => getHemisphere(String(zdtTz)) : undefined,
 							isTempo(obj) ? (obj as any).sphere : undefined,
-							() => (isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' ? getHemisphere(String(zdtTz)) : undefined),
 							state?.config?.sphere,
+							() => (isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' ? getHemisphere(String(zdtTz)) : undefined),
 							Default.sphere
 						);
 					})();

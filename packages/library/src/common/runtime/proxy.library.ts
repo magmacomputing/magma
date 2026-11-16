@@ -2,12 +2,12 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isPlainObject, isReference, isSafeKey } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isDefined, isNullish, isNumber, isObject, isPlainObject, isReference, isSafeKey } from '#library/assertion.library.js';
 import { getSafeTag, registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
 const generatedInspectHooks = new WeakSet<Function>();
-const proxyInspectors = new WeakMap<object, (recv: any) => any>();
+const proxyInspectors = new WeakMap<object, (recv: any, depth?: number | null, seen?: WeakMap<object, object>) => any>();
 
 /** internal options for the unified proxy engine */
 export type ProxyOptions = {
@@ -46,18 +46,62 @@ export type Proxified<T extends object = object> = Proxied<T> & {
  *
  * @internal
  */
-function snapshotInspect(src: object, seen = new WeakMap<object, object>()): object {
+function snapshotInspect(src: object, seen = new WeakMap<object, object>(), depth?: number | null): object {
 	const unwrapped = unwrap(src);
 	const cached = seen.get(unwrapped);
 	if (cached) return cached;
 
-	const resolveValue = (v: unknown) => {
+	const nextDepth = isNumber(depth) ? depth - 1 : depth;
+
+	const resolveValue = (v: unknown, currentDepth: number | null | undefined = nextDepth): unknown => {
 		if (!isReference(v) || isFunction(v)) return v;
-		const inner = unwrap(v as object);
-		if (seen.has(inner)) return seen.get(inner)!;
-		if (Array.isArray(inner) || isPlainObject(inner) || getSafeTag(inner) === 'Enumify') {
-			return snapshotInspect(inner, seen);
+
+		if (seen.has(v as object)) return seen.get(v as object)!;
+		let inner: object;
+		try {
+			inner = unwrap(v as object);
+		} catch {
+			return v;
 		}
+
+		const ownInspectDesc = Object.getOwnPropertyDescriptor(inner, sym.$Inspect);
+		const ownInspectVal = ownInspectDesc?.value;
+		const hasOwnCustom = Boolean(ownInspectDesc) && !(isFunction(ownInspectVal) && generatedInspectHooks.has(ownInspectVal));
+		const innerIsEnum = getSafeTag(inner) === 'Enumify';
+		const innerProto = Object.getPrototypeOf(inner);
+		const hasInheritedCustom = !innerIsEnum && Boolean(innerProto && (sym.$Inspect in innerProto));
+		if (hasOwnCustom || hasInheritedCustom) return v;
+
+		const canDescendHere = isNullish(currentDepth) || currentDepth >= 0;
+		const nestedInspector = proxyInspectors.get(v as object);
+		if (!nestedInspector && seen.has(inner)) return seen.get(inner)!;
+		if (nestedInspector) {
+			if (!canDescendHere) return v;
+			const resolved = nestedInspector(v, currentDepth, seen);
+			if (!isReference(resolved) || isFunction(resolved)) return resolved;
+			if (seen.has(resolved)) return seen.get(resolved)!;
+			if (resolved === seen.get(inner)) return resolved;
+			const virtualOut: any = Array.isArray(resolved) ? new Array<unknown>(resolved.length) : {};
+			seen.set(v as object, virtualOut);
+			seen.set(resolved, virtualOut);
+			const childDepth = isNumber(currentDepth) ? currentDepth - 1 : currentDepth;
+			for (const k of Reflect.ownKeys(resolved)) {
+				if ((Array.isArray(resolved) && k === 'length') || k === sym.$Inspect) continue;
+				const d = Object.getOwnPropertyDescriptor(resolved, k);
+				if (d && d.enumerable) {
+					Object.defineProperty(virtualOut, k, {
+						...d,
+						...('value' in d ? { value: resolveValue(d.value, childDepth) } : {}),
+						configurable: true,
+					});
+				}
+			}
+			return virtualOut;
+		}
+
+		if (!canDescendHere) return v;
+		if (Array.isArray(inner) || isPlainObject(inner) || innerIsEnum)
+			return snapshotInspect(inner, seen, currentDepth);
 		return v;
 	};
 
@@ -96,13 +140,16 @@ function snapshotInspect(src: object, seen = new WeakMap<object, object>()): obj
 		for (const k of Reflect.ownKeys(level)) {
 			if (k === sym.$Inspect) continue;
 			const desc = Object.getOwnPropertyDescriptor(level, k);
-			if (desc && desc.enumerable) {
-				Object.defineProperty(out, k, {
-					...desc,
-					...('value' in desc ? { value: resolveValue(desc.value) } : {}),
-					configurable: true,
-				});
+			if (!desc) continue;
+			if (!desc.enumerable) {
+				delete out[k];
+				continue;
 			}
+			Object.defineProperty(out, k, {
+				...desc,
+				...('value' in desc ? { value: resolveValue(desc.value) } : {}),
+				configurable: true,
+			});
 		}
 	}
 
@@ -110,18 +157,20 @@ function snapshotInspect(src: object, seen = new WeakMap<object, object>()): obj
 }
 
 function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
-	const hook = function (this: any, ...args: any[]) {
+	const hook = function (this: any, depth?: number | null, ...args: any[]) {
 		const recv = isReference(this) && !isFunction(this) ? this : fallbackTarget;
-		const proxyInspector = proxyInspectors.get(recv);
-		if (proxyInspector) return proxyInspector(recv);
 		if (!isEnum) {
-			const proto = Object.getPrototypeOf(fallbackTarget);
+			const liveTarget = isReference(recv) ? unwrap(recv) : fallbackTarget;
+			const proto = Object.getPrototypeOf(liveTarget);
 			if (proto && (sym.$Inspect in proto)) {
-				const inherited = Reflect.get(proto, sym.$Inspect, fallbackTarget);
-				if (isFunction(inherited)) return inherited.apply(fallbackTarget, args);
+				const inherited = Reflect.get(proto, sym.$Inspect, liveTarget);
+				if (isFunction(inherited) && !generatedInspectHooks.has(inherited))
+					return inherited.apply(liveTarget, [depth, ...args]);
 			}
 		}
-		return snapshotInspect(recv);
+		const proxyInspector = proxyInspectors.get(recv);
+		if (proxyInspector) return proxyInspector(recv, depth);
+		return snapshotInspect(recv, new WeakMap(), depth);
 	};
 	generatedInspectHooks.add(hook);
 	return hook;
@@ -154,28 +203,34 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 	const hasInheritedCustomInspect = !isEnumTarget && !hasOwnCustomInspect && Boolean(proto && (sym.$Inspect in proto));
 	const hasCustomInspect = hasOwnCustomInspect || hasInheritedCustomInspect;
 
-	const inspectWithReceiver = (recv: any) => {
+	const inspectWithReceiver = (recv: any, depth?: number | null, seen?: WeakMap<object, object>) => {
 		if (keys) {
-			return Object.fromEntries(keys.filter(k => !isSymbol(k)).map(k => [k, recv[k]]));
+			const raw = Object.fromEntries(keys.filter(k => !isSymbol(k)).map(k => [k, recv[k]]));
+			if (seen) return raw;
+			const rootSeen = new WeakMap<object, object>();
+			const out: Record<string, unknown> = {};
+			rootSeen.set(recv, out);
+			Object.assign(out, snapshotInspect(raw, rootSeen, depth));
+			return out;
 		}
-		return snapshotInspect(recv);
+		return snapshotInspect(recv, seen ?? new WeakMap(), depth);
 	};
 
 	const getInspect = (receiver?: any) => {
 		if (keys || receiver) {
-			return function (this: any) {
+			return function (this: any, depth?: number | null) {
 				const recv = isReference(this) && !isFunction(this) ? this : (receiver ?? result);
 				const proxyInspector = proxyInspectors.get(recv);
-				if (proxyInspector) return proxyInspector(recv);
-				return inspectWithReceiver(recv);
+				if (proxyInspector) return proxyInspector(recv, depth);
+				return inspectWithReceiver(recv, depth);
 			};
 		}
 		if (!cachedInspect) {
-			cachedInspect = function (this: any) {
+			cachedInspect = function (this: any, depth?: number | null) {
 				const recv = isReference(this) && !isFunction(this) ? this : tgt;
 				const proxyInspector = proxyInspectors.get(recv);
-				if (proxyInspector) return proxyInspector(recv);
-				return snapshotInspect(recv);
+				if (proxyInspector) return proxyInspector(recv, depth);
+				return snapshotInspect(recv, new WeakMap(), depth);
 			};
 		}
 		return cachedInspect;

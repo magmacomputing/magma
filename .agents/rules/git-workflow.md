@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Git workflow restrictions (never commit or push)
+---
+
 # Git Workflow Rules
 
 - **NEVER RUN `git commit`**: Do not execute `git commit` under any circumstances. Committing changes is strictly reserved for the user to review diffs and manage git history.

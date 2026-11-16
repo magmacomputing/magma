@@ -83,7 +83,7 @@ describe('Era Parsing Engine', () => {
 		expect(ce.zdt.era).toBeUndefined();
 		expect(ce.zdt.eraYear).toBeUndefined();
 
-		const yearZero = new Tempo('0000-01-01T00:00:00Z', { calendar: 'iso8601' });
+		const yearZero = new Tempo('0000-01-01T00:00:00Z', { calendar: 'iso8601', timeZone: 'UTC' });
 		expect(yearZero.yy).toBe(0);
 		expect(yearZero.era).toBe('bce');
 		expect(yearZero.eon).toBe(1);

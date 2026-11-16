@@ -22,8 +22,8 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 | **`.mm`**<br>`zdt.month` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
 | **`.dd`**<br>`zdt.day` | `number` | Day of the month (1–31) | `24` |
 | **`.dim`**<br>`zdt.daysInMonth` | `number` | Total days in the month (28–31) | `31` |
-| **`.era`**<br>`zdt.era` | `string` | Canonical calendar era identifier (falls back to `'ce'` / `'bce'` on `iso8601`; use `t.zdt.era` for raw Temporal) | `'ce'`, `'bce'`, `'reiwa'` |
-| **`.eon`**<br>`zdt.eraYear` | `number` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> (use `t.zdt.eraYear` for raw Temporal) | `2026`, `4` |
+| **`.era`**<br>`getTemporalEra(zdt)` | `string` | Canonical calendar era identifier (falls back to `'ce'` / `'bce'` on `iso8601`; use `t.zdt.era` for raw Temporal) | `'ce'`, `'bce'`, `'reiwa'` |
+| **`.eon`**<br>`getTemporalEra(zdt)` | `number` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> (use `t.zdt.eraYear` for raw Temporal) | `2026`, `4` |
 | **`.jj`** | `number` | Integer Julian Day number for the local ISO date (ignoring time of day) <sup>[[2]](#fn-jj)</sup> | `2461331` |
 
 <small>

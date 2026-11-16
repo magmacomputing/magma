@@ -1,8 +1,9 @@
 import { inspect } from 'node:util';
 import { Tempo } from '#tempo/core';
 import { Enum } from '#library/enumerate.library.js';
+import { delegator } from '#library/proxy.library.js';
 import { FormatModule } from '#tempo/format';
-import { parseWeekday, parseDate } from '#tempo/engine/engine.lexer.js';
+import { parseWeekday, parseDate, resolveNumber } from '#tempo/engine/engine.lexer.js';
 import '#tempo/parse';
 
 Tempo.use(FormatModule);
@@ -280,6 +281,9 @@ describe('Core Ordinal Offset Parsing', () => {
 			const tDeepOrd = new Deep('customsecond day of May 2026', { anchor });
 			expect(tDeepOrd.isValid).toBe(true);
 			expect(tDeepOrd.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-02');
+
+			const delegatedNumbers = delegator(['customcount'], () => 37);
+			expect(resolveNumber('customcount', { registry: { numbers: delegatedNumbers } })).toBe(37);
 		});
 	});
 });

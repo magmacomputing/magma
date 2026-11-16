@@ -2,12 +2,12 @@ import '#library/temporal.polyfill.js';
 import { fromRoman } from '#library/number.library.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isNotNullish, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isPlainObject, isReference, isZonedDateTime, isInstant, isNotNullish, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
-import { ownKeys, ownEntries, hasOwn } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, hasOwn, unwrap } from '#library/primitive.library.js';
 import { Enum } from '#library/enumerate.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
@@ -561,13 +561,31 @@ const _ParseEngine = {
 				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
 					const localOrdinals: Record<string, number> = {};
-					for (const [k, v] of [
-						...ownEntries(state.config?.registry?.ordinals, true),
-						...ownEntries((state.options as any)?.registry?.ordinals, true)
-					]) {
-						if (isString(k))
-							localOrdinals[k.toLowerCase()] = v as number;
-					}
+					const collectOrdinals = (registry: any) => {
+						if (!isReference(registry) || isFunction(registry)) return;
+						const visited = new WeakSet<object>();
+						let curr: any = registry;
+						while (curr && curr !== Object.prototype) {
+							if (visited.has(curr)) break;
+							visited.add(curr);
+							for (const [k, v] of Object.entries(curr)) {
+								if (isString(k) && !hasOwn(localOrdinals, k.toLowerCase()))
+									localOrdinals[k.toLowerCase()] = v as number;
+							}
+							const level = unwrap(curr);
+							if (level !== curr) {
+								if (visited.has(level)) break;
+								visited.add(level);
+								for (const [k, v] of ownEntries(level)) {
+									if (isString(k) && !hasOwn(localOrdinals, k.toLowerCase()))
+										localOrdinals[k.toLowerCase()] = v as number;
+									}
+							}
+							curr = Object.getPrototypeOf(level);
+						}
+					};
+					collectOrdinals((state.options as any)?.registry?.ordinals);
+					collectOrdinals(state.config?.registry?.ordinals);
 
 					const allOrdKeys = Array.from(new Set([
 						...(Enum.keys(enums.ORDINAL) as string[]),

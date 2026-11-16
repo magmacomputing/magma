@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Interactive pair-programming vs autonomous /ok plan execution rules
+---
+
 # Plan & Development Execution Rules
 
 ## 1. Interactive Pair-Programming (Default Mode)

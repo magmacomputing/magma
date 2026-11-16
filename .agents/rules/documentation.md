@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Documentation source-of-truth and VitePress heading anchor rules
+---
+
 # Documentation & Heading Anchor Rules
 
 When composing, reviewing, or refactoring user documentation, guides, or README files across the monorepo (e.g., `packages/tempo/doc/`, `packages/plugins/*/doc/`, and `README.md` files):
@@ -47,7 +52,7 @@ The public documentation site (GitHub Pages) is built with **VitePress**. VitePr
 ## 5. Prohibit Self-Referential & Trivial Viewport Links
 - **No Self-Referencing Headings**: Never create a link pointing to the enclosing section or parent heading the reader is currently in (e.g., linking `[Range-Keys](#_5-development-constraints)` from within `## 5. Development Constraints`).
 - **No Trivial Intra-Section Jumps**: Avoid intra-page anchor links that only shift the viewport a few lines within the same paragraph or immediately visible block. Refer directly in plain text instead (e.g., "This rule...", "As noted above...").
-- **Legitimate Exceptions**: 
+- **Legitimate Exceptions**:
   - Top-of-page Table of Contents / Quick-Jump navigation outlines.
   - Type cross-references jumping past lengthy code blocks or implementation examples to a type definition table below.
 
@@ -76,5 +81,8 @@ The public documentation site (GitHub Pages) is built with **VitePress**. VitePr
   - **Currency & Prose Dollar Signs**: In regular prose outside code spans, escape literal dollar signs as `\$` (e.g., `\$0 cost`) or wrap in backticks (`` `$0` ``) to prevent unintentional delimiter pairing.
 - **Physical Quantities & Simple Unicode**: For simple unit exponents, degrees, and common operators, prefer plain Unicode characters (`°`, `≈`, `×`, `²`, `³`, `√`, `Δ`, `≤`, `≥`, `±`).
 
-
+## 8. Verifiable & Runnable Documentation Code Samples
+- **Verify Every Code Sample**: Any TypeScript/JavaScript code snippet added or updated in documentation (`packages/tempo/doc/`, `packages/plugins/*/doc/`, `README.md`, or JSDoc `@example` blocks) must be **tested and verified for correctness** against the current codebase before finalizing so copy-pasted examples work out of the box.
+- **No Unverified APIs or Placeholder Signatures**: Verify all imports, package names, symbol/method names, layout tokens, option keys, and shown output values against the actual implementation (and `packages/tempo/public/llms.txt` for Tempo APIs) or by executing the snippet in a test/script against the built packages.
+- **Complete, Copy-Paste Ready Examples**: Prefer self-contained snippets (with accurate imports and initialization where relevant), or explicitly indicate when a snippet continues an earlier block on the same page.
 

@@ -632,6 +632,14 @@ describe('Tempo.format() refinements', () => {
       const nyScopedSyd = new NyTempo('2026-06-15T12:00:00', { timeZone: 'Australia/Sydney' });
       expect(nyScopedSyd.sphere).toBe('south');
       expect(nyScopedSyd.format('{sphere}', { timeZone: 'America/New_York' })).toBe('north');
+
+      Tempo.init({ timeZone: 'Australia/Sydney', sphere: 'north' });
+      try {
+        const nativeSyd = Temporal.ZonedDateTime.from('2026-06-15T12:00:00[Australia/Sydney]');
+        expect(format(nativeSyd, '{sphere}')).toBe('north');
+      } finally {
+        Tempo.init({});
+      }
     });
   });
 
@@ -663,6 +671,8 @@ describe('Tempo.format() refinements', () => {
       const compactParsed = new Tempo(compact, { format: '{yy:long}{mm}{dd}' });
       expect(compactParsed.isValid).toBe(true);
       expect(compactParsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-25');
+
+      expect(new Tempo('-000001-01-01').format('{yy:long}')).toBe('-0001');
     });
   });
 })
