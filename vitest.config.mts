@@ -157,7 +157,7 @@ export default defineConfig({
           isolate: true,
           include: ['packages/tempo/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**', '**/test/**/*.core.test.ts', '**/test/**/*.lazy.test.ts'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+          setupFiles: ['./packages/library/test/support/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       },
       {
@@ -168,7 +168,7 @@ export default defineConfig({
           isolate: true,
           include: ['packages/tempo/test/**/*.core.test.ts', 'packages/tempo/test/**/*.lazy.test.ts'],
           exclude: ['**/node_modules/**'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+          setupFiles: ['./packages/library/test/support/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       },
       {
@@ -214,7 +214,7 @@ export default defineConfig({
           include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**'],
           maxWorkers: process.env.CI ? 2 : undefined,
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+          setupFiles: ['./packages/library/test/support/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       }
     ]
