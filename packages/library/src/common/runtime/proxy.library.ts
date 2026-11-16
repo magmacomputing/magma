@@ -2,10 +2,12 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isReference, isSafeKey } from '#library/assertion.library.js';
-import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
+import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isPlainObject, isReference, isSafeKey } from '#library/assertion.library.js';
+import { getSafeTag, registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
+const generatedInspectHooks = new WeakSet<Function>();
+const proxyInspectors = new WeakMap<object, (recv: any) => any>();
 
 /** internal options for the unified proxy engine */
 export type ProxyOptions = {
@@ -39,6 +41,67 @@ export type Proxified<T extends object = object> = Proxied<T> & {
 };
 
 /**
+ * Copies enumerable property descriptors along the prototype chain into a plain object
+ * (or shallow-clones arrays) without invoking getters during inspection.
+ *
+ * @internal
+ */
+function snapshotInspect(src: object): object {
+	const unwrapped = unwrap(src);
+	if (Array.isArray(unwrapped)) {
+		const out = new Array<unknown>(unwrapped.length);
+		for (const k of Reflect.ownKeys(unwrapped)) {
+			if (k === 'length' || k === sym.$Inspect) continue;
+			const desc = Object.getOwnPropertyDescriptor(unwrapped, k);
+			if (desc?.enumerable) {
+				Object.defineProperty(out, k, { ...desc, configurable: true });
+			}
+		}
+		return out;
+	}
+
+	const out: Record<PropertyKey, unknown> = {};
+	const levels: object[] = [];
+	const limit = 50;
+	let depth = 0;
+	let curr: any = unwrapped;
+
+	while (curr && curr !== Object.prototype && depth++ < limit) {
+		const level = unwrap(curr);
+		levels.push(level);
+		curr = Object.getPrototypeOf(level);
+	}
+
+	for (const level of levels.reverse()) {
+		for (const k of Reflect.ownKeys(level)) {
+			const desc = Object.getOwnPropertyDescriptor(level, k);
+			if (desc && desc.enumerable)
+				Object.defineProperty(out, k, { ...desc, configurable: true });
+		}
+	}
+
+	return out;
+}
+
+function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
+	const hook = function (this: any, ...args: any[]) {
+		const recv = isReference(this) && !isFunction(this) ? this : fallbackTarget;
+		const proxyInspector = proxyInspectors.get(recv);
+		if (proxyInspector) return proxyInspector(recv);
+		if (!isEnum) {
+			const proto = Object.getPrototypeOf(fallbackTarget);
+			if (proto && (sym.$Inspect in proto)) {
+				const inherited = Reflect.get(proto, sym.$Inspect, fallbackTarget);
+				if (isFunction(inherited)) return inherited.apply(fallbackTarget, args);
+			}
+		}
+		return snapshotInspect(recv);
+	};
+	generatedInspectHooks.add(hook);
+	return hook;
+}
+
+/**
  * Creates a configured proxy for an object, optionally returning a revocation function.
  *
  * @param target - The object to wrap
@@ -51,24 +114,66 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 	const { frozen, lock, appendOnly, onGet, keys, bind, skip } = options;
 	const pending = new Set<PropertyKey>();
 	let cachedJSON: any;
+	let cachedInspect: any;
 	let result: any;
 
-	const getInspect = () => {
+	// 1. Unwrap recursive proxies and resolve the true target
+	const tgt = unwrap(target);
+	const isEnumTarget = getSafeTag(tgt) === 'Enumify';
+	const isInspectableTarget = Array.isArray(tgt) || isPlainObject(tgt) || isEnumTarget;
+	const existingOwnInspect = Object.getOwnPropertyDescriptor(tgt, sym.$Inspect)?.value;
+	const hasGeneratedInspect = isFunction(existingOwnInspect) && generatedInspectHooks.has(existingOwnInspect);
+	const hasOwnCustomInspect = Object.hasOwn(tgt, sym.$Inspect) && !hasGeneratedInspect;
+	const proto = Object.getPrototypeOf(tgt);
+	const hasInheritedCustomInspect = !isEnumTarget && !hasOwnCustomInspect && Boolean(proto && (sym.$Inspect in proto));
+	const hasCustomInspect = hasOwnCustomInspect || hasInheritedCustomInspect;
+
+	const inspectWithReceiver = (recv: any) => {
+		if (keys) {
+			return Object.fromEntries(keys.filter(k => !isSymbol(k)).map(k => [k, recv[k]]));
+		}
+		return snapshotInspect(recv);
+	};
+
+	const getInspect = (receiver?: any) => {
+		if (keys || receiver) {
+			return function (this: any) {
+				const recv = isReference(this) && !isFunction(this) ? this : (receiver ?? result);
+				const proxyInspector = proxyInspectors.get(recv);
+				if (proxyInspector) return proxyInspector(recv);
+				return inspectWithReceiver(recv);
+			};
+		}
+		if (!cachedInspect) {
+			cachedInspect = function (this: any) {
+				const recv = isReference(this) && !isFunction(this) ? this : tgt;
+				const proxyInspector = proxyInspectors.get(recv);
+				if (proxyInspector) return proxyInspector(recv);
+				return snapshotInspect(recv);
+			};
+		}
+		return cachedInspect;
+	};
+
+	const getJSON = (receiver?: any) => {
+		if (keys) {
+			return function (this: any) {
+				const recv = isReference(this) && !isFunction(this) ? this : (receiver ?? result);
+				return Object.fromEntries(keys.filter(k => !isSymbol(k)).map(k => [k, recv[k]]));
+			};
+		}
 		if (!cachedJSON) {
-			cachedJSON = keys
-				? function () { return Object.fromEntries(keys.filter(k => !isSymbol(k)).map(k => [k, result[k]])); }
-				: function (this: any) { return allObject(isReference(this) && !isFunction(this) ? this : tgt); };
+			cachedJSON = function (this: any) {
+				return allObject(isReference(this) && !isFunction(this) ? this : tgt);
+			};
 		}
 		return cachedJSON;
 	};
 
-	// 1. Unwrap recursive proxies and resolve the true target
-	const tgt = unwrap(target);
-
-	// Expose Node custom inspection directly on the target so util.inspect finds it after unwrapping the Proxy
-	if (frozen && !Object.hasOwn(tgt, sym.$Inspect) && Object.isExtensible(tgt)) {
+	// Expose Node custom inspection directly on supported targets so util.inspect finds it after unwrapping the Proxy
+	if (frozen && (Boolean(keys) || isInspectableTarget || hasInheritedCustomInspect) && !hasOwnCustomInspect && !hasGeneratedInspect && Object.isExtensible(tgt)) {
 		Object.defineProperty(tgt, sym.$Inspect, {
-			value: getInspect(),
+			value: createTargetInspectHook(tgt, isEnumTarget),
 			enumerable: false,
 			configurable: true,
 			writable: false,
@@ -142,10 +247,24 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			if (k === sym.$Target) return r === result ? t : undefined;
 
 			// Virtualization for serialization
-			if (frozen && (k === sym.$Inspect || k === 'toJSON')) {
+			if (frozen && k === 'toJSON') {
 				const own = Object.getOwnPropertyDescriptor(t, k);
 				if (own && isFunction(own.value)) return own.value;
-				return getInspect();
+				return getJSON(r);
+			}
+			if (frozen && k === sym.$Inspect) {
+				const own = Object.getOwnPropertyDescriptor(t, k);
+				if (own) {
+					if (!own.configurable && 'value' in own && !own.writable) return own.value;
+					if (!own.configurable && !('value' in own) && !own.get) return undefined;
+					if (isFunction(own.value) && !generatedInspectHooks.has(own.value)) return own.value;
+				}
+				if (!keys && !isEnumTarget && (k in t)) {
+					const proto = Object.getPrototypeOf(t);
+					const inherited = proto ? Reflect.get(proto, k, t) : undefined;
+					if (isFunction(inherited)) return inherited.bind(t);
+				}
+				if (keys || isInspectableTarget) return getInspect(r);
 			}
 
 			if (keys && !keys.includes(k)) return undefined;
@@ -184,10 +303,16 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 	if (isRevocable) {
 		const revocableResult = Proxy.revocable(tgt, handler);
 		result = revocableResult.proxy;
+		if (frozen && (keys || (isInspectableTarget && !hasCustomInspect))) {
+			proxyInspectors.set(result, inspectWithReceiver);
+		}
 		return { proxy: revocableResult.proxy as T, revoke: revocableResult.revoke };
 	}
 
 	result = new Proxy(tgt, handler) as T;
+	if (frozen && (keys || (isInspectableTarget && !hasCustomInspect))) {
+		proxyInspectors.set(result, inspectWithReceiver);
+	}
 	return result;
 }
 

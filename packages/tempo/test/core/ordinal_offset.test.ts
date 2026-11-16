@@ -246,5 +246,29 @@ describe('Core Ordinal Offset Parsing', () => {
 			// Verify global enums.ORDINAL was not polluted
 			expect((Tempo.enums.ORDINAL as any).eleventh).toBeUndefined();
 		});
+
+		it('retains earlier local registry.numbers aliases across chained Tempo.derive extensions', () => {
+			const First = Tempo.derive({ registry: { numbers: { uno: 1 } } });
+			const Second = First.derive({ registry: { numbers: { dos: 2 } } });
+			const anchor = new Second('2026-05-01');
+
+			const tUno = new Second('uno days hence', { anchor });
+			const tDos = new Second('dos days hence', { anchor });
+
+			expect(tUno.isValid).toBe(true);
+			expect(tUno.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-02');
+			expect(tDos.isValid).toBe(true);
+			expect(tDos.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
+
+			const Third = Second.derive({ registry: { numbers: { uno: 2 } } });
+			const tUnoOverride = new Third('uno days hence', { anchor });
+			expect(tUnoOverride.isValid).toBe(true);
+			expect(tUnoOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
+
+			const Fourth = Third.derive({ registry: { numbers: { DOS: 9 } } });
+			const tDosCaseOverride = new Fourth('dos days hence', { anchor });
+			expect(tDosCaseOverride.isValid).toBe(true);
+			expect(tDosCaseOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
+		});
 	});
 });

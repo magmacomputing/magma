@@ -30,6 +30,7 @@ export default defineConfig({
 	],
 	test: {
 		globals: true,
+		isolate: true,
 		environment: 'node',
 		include: ['test/**/*.{test,spec}.ts'],
 		setupFiles: [polyfill, spy],

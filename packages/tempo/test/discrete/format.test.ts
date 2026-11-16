@@ -624,6 +624,14 @@ describe('Tempo.format() refinements', () => {
 
       expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe('north');
       expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe(tSyd.format('{sphere}', { sphere: 'north' }));
+
+      expect(tSyd.format('{iso}', { registry: { tokens: { iso: () => 'custom-iso' } } })).toBe('custom-iso');
+      expect(tSyd.format('{sphere}', { registry: { tokens: { sphere: () => 'custom-sphere' } } })).toBe('custom-sphere');
+
+      const NyTempo = Tempo.derive({ timeZone: 'America/New_York' });
+      const nyScopedSyd = new NyTempo('2026-06-15T12:00:00', { timeZone: 'Australia/Sydney' });
+      expect(nyScopedSyd.sphere).toBe('south');
+      expect(nyScopedSyd.format('{sphere}', { timeZone: 'America/New_York' })).toBe('north');
     });
   });
 
@@ -637,6 +645,18 @@ describe('Tempo.format() refinements', () => {
         expect(tUnit.format('{ts}')).toBe(String(tUnit.ts));
         expect(format(zdt, '{ts}', { timeStamp })).toBe(String(tUnit.ts));
       }
+    });
+  });
+
+  describe('{yy:long} format and explicit parse round-trip', () => {
+    it('formats and parses a 4-digit year with {dd}-{mm}-{yy:long}', () => {
+      const original = new Tempo('2026-10-24');
+      const formatted = original.format('{dd}-{mm}-{yy:long}');
+      expect(formatted).toBe('24-10-2026');
+
+      const parsed = new Tempo(formatted, { format: '{dd}-{mm}-{yy:long}' });
+      expect(parsed.isValid).toBe(true);
+      expect(parsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
     });
   });
 })

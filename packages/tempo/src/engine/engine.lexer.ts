@@ -1,5 +1,5 @@
 import { isString, isEmpty, isUndefined, isNotNullish, isNullish, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
-import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
@@ -24,6 +24,20 @@ namespace Lexer {
 	export type GroupModifier = { mod?: t.Modifier | t.Relative, adjust: number, offset: number, period: number }
 }
 
+function findRegistryEntry(registry: any, low: string): number | undefined {
+	if (!registry || typeof registry !== 'object' || !low) return undefined;
+	let curr: any = registry;
+	let depth = 0;
+	while (curr && curr !== Object.prototype && depth++ < 50) {
+		const level = unwrap(curr);
+		for (const [k, v] of ownEntries(level)) {
+			if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
+		}
+		curr = Object.getPrototypeOf(level);
+	}
+	return undefined;
+}
+
 /** return a new object, with only numeric values */
 function num(groups: Record<string, string | number>, config?: any) {
 	return ownEntries(groups)
@@ -41,11 +55,10 @@ function num(groups: Record<string, string | number>, config?: any) {
 
 			if (config?.registry?.numbers) {
 				const low = isString(val) ? val.trim().toLowerCase() : '';
-				for (const [k, n] of Object.entries(config.registry.numbers)) {
-					if (k.toLowerCase() === low && isNumber(n)) {
-						acc[key] = n as number;
-						return acc;
-					}
+				const n = findRegistryEntry(config.registry.numbers, low);
+				if (isNumber(n)) {
+					acc[key] = n;
+					return acc;
 				}
 			}
 
@@ -77,11 +90,8 @@ function num(groups: Record<string, string | number>, config?: any) {
 export function resolveNumber(str: any, config?: any): t.Number | number | any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
-	if (config?.registry?.numbers) {
-		for (const [k, v] of Object.entries(config.registry.numbers)) {
-			if (k.toLowerCase() === low && isNumber(v)) return v;
-		}
-	}
+	const matched = findRegistryEntry(config?.registry?.numbers, low);
+	if (isNumber(matched)) return matched;
 	return Enum.keys(enums.NUMBER).find((key: string) => key.startsWith(low)) ?? str;
 }
 
@@ -99,11 +109,8 @@ export function resolveNth(str: any, config?: any): number {
 		return Number.isFinite(num) ? num : 1;
 	}
 	const low = str.trim().toLowerCase();
-	if (config?.registry?.ordinals) {
-		for (const [k, v] of ownEntries(config.registry.ordinals, true)) {
-			if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
-		}
-	}
+	const matched = findRegistryEntry(config?.registry?.ordinals, low);
+	if (isNumber(matched)) return matched;
 	const ordValue = enums.ORDINAL[low];
 	if (isNumber(ordValue)) return ordValue;
 

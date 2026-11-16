@@ -141,7 +141,7 @@ In addition to scalar getters, `Tempo` provides structured sub-namespaces for do
 | **`.intl`** | `TempoIntlNamespace` | Internationalization metadata and locale engine:<br>• `.info` (`object`) — cultural metadata (`firstDay`, `weekend`, `calendar`, `minimalDays`)<br>• `.locale` (`Intl.Locale`) — native locale instance | `t.intl.info.firstDay` → `1`<br>`t.intl.locale.baseName` → `'en-US'` |
 | **`.geo`** | `Readonly<GeoConfig>` | Geographic coordinates and location data:<br>• `.sphere` (`'north' \| 'south' \| 'equator'`; always resolved)<br>• `.latitude`, `.longitude` (`number \| undefined`)<br>• `.elevation` (`number \| undefined`) | `t.geo.sphere` → `'south'`<br>`t.geo.latitude` → `-33.87` |
 | **`.term`** | `TempoTermRegistry` | Dynamic delegator accessing resolved terminology from loaded `TermPlugin` modules | `t.term.season` → `'summer'`<br>`t.term.quarter` → `'Q1'` |
-| **`.fmt`** | `Tempo.Formats` | Dynamic delegator evaluating named format presets from `Tempo.enums.FORMAT` and `config.registry.formats` | `t.fmt.date` → `'2026-10-24'`<br>`t.fmt.display` → `'Sat, 24 Oct 2026'` |
+| **`.fmt`** | `Record<string,`<br>`string \| undefined>` | Dynamic delegator evaluating named format presets from `Tempo.enums.FORMAT` and `config.registry.formats` | `t.fmt.date` → `'2026-10-24'`<br>`t.fmt.display` → `'Sat, 24 Oct 2026'` |
 
 ---
 

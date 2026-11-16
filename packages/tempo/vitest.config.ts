@@ -23,6 +23,7 @@ export default defineConfig({
 	],
 	test: {
 		globals: true,
+		isolate: true,
 		pool: 'forks',
 		maxWorkers: process.env.CI ? 2 : undefined,
 		slowTestThreshold: 2_000,

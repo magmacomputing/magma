@@ -55,6 +55,13 @@ const RE_DOT = /\./g;
 const RE_HASH_PREFIX = /^#/;
 const RE_COLON = /:/g;
 
+function getCustomTokenFn(config: any, token: string): ((zdt: any, ctx: any) => any) | undefined {
+	const customTokens = config?.registry?.tokens;
+	if (!customTokens) return undefined;
+	const fn = customTokens[token];
+	return hasOwn(customTokens, token) && isFunction(fn) ? fn : undefined;
+}
+
 /**
  * Resolves dot-delimited namespace tokens (e.g. '{geo.city}', '{custom.tag.name}')
  * against a Tempo instance with safety guards and graceful fallback.
@@ -520,18 +527,29 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
-			case 'iso':
+			case 'iso': {
+				const customIso = getCustomTokenFn(config, token);
+				if (customIso) {
+					res = customIso(zdt, { modifiers, config });
+					break;
+				}
 				res = (isTempo(obj) && !options?.timeZone && !options?.calendar)
 					? (obj as any).iso
 					: zdt.toInstant().toString();
 				break;
+			}
 			case 'sphere': {
+				const customSphere = getCustomTokenFn(config, token);
+				if (customSphere) {
+					res = customSphere(zdt, { modifiers, config });
+					break;
+				}
 				const s = (isTempo(obj) && !options?.sphere && !options?.geo && !options?.timeZone)
 					? (obj as any).sphere
 					: (() => {
-						const globalTz = state?.config?.timeZone;
+						const baseTz = isTempo(obj) ? (obj as any).tz : state?.config?.timeZone;
 						const zdtTz = zdt.timeZoneId;
-						const hasTzOverride = isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' && (isUndefined(globalTz) || String(zdtTz).toLowerCase() !== String(globalTz).toLowerCase());
+						const hasTzOverride = isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' && (isUndefined(baseTz) || String(zdtTz).toLowerCase() !== String(baseTz).toLowerCase());
 						const rawGeo = options?.geo ?? config?.geo ?? getStashedGeo();
 						const lat = rawGeo?.latitude;
 						return evaluate(
@@ -549,9 +567,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			default: {
-				const customTokens = (config?.registry as any)?.tokens ?? {};
-				const customTokenFn = customTokens[token];
-				if (hasOwn(customTokens, token) && isFunction(customTokenFn)) {
+				const customTokenFn = getCustomTokenFn(config, token);
+				if (customTokenFn) {
 					res = customTokenFn(zdt, { modifiers, config });
 				} else if (token.startsWith('#') && isTempo(obj)) {
 					const termName = token.slice(1).split('.')[0];

@@ -123,7 +123,7 @@ export class PatternCompiler {
 			const localNumbers = state.config.registry?.numbers ?? {};
 			const keys = Array.from(new Set([
 				...(Enum.keys(enums.NUMBER) as string[]),
-				...Object.keys(localNumbers)
+				...ownKeys(localNumbers, true).filter(isString)
 			])).map((w: string) => Match.escape(w));
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a: string, b: string) => b.length - a.length).join('|')})`);
 

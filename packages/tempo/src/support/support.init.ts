@@ -5,7 +5,7 @@ import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, isEn
 import { normalizeUtcOffset } from '#library/temporal.library.js';
 import { markConfig, markExtensible } from '#library/symbol.library.js';
 import { deepMerge } from '#library/object.library.js';
-import { asType } from '#library/type.library.js';
+import { asType, cast } from '#library/type.library.js';
 import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isRegExp, isEmpty, isFunction, isReference } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
 import { ownEntries, hasOwn, hasNoneOf } from '#library/primitive.library.js';
@@ -371,10 +371,10 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 
 			case 'registry':
 				if (isObject(arg.value)) {
-					state.config.registry = attachRegistryInspect({
-						...state.config.registry,
-						modifiers: { ...(state.config.registry?.modifiers ?? {}) }
-					});
+					state.config.registry = attachRegistryInspect(cast<t.Internal.Config['registry']>({
+						...Object.fromEntries(ownEntries(state.config.registry ?? {}, true)),
+						modifiers: Object.fromEntries(ownEntries(state.config.registry?.modifiers ?? {}, true))
+					}));
 					if (arg.value.formats) {
 						const extended = state.config.registry.formats ? Enum.derive(state.config.registry.formats, arg.value.formats) : arg.value.formats;
 						setProperty(state.config.registry, 'formats', extended);
@@ -403,11 +403,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 					}
 					if (arg.value.tokens) {
 						const existing = state.config.registry.tokens ?? {};
-						setProperty(state.config.registry, 'tokens', { ...existing, ...arg.value.tokens });
+						setProperty(state.config.registry, 'tokens', { ...Object.fromEntries(ownEntries(existing, true)), ...arg.value.tokens });
 					}
 					if (arg.value.dialects) {
 						const existing = state.config.registry.dialects ?? {};
-						setProperty(state.config.registry, 'dialects', { ...existing, ...arg.value.dialects });
+						setProperty(state.config.registry, 'dialects', { ...Object.fromEntries(ownEntries(existing, true)), ...arg.value.dialects });
 					}
 					if (arg.value.numbers) {
 						const extended = state.config.registry.numbers ? Enum.derive(state.config.registry.numbers, arg.value.numbers, false) : enumify(arg.value.numbers, false);

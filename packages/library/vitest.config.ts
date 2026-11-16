@@ -20,6 +20,7 @@ export default defineConfig({
   test: {
     name: 'Library: Full',
     globals: true,
+    isolate: true,
     pool: 'forks',
     maxWorkers: 2,
     slowTestThreshold: 2_000,

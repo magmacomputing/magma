@@ -1,6 +1,7 @@
 import { inspect } from 'node:util';
+import { sym } from '#library/symbol.library.js';
 import { enumify } from '#library/enumerate.library.js';
-import { delegator, proxify, secure, type Proxified } from '#library/proxy.library.js';
+import { delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
 
 describe('proxy method binding', () => {
 	test('returns a stable bound wrapper for repeated method access', () => {
@@ -115,5 +116,101 @@ describe('secure serialization', () => {
 		expect(enumOut).not.toBe('{}');
 		expect(enumOut).toContain('A: 1');
 		expect(enumOut).toContain('B: 2');
+
+		const virt = delegator(['a'], () => 1);
+		expect(inspect(virt)).toBe('{ a: 1 }');
+	});
+
+	test('retains native diagnostic inspection for Error and Map instances', () => {
+		const errOut = inspect(proxify(new Error('failed'), true));
+		expect(errOut).toContain('Error: failed');
+
+		const mapOut = inspect(proxify(new Map([['k', 'v']]), true));
+		expect(mapOut).toContain('Map(1)');
+		expect(mapOut).toContain("'k' => 'v'");
+	});
+
+	test('isolates virtual sym.$Inspect across multiple proxies sharing one target', () => {
+		const shared: Record<string, string> = {};
+		proxify(shared, true, false);
+		const first = revocable(shared, { frozen: true, keys: ['a'], onGet: (k) => `${String(k)}-1` });
+		const second = revocable(shared, { frozen: true, keys: ['b'], onGet: (k) => `${String(k)}-2` });
+
+		Object.freeze(shared);
+
+		expect((first.proxy as any)[sym.$Inspect]()).toEqual({ a: 'a-1' });
+		expect((second.proxy as any)[sym.$Inspect]()).toEqual({ b: 'b-2' });
+		expect(inspect(first.proxy)).toContain("a: 'a-1'");
+		expect(inspect(second.proxy)).toContain("b: 'b-2'");
+
+		first.revoke();
+		expect((second.proxy as any)[sym.$Inspect]()).toEqual({ b: 'b-2' });
+		expect(inspect(second.proxy)).toContain("b: 'b-2'");
+		second.revoke();
+
+		class PlainModel {
+			hidden = 99;
+		}
+		const modelRev = revocable(new PlainModel(), { frozen: true, keys: ['a'], onGet: () => 1 });
+		expect(inspect(modelRev.proxy)).toBe('{ a: 1 }');
+		modelRev.revoke();
+	});
+
+	test('does not invoke getters during default inspection while preserving toJSON evaluation', () => {
+		const obj = proxify({
+			a: 1,
+			get boom() {
+				throw new Error('unavailable');
+			}
+		}, true, false);
+
+		const out = inspect(obj);
+		expect(out).toContain('a: 1');
+		expect(out).toContain('boom: [Getter]');
+		expect(() => (obj as any).toJSON()).toThrow('unavailable');
+
+		const arr: unknown[] = [1];
+		Object.defineProperty(arr, 1, {
+			get() {
+				throw new Error('array unavailable');
+			},
+			enumerable: true,
+			configurable: true,
+		});
+		const pArr = proxify(arr, true, false);
+		expect(inspect(pArr)).toContain('[Getter]');
+	});
+
+	test('preserves inherited class prototype custom inspection hooks', () => {
+		class CustomModel {
+			#secret = 42;
+			[sym.$Inspect]() {
+				return `CustomModel<${this.#secret}>`;
+			}
+		}
+
+		const modelProxy = proxify(new CustomModel(), true);
+		expect(inspect(modelProxy)).toBe('CustomModel<42>');
+		expect((modelProxy as any)[sym.$Inspect]()).toBe('CustomModel<42>');
+
+		class CustomList extends Array<number> {
+			[sym.$Inspect]() {
+				return 'L';
+			}
+		}
+		const listTarget = new CustomList(1, 2);
+		const firstListProxy = proxify(listTarget, true);
+		const secondListProxy = proxify(listTarget, true);
+		expect(inspect(firstListProxy)).toBe('L');
+		expect(inspect(secondListProxy)).toBe('L');
+		expect((secondListProxy as any)[sym.$Inspect]()).toBe('L');
+
+		const throwingTag = {
+			ok: true,
+			get [Symbol.toStringTag](): string {
+				throw new Error('toStringTag boom');
+			}
+		};
+		expect(() => proxify(throwingTag, false)).not.toThrow();
 	});
 });

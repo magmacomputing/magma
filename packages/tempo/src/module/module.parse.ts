@@ -101,7 +101,8 @@ function compileBracedPattern(fmt: string): RegExp {
 			const rawToken = fmt.slice(i + 1, end).trim();
 			const [tok, ...modifiers] = rawToken.split(':');
 			const token = tok.toLowerCase();
-			const isRoman = modifiers.some(m => m.toLowerCase() === 'roman');
+			const normMods = modifiers.map(m => m.toLowerCase());
+			const isRoman = normMods.includes('roman');
 			const romanOr = (fallback: string) => isRoman ? RE_ROMAN_DIGITS : fallback;
 
 			switch (token) {
@@ -110,7 +111,9 @@ function compileBracedPattern(fmt: string): RegExp {
 					pattern += group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'));
 					break;
 				case 'yy':
-					pattern += group('yy', romanOr('\\d{2}'));
+					pattern += normMods.includes('long')
+						? group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'))
+						: group('yy', romanOr('\\d{2}'));
 					break;
 				case 'mm':
 				case 'month':

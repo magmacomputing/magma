@@ -19,6 +19,7 @@ export default defineConfig({
 	],
 	test: {
 		globals: true,
+		isolate: false,
 		environment: 'node',
 		include: ['test/**/*.test.ts'],
 		setupFiles: [polyfill]

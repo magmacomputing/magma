@@ -127,7 +127,7 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
   * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
 * **Removed Legacy Getter Tokens (`{day}`, `{nano}`):**
   * `{day}` (from removed `t.day`) and `{nano}` (from removed `t.nano`) have been removed.
-  * Use `{dd}` or `{dd:raw}` in place of `{day}`, and `{epoch.ns}` (or `{ts}` with `timeStamp: 'ns'`) in place of `{nano}`.
+  * Use `{dd}` or `{dd:raw}` in place of `{day}`. For `{nano}`, use `{ts}` with `{ timeStamp: 'ns' }` (works for both `Tempo` and native `Temporal` values), or `{epoch.ns}` when formatting `Tempo` instances (standalone `format(zdt, ...)` on native `Temporal` values leaves `{epoch.ns}` literal).
 
 ```typescript
 // ❌ v4.x (Deprecated)
