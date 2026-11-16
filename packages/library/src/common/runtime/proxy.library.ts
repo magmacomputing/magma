@@ -3,7 +3,7 @@ import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
 import { isString, isFunction, isSymbol, isDefined, isNullish, isNumber, isObject, isPlainObject, isReference, isSafeKey } from '#library/assertion.library.js';
-import { getSafeTag, registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
+import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
 const generatedInspectHooks = new WeakSet<Function>();
@@ -40,6 +40,19 @@ export type Proxified<T extends object = object> = Proxied<T> & {
 	readonly [sym.$Inspect]?: () => T;
 };
 
+function isEnumifyTarget(obj: object): boolean {
+	const visited = new WeakSet<object>();
+	let curr: object | null = obj;
+	while (curr && curr !== Object.prototype) {
+		if (visited.has(curr)) break;
+		visited.add(curr);
+		const desc = Object.getOwnPropertyDescriptor(curr, Symbol.toStringTag);
+		if (desc) return 'value' in desc && desc.value === 'Enumify';
+		curr = Object.getPrototypeOf(curr);
+	}
+	return false;
+}
+
 /**
  * Copies enumerable property descriptors along the prototype chain into a plain object
  * (or shallow-clones arrays) without invoking getters during inspection.
@@ -67,7 +80,7 @@ function snapshotInspect(src: object, seen = new WeakMap<object, object>(), dept
 		const ownInspectDesc = Object.getOwnPropertyDescriptor(inner, sym.$Inspect);
 		const ownInspectVal = ownInspectDesc?.value;
 		const hasOwnCustom = Boolean(ownInspectDesc) && !(isFunction(ownInspectVal) && generatedInspectHooks.has(ownInspectVal));
-		const innerIsEnum = getSafeTag(inner) === 'Enumify';
+		const innerIsEnum = isEnumifyTarget(inner);
 		const innerProto = Object.getPrototypeOf(inner);
 		const hasInheritedCustom = !innerIsEnum && Boolean(innerProto && (sym.$Inspect in innerProto));
 		if (hasOwnCustom || hasInheritedCustom) return v;
@@ -194,7 +207,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 
 	// 1. Unwrap recursive proxies and resolve the true target
 	const tgt = unwrap(target);
-	const isEnumTarget = getSafeTag(tgt) === 'Enumify';
+	const isEnumTarget = isEnumifyTarget(tgt);
 	const isInspectableTarget = Array.isArray(tgt) || isPlainObject(tgt) || isEnumTarget;
 	const existingOwnInspect = Object.getOwnPropertyDescriptor(tgt, sym.$Inspect)?.value;
 	const hasGeneratedInspect = isFunction(existingOwnInspect) && generatedInspectHooks.has(existingOwnInspect);
@@ -210,7 +223,8 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			const rootSeen = new WeakMap<object, object>();
 			const out: Record<string, unknown> = {};
 			rootSeen.set(recv, out);
-			Object.assign(out, snapshotInspect(raw, rootSeen, depth));
+			const snapshot = snapshotInspect(raw, rootSeen, depth);
+			Object.defineProperties(out, Object.getOwnPropertyDescriptors(snapshot));
 			return out;
 		}
 		return snapshotInspect(recv, seen ?? new WeakMap(), depth);
@@ -221,8 +235,9 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			return function (this: any, depth?: number | null) {
 				const recv = isReference(this) && !isFunction(this) ? this : (receiver ?? result);
 				const proxyInspector = proxyInspectors.get(recv);
-				if (proxyInspector) return proxyInspector(recv, depth);
-				return inspectWithReceiver(recv, depth);
+				return isFunction(proxyInspector)
+					? proxyInspector(recv, depth)
+					: inspectWithReceiver(recv, depth);
 			};
 		}
 		if (!cachedInspect) {
@@ -277,20 +292,18 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 		},
 
 		getOwnPropertyDescriptor: (t, k) => {
-			if (keys && !keys.includes(k)) return undefined;
-			if (keys) {
-				if (onGet && !isSymbol(k) && !pending.has(k)) {
-					pending.add(k);
-					try {
-						const value = onGet(k, t);
-						if (isDefined(value)) return { enumerable: true, configurable: true, value };
-					} finally {
-						pending.delete(k);
-					}
+			if (!keys) return Reflect.getOwnPropertyDescriptor(t, k);
+			if (!keys.includes(k)) return undefined;
+			if (onGet && !isSymbol(k) && !pending.has(k)) {
+				pending.add(k);
+				try {
+					const value = onGet(k, t);
+					if (isDefined(value)) return { enumerable: true, configurable: true, value };
+				} finally {
+					pending.delete(k);
 				}
-				return { enumerable: true, configurable: true };
 			}
-			return Reflect.getOwnPropertyDescriptor(t, k);
+			return { enumerable: true, configurable: true };
 		},
 
 		ownKeys: (t) => {
@@ -403,7 +416,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 /**
  * Creates a Stealth Proxy pattern to allow for on-demand lazy property discovery and registration.
  * Provides deep-freezing and bounding capabilities depending on options.
- * 
+ *
  * @param target - The object to proxify
  * @param frozen - Whether the proxy should throw on mutation (default: true)
  * @param lock - Whether to deep-freeze the underlying target (default: frozen)
@@ -424,7 +437,7 @@ export function proxify<T extends object>(target: T, frozen = true, lock = froze
 /**
  * Creates a dynamic Proxy where property access is forwarded to a discovery callback.
  * Useful for virtual objects and lazy-loading data.
- * 
+ *
  * @param target - The base object
  * @param onGet - Callback fired when an unknown property is accessed
  * @param readonly - Whether the proxy should prevent mutations (default: true)
@@ -442,9 +455,9 @@ export function delegate<T extends object>(target: T, onGet: (key: string | symb
 }
 
 /**
- * Wraps an object in a protective Proxy that allows extension (adding new keys) 
+ * Wraps an object in a protective Proxy that allows extension (adding new keys)
  * but prevents modification or deletion of existing keys.
- * 
+ *
  * @param target - The object to secure
  * @returns The append-only secured Proxy
  * @example
@@ -459,7 +472,7 @@ export function secureRef<T extends object>(target: T): T {
 /**
  * Deep-freezes an object and wraps it in a loudly-throwing read-only Proxy.
  * Provides the highest level of noisy immutability.
- * 
+ *
  * @param obj - The object to secure
  * @param skip - A WeakSet of objects to skip during deep-freeze
  * @returns The securely frozen Proxy
@@ -474,7 +487,7 @@ export function secure<const T extends object>(obj: T, skip = new WeakSet<object
 
 /**
  * Creates a virtual Proxy where fixed keys are mapped to a callback function.
- * 
+ *
  * @param keys - The array of allowed keys (or an object whose ownKeys will be used)
  * @param fn - The callback fired when a key is accessed
  * @returns The virtual delegator object
@@ -492,7 +505,7 @@ export function delegator<K extends string | symbol>(keys: readonly K[] | Record
  * Augments a standard array with a Proxy-based lookup delegate.
  * Allows index/enumerable array methods to function natively (e.g., map, filter, length),
  * while redirecting non-numeric string keys to a custom finder function to lookup items.
- * 
+ *
  * @param list - The array to augment
  * @param finder - The lookup function for non-numeric keys
  * @param readonly - Whether the array should be read-only (default: true)

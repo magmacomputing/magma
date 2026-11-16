@@ -637,6 +637,7 @@ describe('Tempo.format() refinements', () => {
       try {
         const nativeSyd = Temporal.ZonedDateTime.from('2026-06-15T12:00:00[Australia/Sydney]');
         expect(format(nativeSyd, '{sphere}')).toBe('north');
+        expect(format(nativeSyd, '{sphere}', { geo: { lat: -33.87, lng: 151.2 } as any })).toBe('south');
       } finally {
         Tempo.init({});
       }

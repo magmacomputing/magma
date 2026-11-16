@@ -297,6 +297,29 @@ describe('secure serialization', () => {
 		selfDelegator = delegator(['self'], () => selfDelegator);
 		const delegatorInspect = inspect(selfDelegator, { depth: null });
 		expect(delegatorInspect).toContain('[Circular');
+
+		// Keyed inspection preserves '__proto__' as an own property without mutating prototype
+		const protoDelegator = revocable(Object.create(null), {
+			frozen: true,
+			keys: ['__proto__'],
+			onGet: () => ({ injected: true }),
+		});
+		const protoSnap = (protoDelegator.proxy as any)[sym.$Inspect]();
+		expect(Object.hasOwn(protoSnap, '__proto__')).toBe(true);
+		expect(Object.getPrototypeOf(protoSnap)).toBe(Object.prototype);
+		expect(protoSnap['__proto__']).toEqual({ injected: true });
+		protoDelegator.revoke();
+
+		// Nested objects with a prototype getter must not have getters invoked during inspection
+		let protoGetterCalls = 0;
+		const childWithProtoGetter = {
+			get prototype() {
+				protoGetterCalls++;
+				return {};
+			},
+		};
+		inspect(proxify({ child: childWithProtoGetter }, true, false));
+		expect(protoGetterCalls).toBe(0);
 	});
 
 	test('preserves inherited class prototype custom inspection hooks', () => {

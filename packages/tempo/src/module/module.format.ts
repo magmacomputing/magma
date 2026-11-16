@@ -6,7 +6,7 @@ import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDat
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
 import { getISOWeekOfYear, getTemporalEra } from '#library/temporal.library.js';
 import { formatDayPeriod, getDTF, getPR, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi, getHemisphere } from '#library/international.library.js';
-import { getStashedGeo } from '#library/mapper.library.js';
+import { coerceGeo, getStashedGeo } from '#library/mapper.library.js';
 import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
@@ -561,7 +561,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						const zdtTz = zdt.timeZoneId;
 						const hasTzOverride = isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' && (isUndefined(baseTz) || String(zdtTz).toLowerCase() !== String(baseTz).toLowerCase());
 						const rawGeo = options?.geo ?? config?.geo ?? getStashedGeo();
-						const lat = rawGeo?.latitude;
+						const geo = rawGeo ? coerceGeo(rawGeo as any) : undefined;
+						const lat = geo?.latitude ?? (rawGeo as any)?.latitude;
 						return evaluate(
 							options && hasOwn(options, 'sphere') ? options.sphere : undefined,
 							rawGeo?.sphere,

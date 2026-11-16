@@ -1,6 +1,6 @@
 # Magma Monorepo Agent Guidelines
 
-When working anywhere inside `/home/michael/Project/magma`, follow the workspace rules in `.agents/rules/`:
+When working anywhere inside this repository, follow the workspace rules in `.agents/rules/`:
 
 - **[styleGuide.md](./.agents/rules/styleGuide.md)**: Follow all TypeScript style conventions — omit braces on single-line `if` branches, prefer `#library/assertion.library.js` helpers (`isNumber`, `isString`, `isFunction`, `isPlainObject`, `isObject`, `isReference`, `isUndefined`, `isText`) over raw `typeof`/`null` checks, use top-level `import type`, mark internal cross-module exports with `/** @internal */`, include trailing commas in multi-line structures, hoist static regexes as module-level `RE_*` constants, use ternaries for dual terminal returns, avoid internal re-exports, and minimize `export` surface.
 - **[git-workflow.md](./.agents/rules/git-workflow.md)**: Never run `git commit` or `git push`. Leave changes uncommitted in the working tree.
