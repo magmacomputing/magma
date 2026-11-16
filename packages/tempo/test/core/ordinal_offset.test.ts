@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import { Tempo } from '#tempo/core';
 import { Enum } from '#library/enumerate.library.js';
 import { FormatModule } from '#tempo/format';
@@ -186,6 +187,14 @@ describe('Core Ordinal Offset Parsing', () => {
 
 				expect(Tempo.enums.ORDINAL.penultimate).toBe(-2);
 				expect(Tempo.enums.ORDINAL.twelfth).toBe(12);
+				expect(Enum.isEnum(Tempo.registry.ordinals)).toBe(true);
+				expect(Tempo.registry.ordinals?.penultimate).toBe(-2);
+
+				for (const showProxy of [false, true]) {
+					const out = inspect(Tempo.registry, { showProxy });
+					expect(out).not.toContain('Proxy');
+					expect(out).toContain('penultimate: -2');
+				}
 
 				const t12th = new Tempo('twelfth day of May 2026');
 				expect(t12th.isValid).toBe(true);

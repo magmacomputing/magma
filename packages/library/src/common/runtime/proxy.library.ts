@@ -2,7 +2,7 @@ import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
 import { unwrap } from '#library/primitive.library.js';
-import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isSafeKey } from '#library/assertion.library.js';
+import { isString, isFunction, isSymbol, isDefined, isNumber, isObject, isReference, isSafeKey } from '#library/assertion.library.js';
 import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
 const boundMethodCache = new WeakMap<Function, WeakMap<object, Function>>();
@@ -53,8 +53,27 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 	let cachedJSON: any;
 	let result: any;
 
+	const getInspect = () => {
+		if (!cachedJSON) {
+			cachedJSON = keys
+				? function () { return Object.fromEntries(keys.filter(k => !isSymbol(k)).map(k => [k, result[k]])); }
+				: function (this: any) { return allObject(isReference(this) && !isFunction(this) ? this : tgt); };
+		}
+		return cachedJSON;
+	};
+
 	// 1. Unwrap recursive proxies and resolve the true target
 	const tgt = unwrap(target);
+
+	// Expose Node custom inspection directly on the target so util.inspect finds it after unwrapping the Proxy
+	if (frozen && !Object.hasOwn(tgt, sym.$Inspect) && Object.isExtensible(tgt)) {
+		Object.defineProperty(tgt, sym.$Inspect, {
+			value: getInspect(),
+			enumerable: false,
+			configurable: true,
+			writable: false,
+		});
+	}
 
 	// 2. Harden the target if requested
 	if (lock) deepFreeze(tgt, skip ? { skip } : undefined);
@@ -126,8 +145,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			if (frozen && (k === sym.$Inspect || k === 'toJSON')) {
 				const own = Object.getOwnPropertyDescriptor(t, k);
 				if (own && isFunction(own.value)) return own.value;
-				if (!cachedJSON) cachedJSON = () => allObject(t);
-				return cachedJSON;
+				return getInspect();
 			}
 
 			if (keys && !keys.includes(k)) return undefined;

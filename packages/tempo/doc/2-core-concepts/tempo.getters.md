@@ -141,7 +141,7 @@ In addition to scalar getters, `Tempo` provides structured sub-namespaces for do
 | **`.intl`** | `TempoIntlNamespace` | Internationalization metadata and locale engine:<br>• `.info` (`object`) — cultural metadata (`firstDay`, `weekend`, `calendar`, `minimalDays`)<br>• `.locale` (`Intl.Locale`) — native locale instance | `t.intl.info.firstDay` → `1`<br>`t.intl.locale.baseName` → `'en-US'` |
 | **`.geo`** | `Readonly<GeoConfig>` | Geographic coordinates and location data:<br>• `.sphere` (`'north' \| 'south' \| 'equator'`; always resolved)<br>• `.latitude`, `.longitude` (`number \| undefined`)<br>• `.elevation` (`number \| undefined`) | `t.geo.sphere` → `'south'`<br>`t.geo.latitude` → `-33.87` |
 | **`.term`** | `TempoTermRegistry` | Dynamic delegator accessing resolved terminology from loaded `TermPlugin` modules | `t.term.season` → `'summer'`<br>`t.term.quarter` → `'Q1'` |
-| **`.fmt`** | `Record<string,`<br>`string \| undefined>` | Dynamic delegator evaluating and memoizing individual format token strings | `t.fmt.yyyy` → `'2026'`<br>`t.fmt.wkd` → `'Saturday'` |
+| **`.fmt`** | `Tempo.Formats` | Dynamic delegator evaluating named format presets from `Tempo.enums.FORMAT` and `config.registry.formats` | `t.fmt.date` → `'2026-10-24'`<br>`t.fmt.display` → `'Sat, 24 Oct 2026'` |
 
 ---
 
@@ -153,7 +153,6 @@ Beyond date-time properties, `Tempo` instances expose read-only inspection gette
 | :--- | :--- | :--- | :--- |
 | **`.config`** | `Readonly<Config>` | Active configuration proxy reflecting resolved global defaults and local instance overrides. | `t.config.timeZone` |
 | **`.parse`** | `Internal.Parse` | Shadowed view of internal parse state, including active `mode`, `anchor`, and matched AST tokens (`.result`). | `t.parse.anchor`<br>`t.parse.result` |
-| **`.meta`** | `Readonly<{ terms, ranges }>` | Frozen metadata namespace with lazy `.terms` (registered `TermPlugin` keys and available range keys) and `.ranges` (active range values for this date). | `t.meta.terms.season` → `['summer', ...]`<br>`t.meta.ranges` → `{ season: 'summer', qtr: 'Q1' }` |
 
 ---
 

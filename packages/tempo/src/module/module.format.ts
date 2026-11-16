@@ -66,9 +66,8 @@ function resolveNamespaceToken(obj: unknown, token: string): string {
 	const [root, ...rest] = parts;
 	let curr = (obj as any)[root];
 
-	if (isNullish(curr)) {
+	if (isNullish(curr))
 		return root === 'geo' ? '' : `{${token}}`;
-	}
 
 	for (const key of rest) {
 		if (isNullish(curr)) return '';
@@ -381,8 +380,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'mon': res = Enum.keyOf(enums.MONTHS, zdt.month); break;
 			case 'mmm': res = Enum.keyOf(enums.MONTH, zdt.month); break;
-			case 'dd':
-			case 'day': {
+			case 'dd': {
 				if (normMods.includes('year')) {
 					const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.dayOfYear - 1 : zdt.dayOfYear;
 					res = pad(d, 3);
@@ -390,7 +388,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					res = (normMods.includes('zero') || normMods.includes('0')) ? (zdt.dayOfWeek % 7).toString() : zdt.dayOfWeek.toString();
 				} else {
 					const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.day - 1 : zdt.day;
-					res = token === 'day' ? d.toString() : pad(d);
+					res = pad(d);
 				}
 				break;
 			}
@@ -520,7 +518,6 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}
 				break;
 			}
-			case 'nano': res = zdt.epochNanoseconds.toString(); break;
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
 			case 'iso':

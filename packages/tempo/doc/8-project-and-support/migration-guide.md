@@ -48,6 +48,8 @@ Several legacy and ambiguous instance getters have been removed in favor of cano
 | `t.yw` | `t.yow` | 4-digit ISO week-numbering year. |
 | `t.day` | `t.dd` | Day of the month (`1`–`31` number). Use `t.format('{dd}')` when zero-padded text is needed. For day-of-week use `t.dow`, and for day-of-year use `t.doy`. |
 | `t.nano` | `t.epoch.ns` | High-precision nanoseconds since Unix epoch (`bigint`). |
+| `t.terms` | `Tempo.terms` / `t.term.<scope>.keys` | Registered term definitions and available range keys (`keys` on static `Tempo.terms.<key>` or instance `t.term.<scope>`). |
+| `t.ranges` | `t.term.<key>` | Active range key for a specific term evaluated lazily on demand. |
 | `t.clone()` | `Tempo.from(t, t.config)` | Canonical instance cloning constructor (preserves instance-local configuration). |
 
 ```typescript
@@ -123,6 +125,9 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
 * **Legacy Offset Modifiers on `{tz}`:**
   * Legacy modifier cases (`offsetshort`, `offsetcompact`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
   * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+* **Removed Legacy Getter Tokens (`{day}`, `{nano}`):**
+  * `{day}` (from removed `t.day`) and `{nano}` (from removed `t.nano`) have been removed.
+  * Use `{dd}` or `{dd:raw}` in place of `{day}`, and `{epoch.ns}` (or `{ts}` with `timeStamp: 'ns'`) in place of `{nano}`.
 
 ```typescript
 // ❌ v4.x (Deprecated)

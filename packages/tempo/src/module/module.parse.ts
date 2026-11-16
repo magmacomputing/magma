@@ -557,10 +557,14 @@ const _ParseEngine = {
 
 				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
-					const rawLocalOrdinals = { ...state.config?.registry?.ordinals, ...(state.options as any)?.registry?.ordinals };
 					const localOrdinals: Record<string, number> = {};
-					for (const [k, v] of Object.entries(rawLocalOrdinals))
-						localOrdinals[k.toLowerCase()] = v as number;
+					for (const [k, v] of [
+						...ownEntries(state.config?.registry?.ordinals, true),
+						...ownEntries((state.options as any)?.registry?.ordinals, true)
+					]) {
+						if (isString(k))
+							localOrdinals[k.toLowerCase()] = v as number;
+					}
 
 					const allOrdKeys = Array.from(new Set([
 						...(Enum.keys(enums.ORDINAL) as string[]),

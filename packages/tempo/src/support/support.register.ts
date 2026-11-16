@@ -1,7 +1,7 @@
 import { clearCache } from '#library/function.library.js';
 import { isEqual } from '#library/object.library.js';
 import { isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
-import { ownKeys, unwrap, hasOwn } from '#library/primitive.library.js';
+import { ownKeys, ownValues, unwrap, hasOwn } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
 
@@ -30,7 +30,7 @@ export function registryReset() {
 
 		// 1. Purge all own-properties from state and target (if configurable and extensible)
 		[state, target].filter(obj => obj != null).forEach(obj => {
-			const symInternal = Object.values(sym);								// these are the Symbols we want to preserve
+			const symInternal = ownValues(sym, true);							// these are the Symbols we want to preserve
 			Reflect.ownKeys(obj)
 				.filter(key => !isSymbol(key) || !symInternal.includes(key as any))
 				.forEach(key => {

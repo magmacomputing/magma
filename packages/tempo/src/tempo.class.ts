@@ -132,15 +132,6 @@ export class Tempo {
 	}
 
 	/** mutable list of registered term plugins */						static get #terms(): TermPlugin[] { return Tempo[$Internal]().pluginsDb.terms }
-	/** cached term metadata keyed by #terms array ref/length */ static #termsMetaCache?: { ref: TermPlugin[]; len: number; value: Readonly<Record<string, readonly string[]>> };
-	/** wraps a term-keyed map in a delegate supporting key/scope/alias lookup */
-	static #delegateTermMap<V>(base: Record<string, V>): Readonly<Record<string, V>> {
-		return delegate(base, (key) => {
-			if (!isString(key)) return undefined;
-			const term = Tempo.#terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
-			return term ? base[term.key] : undefined;
-		});
-	}
 	/** tracks invalid locales already warned about to avoid log spam */		static #warnedLocales: Set<string> = new Set();
 
 	/** @internal Master Guard predicate (implements RegExp-like interface) */static get [$guard]() { return (this[$Internal]() as any)[$guard] ?? { test: () => true }; }
@@ -480,9 +471,9 @@ export class Tempo {
 		const state = targetState ?? this[$Internal]();
 		const wordsList = [
 			...Enum.keys(enums.NUMBER),
-			...Object.keys(state.config.registry?.numbers ?? {}),
+			...ownKeys(state.config.registry?.numbers ?? {}, true).filter(isString),
 			...Enum.keys(enums.ORDINAL),
-			...Object.keys(state.config.registry?.ordinals ?? {}),
+			...ownKeys(state.config.registry?.ordinals ?? {}, true).filter(isString),
 			...Enum.keys(enums.WEEKDAY),
 			...Enum.keys(enums.WEEKDAYS),
 			...Enum.keys(enums.MONTH),
@@ -1197,7 +1188,6 @@ export class Tempo {
 		iso?: string;
 		isoWeek?: { weekOfYear: number; yearOfWeek: number };
 		eraInfo?: { era: string; eraYear: number };
-		meta?: Readonly<{ terms: Readonly<Record<string, readonly string[]>>; ranges: Readonly<Record<string, string>> }>;
 		config?: Readonly<t.Internal.Config>;
 	} = {};
 	/** indicator that the instance failed to parse */				#errored = false;
@@ -1219,8 +1209,6 @@ export class Tempo {
 		const msg = `Unknown Term identifier: ${term}${hint}`;
 		logError(msg, config);
 	}
-
-
 
 	/**
 	 * @internal Internal access to instance private state.
@@ -1592,49 +1580,6 @@ export class Tempo {
 	/** Julian day number for the local ISO calendar date. */	get jj() { return (this.#memo.jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
 	/** Standard ISO 8601 string in UTC */										get iso() { return (this.#memo.iso ??= this.toDateTime().toInstant().toString()); }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
-
-	/** Frozen metadata namespace for registered terms and active ranges */
-	get meta(): Readonly<{
-		terms: Readonly<Record<string, readonly string[]>>;
-		ranges: Readonly<Record<string, string>>;
-	}> {
-		const self = this;
-		let cachedRanges: { ref: TermPlugin[]; len: number; value: Readonly<Record<string, string>> } | undefined;
-		return (this.#memo.meta ??= Object.freeze({
-			get terms(): Readonly<Record<string, readonly string[]>> {
-				const terms = Tempo.#terms;
-				if (Tempo.#termsMetaCache && Tempo.#termsMetaCache.ref === terms && Tempo.#termsMetaCache.len === terms.length)
-					return Tempo.#termsMetaCache.value;
-
-				const base: Record<string, string[]> = {};
-				terms.forEach(term => {
-					const source = (term as any).ranges || (term as any).groups || [];			// check both ranges and groups
-					const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
-					base[term.key] = [...new Set(list.map(r => r.key).filter(isString))];		// collect unique range keys
-				});
-
-				const value = Tempo.#delegateTermMap(base);
-				Tempo.#termsMetaCache = { ref: terms, len: terms.length, value };
-				return value;
-			},
-			get ranges(): Readonly<Record<string, string>> {
-				const terms = Tempo.#terms;
-				if (cachedRanges && cachedRanges.ref === terms && cachedRanges.len === terms.length)
-					return cachedRanges.value;
-
-				const base: Record<string, string> = {};
-				terms.forEach(term => {
-					const val = (self as Tempo).term[term.key];														// access the term-delegate (forces evaluation)
-					const key = isString(val) ? val : (isObject(val) && isString((val as any).key) ? (val as any).key : undefined);
-					if (isString(key)) base[term.key] = key;
-				});
-
-				const value = Tempo.#delegateTermMap(base);
-				cachedRanges = { ref: terms, len: terms.length, value };
-				return value;
-			}
-		}));
-	}
 
 	/** current Tempo configuration */
 	get config(): Readonly<t.Internal.Config> {

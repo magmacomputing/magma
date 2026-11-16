@@ -221,8 +221,8 @@ describe('Tempo.format() refinements', () => {
     const tNum = new Tempo('2024-05-09T03:05:07.042000005Z');
 
     it('zero-fills numeric tokens to specified width', () => {
-      expect(tNum.format('{day:2}')).toBe('09');
-      expect(tNum.format('{day:3}')).toBe('009');
+      expect(tNum.format('{dd:2}')).toBe('09');
+      expect(tNum.format('{dd:3}')).toBe('009');
       expect(tNum.format('{dow:2}')).toBe('04');
       expect(tNum.format('{doy}')).toBe('130');
       expect(tNum.format('{doy:4}')).toBe('0130');
@@ -233,8 +233,8 @@ describe('Tempo.format() refinements', () => {
 
     it('leaves unpadded numbers untouched if width is already equal or smaller', () => {
       const tBig = new Tempo('2024-11-25T15:30:45');
-      expect(tBig.format('{day:2}')).toBe('25');
-      expect(tBig.format('{day:1}')).toBe('25');
+      expect(tBig.format('{dd:2}')).toBe('25');
+      expect(tBig.format('{dd:1}')).toBe('25');
     })
 
     it('works with custom registered tokens returning numeric values (including negative values)', () => {

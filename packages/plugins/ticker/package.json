@@ -47,7 +47,7 @@
   },
   "devDependencies": {
     "@magmacomputing/tempo": "^5.0.0",
-    "@magmacomputing/tempo-plugin-ntp": "^1.0.0"
+    "@magmacomputing/tempo-plugin-ntp": "^1.1.0"
   },
   "keywords": [
     "tempo",

@@ -88,22 +88,22 @@ These properties share the exact same identifier on `t.<prop>` and `{<prop>}`, b
 | **`t.locale`** | `string` (`'en-US'`) | Resolves `'en-US'` on `Tempo` instances via the line 543 `token in obj` fallback (or via `{intl.locale}`), but fails on standalone `format(zdt, '{locale}')`. | ❌ Rejected by `TempoFormatTokens` (`❌ '{locale}' is not a valid Tempo format token`). |
 | **`t.isValid`** | `boolean` | Invalid `Tempo` instances short-circuit `t.format(...)` to `''` before token replacement. | ❌ Not in `TempoFormatTokens` (intentionally a state check rather than a format token). |
 
-### 3.2 Structured Namespace Getters (`t.epoch`, `t.intl`, `t.geo`, `t.fmt`)
+### 3.2 Structured Namespace Getters (`t.epoch`, `t.intl`, `t.geo`, `t.fmt`) *(Resolved / Accepted)*
 `FormatModule` supports dot-delimited namespace resolution (`resolveNamespaceToken` in [`module.format.ts`](../../src/module/module.format.ts#L60-L80)) and `ValidateFormat` accepts any `${string}.${string}` token:
 
-| Namespace Getter | Sub-Properties | Corresponding Format Token Syntax | Notes |
+| Namespace Getter | Sub-Properties | Corresponding Format Token Syntax | Resolution |
 | :--- | :--- | :--- | :--- |
-| **`t.epoch`** | `.ss`, `.ms`, `.us`, `.ns` | `{epoch.ss}`, `{epoch.ms}`, `{epoch.us}`, `{epoch.ns}` | Works on `Tempo` instances (`isTempo(obj)`), but fails on standalone `format(zdt, '{epoch.ms}')` because `zdt` has no `.epoch` namespace. |
-| **`t.intl`** | `.info.firstDay`, `.info.weekend`, `.info.calendar`, `.locale`, etc. | `{intl.firstDay}`, `{intl.region}`, `{intl.hourCycle}`, `{intl.direction}`, `{intl.locale}` | Explicitly bridged in `module.format.ts` line 537 (`{intl.<prop>}` flattens `li` onto `intl`, so `{intl.firstDay}` and `{intl.info.firstDay}` both work). |
-| **`t.geo`** | `.latitude`, `.longitude`, `.elevation`, `.sphere` | `{geo.latitude}`, `{geo.longitude}`, `{geo.elevation}`, `{geo.sphere}` | Works on `Tempo` instances; returns `''` if unconfigured. |
-| **`t.fmt`** | Named presets from `Tempo.enums.FORMAT` (`display`, `weekDate`, `weekTime`, `weekStamp`, `dayMonth`, `dayDate`, `dayTime`, `logStamp`, `sortTime`, `yearWeek`, `yearMonth`, `yearMonthDay`, `date`, `time`) | Passed directly as format names: `t.format('weekDate')` (or `{fmt.weekDate}`) | **Documentation Note**: [`tempo.getters.md`](./tempo.getters.md#L97) currently states `t.fmt.yyyy → '2026'` and `t.fmt.wkd → 'Saturday'`, but `t.fmt` only resolves keys in `enums.FORMAT` and `config.registry.formats`—`t.fmt.yyyy` and `t.fmt.wkd` actually return `undefined`! |
+| **`t.epoch`** | `.ss`, `.ms`, `.us`, `.ns` | `{epoch.ss}`, `{epoch.ms}`, `{epoch.us}`, `{epoch.ns}` | **Accepted.** Native `Temporal` has no `.epoch` property, so standalone `format(zdt, ...)` intentionally does not resolve `{epoch.*}` (use `{ts}` for standalone timestamps). |
+| **`t.intl`** | `.info.firstDay`, `.info.weekend`, `.info.calendar`, `.locale`, etc. | `{intl.firstDay}`, `{intl.region}`, `{intl.hourCycle}`, `{intl.direction}`, `{intl.locale}` | **Accepted.** Explicitly bridged in `module.format.ts` so `LocaleInfo` fields nested under `intl.info` flatten onto `{intl.*}` (supporting both `{intl.firstDay}` and `{intl.info.firstDay}`). |
+| **`t.geo`** | `.latitude`, `.longitude`, `.elevation`, `.sphere` | `{geo.latitude}`, `{geo.longitude}`, `{geo.elevation}`, `{geo.sphere}` | **Accepted.** Resolves on `Tempo` instances and intentionally returns `''` when geographic coordinates are unconfigured. |
+| **`t.fmt`** | Named presets from `Tempo.enums.FORMAT` (`display`, `weekDate`, `weekTime`, `weekStamp`, `dayMonth`, `dayDate`, `dayTime`, `logStamp`, `sortTime`, `yearWeek`, `yearMonth`, `yearMonthDay`, `date`, `time`) | Passed directly as format names: `t.format('weekDate')` (or `{fmt.weekDate}`) | **Resolved.** Corrected [`tempo.getters.md`](../doc/2-core-concepts/tempo.getters.md#L144) to document named format presets (`t.fmt.date`, `t.fmt.display`) instead of raw format tokens (`t.fmt.yyyy`, `t.fmt.wkd`). |
 
-### 3.3 Inspection, Lifecycle & Gateway Getters (Intentionally Non-Format)
+### 3.3 Inspection, Lifecycle & Gateway Getters (Intentionally Non-Format) *(Accepted)*
 The following getters expose internal state, parser ASTs, or native objects and intentionally do not correspond to format tokens:
 * **`t.zdt`**: Underlying `Temporal.ZonedDateTime` gateway (though `{zdt.daysInYear}`, `{zdt.inLeapYear}`, `{zdt.monthCode}` work dynamically on `Tempo` instances via dot-namespace resolution!).
 * **`t.config`**: Active configuration proxy.
 * **`t.parse`**: Parser state and match AST (`.result`).
-* **`t.terms`** / **`t.ranges`** / **`t.term`**: Term registry inspection and term delegator (bridged in `FormatModule` via `{#term}` syntax rather than `{terms}`).
+* **`t.term`**: Instance term delegator accessing resolved terminology (bridged in `FormatModule` via `{#term}` syntax rather than scalar format tokens; `Tempo.terms` provides static registry inspection).
 
 ---
 
@@ -111,17 +111,17 @@ The following getters expose internal state, parser ASTs, or native objects and 
 
 The following tokens are defined in `FormatModule` and `TempoFormatTokens`, but have **no** `t.<token>` getter on `Tempo`:
 
-### 4.1 Legacy v4 Getters Removed from `Tempo`, Retained as Tokens
-| Format Token | Format Output | Getter Status in v5 | Alignment Question |
+### 4.1 Legacy v4 Getters Removed from `Tempo` *(Resolved)*
+| Format Token | Previous Output | Getter Status in v5 | Resolution |
 | :--- | :--- | :--- | :--- |
-| **`{day}`** | Unpadded day of month (`'1'`–`'31'`, identical to `{dd:raw}`) | `t.day` was **removed** in v5 (replaced by `t.dd`). | Should `{day}` be deprecated/removed in favor of `{dd}` / `{dd:raw}`, or kept only as an internal parser token? |
-| **`{nano}`** | Epoch nanoseconds (`'1792843200000000000'`) | `t.nano` was **removed** in v5 (replaced by `t.epoch.ns`). | `{nano}` is retained in `FormatModule` while `t.nano` was removed. |
-| **`{ww}`** | Zero-padded Calendar Week of Year (`'01'`–`'53'`, Jan 1 basis) | `t.ww` was **removed** in v5 (where it previously meant ISO week, now `t.woy`). | `FormatModule` has `{ww}` for Jan-1 calendar week, but `Tempo` has no getter for calendar week (only `t.woy` for ISO week). |
+| **`{day}`** | Unpadded day of month (`'1'`–`'31'`) | `t.day` was **removed** in v5 (replaced by `t.dd`). | **Resolved (Removed):** Removed `{day}` from `module.format.ts` and `TempoFormatTokens`; use `{dd}` or `{dd:raw}` instead. |
+| **`{nano}`** | Epoch nanoseconds (`'1792843200000000000'`) | `t.nano` was **removed** in v5 (replaced by `t.epoch.ns`). | **Resolved (Removed):** Removed `{nano}` from `module.format.ts` and `TempoFormatTokens`; use `{epoch.ns}` (or `{ts}` with `timeStamp: 'ns'`) instead. |
 
 ### 4.2 Calendar & Clock Tokens Without Getters
 | Format Token | Format Output | Closest `Tempo` Getter | Notes |
 | :--- | :--- | :--- | :--- |
 | **`{yyyy}`** | 4-digit zero-padded year (`'2026'`) | `t.yy` (`2026`) | See [Section 2.1](#21-tyy-4-digit-year-vs-yy-2-digit-year--yyyy-4-digit-year). |
+| **`{ww}`** | Zero-padded Calendar Week of Year (`'01'`–`'53'`, Jan 1 basis) | None (ISO week is `t.woy`) | Repurposed in v5 for Jan-1 calendar week (matching Oracle `WW` alongside `{wom}`); no separate `Tempo` getter. |
 | **`{cen}`**, **`{century}`** | 2-digit century (`'20'` for `2026`) | None (`Math.floor(t.yy / 100)`) | No `t.cen` getter on `Tempo`. |
 | **`{wom}`** | 1-based week of month (`'1'`–`'5'`) | None (`Math.ceil(t.dd / 7)`) | No `t.wom` getter on `Tempo`. |
 | **`{julian}`** | Astronomical Julian Day (`'2461338'`) | `t.jj` (`2461338`) | Long-form alias for `{jj}`; no `t.julian` getter. |
@@ -168,7 +168,7 @@ Advanced developers compose custom `Layout` patterns using [`Snippet`](../../src
 | **ISO Week-Year** | `t.yow` | `{yow}` | `Token.yw` (`Symbol('yw')`, unused in `Snippet`) | ❌ **3-way drift**: `Token.yw` vs. `yow` in getter & format |
 | **Week of Year** | `t.woy` (ISO week; `t.ww` removed) | `{woy}` (ISO) / `{ww}` (Jan-1 calendar) | `{ww}` (`(?<ww>0?[1-9]\|[1-4][0-9]\|5[0-3])`) | ⚠️ Snippet uses `{ww}` (no `{woy}` snippet) |
 | **Month** | `t.mm`, `t.mon`, `t.mmm` | `{mm}`, `{mon}`, `{mmm}` | `{mm}` (digits + English/localized names) | ✅ Aligned (`{mm}` covers names & numbers; `{mon}`/`{mmm}` not separate snippets) |
-| **Day of Month** | `t.dd` | `{dd}` (`{day}` legacy alias) | `{dd}` (`3[01]\|...{ord}?`) | ✅ Aligned |
+| **Day of Month** | `t.dd` | `{dd}` | `{dd}` (`3[01]\|...{ord}?`) | ✅ Aligned |
 | **Weekday Name** | `t.wkd` (full), `t.www` (short) | `{wkd}` (full), `{www}` (short) | `{wkd}` (`Snippet[Token.wkd]`); `Token.www` exists in `Token` without a `Snippet` entry | ⚠️ `Token.www` is declared under Snippet Symbols while `Snippet` actually keys on `Token.wkd` (which lives under Layout Symbols) |
 | **Day of Week / Year** | `t.dow`, `t.doy` | `{dow}`, `{doy}` | None (`{nth}` + `{unt}` in `Layout[Token.ordUnt]`) | ℹ️ No scalar snippet (parsed via ordinal-unit layout) |
 | **Julian Day** | `t.jj` | `{jj}`, `{julian}` | None | ℹ️ **Not a parse snippet** (getter + dual format tokens only) |
@@ -187,7 +187,7 @@ The following [`Token`](../../src/support/support.symbol.ts#L115-L131) keys exis
 
 ## 7. Type Registry Alignment (`TempoFormatTokens`)
 
-Compile-time format string validation (`ValidateFormat`) derives its core token set from [`TempoFormatTokens`](../../src/tempo.type.ts#L257-L281) (`44` scalar/composite keys, plus `:<modifier>`, `#<term>`, and `<namespace>.<prop>`). Comparing `TempoFormatTokens` against `FormatModule` and `Tempo` getters reveals three type-registry gaps:
+Compile-time format string validation (`ValidateFormat`) derives its core token set from [`TempoFormatTokens`](../../src/tempo.type.ts#L257-L281) (`42` scalar/composite keys, plus `:<modifier>`, `#<term>`, and `<namespace>.<prop>`). Comparing `TempoFormatTokens` against `FormatModule` and `Tempo` getters reveals three type-registry gaps:
 
 | Token | In `Tempo` Getters? | In `FormatModule` `switch`? | In `TempoFormatTokens`? | Alignment Note |
 | :--- | :--- | :--- | :--- | :--- |
@@ -201,9 +201,9 @@ Compile-time format string validation (`ValidateFormat`) derives its core token 
 
 If we want to tighten alignment between `t.<prop>` and `t.format('{<prop>}')` in upcoming v5 branches, the highest-value candidates are:
 
-1. **Fix `{ts}` in `module.format.ts` to respect `'us'` and `'ns'` `timeStamp` configurations** so `t.ts` and `t.format('{ts}')` always return the exact same value.
-2. **Add explicit `case 'iso':` and `case 'locale':` (and `case 'sphere':`) handlers in `module.format.ts`**, and add `locale: true` to `TempoFormatTokens`, so `{iso}`, `{sphere}`, and `{locale}` work both on `Tempo` instances and in standalone `format(zdt, ...)` calls with full TypeScript validation.
-3. **Correct the `t.fmt` example in `tempo.getters.md`** (line 97) from `t.fmt.yyyy` / `t.fmt.wkd` to actual `Tempo.enums.FORMAT` keys (`t.fmt.date`, `t.fmt.display`, `t.fmt.logStamp`).
+1. **~~Fix `{ts}` in `module.format.ts` to respect `'us'` and `'ns'` `timeStamp` configurations~~** *(Resolved in Section 2.4: `{ts}` now supports `'ss'`, `'ms'`, `'us'`, and `'ns'` identically to `t.ts`.)*
+2. **Add explicit `case 'iso':` and `case 'locale':` (and `case 'sphere':`) handlers in `module.format.ts`**, and add `locale: true` to `TempoFormatTokens`, so `{iso}`, `{sphere}`, and `{locale}` work both on `Tempo` instances and in standalone `format(zdt, ...)` calls with full TypeScript validation. *(Note: `{iso}` and `{sphere}` resolved in Section 2.5.)*
+3. **~~Correct the `t.fmt` example in `tempo.getters.md`~~** *(Resolved in Section 3.2: updated [`tempo.getters.md`](../doc/2-core-concepts/tempo.getters.md#L144) to use actual `Tempo.enums.FORMAT` keys `t.fmt.date` and `t.fmt.display`.)*
 4. **~~Decide on `t.eon` / `t.era` fallback behavior on `iso8601`~~** *(Resolved in Section 2.3: `t.era` falls back to `'ce'`/`'bce'` and `t.eon` matches `{eon}`, while `t.zdt.era` / `t.zdt.eraYear` expose raw Temporal values.)*
 5. **Evaluate whether `wom` / `cen` / `ww` warrant getters or should remain format-only.**
 6. **Clean up `Token` snippet symbol drift in [`support.symbol.ts`](../../src/support/support.symbol.ts#L104-L154)**:

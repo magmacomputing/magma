@@ -266,7 +266,7 @@ export interface TempoFormatTokens {
 	// ── month ─────────────────────────────────────────
 	mm: true; mon: true; mmm: true;
 	// ── day ───────────────────────────────────────────
-	dd: true; day: true; dow: true; doy: true; wkd: true; www: true;
+	dd: true; dow: true; doy: true; wkd: true; www: true;
 	// ── hour / minute / second ────────────────────────
 	hh: true; h24: true; h12: true; mer: true;
 	mi: true; ss: true;
@@ -275,7 +275,7 @@ export interface TempoFormatTokens {
 	// ── composite date/time ───────────────────────────
 	ymd: true; dmy: true; mdy: true; hms: true; time: true;
 	// ── timestamp / zone / calendar ───────────────────
-	ts: true; nano: true; tz: true; cal: true; sphere: true; iso: true;
+	ts: true; tz: true; cal: true; sphere: true; iso: true;
 	// ── specialized tokens & counters ─────────────────
 	cen: true; century: true; dim: true; diy: true; jj: true; julian: true; wom: true;
 }

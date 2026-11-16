@@ -1,6 +1,9 @@
 import './suppress-warnings.js';
+import repl from 'node:repl';
 import { Tempo, enums } from '#tempo';
 import { stringify, objectify, enumify, getType, Pledge, signify, Signify, Signal } from '#library';
+
+repl.writer.options.showProxy = false;
 
 // pre-load Tempo to the global scope for ease of use in the REPL
 Object.assign(globalThis, { Tempo, getType, stringify, objectify, enumify, enums, Pledge, signify, Signify, Signal });

@@ -100,8 +100,8 @@ export function resolveNth(str: any, config?: any): number {
 	}
 	const low = str.trim().toLowerCase();
 	if (config?.registry?.ordinals) {
-		for (const [k, v] of Object.entries(config.registry.ordinals)) {
-			if (k.toLowerCase() === low && isNumber(v)) return v as number;
+		for (const [k, v] of ownEntries(config.registry.ordinals, true)) {
+			if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
 		}
 	}
 	const ordValue = enums.ORDINAL[low];

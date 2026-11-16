@@ -1,3 +1,5 @@
+import { inspect } from 'node:util';
+import { enumify } from '#library/enumerate.library.js';
 import { delegator, proxify, secure, type Proxified } from '#library/proxy.library.js';
 
 describe('proxy method binding', () => {
@@ -95,5 +97,23 @@ describe('secure serialization', () => {
 		expect(secured.toJSON()).toEqual({ a: 1, b: 2 });
 		expect(secured.toJSON()).not.toBe(secured);
 		expect(JSON.stringify(secured)).toBe('{"a":1,"b":2}');
+	});
+
+	test('formats proxify and enumify objects cleanly via util.inspect without Proxy wrapper', () => {
+		const obj = proxify({ a: 1 }, true);
+		const objOut = inspect(obj);
+		expect(objOut).not.toContain('Proxy');
+		expect(objOut).toContain('a: 1');
+
+		const list = proxify(['alpha', 'beta'], true);
+		const listOut = inspect(list);
+		expect(listOut).not.toContain('Proxy');
+		expect(listOut).toContain('alpha');
+
+		const e = enumify({ A: 1, B: 2 });
+		const enumOut = inspect(e);
+		expect(enumOut).not.toBe('{}');
+		expect(enumOut).toContain('A: 1');
+		expect(enumOut).toContain('B: 2');
 	});
 });

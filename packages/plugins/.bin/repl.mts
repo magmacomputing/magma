@@ -5,6 +5,8 @@ import repl from 'node:repl';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Tempo, enums } from '@magmacomputing/tempo';
 
+repl.writer.options.showProxy = false;
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let mockToken = process.env.TEMPO_LICENSE_KEY || undefined;
