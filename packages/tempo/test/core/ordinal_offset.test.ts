@@ -269,6 +269,17 @@ describe('Core Ordinal Offset Parsing', () => {
 			const tDosCaseOverride = new Fourth('dos days hence', { anchor });
 			expect(tDosCaseOverride.isValid).toBe(true);
 			expect(tDosCaseOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
+
+			let Deep = Tempo.derive({ registry: { numbers: { deepuno: 2 }, ordinals: { customsecond: 2 } } });
+			for (let i = 0; i < 52; i++) {
+				Deep = Deep.derive({ registry: { numbers: { [`n${i}`]: i + 10 }, ordinals: { [`o${i}`]: i + 10 } } });
+			}
+			const tDeepNum = new Deep('deepuno days hence', { anchor });
+			expect(tDeepNum.isValid).toBe(true);
+			expect(tDeepNum.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
+			const tDeepOrd = new Deep('customsecond day of May 2026', { anchor });
+			expect(tDeepOrd.isValid).toBe(true);
+			expect(tDeepOrd.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-02');
 		});
 	});
 });

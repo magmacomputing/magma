@@ -657,6 +657,12 @@ describe('Tempo.format() refinements', () => {
       const parsed = new Tempo(formatted, { format: '{dd}-{mm}-{yy:long}' });
       expect(parsed.isValid).toBe(true);
       expect(parsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+      const compact = new Tempo('2026-11-25').format('{yy:long}{mm}{dd}');
+      expect(compact).toBe('20261125');
+      const compactParsed = new Tempo(compact, { format: '{yy:long}{mm}{dd}' });
+      expect(compactParsed.isValid).toBe(true);
+      expect(compactParsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-25');
     });
   });
 })

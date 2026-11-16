@@ -112,7 +112,7 @@ function compileBracedPattern(fmt: string): RegExp {
 					break;
 				case 'yy':
 					pattern += normMods.includes('long')
-						? group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'))
+						? group('yyyy', romanOr('[+-]\\d{4,6}|\\d{4}'))
 						: group('yy', romanOr('\\d{2}'));
 					break;
 				case 'mm':

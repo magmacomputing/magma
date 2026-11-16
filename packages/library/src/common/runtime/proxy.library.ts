@@ -46,37 +46,63 @@ export type Proxified<T extends object = object> = Proxied<T> & {
  *
  * @internal
  */
-function snapshotInspect(src: object): object {
+function snapshotInspect(src: object, seen = new WeakMap<object, object>()): object {
 	const unwrapped = unwrap(src);
+	const cached = seen.get(unwrapped);
+	if (cached) return cached;
+
+	const resolveValue = (v: unknown) => {
+		if (!isReference(v) || isFunction(v)) return v;
+		const inner = unwrap(v as object);
+		if (seen.has(inner)) return seen.get(inner)!;
+		if (Array.isArray(inner) || isPlainObject(inner) || getSafeTag(inner) === 'Enumify') {
+			return snapshotInspect(inner, seen);
+		}
+		return v;
+	};
+
 	if (Array.isArray(unwrapped)) {
 		const out = new Array<unknown>(unwrapped.length);
+		seen.set(unwrapped, out);
 		for (const k of Reflect.ownKeys(unwrapped)) {
 			if (k === 'length' || k === sym.$Inspect) continue;
 			const desc = Object.getOwnPropertyDescriptor(unwrapped, k);
 			if (desc?.enumerable) {
-				Object.defineProperty(out, k, { ...desc, configurable: true });
+				Object.defineProperty(out, k, {
+					...desc,
+					...('value' in desc ? { value: resolveValue(desc.value) } : {}),
+					configurable: true,
+				});
 			}
 		}
 		return out;
 	}
 
 	const out: Record<PropertyKey, unknown> = {};
+	seen.set(unwrapped, out);
 	const levels: object[] = [];
-	const limit = 50;
-	let depth = 0;
+	const visited = new WeakSet<object>();
 	let curr: any = unwrapped;
 
-	while (curr && curr !== Object.prototype && depth++ < limit) {
+	while (curr && curr !== Object.prototype) {
 		const level = unwrap(curr);
+		if (visited.has(level)) break;
+		visited.add(level);
 		levels.push(level);
 		curr = Object.getPrototypeOf(level);
 	}
 
 	for (const level of levels.reverse()) {
 		for (const k of Reflect.ownKeys(level)) {
+			if (k === sym.$Inspect) continue;
 			const desc = Object.getOwnPropertyDescriptor(level, k);
-			if (desc && desc.enumerable)
-				Object.defineProperty(out, k, { ...desc, configurable: true });
+			if (desc && desc.enumerable) {
+				Object.defineProperty(out, k, {
+					...desc,
+					...('value' in desc ? { value: resolveValue(desc.value) } : {}),
+					configurable: true,
+				});
+			}
 		}
 	}
 
@@ -170,8 +196,11 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 		return cachedJSON;
 	};
 
+	const ctorDesc = Object.getOwnPropertyDescriptor(tgt, 'constructor');
+	const hasAccessorCtor = Boolean(ctorDesc && !('value' in ctorDesc));
+
 	// Expose Node custom inspection directly on supported targets so util.inspect finds it after unwrapping the Proxy
-	if (frozen && (Boolean(keys) || isInspectableTarget || hasInheritedCustomInspect) && !hasOwnCustomInspect && !hasGeneratedInspect && Object.isExtensible(tgt)) {
+	if (frozen && !hasAccessorCtor && (Boolean(keys) || isInspectableTarget || hasInheritedCustomInspect) && !hasOwnCustomInspect && !hasGeneratedInspect && Object.isExtensible(tgt)) {
 		Object.defineProperty(tgt, sym.$Inspect, {
 			value: createTargetInspectHook(tgt, isEnumTarget),
 			enumerable: false,

@@ -179,6 +179,23 @@ describe('secure serialization', () => {
 		});
 		const pArr = proxify(arr, true, false);
 		expect(inspect(pArr)).toContain('[Getter]');
+
+		const ctorObj = {
+			get constructor(): any {
+				throw new Error('unexpected constructor read');
+			}
+		};
+		expect(() => inspect(proxify(ctorObj, true, false))).not.toThrow();
+
+		const circObj: Record<string, any> = { a: 1 };
+		circObj.self = circObj;
+		const circObjOut = inspect(proxify(circObj, true, false), { depth: null });
+		expect(circObjOut).toContain('[Circular');
+
+		const circArr: unknown[] = [1];
+		circArr.push(circArr);
+		const circArrOut = inspect(proxify(circArr, true, false), { depth: null });
+		expect(circArrOut).toContain('[Circular');
 	});
 
 	test('preserves inherited class prototype custom inspection hooks', () => {

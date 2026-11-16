@@ -14,7 +14,7 @@ const RE_ERA_BCE = /b\.?c\.?(?:e\.?)?|bc/i;
 const RE_ZONE_OFFSET = /^([+-])(\d{1,2})(?::?(\d{2}))?$/;
 
 /**
- * Internal Lexer helpers for the Tempo parsing engine.  
+ * Internal Lexer helpers for the Tempo parsing engine.
  * Extracted from Tempo class to reduce core file size.
  */
 
@@ -26,13 +26,14 @@ namespace Lexer {
 
 function findRegistryEntry(registry: any, low: string): number | undefined {
 	if (!registry || typeof registry !== 'object' || !low) return undefined;
+	const visited = new WeakSet<object>();
 	let curr: any = registry;
-	let depth = 0;
-	while (curr && curr !== Object.prototype && depth++ < 50) {
+	while (curr && curr !== Object.prototype) {
 		const level = unwrap(curr);
-		for (const [k, v] of ownEntries(level)) {
+		if (visited.has(level)) break;
+		visited.add(level);
+		for (const [k, v] of ownEntries(level))
 			if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
-		}
 		curr = Object.getPrototypeOf(level);
 	}
 	return undefined;
