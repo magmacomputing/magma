@@ -46,6 +46,19 @@ describe(`${label}`, () => {
       unsubscribe();
       Tempo.init({ locale: 'es-ES' });
       expect(seen).toEqual(['fr-FR']);
+
+      const seenAfterThrow: string[] = [];
+      const unsubBad = onConfigChange(() => { throw new Error('observer boom'); });
+      const unsubGood = onConfigChange((cfg) => {
+        if (cfg.locale) seenAfterThrow.push(String(cfg.locale));
+      });
+      try {
+        expect(() => Tempo.init({ locale: 'it-IT' })).not.toThrow();
+        expect(seenAfterThrow).toEqual(['it-IT']);
+      } finally {
+        unsubBad();
+        unsubGood();
+      }
     } finally {
       unsubscribe();
       Tempo.init({ locale: undefined });

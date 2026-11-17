@@ -665,6 +665,13 @@ describe('Tempo.format() refinements', () => {
       expect(compactParsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-25');
 
       expect(new Tempo('-000001-01-01').format('{yy:long}')).toBe('-0001');
+
+      const ext = new Tempo('+012345-06-15');
+      const extFormatted = ext.format('{dd}-{mm}-{yy:long}');
+      expect(extFormatted).toBe('15-06-+12345');
+      const extParsed = new Tempo(extFormatted, { format: '{dd}-{mm}-{yy:long}' });
+      expect(extParsed.isValid).toBe(true);
+      expect(extParsed.yy).toBe(12345);
     });
   });
 })

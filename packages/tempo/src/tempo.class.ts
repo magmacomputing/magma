@@ -37,7 +37,7 @@ import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
 import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, isCompareUnit, resolveCompareUnit, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, notifyConfigChange, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, isCompareUnit, resolveCompareUnit, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -372,6 +372,8 @@ export class Tempo {
 			setPatterns(shape);
 			this[$buildGuard](shape);
 		}
+		if (shape === _global && !_lifecycle.initialising)
+			notifyConfigChange(shape.config);
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -745,6 +747,8 @@ export class Tempo {
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
 
 			_lifecycle.ready = true;
+			if (isBase)
+				notifyConfigChange(state.config);
 			return this;
 		} catch (err) {
 			_lifecycle.ready = false;

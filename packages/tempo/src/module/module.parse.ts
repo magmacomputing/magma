@@ -568,17 +568,17 @@ const _ParseEngine = {
 							if (visited.has(curr)) break;
 							visited.add(curr);
 							for (const [k, v] of Object.entries(curr)) {
-								if (isString(k) && !hasOwn(localOrdinals, k.toLowerCase()))
-									localOrdinals[k.toLowerCase()] = v as number;
+								if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
+									localOrdinals[k.toLowerCase()] = v;
 							}
 							const level = unwrap(curr);
 							if (level !== curr) {
 								if (visited.has(level)) break;
 								visited.add(level);
 								for (const [k, v] of ownEntries(level)) {
-									if (isString(k) && !hasOwn(localOrdinals, k.toLowerCase()))
-										localOrdinals[k.toLowerCase()] = v as number;
-									}
+									if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
+										localOrdinals[k.toLowerCase()] = v;
+								}
 							}
 							curr = Object.getPrototypeOf(level);
 						}

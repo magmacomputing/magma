@@ -204,6 +204,7 @@ export function getRuntime(): TempoRuntime {
 		if (!existing.modules) (existing as any).modules = {};
 		if (!existing.installed) (existing as any).installed = new Set();
 		if (!existing.resetHooks) (existing as any).resetHooks = new Set();
+		if (!existing.configHooks) (existing as any).configHooks = new Set();
 		if (!existing.versionOwners) (existing as any).versionOwners = new Map();
 		return existing;
 	}

@@ -145,7 +145,7 @@ const DIALECTS: DialectConfig[] = [
       { external: '%-y', tempo: '{yy:raw}', category: 'Year', description: 'Unpadded 2-digit year (0–99)', example: '6' },
       { external: '%G', tempo: '{yow}', category: 'Year', description: '4-digit ISO week-numbering year', example: '2026' },
       { external: '%g', tempo: '{yow:-2}', category: 'Year', description: '2-digit ISO week-numbering year', example: '26' },
-      { external: '%C', tempo: '—', category: 'Year', description: 'Century number (00–99; compute via Math.floor(t.yy / 100))', example: '20' },
+      { external: '%C', tempo: '', category: 'Year', description: 'Century number (00–99; compute via Math.floor(t.yy / 100))', example: '20' },
       { external: '%m', tempo: '{mm}', category: 'Month', description: 'Zero-padded month (01–12)', example: '10' },
       { external: '%-m', tempo: '{mm:raw}', category: 'Month', description: 'Unpadded month (1–12)', example: '10' },
       { external: '%b / %h', tempo: '{mmm}', category: 'Month', description: 'Abbreviated month name', example: 'Oct' },

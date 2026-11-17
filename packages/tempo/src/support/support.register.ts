@@ -30,8 +30,13 @@ export function onConfigChange(hook: (config: Internal.Config) => void): () => v
 
 /** @internal Notify registered config-change hooks after a global configuration update. */
 export function notifyConfigChange(config: Internal.Config): void {
-	for (const hook of rt.configHooks)
-		hook(config);
+	for (const hook of rt.configHooks) {
+		try {
+			hook(config);
+		} catch (err) {
+			logWarn('[tempo] onConfigChange hook failed', {}, err);
+		}
+	}
 }
 
 /** Reset all extendable registries to their original built-in defaults */

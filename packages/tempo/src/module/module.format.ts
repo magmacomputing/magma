@@ -318,7 +318,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			case 'yyyy': res = pad(zdt.year, 4); break;
 			case 'yy':
 				res = normMods.includes('long')
-					? (zdt.year < 0 ? `-${pad(Math.abs(zdt.year), 4)}` : pad(zdt.year, 4))
+					? (zdt.year < 0 ? `-${pad(Math.abs(zdt.year), 4)}` : (zdt.year > 9999 ? `+${zdt.year}` : pad(zdt.year, 4)))
 					: pad(zdt.year % 100);
 				break;
 			case 'yow': {

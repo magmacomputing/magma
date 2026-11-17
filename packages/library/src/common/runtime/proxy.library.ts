@@ -71,18 +71,20 @@ function snapshotInspect(src: object, seen = new WeakMap<object, object>(), dept
 
 		if (seen.has(v as object)) return seen.get(v as object)!;
 		let inner: object;
+		let hasOwnCustom = false;
+		let innerIsEnum = false;
+		let hasInheritedCustom = false;
 		try {
 			inner = unwrap(v as object);
+			const ownInspectDesc = Object.getOwnPropertyDescriptor(inner, sym.$Inspect);
+			const ownInspectVal = ownInspectDesc?.value;
+			hasOwnCustom = Boolean(ownInspectDesc) && !(isFunction(ownInspectVal) && generatedInspectHooks.has(ownInspectVal));
+			innerIsEnum = isEnumifyTarget(inner);
+			const innerProto = Object.getPrototypeOf(inner);
+			hasInheritedCustom = !innerIsEnum && Boolean(innerProto && (sym.$Inspect in innerProto));
 		} catch {
 			return v;
 		}
-
-		const ownInspectDesc = Object.getOwnPropertyDescriptor(inner, sym.$Inspect);
-		const ownInspectVal = ownInspectDesc?.value;
-		const hasOwnCustom = Boolean(ownInspectDesc) && !(isFunction(ownInspectVal) && generatedInspectHooks.has(ownInspectVal));
-		const innerIsEnum = isEnumifyTarget(inner);
-		const innerProto = Object.getPrototypeOf(inner);
-		const hasInheritedCustom = !innerIsEnum && Boolean(innerProto && (sym.$Inspect in innerProto));
 		if (hasOwnCustom || hasInheritedCustom) return v;
 
 		const canDescendHere = isNullish(currentDepth) || currentDepth >= 0;
@@ -174,11 +176,18 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 		const recv = isReference(this) && !isFunction(this) ? this : fallbackTarget;
 		if (!isEnum) {
 			const liveTarget = isReference(recv) ? unwrap(recv) : fallbackTarget;
-			const proto = Object.getPrototypeOf(liveTarget);
-			if (proto && (sym.$Inspect in proto)) {
-				const inherited = Reflect.get(proto, sym.$Inspect, liveTarget);
-				if (isFunction(inherited) && !generatedInspectHooks.has(inherited))
-					return inherited.apply(liveTarget, [depth, ...args]);
+			const visited = new WeakSet<object>();
+			let proto = Object.getPrototypeOf(liveTarget);
+			while (proto && proto !== Object.prototype) {
+				if (visited.has(proto)) break;
+				visited.add(proto);
+				const desc = Object.getOwnPropertyDescriptor(proto, sym.$Inspect);
+				if (desc) {
+					const fn = 'value' in desc ? desc.value : Reflect.get(proto, sym.$Inspect, liveTarget);
+					if (isFunction(fn) && !generatedInspectHooks.has(fn))
+						return fn.apply(liveTarget, [depth, ...args]);
+				}
+				proto = Object.getPrototypeOf(proto);
 			}
 		}
 		const proxyInspector = proxyInspectors.get(recv);

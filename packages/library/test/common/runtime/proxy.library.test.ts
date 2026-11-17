@@ -320,6 +320,19 @@ describe('secure serialization', () => {
 		};
 		inspect(proxify({ child: childWithProtoGetter }, true, false));
 		expect(protoGetterCalls).toBe(0);
+
+		// Proxying a child of a proxified base still honors the base's inherited custom hook
+		const baseWithHook = Object.create({
+			[sym.$Inspect]() {
+				return '[redacted-base]';
+			},
+		});
+		const proxifiedBase = proxify(baseWithHook, true, false);
+		const derivedChild = Object.create(proxifiedBase);
+		derivedChild.token = 'secret-child';
+		const proxifiedDerived = proxify(derivedChild, true, false);
+		expect(inspect(proxifiedDerived)).toContain('[redacted-base]');
+		expect(inspect(proxifiedDerived)).not.toContain('secret-child');
 	});
 
 	test('preserves inherited class prototype custom inspection hooks', () => {
