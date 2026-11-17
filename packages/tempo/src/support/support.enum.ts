@@ -1,12 +1,12 @@
 import { sym } from './support.symbol.js';
-import { enumify, Enum } from '#library/enumerate.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { allDescriptors } from '#library/reflection.library.js';
 import { looseIndex } from '#library/object.library.js';
 import type { OwnOf, KeyOf, ValueOf, LooseUnion } from '#library/type.library.js';
 
 /** calendar seasons */
-export const SEASON = enumify({
+export const SEASON = Enum.from({
 	/** Spring season */ Spring: 'spring',
 	/** Summer season */ Summer: 'summer',
 	/** Autumn season */ Autumn: 'autumn',
@@ -15,7 +15,7 @@ export const SEASON = enumify({
 export type SEASON = ValueOf<typeof SEASON>
 
 /** cardinal directions */
-export const COMPASS = looseIndex<string, string>()(enumify({
+export const COMPASS = looseIndex<string, string>()(Enum.from({
 	/** North direction */ North: 'north',
 	/** South direction */ South: 'south',
 	/** East direction */ East: 'east',
@@ -176,9 +176,9 @@ defineExtensible(STATE.MONTH_DAY);
 defineExtensible(STATE.LOCALE);
 
 /** Gregorian calendar week-days (short-form) */
-export const WEEKDAY = enumify({ Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 });
+export const WEEKDAY = Enum.from({ Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 });
 /** Gregorian calendar week-days (long-form) */
-export const WEEKDAYS = enumify({ Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 });
+export const WEEKDAYS = Enum.from({ Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 });
 
 export type WEEKDAY = KeyOf<typeof WEEKDAY>
 export type Weekday = ValueOf<typeof WEEKDAY>
@@ -186,9 +186,9 @@ export type WEEKDAYS = KeyOf<typeof WEEKDAYS>
 export type Weekdays = ValueOf<typeof WEEKDAYS>
 
 /** Gregorian calendar months (short-form) */
-export const MONTH = enumify({ Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 });
+export const MONTH = Enum.from({ Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 });
 /** Gregorian calendar months (long-form) */
-export const MONTHS = enumify({ January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7, August: 8, September: 9, October: 10, November: 11, December: 12 });
+export const MONTHS = Enum.from({ January: 1, February: 2, March: 3, April: 4, May: 5, June: 6, July: 7, August: 8, September: 9, October: 10, November: 11, December: 12 });
 
 export type MONTH = KeyOf<typeof MONTH>
 export type Month = ValueOf<typeof MONTH>
@@ -196,12 +196,12 @@ export type MONTHS = KeyOf<typeof MONTHS>
 export type Months = ValueOf<typeof MONTHS>
 
 /** number names (0-10) */
-export const NUMBER = looseIndex<string, number>()(enumify(STATE.NUMBER, false));
+export const NUMBER = looseIndex<string, number>()(Enum.from(STATE.NUMBER, false));
 export type NUMBER = typeof NUMBER;
 export type Number = KeyOf<typeof NUMBER>
 
 /** ordinal names */
-export const ORDINAL = looseIndex<string, number>()(enumify(STATE.ORDINAL, false));
+export const ORDINAL = looseIndex<string, number>()(Enum.from(STATE.ORDINAL, false));
 export type ORDINAL = typeof ORDINAL;
 export type Ordinal = KeyOf<typeof ORDINAL>;
 
@@ -211,15 +211,15 @@ export type TIMEZONE = typeof TIMEZONE;
 export type Timezone = ValueOf<typeof TIMEZONE>
 
 /** number of seconds in a time unit */
-export const DURATION = enumify(STATE.DURATION, false);
+export const DURATION = Enum.from(STATE.DURATION, false);
 export type DURATION = KeyOf<typeof DURATION>
 
 /** number of milliseconds in a time unit */
-export const DURATIONS = enumify(STATE.DURATIONS, false);
+export const DURATIONS = Enum.from(STATE.DURATIONS, false);
 export type DURATIONS = KeyOf<typeof DURATIONS>
 
 /** common format aliases */
-export const FORMAT = looseIndex<string, string>()(enumify(STATE.FORMAT, false));
+export const FORMAT = looseIndex<string, string>()(Enum.from(STATE.FORMAT, false));
 export type FORMAT = typeof FORMAT;
 export type Format = LooseUnion<KeyOf<typeof FORMAT> & string>
 
@@ -242,7 +242,7 @@ export const LOCALE = proxify(STATE.LOCALE, true, true);
 
 /** date-time element tokens */
 const elementKeys = ['yy', 'mm', 'wy', 'ww', 'woy', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;
-export const ELEMENT = enumify({
+export const ELEMENT = Enum.from({
 	/** Year element */ yy: 'year',
 	/** Month element */ mm: 'month',
 	/** @internal ISO week number element */ wy: 'week',
@@ -261,23 +261,23 @@ export type Element = KeyOf<typeof ELEMENT>
 
 /** allowed mutation keys for .set() and .add() */
 const mutationKeys = [...elementKeys, 'yw', 'yow', 'isoYear', 'isoyear', 'isoWeek', 'isoweek', 'event', 'period', 'clock', 'time', 'date', 'start', 'mid', 'end'] as const;
-export const MUTATION = enumify(mutationKeys, false);
+export const MUTATION = Enum.from(mutationKeys, false);
 export type MUTATION = ValueOf<typeof MUTATION>
 export type Mutation = KeyOf<typeof MUTATION>
 
 /** allowed keys for ZonedDateTime-like objects */
 const zonedDateTimeKeys = ['value', 'timeZoneId', 'calendarId', 'monthCode', 'offset', 'timeZone', 'calendar', 'year', 'month', 'day', 'hour', 'minute', 'second', ...elementKeys] as const;
-export const ZONED_DATE_TIME = enumify(zonedDateTimeKeys, false);
+export const ZONED_DATE_TIME = Enum.from(zonedDateTimeKeys, false);
 export type ZONED_DATE_TIME = ValueOf<typeof ZONED_DATE_TIME>
 export type ZonedDateTime = KeyOf<typeof ZONED_DATE_TIME>
 
 /** allowed keys for Tempo configuration options */
 const configKeys = ['config', 'parse', 'value', 'intl', 'localeInfo', 'store', 'discovery', 'debug', 'catch', 'silent', 'timeZone', 'calendar', 'locale', 'sphere', 'geo', 'latitude', 'lat', 'longitude', 'lng', 'timeStamp', 'registry', 'plugins', 'extends', 'cache'] as const;
-export const CONFIG = enumify(configKeys, false);
+export const CONFIG = Enum.from(configKeys, false);
 export type Config = KeyOf<typeof CONFIG>
 
 /** initialization strategies */
-export const MODE = enumify({
+export const MODE = Enum.from({
 	/** automatic initialization mode */ Auto: 'auto',
 	/** strict initialization mode */ Strict: 'strict',
 	/** deferred initialization mode */ Defer: 'defer',
@@ -285,7 +285,7 @@ export const MODE = enumify({
 export type MODE = ValueOf<typeof MODE>
 
 /** cache operation modes */
-export const CACHE = enumify({
+export const CACHE = Enum.from({
 	/** cache disabled */ Off: false,
 	/** cache enabled */ On: true,
 	/** refresh cache */ Refresh: 'refresh',
@@ -294,12 +294,12 @@ export type CACHE = ValueOf<typeof CACHE>
 
 /** allowed keys for internal parse state */
 const parseKeys = ['monthDay', 'planner', 'layoutOrder', 'preFilter', 'mode', 'pivot', 'snippet', 'layout', 'event', 'period', 'anchor'] as const;
-export const PARSE = enumify(parseKeys, false);
+export const PARSE = Enum.from(parseKeys, false);
 export type Parse = KeyOf<typeof PARSE>
 
 /** allowed keys for global discovery objects */
 const discoveryKeys = ['options', 'extends', 'plugins', 'terms', 'timeZones', 'monthDay', 'intl', 'planner', 'numbers', 'ordinals', 'formats', 'ignore'] as const;
-export const DISCOVERY = enumify(discoveryKeys, false);
+export const DISCOVERY = Enum.from(discoveryKeys, false);
 export type Discovery = KeyOf<typeof DISCOVERY>
 
 /** @internal LIVE Registries mapping (STATE key -> Enum/Proxy) */

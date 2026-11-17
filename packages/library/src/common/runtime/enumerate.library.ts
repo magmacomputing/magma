@@ -1,5 +1,5 @@
 import { asType, getType } from '#library/type.library.js';
-import { isNumeric, isBranded } from '#library/assertion.library.js';
+import { isNumeric, isBranded, isReference } from '#library/assertion.library.js';
 import { ownEntries, unwrap } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
@@ -60,6 +60,9 @@ function isChainFrozen(obj: unknown): boolean {
  * Immune to member property shadowing and replaces legacy prototype methods.
  */
 const enumMethods = {
+	/** Create a frozen Enum instance from a dictionary or string array (preferred over `enumify`) */
+	from: enumify,
+
 	/** Check if a value is a genuine Enum instance (mirrors Array.isArray) */
 	isEnum,
 
@@ -144,8 +147,11 @@ const enumMethods = {
 		return inverted as any;
 	},
 
-	/** Derive a new enum by inheriting from a base enum */
-	derive: deriveEnum,
+	/** Extend a base enum by inheriting from it via prototype delegation */
+	extend: extendEnum,
+
+	/** Merge two or more enums or dictionaries left-to-right into a flat Enum */
+	merge: mergeEnum,
 
 	/** Custom instance-of check supporting `val instanceof Enum` or predicate checking */
 	[Symbol.hasInstance](instance: any): boolean {
@@ -154,11 +160,33 @@ const enumMethods = {
 };
 type enumMethods = typeof enumMethods;
 
-function deriveEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
-function deriveEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
-function deriveEnum(enumObj: any, list: any, frozen?: boolean): any {
+function extendEnum<T extends Property<any>, const E extends readonly any[]>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof Index<E>> & Index<E>>;
+function extendEnum<T extends Property<any>, const E extends Property<any>>(enumObj: T, list: E, frozen?: boolean): Enum.wrap<Omit<T, keyof E> & E>;
+function extendEnum(enumObj: any, list: any, frozen?: boolean): any {
 	const base = isEnum(enumObj) ? enumObj : enumify(enumObj);
 	return (enumify as any).call(base, list, frozen);
+}
+
+type MergeSources<T extends readonly Property<any>[]> = T extends readonly [
+	infer Head extends Property<any>,
+	...infer Tail extends readonly Property<any>[],
+]
+	? Omit<Head, keyof MergeSources<Tail>> & MergeSources<Tail>
+	: {};
+
+function mergeEnum<const T extends readonly Property<any>[]>(...sources: T): Enum.wrap<MergeSources<T>> {
+	const merged: Record<PropertyKey, any> = Object.create(null);
+	for (const src of sources as readonly any[]) {
+		if (!isReference(src)) continue;
+		const entries = isEnum(src)
+			? enumMethods.entries(src)
+			: Array.isArray(src)
+				? (src as readonly any[]).map((key, idx) => [String(key), idx] as const)
+				: ownEntries(src, true);
+		for (const [k, v] of entries)
+			merged[k] = v;
+	}
+	return enumify(merged) as any;
 }
 
 export const Enum: Readonly<enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));
@@ -171,13 +199,14 @@ export namespace Enum {
 }
 
 /**
+ * @internal Prefer `Enum.from(...)`.
  * # Enumify
  * create a Proxy-based Registry (Enum) from an Object or Array.  
  * Enums are immutable (frozen) and provide methods for iteration, search, and extension.  
  * 
  * @example
  * ```typescript
- * const Status = enumify(['Active', 'Inactive', 'Pending']);
+ * const Status = Enum.from(['Active', 'Inactive', 'Pending']);
  * console.log(Status.Active);															// 0
  * console.log(Enum.has(Status, 'Active'));									// true
  * console.log(Enum.keys(Status));													// ['Active', 'Inactive', 'Pending']

@@ -144,9 +144,9 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(mixedGroups.ord.toLowerCase()).toBe('penultimate');
 		expect(mixedGroups.value).toBe(-2);
 
-		const Step1 = Tempo.derive({ registry: { ordinals: { customstep: 1 } } });
-		const Step2 = Step1.derive({ registry: { ordinals: { CUSTOMSTEP: 2 } } });
-		const Step3 = Step2.derive({ registry: { ordinals: { customstep: 3 } } });
+		const Step1 = Tempo.extend({ registry: { ordinals: { customstep: 1 } } });
+		const Step2 = Step1.extend({ registry: { ordinals: { CUSTOMSTEP: 2 } } });
+		const Step3 = Step2.extend({ registry: { ordinals: { customstep: 3 } } });
 		Step3.use(CaseHook);
 		const tStep = Step3.from('customstep day of #casehook', { anchor });
 		expect(tStep.isValid).toBe(true);

@@ -1,6 +1,6 @@
 import { Immutable, StringTag } from '#library/decorator.library.js';
 import { isFunction, isCallable } from '#library/assertion.library.js';
-import { enumify } from './enumerate.library.js';
+import { Enum } from './enumerate.library.js';
 import { Finalizer } from './finalizer.class.js';
 import type { ValueOf } from '#library/type.library.js';
 
@@ -9,7 +9,7 @@ import type { ValueOf } from '#library/type.library.js';
  * Created using Tempo's standard enumify feature.
  * @internal
  */
-export const StateFlag = enumify(['CLEAN', 'CHECK_DIRTY', 'DIRTY']);
+export const StateFlag = Enum.from(['CLEAN', 'CHECK_DIRTY', 'DIRTY']);
 export type StateFlag = ValueOf<typeof StateFlag>;
 
 declare module '#library/type.library.js' {

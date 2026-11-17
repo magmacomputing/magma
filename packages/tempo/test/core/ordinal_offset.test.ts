@@ -169,9 +169,9 @@ describe('Core Ordinal Offset Parsing', () => {
 			expect(t10th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
 		});
 
-		it('supports user extensibility via Enum.derive and Tempo.init registry', () => {
+		it('supports user extensibility via Enum.extend and Tempo.init registry', () => {
 			try {
-				const CustomOrd = Enum.derive(Tempo.enums.ORDINAL, {
+				const CustomOrd = Enum.extend(Tempo.enums.ORDINAL, {
 					zeroth: 0,
 				});
 				expect(CustomOrd.zeroth).toBe(0);
@@ -248,9 +248,9 @@ describe('Core Ordinal Offset Parsing', () => {
 			expect((Tempo.enums.ORDINAL as any).eleventh).toBeUndefined();
 		});
 
-		it('retains earlier local registry.numbers aliases across chained Tempo.derive extensions', () => {
-			const First = Tempo.derive({ registry: { numbers: { uno: 1 } } });
-			const Second = First.derive({ registry: { numbers: { dos: 2 } } });
+		it('retains earlier local registry.numbers aliases across chained Tempo.extend extensions', () => {
+			const First = Tempo.extend({ registry: { numbers: { uno: 1 } } });
+			const Second = First.extend({ registry: { numbers: { dos: 2 } } });
 			const anchor = new Second('2026-05-01');
 
 			const tUno = new Second('uno days hence', { anchor });
@@ -261,19 +261,19 @@ describe('Core Ordinal Offset Parsing', () => {
 			expect(tDos.isValid).toBe(true);
 			expect(tDos.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
 
-			const Third = Second.derive({ registry: { numbers: { uno: 2 } } });
+			const Third = Second.extend({ registry: { numbers: { uno: 2 } } });
 			const tUnoOverride = new Third('uno days hence', { anchor });
 			expect(tUnoOverride.isValid).toBe(true);
 			expect(tUnoOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
 
-			const Fourth = Third.derive({ registry: { numbers: { DOS: 9 } } });
+			const Fourth = Third.extend({ registry: { numbers: { DOS: 9 } } });
 			const tDosCaseOverride = new Fourth('dos days hence', { anchor });
 			expect(tDosCaseOverride.isValid).toBe(true);
 			expect(tDosCaseOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
 
-			let Deep = Tempo.derive({ registry: { numbers: { deepuno: 2 }, ordinals: { customsecond: 2 } } });
+			let Deep = Tempo.extend({ registry: { numbers: { deepuno: 2 }, ordinals: { customsecond: 2 } } });
 			for (let i = 0; i < 52; i++) {
-				Deep = Deep.derive({ registry: { numbers: { [`n${i}`]: i + 10 }, ordinals: { [`o${i}`]: i + 10 } } });
+				Deep = Deep.extend({ registry: { numbers: { [`n${i}`]: i + 10 }, ordinals: { [`o${i}`]: i + 10 } } });
 			}
 			const tDeepNum = new Deep('deepuno days hence', { anchor });
 			expect(tDeepNum.isValid).toBe(true);

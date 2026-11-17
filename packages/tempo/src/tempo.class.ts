@@ -585,21 +585,21 @@ export class Tempo {
 	 * ```ts
 	 * // Factory mode with `using`
 	 * {
-	 *   using sb = Tempo.derive({ discovery: 'test' });
+	 *   using sb = Tempo.extend({ discovery: 'test' });
 	 *   sb.use(MyPlugin);
 	 * }
 	 *
 	 * // Scoped callback mode
-	 * const result = Tempo.derive((sb) => {
+	 * const result = Tempo.extend((sb) => {
 	 *   sb.use(MyPlugin);
 	 *   return sb('2026-05-10').format();
 	 * });
 	 * ```
 	 */
-	static derive(options?: t.Options): typeof Tempo;
-	static derive<R>(fn: (sandbox: typeof Tempo) => R): R;
-	static derive<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
-	static derive<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
+	static extend(options?: t.Options): typeof Tempo;
+	static extend<R>(fn: (sandbox: typeof Tempo) => R): R;
+	static extend<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
+	static extend<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
 		return createSandbox(this, arg1, arg2);
 	}
 

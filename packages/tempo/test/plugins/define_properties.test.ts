@@ -5,7 +5,7 @@ import { $Internal } from '#tempo/support';
 
 describe('defineProperties & defineProperty', () => {
 	it('defines custom getters on Tempo instances via a sandbox', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		S.use(defineProperties({
 			isWeekend: (t: any) => t.dow >= 6,
 			quarter: (t: any) => Math.ceil(t.mm / 3),
@@ -21,7 +21,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('auto-memoizes getter computations per instance', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		let computations = 0;
 
 		S.use(defineProperty('expensive', () => {
@@ -49,7 +49,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('does not cache values on prototype when getters are evaluated on proto directly', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		let fnCalls = 0;
 		let descCalls = 0;
 
@@ -93,7 +93,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('supports unmemoized getters via explicit descriptor', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		let counter = 0;
 		let receivedInstance: any;
 		let receivedThis: any;
@@ -118,7 +118,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('supports defining instance methods via methods shorthand and value descriptor', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		S.use(defineProperties({
 			methods: {
 				shiftDays(this: any, days: number) {
@@ -141,7 +141,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('integrates seamlessly with t.format({token}) even when non-enumerable', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		S.use(defineProperty('isWeekend', (t: any) => t.dow >= 6));
 
 		const saturday = new S('2026-10-31');
@@ -152,7 +152,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('throws TempoError on attempt to overwrite core Tempo properties', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 
 		expect(() => {
 			S.use(defineProperty('yy', () => 9999));
@@ -170,8 +170,8 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('supports both factory invocation and raw definition in S.use', () => {
-		const S1 = Tempo.derive({});
-		const S2 = Tempo.derive({});
+		const S1 = Tempo.extend({});
+		const S2 = Tempo.extend({});
 
 		const propPlugin = defineProperty('customVal', () => 42);
 
@@ -185,7 +185,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('throws TempoError on attempt to define setters', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 
 		expect(() => {
 			S.use(defineProperties({
@@ -210,7 +210,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('allows multiple unnamed defineProperties bundles without name collision', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		S.use(defineProperties({
 			foo: () => 'valFoo',
 		}));
@@ -224,7 +224,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('skips reinstall for named properties plugins to avoid core property redefinition errors', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		const namedPlugin = defineProperties({
 			baz: () => 'valBaz',
 		}, 'BazExtension');
@@ -240,7 +240,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('allows reinstalling property bundles on subclasses or same class when keys are owned by the plugin', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		const bundle = defineProperties({
 			ownedProp: () => 'ownedVal',
 			methods: {
@@ -255,7 +255,7 @@ describe('defineProperties & defineProperty', () => {
 		}).not.toThrow();
 
 		// Subclass inheriting prototype
-		const Sub = Tempo.derive({});
+		const Sub = Tempo.extend({});
 		Object.setPrototypeOf(Sub.prototype, S.prototype);
 		expect(() => {
 			(bundle as any).install(Sub);
@@ -264,7 +264,7 @@ describe('defineProperties & defineProperty', () => {
 		expect(Object.prototype.hasOwnProperty.call(Sub.prototype, 'ownedMethod')).toBe(true);
 
 		// Sibling sandbox defining its own property with the same name throws
-		const Sibling = Tempo.derive({});
+		const Sibling = Tempo.extend({});
 		Object.defineProperty(Sibling.prototype, 'ownedProp', { value: 'siblingVal', configurable: true });
 		expect(() => {
 			(bundle as any).install(Sibling);
@@ -272,14 +272,14 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects null getter during first-pass validation', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({ badProp: { get: null as any } }));
 		}).toThrow(/Invalid property definition/);
 	});
 
 	it('rejects descriptor with get and writable or value', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({ badProp: { get: () => 1, writable: false } as any }));
 		}).toThrow(/cannot define 'get' with 'value' or 'writable'/);
@@ -295,7 +295,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects per-property method dictionaries passed outside of methods block', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				badMethodBundle: {
@@ -306,7 +306,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('validates all entries atomically in a first pass so failed bundles leave prototype clean', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				validFirst: () => 'should-not-exist',
@@ -319,7 +319,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('releases installed mark when a named properties bundle throws, allowing a corrected retry to install', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		const faultyBundle = defineProperties({
 			goodProp: () => 'first',
 			badProp: { notAProp: true } as any,
@@ -343,7 +343,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects non-callable method definitions under methods key', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				methods: {
@@ -354,7 +354,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('validates get is callable in first pass so invalid descriptor leaves prototype clean', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				validFirst: () => 'val',
@@ -367,7 +367,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects duplicate property keys across methods and top-level definitions', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				collision: () => 'getter',
@@ -388,7 +388,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('cleans up plugin registry when properties bundle installation throws so hasModule is false', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(S.hasModule('FaultyModule')).toBe(false);
 
 		expect(() => {
@@ -401,7 +401,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects descriptors defining both get and value during pass 1', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				validFirst: () => 'valid',
@@ -417,7 +417,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('rejects descriptors defining both get and writable during pass 1', () => {
-		const S = Tempo.derive({});
+		const S = Tempo.extend({});
 		expect(() => {
 			S.use(defineProperties({
 				validFirst: () => 'valid',
@@ -433,7 +433,7 @@ describe('defineProperties & defineProperty', () => {
 	});
 
 	it('restores state.config.pluginOptions if properties bundle install throws', () => {
-		const S = Tempo.derive({
+		const S = Tempo.extend({
 			pluginOptions: {
 				TestPlugin: { existing: 'original' },
 			},

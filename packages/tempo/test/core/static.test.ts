@@ -59,6 +59,21 @@ describe(`${label}`, () => {
         unsubBad();
         unsubGood();
       }
+
+      let calls = 0;
+      let unsubResub = () => {};
+      const resubHook = () => {
+        calls++;
+        unsubResub();
+        unsubResub = onConfigChange(resubHook);
+      };
+      unsubResub = onConfigChange(resubHook);
+      try {
+        Tempo.init({ locale: 'pt-PT' });
+        expect(calls).toBe(1);
+      } finally {
+        unsubResub();
+      }
     } finally {
       unsubscribe();
       Tempo.init({ locale: undefined });

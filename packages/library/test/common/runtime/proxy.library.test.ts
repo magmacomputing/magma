@@ -1,6 +1,6 @@
 import { inspect } from 'node:util';
 import { sym } from '#library/symbol.library.js';
-import { enumify } from '#library/enumerate.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
 
 describe('proxy method binding', () => {
@@ -111,7 +111,7 @@ describe('secure serialization', () => {
 		expect(listOut).not.toContain('Proxy');
 		expect(listOut).toContain('alpha');
 
-		const e = enumify({ A: 1, B: 2 });
+		const e = Enum.from({ A: 1, B: 2 });
 		const enumOut = inspect(e);
 		expect(enumOut).not.toBe('{}');
 		expect(enumOut).toContain('A: 1');

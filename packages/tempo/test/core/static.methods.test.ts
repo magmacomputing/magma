@@ -387,7 +387,7 @@ describe(`${label} equals`, () => {
   })
 
   test('supports derived Tempo sandboxes', () => {
-    const Sub = Tempo.derive({ timeZone: 'Australia/Sydney' });
+    const Sub = Tempo.extend({ timeZone: 'Australia/Sydney' });
     const a = new Sub('2025-07-01T08:00:00');
     const b = new Sub('2025-07-01T20:00:00');
 
@@ -498,7 +498,7 @@ describe(`${label} isTempo`, () => {
     expect(Tempo.isTempo(t)).toBe(true);
     expect(Tempo.isTempo(new Tempo('2026-01-01'))).toBe(true);
 
-    const Sandbox = Tempo.derive();
+    const Sandbox = Tempo.extend();
     const s = new Sandbox('2026-01-01');
     expect(Tempo.isTempo(s)).toBe(true);
     expect(Sandbox.isTempo(s)).toBe(true);

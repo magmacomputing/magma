@@ -1,5 +1,5 @@
 import '#library/temporal.polyfill.js';
-import { enumify, Enum } from '#library/enumerate.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, isEnglish } from '#library/international.library.js';
 import { normalizeUtcOffset } from '#library/temporal.library.js';
@@ -198,7 +198,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			timeZone,
 			locale: (getDateTimeFormat() as any).locale ?? 'en-US',
 			discovery: Symbol.keyFor(sym.$Tempo) as string,
-			formats: enumify(STATE.FORMAT, false),
+			formats: Enum.from(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
 			scope: 'global',
 			catch: options.catch ?? false,
@@ -232,7 +232,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			timeZone,
 			locale: (getDateTimeFormat() as any).locale ?? 'en-US',
 			discovery: Symbol.keyFor(sym.$Tempo) as string,
-			formats: enumify(STATE.FORMAT, false),
+			formats: Enum.from(STATE.FORMAT, false),
 			sphere: getHemisphere(timeZone),
 			scope: 'local',
 			silent: options.silent ?? false,
@@ -376,11 +376,11 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						modifiers: Object.fromEntries(ownEntries(state.config.registry?.modifiers ?? {}, true))
 					}));
 					if (arg.value.formats) {
-						const extended = state.config.registry.formats ? Enum.derive(state.config.registry.formats, arg.value.formats) : arg.value.formats;
+						const extended = state.config.registry.formats ? Enum.merge(state.config.registry.formats, arg.value.formats) : arg.value.formats;
 						setProperty(state.config.registry, 'formats', extended);
 					}
 					if (arg.value.locales) {
-						const extended = state.config.registry.locales ? Enum.derive(state.config.registry.locales, arg.value.locales) : arg.value.locales;
+						const extended = state.config.registry.locales ? Enum.merge(state.config.registry.locales, arg.value.locales) : arg.value.locales;
 						setProperty(state.config.registry, 'locales', extended);
 					}
 					if (arg.value.modifiers) {
@@ -401,23 +401,19 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						setProperty(state.config.registry, 'modifiers', merged);
 						patternsDirty = true;
 					}
-					if (arg.value.tokens) {
-						const existing = state.config.registry.tokens ?? {};
-						setProperty(state.config.registry, 'tokens', { ...Object.fromEntries(ownEntries(existing, true)), ...arg.value.tokens });
-					}
-					if (arg.value.dialects) {
-						const existing = state.config.registry.dialects ?? {};
-						setProperty(state.config.registry, 'dialects', { ...Object.fromEntries(ownEntries(existing, true)), ...arg.value.dialects });
-					}
+					if (arg.value.tokens)
+						setProperty(state.config.registry, 'tokens', Enum.merge(state.config.registry.tokens ?? {}, arg.value.tokens));
+					if (arg.value.dialects)
+						setProperty(state.config.registry, 'dialects', Enum.merge(state.config.registry.dialects ?? {}, arg.value.dialects));
 					if (arg.value.numbers) {
-						const extended = state.config.registry.numbers ? Enum.derive(state.config.registry.numbers, arg.value.numbers, false) : enumify(arg.value.numbers, false);
+						const extended = state.config.registry.numbers ? Enum.extend(state.config.registry.numbers, arg.value.numbers, false) : Enum.from(arg.value.numbers, false);
 						setProperty(state.config.registry, 'numbers', extended);
 						if (state.config?.scope === 'global')
 							registryUpdate('NUMBER', arg.value.numbers);
 						patternsDirty = true;
 					}
 					if (arg.value.ordinals) {
-						const extended = state.config.registry.ordinals ? Enum.derive(state.config.registry.ordinals, arg.value.ordinals, false) : enumify(arg.value.ordinals, false);
+						const extended = state.config.registry.ordinals ? Enum.extend(state.config.registry.ordinals, arg.value.ordinals, false) : Enum.from(arg.value.ordinals, false);
 						setProperty(state.config.registry, 'ordinals', extended);
 						if (state.config?.scope === 'global')
 							registryUpdate('ORDINAL', arg.value.ordinals);

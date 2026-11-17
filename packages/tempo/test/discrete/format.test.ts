@@ -619,7 +619,7 @@ describe('Tempo.format() refinements', () => {
       expect(tSyd.format('{iso}', { registry: { tokens: { iso: () => 'custom-iso' } } })).toBe('custom-iso');
       expect(tSyd.format('{sphere}', { registry: { tokens: { sphere: () => 'custom-sphere' } } })).toBe('custom-sphere');
 
-      const NyTempo = Tempo.derive({ timeZone: 'America/New_York' });
+      const NyTempo = Tempo.extend({ timeZone: 'America/New_York' });
       const nyScopedSyd = new NyTempo('2026-06-15T12:00:00', { timeZone: 'Australia/Sydney' });
       expect(nyScopedSyd.sphere).toBe('south');
       expect(nyScopedSyd.format('{sphere}', { timeZone: 'America/New_York' })).toBe('north');

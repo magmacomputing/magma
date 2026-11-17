@@ -1,4 +1,4 @@
-import { enumify, Enum } from '#library/enumerate.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { isEmpty, isFunction } from '#library/assertion.library.js';
 import { StringTag } from '#library/decorator.library.js';
 import type { ValueOf } from '#library/type.library.js';
@@ -14,7 +14,7 @@ import type { ValueOf } from '#library/type.library.js';
  */
 @StringTag('Tapper')
 export class Tapper {
-	static EVENT = enumify({
+	static EVENT = Enum.from({
 		SingleTap: 'singleTap',
 		DoubleTap: 'doubleTap',
 		TripleTap: 'tripleTap',

@@ -30,7 +30,7 @@ export function onConfigChange(hook: (config: Internal.Config) => void): () => v
 
 /** @internal Notify registered config-change hooks after a global configuration update. */
 export function notifyConfigChange(config: Internal.Config): void {
-	for (const hook of rt.configHooks) {
+	for (const hook of [...rt.configHooks]) {
 		try {
 			hook(config);
 		} catch (err) {
