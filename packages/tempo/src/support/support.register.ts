@@ -1,6 +1,6 @@
 import { clearCache } from '#library/function.library.js';
 import { isEqual } from '#library/object.library.js';
-import { isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
+import { isFunction, isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
 import { ownKeys, ownValues, unwrap, hasOwn } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
@@ -32,7 +32,9 @@ export function onConfigChange(hook: (config: Internal.Config) => void): () => v
 export function notifyConfigChange(config: Internal.Config): void {
 	for (const hook of [...rt.configHooks]) {
 		try {
-			hook(config);
+			const res: any = hook(config);
+			if (isFunction(res?.then))
+				Promise.resolve(res).catch(err => logWarn('[tempo] onConfigChange hook failed', {}, err));
 		} catch (err) {
 			logWarn('[tempo] onConfigChange hook failed', {}, err);
 		}

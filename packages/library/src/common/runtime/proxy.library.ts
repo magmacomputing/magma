@@ -184,15 +184,18 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 				const desc = Object.getOwnPropertyDescriptor(proto, sym.$Inspect);
 				if (desc) {
 					const fn = 'value' in desc ? desc.value : Reflect.get(proto, sym.$Inspect, liveTarget);
-					if (isFunction(fn) && !generatedInspectHooks.has(fn))
+					if (!isFunction(fn))
+						break;
+					if (!generatedInspectHooks.has(fn))
 						return fn.apply(liveTarget, [depth, ...args]);
 				}
 				proto = Object.getPrototypeOf(proto);
 			}
 		}
 		const proxyInspector = proxyInspectors.get(recv);
-		if (proxyInspector) return proxyInspector(recv, depth);
-		return snapshotInspect(recv, new WeakMap(), depth);
+		return (proxyInspector)
+		? proxyInspector(recv, depth)
+		: snapshotInspect(recv, new WeakMap(), depth);
 	};
 	generatedInspectHooks.add(hook);
 	return hook;
