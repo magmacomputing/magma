@@ -461,7 +461,7 @@ export function delegate<T extends object>(target: T, onGet: (key: string | symb
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode: 'mutable'): T;
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode?: ProxyMode): Readonly<T> | T;
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode: ProxyMode = 'readonly'): any {
-	return factory(target, { onGet, frozen: mode !== 'mutable' });
+	return factory(target, { onGet, frozen: mode !== 'mutable', lock: mode === 'frozen' });
 }
 
 /**

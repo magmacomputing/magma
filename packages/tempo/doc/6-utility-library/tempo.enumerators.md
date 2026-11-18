@@ -46,7 +46,7 @@ export type Season = KeyOf<typeof SEASON>;   // Type: 'Summer' | 'Autumn' | 'Win
 ```
 The above types allow for the use of `Season` and `SEASON` as type arguments, providing type safety for both the keys and values of the `Enum`.
 
-It is generally recommended to use the **values** (lowercase) as type arguments, as they are used as the actual values in the `Enum` object. This allows for easier use of the `Enum.*` methods, which operate on the values.
+Use `KeyOf` (`Season`) for key-based helpers (`Enum.has()`, `Enum.hasOwn()`, `Enum.get()`) and `ValueOf` (`SEASON`) for value-based helpers (`Enum.includes()`, `Enum.keyOf()`).
 
 **Note:** TypeScript provides automatic typing for native `enum`s, whereas `Enum.from` uses `KeyOf` / `ValueOf` type helpers.
 

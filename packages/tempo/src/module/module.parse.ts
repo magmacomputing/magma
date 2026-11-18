@@ -56,6 +56,7 @@ const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
 const RE_EXTENDED_YEAR = '[+-]?\\d{4,6}';
 const RE_COMPACT_LONG_YEAR = '[+-]\\d{4,6}|\\d{4}';
 const RE_TWO_DIGITS = '\\d{1,2}';
+const RE_DIGIT_CHAR = /\d/;
 
 /** Parses a capture group as Roman numerals if it matches Roman characters, otherwise parses as decimal */
 function parseRomanOrDecimal(val: string): number {
@@ -113,11 +114,14 @@ function compileBracedPattern(fmt: string): RegExp {
 				case 'year':
 					pattern += group('yyyy', romanOr(RE_EXTENDED_YEAR));
 					break;
-				case 'yy':
+				case 'yy': {
+					const nextChar = fmt[end + 1];
+					const compact = nextChar === '{' || (nextChar !== undefined && RE_DIGIT_CHAR.test(nextChar));
 					pattern += normMods.includes('long')
-						? group('yyyy', romanOr(fmt[end + 1] === '{' ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
+						? group('yyyy', romanOr(compact ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
 						: group('yy', romanOr('\\d{2}'));
 					break;
+				}
 				case 'mm':
 				case 'month':
 					pattern += group('mm', romanOr(RE_TWO_DIGITS));

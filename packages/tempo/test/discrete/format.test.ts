@@ -676,6 +676,10 @@ describe('Tempo.format() refinements', () => {
       const unsignedExt = new Tempo('01-01-10000', { format: '{dd}-{mm}-{yy:long}' });
       expect(unsignedExt.isValid).toBe(true);
       expect(unsignedExt.yy).toBe(10000);
+
+      const digitLiteralFollower = new Tempo('2024111-15', { format: '{yy:long}1{mm}-{dd}' });
+      expect(digitLiteralFollower.isValid).toBe(true);
+      expect(digitLiteralFollower.format('{yyyy}-{mm}-{dd}')).toBe('2024-11-15');
     });
   });
 })

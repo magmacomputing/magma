@@ -27,13 +27,13 @@ To understand when to use `Tempo.extend()`, it helps to contrast it with the oth
 
 ```typescript
 // 1. Derived Class Factory (Long-lived sandbox)
-static derive(options?: Options): typeof Tempo;
+static extend(options?: Options): typeof Tempo;
 
 // 2. Scoped Callback Mode (Ephemeral auto-disposed sandbox)
-static derive<R>(fn: (sandbox: typeof Tempo) => R): R;
+static extend<R>(fn: (sandbox: typeof Tempo) => R): R;
 
 // 3. Configured Scoped Callback Mode (Custom options + auto-disposed sandbox)
-static derive<R>(options: Options, fn: (sandbox: typeof Tempo) => R): R;
+static extend<R>(options: Options, fn: (sandbox: typeof Tempo) => R): R;
 ```
 
 #### Mode 1: Derived Class Factory

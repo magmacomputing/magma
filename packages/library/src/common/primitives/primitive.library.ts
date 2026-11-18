@@ -526,8 +526,9 @@ export function defineLazy<T extends object, V = unknown>(
 		configurable: true,
 		get(this: T) {
 			const value = factory.call(this);
-			if (Object.isExtensible(this))
-				Object.defineProperty(this, key, { value, enumerable, writable: false, configurable: true });
+			const dest = unwrap(this);
+			if (Object.isExtensible(dest))
+				Object.defineProperty(dest, key, { value, enumerable, writable: false, configurable: true });
 			return value;
 		},
 	});

@@ -1,7 +1,8 @@
 import { inspect } from 'node:util';
 import { sym } from '#library/symbol.library.js';
 import { Enum } from '#library/enumerate.library.js';
-import { delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
+import { defineLazy } from '#library/primitive.library.js';
+import { delegate, delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
 
 describe('proxy method binding', () => {
 	test('returns a stable bound wrapper for repeated method access', () => {
@@ -366,5 +367,16 @@ describe('secure serialization', () => {
 			}
 		};
 		expect(() => proxify(throwingTag, 'mutable')).not.toThrow();
+	});
+
+	test('allows defineLazy reads through a readonly proxy and locks nested objects in delegate frozen mode', () => {
+		const lazyTarget: { answer?: number } = {};
+		defineLazy(lazyTarget, 'answer', () => 42);
+		const roProxy = proxify(lazyTarget, 'readonly');
+		expect(roProxy.answer).toBe(42);
+		expect(lazyTarget.answer).toBe(42);
+
+		const nestedDelegate = delegate({ nested: { value: 1 } }, () => undefined, 'frozen');
+		expect(() => { (nestedDelegate.nested as any).value = 2; }).toThrow(TypeError);
 	});
 });

@@ -84,7 +84,7 @@ const ALLOWED_ROOT_EXT_PATTERN = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
 const FOLLOW_UP_SECTION_PATTERN = /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i;
 const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i;
 const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
-const OUTSIDE_DIFF_SECTION_PATTERN = /(?:\*\*[^\w]*Outside diff range comments(?:\s*\(\d+\))?\*\*|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Outside diff range comments[\s\S]*?<\/summary>)/i;
+const OUTSIDE_DIFF_SECTION_PATTERN = /(?:^[ \t]*\*\*[^\w]*Outside diff range comments(?:\s*\(\d+\))?\*\*[ \t]*$|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Outside diff range comments[\s\S]*?<\/summary>)/im;
 
 const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-ups?\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt (?:for|to)\b|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
 
