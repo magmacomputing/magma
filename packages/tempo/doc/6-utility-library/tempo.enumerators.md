@@ -34,7 +34,7 @@ export const SEASON = Enum.from({ Summer: 'summer', Autumn: 'autumn', Winter: 'w
 
 ### Lock-Down Flag (`frozen`)
 Both `Enum.from(source, frozen = true)` and `Enum.extend(base, source, frozen = true)` accept an optional `frozen` boolean:
-- **`true` (default):** Wraps the enum in a read-only `Proxy` that rejects writes, deletions, and extensions (note: `deepFreeze` skips targets carrying the `Enumify` tag, and nested object values remain mutable through existing external references).
+- **`true` (default):** Wraps the enum in a read-only `Proxy` that rejects writes, deletions, and extensions (note: `deepFreeze` freezes nested plain objects and arrays in place, so existing external references to them are also frozen; it skips targets carrying the `Enumify` tag, `$Extensible`-marked objects, and nested `Map`, `Set`, `Date`, `RegExp`, `Error`, or `Promise` values, whose contents remain mutable).
 - **`false`:** Leaves the underlying target object unfrozen/extensible while the returned `Proxy` wrapper still enforces read-only access for consumers.
 
 ### Type Inference
@@ -197,7 +197,7 @@ console.log(Enum.isEnum(ALL_TAGS));  // true (frozen Proxy-wrapped Enum)
 | **Structure** | Single flat `Enum` (all own properties) | Prototype-chained `Enum` (`child → parent`) |
 | **Lookup Speed** | Direct `O(1)` own-property lookup | Walks prototype chain for inherited keys |
 | **`Enum.hasOwn()`** | `true` for all merged keys | `true` only for keys added in that layer |
-| **Precedence** | Last-source-wins by exact key; insertion order preserved across distinct keys | Exact-key shadows resolve child → parent; `Enum.entries()` enumerates ancestor keys first (prototype-walking lookups such as `registry.numbers` inspect child → parent directly) |
+| **Precedence** | Last-source-wins by exact key; string keys preserve insertion order, while integer-like keys enumerate in ascending numeric order | Exact-key shadows resolve child → parent; `Enum.entries()` enumerates ancestor keys first (prototype-walking lookups such as `registry.numbers` inspect child → parent directly) |
 | **Memory on Chain** | Copies entries into a new flat object | Allocates only the delta properties |
 | **`frozen` Flag** | Always `true` | Configurable (`true` by default) |
 

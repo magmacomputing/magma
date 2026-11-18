@@ -666,6 +666,7 @@ describe('Tempo.format() refinements', () => {
       ['+12345/06/15', '{yy:long}/{mm}/{dd}', 12345, 6, 15],
       ['-0001/01/02', '{yy:long}/{mm}/{dd}', -1, 1, 2],
       ['2024111-15', '{yy:long}1{mm}-{dd}', 2024, 11, 15],
+      ['100001/06/15', '{yy:long}1/{mm}/{dd}', 10000, 6, 15],
     ])('keeps compact year boundaries in %s', (input, format, yy, mm, dd) => {
       const parsed = new Tempo(input, { format, timeZone: 'UTC' });
       expect(parsed.isValid).toBe(true);
