@@ -42,7 +42,7 @@ export const SignalsPlugin: TempoPlugin<SignalsPluginOptions> = definePlugin({
 			...(isObject(options) ? options : {}),
 		};
 
-		initConfigSignals(effectiveOptions, installedClass.config);
+		initConfigSignals(effectiveOptions, () => installedClass.config);
 
 		if (!hasOwn(installedClass, 'signals')) {
 			const signalsNamespace: TempoSignalsNamespace = {

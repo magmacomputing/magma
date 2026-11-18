@@ -73,7 +73,7 @@ export function* walkPrototype(
 			break;
 
 		yield level;
-		curr = Object.getPrototypeOf(unwrapped);
+		curr = Object.getPrototypeOf(level);
 	}
 }
 

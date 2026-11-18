@@ -12,7 +12,7 @@ Core `@magmacomputing/tempo` is a static, immutable, zero-timer snapshot engine.
 
 ## Key Features
 
-- **100% Tree-Shakeable Root Exports**: Importing standalone functions from `@magmacomputing/tempo-plugin-signals` has zero top-level side effects (`"sideEffects": ["./dist/install.js"]`).
+- **Tree-Shakeable Functions & Explicit Installation**: Standalone functions (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) are tree-shakeable, while importing the root entry registers `SignalsPlugin` in the plugin registry (`Tempo.use(SignalsPlugin)` or `/install` mounts `Tempo.signals`, `tempo.toRelativeSignal()`, and `interval.toSignal()`).
 - **Two Integration Patterns**: Use standalone tree-shakeable functions directly, or mount `Tempo.signals`, `tempo.toRelativeSignal()`, and `interval.toSignal()` via `Tempo.use(SignalsPlugin)` or `/install`.
 - **Adaptive Relative-Time Signals**: `toRelativeSignal` schedules one-shot `setTimeout` updates at exact unit-bucket boundaries (`second` → `minute` → `hour` → `day` → `month` → `year`) instead of polling every second, and automatically tracks global `Tempo.init({ locale })` updates.
 - **Boundary-Scheduled Interval Observation**: `intervalSignal` tracks `isCurrent`, `isPast`, `isFuture`, and normalized `progress` ($\in [0, 1]$) with zero polling while future or past.
@@ -244,6 +244,12 @@ console.log(state.isCurrent.get()); // true
 
 - Use **`@magmacomputing/tempo-plugin-ticker`** when you need continuous fixed-cadence clock streams (`Tempo.ticker.signal({ seconds: 1 })`).
 - Use **`@magmacomputing/tempo-plugin-signals`** when you need event-driven relative-time labels, interval lifecycle state, or reactive `Tempo.init()` configuration signals.
+
+---
+
+## Topic Guides {#topic-guides}
+
+- [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) - Battery-friendly activity feeds, live interval progress bars, and app-wide locale/time zone reactivity.
 
 ---
 

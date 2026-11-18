@@ -4,11 +4,10 @@ import type { ConfigSignals, SignalsPluginOptions } from '../types/index.js';
 
 let _localeState: Signify.State<string> | null = null;
 let _timeZoneState: Signify.State<string> | null = null;
-let _localeSignal: ReadonlySignal<string> | null = null;
-let _timeZoneSignal: ReadonlySignal<string> | null = null;
 let _unsubscribeConfig: (() => void) | null = null;
 let _fallbackLocale: string | undefined = undefined;
 let _fallbackTimeZone: string | undefined = undefined;
+let _activeConfigSource: (() => Record<string, any> | undefined) | null = null;
 
 /** Resolves a BCP 47 locale string with Intl runtime fallback. */
 function resolveLocale(value: unknown, fallback?: string): string {
@@ -34,24 +33,29 @@ function resolveTimeZone(value: unknown, fallback?: string): string {
  *
  * @internal
  */
-export function initConfigSignals(options?: SignalsPluginOptions, config?: Record<string, any>): void {
+export function initConfigSignals(
+	options?: SignalsPluginOptions,
+	config?: Record<string, any> | (() => Record<string, any> | undefined),
+): void {
 	if (isText(options?.locale))
 		_fallbackLocale = options.locale;
 	if (isText(options?.timeZone))
 		_fallbackTimeZone = options.timeZone;
+	if (config)
+		_activeConfigSource = typeof config === 'function' ? (config as () => Record<string, any> | undefined) : () => config;
 
-	const currentConfig = config ?? Tempo.config;
+	const currentConfig = (typeof config === 'function' ? (config as () => Record<string, any> | undefined)() : config) ?? _activeConfigSource?.() ?? Tempo.config;
 	const nextLocale = resolveLocale(currentConfig?.locale, _fallbackLocale);
 	const nextTimeZone = resolveTimeZone(currentConfig?.timeZone, _fallbackTimeZone);
 
 	if (!_localeState)
 		_localeState = new Signify.State(nextLocale);
-	else if (config)
+	else
 		_localeState.set(nextLocale);
 
 	if (!_timeZoneState)
 		_timeZoneState = new Signify.State(nextTimeZone);
-	else if (config)
+	else
 		_timeZoneState.set(nextTimeZone);
 
 	if (!_unsubscribeConfig) {
@@ -63,23 +67,23 @@ export function initConfigSignals(options?: SignalsPluginOptions, config?: Recor
 }
 
 /**
- * Returns a shared `ReadonlySignal<string>` that tracks `Tempo.config.locale`
+ * Returns a consumer-owned `ReadonlySignal<string>` that tracks `Tempo.config.locale`
  * and updates automatically whenever `Tempo.init()` changes the global locale.
  */
 export function localeSignal(options?: SignalsPluginOptions): ReadonlySignal<string> {
 	initConfigSignals(options);
 	const state = _localeState!;
-	return (_localeSignal ??= Signify.computed(() => state.get()));
+	return Signify.computed(() => state.get());
 }
 
 /**
- * Returns a shared `ReadonlySignal<string>` that tracks `Tempo.config.timeZone`
+ * Returns a consumer-owned `ReadonlySignal<string>` that tracks `Tempo.config.timeZone`
  * and updates automatically whenever `Tempo.init()` changes the global time zone.
  */
 export function timeZoneSignal(options?: SignalsPluginOptions): ReadonlySignal<string> {
 	initConfigSignals(options);
 	const state = _timeZoneState!;
-	return (_timeZoneSignal ??= Signify.computed(() => state.get()));
+	return Signify.computed(() => state.get());
 }
 
 /**
@@ -101,4 +105,5 @@ export function disposeConfigSignals(): void {
 		_unsubscribeConfig();
 		_unsubscribeConfig = null;
 	}
+	_activeConfigSource = null;
 }

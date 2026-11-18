@@ -39,7 +39,7 @@ relative.dispose();
 
 ## ✨ Features & Architecture
 
-* ⚡ **100% Tree-Shakeable**: Root imports are pure and side-effect-free (`"sideEffects": ["./dist/install.js"]`); opt into prototype/namespace registration via `/install` or `Tempo.use(SignalsPlugin)`.
+* ⚡ **Tree-Shakeable Functions & Explicit Registration**: Standalone helpers (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) are tree-shakeable, while importing the package registers `SignalsPlugin` in the plugin registry (`Tempo.use(SignalsPlugin)` or `/install` mounts `Tempo.signals` and prototype methods).
 * ⏱️ **Adaptive Relative Time**: Schedules updates only when the formatted relative unit boundary changes rather than polling every second.
 * 📅 **Event-Driven Interval Tracking**: Tracks active, past, and future interval states (`isCurrent`, `isPast`, `isFuture`, `progress`) with boundary timeouts.
 * 🌐 **Global Config Reactivity**: Exposes reactive `locale` and `timeZone` signals synchronized with `Tempo.init()` via `onConfigChange`.

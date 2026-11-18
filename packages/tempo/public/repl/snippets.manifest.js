@@ -468,7 +468,7 @@ const relative = meeting.toRelativeSignal({ style: 'long' });
 console.log('Relative Time:', relative.get());
 
 // 3. Interval State Signal (isCurrent, isPast, isFuture, progress)
-const sprint = Tempo.Interval.from(
+const sprint = new Tempo.Interval(
   new Tempo().subtract({ hours: 1 }),
   new Tempo().add({ hours: 3 }),
 );
@@ -483,7 +483,7 @@ console.log('Interval State:', {
 // 4. Deterministic Cleanup
 relative.dispose();
 state.dispose();
-locale.dispose();
+Tempo.signals.dispose();
 
 return relative.get();`,
 	},

@@ -56,8 +56,16 @@ function resolveTargetMs(target: RelativeSignalTarget): number {
 	if (isNumber(temporalMs))
 		return temporalMs;
 
+	const epochNs = (target as any)?.epoch?.ns;
+	if (isBigInt(epochNs))
+		return Number(epochNs / 1_000_000n) + Number(epochNs % 1_000_000n) / 1_000_000;
+
+	const temporalNs = (target as any)?.epochNanoseconds;
+	if (isBigInt(temporalNs))
+		return Number(temporalNs / 1_000_000n) + Number(temporalNs % 1_000_000n) / 1_000_000;
+
 	if (isBigInt(target))
-		return Number(target / 1_000_000n);
+		return Number(target / 1_000_000n) + Number(target % 1_000_000n) / 1_000_000;
 
 	const instance = new Tempo(target as any);
 	if (!instance.isValid)

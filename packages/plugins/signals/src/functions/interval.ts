@@ -31,6 +31,34 @@ function computeProgress(nowMs: number, startMs: number, endMs: number): number 
 	return Math.min(1, Math.max(0, (nowMs - startMs) / (endMs - startMs)));
 }
 
+interface IntervalTimers {
+	boundaryTimer: ReturnType<typeof setTimeout> | null;
+	progressTimer: ReturnType<typeof setInterval> | null;
+	isDisposed: boolean;
+}
+
+function stopProgressTicker(timers: IntervalTimers): void {
+	if (timers.progressTimer !== null) {
+		clearInterval(timers.progressTimer);
+		timers.progressTimer = null;
+	}
+}
+
+function stopBoundaryTimer(timers: IntervalTimers): void {
+	if (timers.boundaryTimer !== null) {
+		clearTimeout(timers.boundaryTimer);
+		timers.boundaryTimer = null;
+	}
+}
+
+function createIntervalCleanup(timers: IntervalTimers): () => void {
+	return () => {
+		timers.isDisposed = true;
+		stopBoundaryTimer(timers);
+		stopProgressTicker(timers);
+	};
+}
+
 /**
  * Creates a reactive `IntervalSignalState` (`isCurrent`, `isPast`, `isFuture`, `progress`)
  * for a temporal `Interval`.
@@ -63,26 +91,14 @@ export function intervalSignal(
 	const isFutureState = new Signify.State<boolean>(initialFuture);
 	const progressState = new Signify.State<number>(computeProgress(initialNow, startMs, endMs));
 
-	let boundaryTimer: ReturnType<typeof setTimeout> | null = null;
-	let progressTimer: ReturnType<typeof setInterval> | null = null;
-	let isDisposed = false;
-
-	const stopProgressTicker = (): void => {
-		if (progressTimer !== null) {
-			clearInterval(progressTimer);
-			progressTimer = null;
-		}
-	};
-
-	const stopBoundaryTimer = (): void => {
-		if (boundaryTimer !== null) {
-			clearTimeout(boundaryTimer);
-			boundaryTimer = null;
-		}
+	const timers: IntervalTimers = {
+		boundaryTimer: null,
+		progressTimer: null,
+		isDisposed: false,
 	};
 
 	const syncState = (): void => {
-		if (isDisposed)
+		if (timers.isDisposed)
 			return;
 
 		const nowMs = nowFn();
@@ -96,9 +112,9 @@ export function intervalSignal(
 		progressState.set(computeProgress(nowMs, startMs, endMs));
 
 		if (isCurrent && progressInterval > 0 && Number.isFinite(startMs) && Number.isFinite(endMs)) {
-			if (progressTimer === null) {
-				progressTimer = setInterval(() => {
-					if (isDisposed)
+			if (timers.progressTimer === null) {
+				timers.progressTimer = setInterval(() => {
+					if (timers.isDisposed)
 						return;
 					const tickNow = nowFn();
 					if (tickNow >= endMs) {
@@ -109,18 +125,18 @@ export function intervalSignal(
 				}, progressInterval);
 			}
 		} else {
-			stopProgressTicker();
+			stopProgressTicker(timers);
 		}
 
-		stopBoundaryTimer();
+		stopBoundaryTimer(timers);
 		const nextBoundary = isFuture
 			? startMs
 			: (isCurrent ? endMs : Infinity);
 
 		if (Number.isFinite(nextBoundary)) {
 			const delay = Math.min(Math.max(nextBoundary - nowMs, 1), MAX_TIMEOUT_MS);
-			boundaryTimer = setTimeout(() => {
-				boundaryTimer = null;
+			timers.boundaryTimer = setTimeout(() => {
+				timers.boundaryTimer = null;
 				syncState();
 			}, delay);
 		}
@@ -128,11 +144,7 @@ export function intervalSignal(
 
 	syncState();
 
-	const teardown = (): void => {
-		isDisposed = true;
-		stopBoundaryTimer();
-		stopProgressTicker();
-	};
+	const teardown = createIntervalCleanup(timers);
 
 	let unregisterFinalizer: (() => boolean) | null = null;
 	let stateHandle: IntervalSignalState;
@@ -162,10 +174,10 @@ export function intervalSignal(
 		isFuture,
 		progress,
 		get disposed(): boolean {
-			return isDisposed;
+			return timers.isDisposed;
 		},
 		dispose(): void {
-			if (isDisposed)
+			if (timers.isDisposed)
 				return;
 			unregisterFinalizer?.();
 			teardown();

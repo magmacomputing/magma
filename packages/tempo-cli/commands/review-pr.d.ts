@@ -1,14 +1,11 @@
 export interface TopLevelReviewComment {
-	threadId?: string | null;
 	path: string;
-	line: string;
-	isOutdated?: boolean;
-	commentId?: string;
-	body?: string;
-	isFollowUp?: boolean;
+	line: string | null;
+	title: string;
 	category: 'Follow-up' | 'Nitpick' | 'Additional' | 'OutsideDiff';
-	severity: string;
-	comment: string;
+	commentId: string | null;
+	body: string;
+	isFollowUp: boolean;
 }
 
-export function parseTopLevelReviewComments(body: string): TopLevelReviewComment[];
+export function parseTopLevelReviewComments(rawBody: string, prRef?: string): TopLevelReviewComment[];

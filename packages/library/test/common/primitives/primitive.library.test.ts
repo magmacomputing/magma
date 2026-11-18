@@ -169,6 +169,22 @@ describe('Primitive Library', () => {
 			expect(Array.from(walkPrototype(proxy))).toEqual([target, base]);
 			expect(Array.from(walkPrototype(proxy, false))).toEqual([proxy, base]);
 
+			const proxyProto = { fromProxy: true };
+			const targetProto = { fromTarget: true };
+			const rawTarget = Object.create(targetProto);
+			const customProtoProxy = new Proxy(rawTarget, {
+				get(t, prop, receiver) {
+					if (prop === sym.$Target)
+						return t;
+					return Reflect.get(t, prop, receiver);
+				},
+				getPrototypeOf() {
+					return proxyProto;
+				},
+			});
+			expect(Array.from(walkPrototype(customProtoProxy))).toEqual([rawTarget, targetProto]);
+			expect(Array.from(walkPrototype(customProtoProxy, false))).toEqual([customProtoProxy, proxyProto]);
+
 			const wrappedRoot = new Proxy({}, {
 				get(t, prop, receiver) {
 					if (prop === sym.$Target)

@@ -252,7 +252,7 @@ export default withMermaid(defineConfig({
       target: 'esnext'
     },
     optimizeDeps: {
-      include: ['mermaid', 'fastdom', 'dayjs', '@braintree/sanitize-url', 'cytoscape', 'khroma'],
+      include: ['mermaid', 'dayjs', '@braintree/sanitize-url', 'cytoscape', 'khroma'],
       esbuildOptions: {
         target: 'esnext',
         supported: {

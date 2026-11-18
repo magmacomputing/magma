@@ -37,7 +37,12 @@ describe('toRelativeSignal()', () => {
 	});
 
 	it('throws for invalid temporal targets', () => {
-		expect(() => toRelativeSignal('not-a-valid-date')).toThrow();
+		const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		try {
+			expect(() => toRelativeSignal('not-a-valid-date')).toThrow();
+		} finally {
+			errorSpy.mockRestore();
+		}
 	});
 
 	it('exposes frozen callable DisposableSignal interface', () => {
