@@ -162,7 +162,9 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 		const recv = isReference(this) && !isFunction(this) ? this : fallbackTarget;
 		if (!isEnum) {
 			const liveTarget = isReference(recv) ? unwrap(recv) : fallbackTarget;
-			for (const proto of walkPrototype(Object.getPrototypeOf(liveTarget), false)) {
+			for (const proto of walkPrototype(liveTarget, false)) {
+				if (proto === liveTarget)
+					continue;
 				const desc = Object.getOwnPropertyDescriptor(proto, sym.$Inspect);
 				if (desc) {
 					const fn = 'value' in desc ? desc.value : Reflect.get(proto, sym.$Inspect, liveTarget);

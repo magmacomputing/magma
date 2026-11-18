@@ -445,6 +445,48 @@ console.log('Consular Date:', byConsuls.format('{yyyy}-{mm}-{dd}')); // "-000062
 
 return \`Today: \${today.format('{roman:classical}')} (\${today.auc} AUC)\`;`,
 	},
+
+	signals: {
+		label: 'Preset: Reactive Signals (Relative Time & Intervals)',
+		plugin: 'signals',
+		code: `// ⚡ Reactive TC39 Signals (@magmacomputing/tempo-plugin-signals)
+const {
+  SignalsPlugin,
+  localeSignal,
+  toRelativeSignal,
+  intervalSignal,
+} = await import('@magmacomputing/tempo-plugin-signals');
+Tempo.use(SignalsPlugin);
+
+// 1. Reactive Global Locale Signal (tracks Tempo.init updates)
+const locale = localeSignal();
+console.log('Initial Locale:', locale.get());
+
+// 2. Adaptive Boundary-Scheduled Relative Time Signal
+const meeting = new Tempo().add({ minutes: 5 });
+const relative = meeting.toRelativeSignal({ style: 'long' });
+console.log('Relative Time:', relative.get());
+
+// 3. Interval State Signal (isCurrent, isPast, isFuture, progress)
+const sprint = Tempo.Interval.from(
+  new Tempo().subtract({ hours: 1 }),
+  new Tempo().add({ hours: 3 }),
+);
+const state = sprint.toSignal({ progressInterval: false });
+console.log('Interval State:', {
+  isCurrent: state.isCurrent.get(),
+  isPast: state.isPast.get(),
+  isFuture: state.isFuture.get(),
+  progress: Number(state.progress.get().toFixed(2)),
+});
+
+// 4. Deterministic Cleanup
+relative.dispose();
+state.dispose();
+locale.dispose();
+
+return relative.get();`,
+	},
 };
 
 export default SNIPPETS;

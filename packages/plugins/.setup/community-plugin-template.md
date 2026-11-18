@@ -569,17 +569,13 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      > [!NOTE]
      > Always use `@latest` in import maps rather than semver operators like `@^1` or `@^0`, as browsers percent-encode special characters (e.g. `^` $\rightarrow$ `%5E`), causing CDN resolution errors on `esm.sh`.
 
-3. **Dedicated Playground Preset & Dropdown Option (`public/repl/index.html`)**:
-   - **Preset Dropdown Selector**: Add an `<option>` element inside `<select id="presetSelect">` in `packages/tempo/public/repl/index.html`:
-     ```html
-     <select id="presetSelect" title="Load Snippet Preset">
-       <!-- existing presets... -->
-       <option value="[name]">Preset: [Plugin Title & Features]</option>
-     </select>
-     ```
-   - **Preset Code Snippet**: Add a domain-specific, runnable demonstration snippet under `SNIPPETS` / `DEFAULT_PRESETS` in `packages/tempo/public/repl/index.html` using the plugin's key name (e.g. `holidays`, `celestial`, `geo`):
+3. **Dedicated Playground Preset & Documentation REPL (`snippets.manifest.js` & `<PluginRepl>`)**:
+   - **REPL Snippet Manifests**: Add a runnable preset entry under `SNIPPETS` in both `packages/tempo/public/repl/snippets.manifest.js` and `packages/tempo/.vitepress/theme/data/snippets.manifest.js` using the plugin's key name (e.g. `signals`, `roman`, `holidays`):
      ```javascript
-     [name]: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
+     [name]: {
+       label: 'Preset: [Plugin Title & Features]',
+       plugin: '[name]',
+       code: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
      const { [PluginExport] } = await import('@magmacomputing/tempo-plugin-[name]');
      Tempo.use([PluginExport]);
 
@@ -587,9 +583,11 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      const t = new Tempo();
      console.log(t.[name]...);
      return t.format(...);`,
+     },
      ```
+   - **Plugin Documentation Embed**: Embed `<PluginRepl plugin="[name]" />` in `packages/plugins/[name]/doc/index.md` so the VitePress plugin page renders the live interactive demo backed by `snippets.manifest.js`.
      > [!IMPORTANT]
-     > Without both the dropdown `<option>` and the snippet dictionary entry, users cannot interactively select the preset from the UI, and navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` will silently fall back to displaying the generic `quickstart` template.
+     > Without the `snippets.manifest.js` entry in both locations, `<PluginRepl plugin="[name]" />` and navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` will fall back to displaying a generic `new Tempo()` snippet.
 
 4. **VitePress Ecosystem & Documentation Component**:
    - **`CatalogList.vue` (`packages/tempo/.vitepress/theme/components/CatalogList.vue`)**: Ensure the plugin's ID is assigned to an appropriate functional category in `DOMAIN_GROUPS` (e.g., `geo`, `celestial`, `business`, `system`, `ai`, `dialects`) so it is listed under the proper section on the `ecosystem.md` page.

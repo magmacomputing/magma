@@ -62,17 +62,18 @@ export function* walkPrototype(
 			break;
 		visited.add(curr);
 
-		const level = unwrapProxies ? unwrap(curr) : curr;
-		if (level === Object.prototype)
-			break;
-		if (level !== curr) {
-			if (visited.has(level))
+		const unwrapped = unwrap(curr);
+		if (unwrapped !== curr) {
+			if (visited.has(unwrapped))
 				break;
-			visited.add(level);
+			visited.add(unwrapped);
 		}
+		const level = unwrapProxies ? unwrapped : curr;
+		if (level === Object.prototype || unwrapped === Object.prototype)
+			break;
 
 		yield level;
-		curr = Object.getPrototypeOf(level);
+		curr = Object.getPrototypeOf(unwrapped);
 	}
 }
 

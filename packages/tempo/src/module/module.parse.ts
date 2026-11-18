@@ -127,7 +127,7 @@ function compileBracedPattern(fmt: string): RegExp {
 				}
 				case 'mm':
 				case 'month':
-					pattern += group('mm', romanOr(RE_TWO_DIGITS));
+					pattern += group('mm', romanOr('1[0-2]|0?[1-9]'));
 					break;
 				case 'mmm':
 					pattern += group('mmm', '[A-Za-z]{3,}');

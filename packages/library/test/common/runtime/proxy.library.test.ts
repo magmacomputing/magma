@@ -463,4 +463,13 @@ describe('secure serialization', () => {
 		expect(() => delegate({}, () => undefined, true as any)).toThrow(TypeError);
 		expect(() => delegate({}, () => undefined, 'invalid' as any)).toThrow(TypeError);
 	});
+
+	test('preserves sym.$Inspect hooks on function-valued immediate prototypes', () => {
+		const fnProto = Object.assign(function () {}, {
+			[sym.$Inspect]: () => '[redacted-fn-proto]',
+		});
+		const target = Object.assign(Object.create(fnProto), { secret: '123' });
+		const proxied = proxify(target, 'readonly');
+		expect(inspect(proxied)).toBe('[redacted-fn-proto]');
+	});
 });

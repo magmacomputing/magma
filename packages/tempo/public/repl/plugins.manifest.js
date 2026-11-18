@@ -63,5 +63,10 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 		name: "@magmacomputing/tempo-plugin-roman",
 		version: "1.0.0",
 		loader: () => import("@magmacomputing/tempo-plugin-roman").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-roman" + "@1.0.0"))
+	},
+	"signals": {
+		name: "@magmacomputing/tempo-plugin-signals",
+		version: "1.0.0",
+		loader: () => import("@magmacomputing/tempo-plugin-signals").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-signals" + "@1.0.0"))
 	}
 };

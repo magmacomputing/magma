@@ -1,0 +1,63 @@
+{
+  "name": "@magmacomputing/tempo-plugin-signals",
+  "version": "1.0.0",
+  "description": "Tempo community plugin for reactive TC39 Signals, adaptive relative-time updates, interval state tracking, and global config reactivity.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js"
+    }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/signals"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "sideEffects": [
+    "./dist/install.js"
+  ],
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "tempo": {
+    "vendorVariantId": "tempo-plugin-signals",
+    "plan": "community"
+  },
+  "peerDependencies": {
+    "@magmacomputing/tempo": "^5.0.0"
+  },
+  "devDependencies": {
+    "@magmacomputing/tempo": "^5.0.0"
+  },
+  "keywords": [
+    "tempo",
+    "tempo-plugin",
+    "magmacomputing",
+    "temporal",
+    "signals",
+    "reactive",
+    "relative-time",
+    "interval",
+    "plugin"
+  ],
+  "type": "module"
+}
