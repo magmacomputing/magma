@@ -267,5 +267,22 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		]);
 		expect(Enum.hasOwn(MERGED, 'A')).toBe(true);
 		expect(Enum.hasOwn(MERGED, 'C')).toBe(true);
+
+		const ARR_MERGED = Enum.merge(['Alpha', 'Beta'] as const);
+		expect(ARR_MERGED.Alpha).toBe(0);
+		expect(ARR_MERGED.Beta).toBe(1);
+
+		const dynamicSources: { A: number }[] = [{ A: 1 }];
+		const LIST_MERGED = Enum.merge(...dynamicSources);
+		expect(LIST_MERGED.A).toBe(1);
+
+		const sparse = new Array<string>(2);
+		sparse[1] = 'Ready';
+		const SPARSE_MERGED = Enum.merge(sparse as any);
+		expect(Enum.entries(SPARSE_MERGED)).toEqual([['Ready', 1]]);
+
+		const LENGTH_MERGED = Enum.merge(['length'] as const, {});
+		expect(Enum.entries(LENGTH_MERGED)).toEqual([['length', 0]]);
+		expect(LENGTH_MERGED.length).toBe(0);
 	});
 });

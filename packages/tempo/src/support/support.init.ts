@@ -406,17 +406,19 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 					if (arg.value.dialects)
 						setProperty(state.config.registry, 'dialects', Enum.merge(state.config.registry.dialects ?? {}, arg.value.dialects));
 					if (arg.value.numbers) {
-						const extended = state.config.registry.numbers ? Enum.extend(state.config.registry.numbers, arg.value.numbers, false) : Enum.from(arg.value.numbers, false);
+						const incoming = Object.fromEntries(ownEntries(arg.value.numbers, true));
+						const extended = state.config.registry.numbers ? Enum.extend(state.config.registry.numbers, incoming, false) : Enum.from(incoming, false);
 						setProperty(state.config.registry, 'numbers', extended);
 						if (state.config?.scope === 'global')
-							registryUpdate('NUMBER', arg.value.numbers);
+							registryUpdate('NUMBER', incoming);
 						patternsDirty = true;
 					}
 					if (arg.value.ordinals) {
-						const extended = state.config.registry.ordinals ? Enum.extend(state.config.registry.ordinals, arg.value.ordinals, false) : Enum.from(arg.value.ordinals, false);
+						const incoming = Object.fromEntries(ownEntries(arg.value.ordinals, true));
+						const extended = state.config.registry.ordinals ? Enum.extend(state.config.registry.ordinals, incoming, false) : Enum.from(incoming, false);
 						setProperty(state.config.registry, 'ordinals', extended);
 						if (state.config?.scope === 'global')
-							registryUpdate('ORDINAL', arg.value.ordinals);
+							registryUpdate('ORDINAL', incoming);
 						patternsDirty = true;
 					}
 

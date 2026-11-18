@@ -167,26 +167,39 @@ function extendEnum(enumObj: any, list: any, frozen?: boolean): any {
 	return (enumify as any).call(base, list, frozen);
 }
 
-type MergeSources<T extends readonly Property<any>[]> = T extends readonly [
-	infer Head extends Property<any>,
-	...infer Tail extends readonly Property<any>[],
-]
-	? Omit<Head, keyof MergeSources<Tail>> & MergeSources<Tail>
-	: {};
+type NormalizeMergeSource<S> = S extends readonly any[] ? Index<S> : S;
+
+type MergeSources<T extends readonly Property<any>[]> =
+	T extends readonly []
+		? {}
+		: T extends readonly [
+			infer Head extends Property<any>,
+			...infer Tail extends readonly Property<any>[],
+		]
+			? Omit<NormalizeMergeSource<Head>, keyof MergeSources<Tail>> & MergeSources<Tail>
+			: T extends readonly (infer Elem extends Property<any>)[]
+				? NormalizeMergeSource<Elem>
+				: {};
 
 function mergeEnum<const T extends readonly Property<any>[]>(...sources: T): Enum.wrap<MergeSources<T>> {
 	const merged: Record<PropertyKey, any> = Object.create(null);
 	for (const src of sources as readonly any[]) {
 		if (!isReference(src)) continue;
-		const entries = isEnum(src)
-			? enumMethods.entries(src)
-			: Array.isArray(src)
-				? (src as readonly any[]).map((key, idx) => [String(key), idx] as const)
-				: ownEntries(src, true);
-		for (const [k, v] of entries)
-			merged[k] = v;
+		if (isEnum(src)) {
+			for (const [k, v] of enumMethods.entries(src))
+				merged[k] = v;
+		} else if (Array.isArray(src)) {
+			(src as readonly any[]).forEach((key, idx) => {
+				merged[String(key)] = idx;
+			});
+		} else {
+			for (const [k, v] of ownEntries(src as any, true))
+				merged[k] = v;
+		}
 	}
-	return enumify(merged) as any;
+	const target = Object.create(ENUM);
+	Object.defineProperties(target, Object.getOwnPropertyDescriptors(merged));
+	return proxify(target, true, true) as any;
 }
 
 export const Enum: Readonly<enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));

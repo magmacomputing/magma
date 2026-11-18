@@ -1183,15 +1183,17 @@ export class Tempo {
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized instance properties */
 	#memo: {
-		tzCal?: [string, string];
+		zdt?: {
+			tzCal?: [string, string];
+			jj?: number;
+			epoch?: Readonly<{ ss: number; ms: number; us: number; ns: bigint }>;
+			iso?: string;
+			isoWeek?: { weekOfYear: number; yearOfWeek: number };
+			eraInfo?: { era: string; eraYear: number };
+		};
 		sphere?: t.COMPASS | undefined;
 		geo?: t.GeoConfig | undefined;
 		fmt?: Record<string, string | undefined>;
-		jj?: number;
-		epoch?: Readonly<{ ss: number; ms: number; us: number; ns: bigint }>;
-		iso?: string;
-		isoWeek?: { weekOfYear: number; yearOfWeek: number };
-		eraInfo?: { era: string; eraYear: number };
 		config?: Readonly<t.Internal.Config>;
 	} = {};
 	/** indicator that the instance failed to parse */				#errored = false;
@@ -1222,7 +1224,12 @@ export class Tempo {
 		const self: Tempo = unwrap(this);
 		const out = {
 			get zdt() { return self.#zdt },
-			set zdt(val: any) { self.#zdt = val },
+			set zdt(val: any) {
+				if (self.#zdt !== val) {
+					self.#zdt = val;
+					delete self.#memo.zdt;
+				}
+			},
 			get errored() { return self.#errored },
 			set errored(val: any) { self.#errored = val },
 			get parseDepth() { return self.#parseDepth },
@@ -1527,12 +1534,12 @@ export class Tempo {
 	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
 	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
-	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return (this.#memo.tzCal ??= getTemporalIds(this.toDateTime()))[0] }
-	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return (this.#memo.tzCal ??= getTemporalIds(this.toDateTime()))[1] }
-	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return (this.#memo.eraInfo ??= getTemporalEra(this.toDateTime())).era; }
-	/** Year within the era (positive integer) */							get eon() { return (this.#memo.eraInfo ??= getTemporalEra(this.toDateTime())).eraYear; }
-	/** 4-digit ISO week-numbering year */										get yow() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
-	/** ISO week number of the year */												get woy() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
+	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return ((this.#memo.zdt ??= {}).tzCal ??= getTemporalIds(this.toDateTime()))[0] }
+	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return ((this.#memo.zdt ??= {}).tzCal ??= getTemporalIds(this.toDateTime()))[1] }
+	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return ((this.#memo.zdt ??= {}).eraInfo ??= getTemporalEra(this.toDateTime())).era; }
+	/** Year within the era (positive integer) */							get eon() { return ((this.#memo.zdt ??= {}).eraInfo ??= getTemporalEra(this.toDateTime())).eraYear; }
+	/** 4-digit ISO week-numbering year */										get yow() { return ((this.#memo.zdt ??= {}).isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
+	/** ISO week number of the year */												get woy() { return ((this.#memo.zdt ??= {}).isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
 	/** Internationalization namespace (info, locale) */			get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	#getRawGeo(): t.GeoConfig | undefined {
@@ -1581,8 +1588,8 @@ export class Tempo {
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
 	/** Days in current month, using instance calendar. */		get dim() { return this.toDateTime().daysInMonth }
 	/** Days in current year, using instance calendar. */			get diy() { return this.toDateTime().daysInYear }
-	/** Julian day number for the local ISO calendar date. */	get jj() { return (this.#memo.jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
-	/** Standard ISO 8601 string in UTC */										get iso() { return (this.#memo.iso ??= this.toDateTime().toInstant().toString()); }
+	/** Julian day number for the local ISO calendar date. */	get jj() { return ((this.#memo.zdt ??= {}).jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
+	/** Standard ISO 8601 string in UTC */										get iso() { return ((this.#memo.zdt ??= {}).iso ??= this.toDateTime().toInstant().toString()); }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
 
 	/** current Tempo configuration */
@@ -1637,7 +1644,7 @@ export class Tempo {
 	/** returns the underlying Temporal.ZonedDateTime */			get zdt(): Temporal.ZonedDateTime { return this.toDateTime(); }
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
 	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
-	/** units since epoch for this date-time instance */			get epoch() { return (this.#memo.epoch ??= Tempo.#getEpoch(this.toDateTime())); }
+	/** units since epoch for this date-time instance */			get epoch() { return ((this.#memo.zdt ??= {}).epoch ??= Tempo.#getEpoch(this.toDateTime())); }
 
 	/**
 	 * @Immutable class decorators wrap the class but leave internal lexical bindings pointing to the original, undecorated class.

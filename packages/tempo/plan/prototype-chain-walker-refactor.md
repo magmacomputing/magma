@@ -31,7 +31,7 @@ Centralizing the traversal in `#library` eliminates copy-pasted boilerplate and 
 ## 2. Proposed `#library` Helper
 
 In `packages/library/src/common/primitives/primitive.library.ts`:
-
+(or `reflection.library.ts`)
 ```ts
 /**
  * Lazily yields each object along `target`'s prototype chain up to (excluding) `Object.prototype`,
@@ -40,14 +40,18 @@ In `packages/library/src/common/primitives/primitive.library.ts`:
 export function* walkPrototype(
 	target: unknown,
 	unwrapProxies = true,
+	maxDepth = 256,
 ): Generator<object> {
 	if (!isReference(target) || isFunction(target))
 		return;
 
 	const visited = new WeakSet<object>();
 	let curr: any = target;
+	let depth = 0;
 
 	while (curr && curr !== Object.prototype) {
+		if (depth++ >= maxDepth)
+			throw new RangeError(`walkPrototype: prototype chain exceeded maximum traversal depth (${maxDepth}).`);
 		if (visited.has(curr))
 			break;
 		visited.add(curr);
@@ -64,6 +68,8 @@ export function* walkPrototype(
 	}
 }
 ```
+
+> **Finite Depth Budget (`maxDepth = 256`):** Even with `visited: WeakSet`, an adversarial `Proxy` with a `getPrototypeOf` trap that synthesizes a fresh object on every step will bypass identity-based cycle detection and loop forever. Enforcing a finite `maxDepth = 256` budget (throwing `RangeError` on exhaustion, matching `ownEntries`) guarantees termination.
 
 > **Note for `findRegistryEntry` / `collectOrdinals`:** Verify during implementation whether `Object.entries(curr)` (on the Proxy wrapper) and `ownEntries(level)` (on the unwrapped target) can be unified or whether `walkPrototype` should yield `[curr, level]` pairs (or `unwrapProxies = false` + `unwrap` at the call site) so proxy-trap semantics in `Proxy`-wrapped `Enum`s remain identical.
 
@@ -96,3 +102,14 @@ export function* walkPrototype(
    - `Proxy` unwrapping (`unwrapProxies = true` vs `false`)
    - Non-reference / function inputs returning empty immediately
 2. Run `npm run build:all && npm test` and verify all workspaces pass with zero regressions (especially `ordinal_offset.test.ts`, `enumerate.test.ts`, `proxy.library.test.ts`).
+
+---
+
+## 5. Follow-Up Companion Refactor: `Object.defineProperty` / `Object.defineProperties` Helpers
+
+Across `#library` and `#tempo`, ~50 `Object.defineProperty` / `Object.defineProperties` calls repeat 4 common patterns that can be consolidated alongside `ownKeys` / `ownEntries` in `packages/library/src/common/primitives/primitive.library.ts` (or `object.library.ts`):
+
+1. **`defineHidden(target, key, value, writable?)`** — non-enumerable metadata/internal properties (`enumerable: false`).
+2. **`defineReadonly(target, key, value, configurable?)`** — enumerable read-only values (`writable: false`).
+3. **`defineLazy(target, key, factory)`** — enumerable, configurable getter that reifies itself on first access via `Object.defineProperty(this, key, { value })`.
+4. **`defineFrom(target, source)`** — descriptor-preserving copy (`Object.defineProperties(target, Object.getOwnPropertyDescriptors(source))`).

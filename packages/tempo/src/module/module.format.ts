@@ -509,7 +509,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'ts': {
-				switch (config?.timeStamp ?? 'ms') {
+				switch (config?.timeStamp ?? baseConfig?.timeStamp ?? 'ms') {
 					case 'ss': res = Math.trunc(zdt.epochMilliseconds / 1_000).toString(); break;
 					case 'us': res = Number(zdt.epochNanoseconds / 1_000n).toString(); break;
 					case 'ns': res = zdt.epochNanoseconds.toString(); break;

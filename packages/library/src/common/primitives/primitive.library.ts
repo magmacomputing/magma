@@ -66,6 +66,8 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 	let curr: any = tgt;
 
 	while (curr && curr !== Object.prototype) {
+		if (levels.length >= 256)
+			throw new RangeError('ownEntries: prototype chain exceeded maximum traversal depth (256).');
 		const level = unwrap(curr);
 		if (visited.has(level)) break;
 		visited.add(level);
