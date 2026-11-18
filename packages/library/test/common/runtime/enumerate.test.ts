@@ -289,5 +289,10 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		const DYNAMIC_TAIL = Enum.merge({ A: 42 }, ...emptyDynamic);
 		const checkUnion: number | string = DYNAMIC_TAIL.A;
 		expect(checkUnion).toBe(42);
+
+		const undefDynamic: { A: string | undefined }[] = [{ A: undefined }];
+		const UNDEF_TAIL = Enum.merge({ A: 42 }, ...undefDynamic);
+		const checkUndefUnion: number | string | undefined = UNDEF_TAIL.A;
+		expect(checkUndefUnion).toBeUndefined();
 	});
 });
