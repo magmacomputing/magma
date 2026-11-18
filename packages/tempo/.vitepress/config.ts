@@ -125,7 +125,8 @@ export default withMermaid(defineConfig({
             { text: 'Internationalization & Locale', link: '/doc/4-advanced-reference/tempo.intl' },
             { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },
             { text: 'Weekday Engine', link: '/doc/4-advanced-reference/tempo.weekday' },
-            { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' }
+            { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' },
+            { text: 'Glossary', link: '/doc/4-advanced-reference/glossary' }
           ]
         },
         {

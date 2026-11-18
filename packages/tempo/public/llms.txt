@@ -101,3 +101,38 @@ Tempo.init({
 });
 const customDate = new Tempo('08*04*2026'); // Automatically matched against star_date layout
 ```
+
+<!-- GLOSSARY:START -->
+## Glossary
+
+- **Cadence** (`reactivity`): The rhythmic scheduling interval or pattern governing ticker executions and reactive signal updates.
+- **Calendar** (`temporal-math`): A system for organizing days into months and years (such as iso8601, gregory, hebrew, or islamic-civil) tracked by every Tempo instance.
+- **Clock Drift** (`plugins`): The gradual offset between local system time and true reference network time, compensated by the NTP plugin.
+- **Dialect** (`plugins`): An external date/time format token grammar (such as LDML, Moment, POSIX strftime, or Oracle TO_CHAR) bridged by @magmacomputing/tempo-plugin-dialects.
+- **Disposable** (`reactivity`): An object implementing dispose() and Symbol.dispose for deterministic timer and subscription cleanup via TypeScript using declarations.
+- **Duration** (`temporal-math`): A signed span of calendar and clock units (years, months, days, hours, minutes, seconds, sub-seconds) used in Tempo arithmetic and formatting.
+- **Dynamic Functional Context (DFC)** (`architecture`): Tempo's pattern where configuration options (such as timeZone, locale, or calendar) accept lazy evaluator functions (() => T) resolved per request.
+- **Enum** (`architecture`): A Proxy-wrapped, null-prototype lookup dictionary built with Enum.from() or Enum.extend() that supports O(1) static reflection without prototype pollution.
+- **Epoch** (`temporal-math`): Elapsed time since the Unix epoch (1970-01-01T00:00:00Z), exposed by Tempo as .epoch.ms (number) and .epoch.ns (bigint).
+- **IANA Time Zone** (`standards`): A canonical geographic region identifier (such as Australia/Sydney or America/New_York) carrying historical and DST offset rules.
+- **Instant** (`temporal-math`): A precise, absolute point on the universal temporal timeline, independent of time zones or calendars.
+- **Interval** (`temporal-math`): A half-open or bounded [start, end] span between two temporal points supporting containment, overlap, union, and reactive state observation.
+- **ISO 8601** (`standards`): The international standard for date, time, UTC offset, duration, and week-date string representations.
+- **Lazy Evaluation** (`architecture`): Deferring expensive derived computations (such as calendar decompositions, formatted caches, and DFC options) until first read and memoizing the result.
+- **Locale** (`standards`): A BCP 47 language tag (such as en-AU or fr-FR) governing month/weekday names, relative-time phrasing, numbering systems, and regional date parsing.
+- **Modifier** (`formatting`): An orthogonal token extension (e.g., :compact, :hh, :ordinal, :roman, :zero) refining how a format token or term serializes or parses values.
+- **Namespace** (`plugins`): A deeply frozen static or instance extension object mounted on Tempo via defineNamespace() or definePlugin() (e.g., Tempo.signals, t.geo).
+- **Offset** (`temporal-math`): A fixed numeric displacement from UTC (e.g., +10:00 or -05:00), distinct from an IANA time zone which carries historical and DST transition rules.
+- **Parse Planner** (`architecture`): Tempo's layout selection and scoring subsystem that matches ambiguous input strings against registered snippets, dialects, and regional date layouts.
+- **Pivot** (`formatting`): The two-digit year century cutoff (default 75) controlling whether 2-digit years resolve to 19xx or 20xx during parsing.
+- **PlainDate** (`temporal-math`): A calendar date (year, month, day) without reference to a specific time of day, time zone, or geographical location.
+- **PlainDateTime** (`temporal-math`): A wall-clock date and time without an attached time zone or UTC offset.
+- **ReadonlySignal** (`reactivity`): A reactive accessor function adhering to the TC39 Signals proposal (Signify) that notifies subscribers of value and epoch changes.
+- **RFC 9557** (`standards`): The Internet Extended Date/Time Format (IXDTF) standard extending RFC 3339 with bracketed time zone and calendar annotations (e.g., [Australia/Sydney][u-ca=iso8601]).
+- **Sandbox** (`architecture`): An isolated Tempo subclass created via Tempo.extend() with its own configuration, plugins, and term snapshot for multi-tenant SSR or testing.
+- **Snippet** (`formatting`): A named regular-expression fragment registered in the parsing engine to match recurring sub-patterns (such as dates, times, or ordinals).
+- **Soft Freeze** (`architecture`): Tempo's immutability strategy that provides non-destructive mutations without incurring the heavy V8 runtime cost of deep recursive Object.freeze().
+- **Term** (`formatting`): A modular unit of temporal formatting, parsing, or range partitioning registered in the engine registry (e.g. #quarter, #season, #timeOfDay).
+- **Token** (`formatting`): A bracketed lowercase format or parse placeholder inside a Tempo mask (e.g., {yyyy}, {mm}, {dd}, {hh}, {mi}, {ss}, {tz}).
+- **ZonedDateTime** (`temporal-math`): A time-zone-aware, calendar-aware date and time combining an exact Instant, an IANA time zone, and a calendar system; Tempo's underlying Temporal representation.
+<!-- GLOSSARY:END -->
