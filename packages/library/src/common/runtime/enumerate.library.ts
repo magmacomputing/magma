@@ -178,7 +178,7 @@ type MergeSources<T extends readonly Property<any>[]> =
 		]
 			? Omit<NormalizeMergeSource<Head>, keyof MergeSources<Tail>> & MergeSources<Tail>
 			: T extends readonly (infer Elem extends Property<any>)[]
-				? NormalizeMergeSource<Elem>
+				? Partial<NormalizeMergeSource<Elem>>
 				: {};
 
 function mergeEnum<const T extends readonly Property<any>[]>(...sources: T): Enum.wrap<MergeSources<T>> {

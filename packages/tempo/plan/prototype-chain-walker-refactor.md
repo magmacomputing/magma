@@ -107,9 +107,28 @@ export function* walkPrototype(
 
 ## 5. Follow-Up Companion Refactor: `Object.defineProperty` / `Object.defineProperties` Helpers
 
-Across `#library` and `#tempo`, ~50 `Object.defineProperty` / `Object.defineProperties` calls repeat 4 common patterns that can be consolidated alongside `ownKeys` / `ownEntries` in `packages/library/src/common/primitives/primitive.library.ts` (or `object.library.ts`):
+### Existing Specialized Wrappers (Do Not Duplicate)
+- `setProperty` / `setProperties` (`packages/tempo/src/support/support.util.ts`): Tempo-internal mutable/enumerable property setters with `Object.isExtensible` guard + `logWarn`.
+- `markSymbol` (`packages/library/src/common/primitives/symbol.library.ts`): non-enumerable symbol markers (`enumerable: false, writable: true, configurable: true`).
+- `memoizeMethod` (`packages/library/src/common/runtime/function.library.ts`): property descriptor factory for self-memoizing methods.
+- `defineProperty` / `defineProperties` / `attachStatics` (`packages/tempo/src/plugin/plugin.util.ts`): Tempo plugin SDK helpers for registering getters/properties/statics on `Tempo`.
+
+### General-Purpose `#library` Descriptor Helpers
+Across `#library` and `#tempo`, ~50 raw `Object.defineProperty` / `Object.defineProperties` calls repeat 4 common patterns that can be consolidated alongside `ownKeys` / `ownEntries` in `packages/library/src/common/primitives/primitive.library.ts` (or `object.library.ts`):
 
 1. **`defineHidden(target, key, value, writable?)`** — non-enumerable metadata/internal properties (`enumerable: false`).
 2. **`defineReadonly(target, key, value, configurable?)`** — enumerable read-only values (`writable: false`).
 3. **`defineLazy(target, key, factory)`** — enumerable, configurable getter that reifies itself on first access via `Object.defineProperty(this, key, { value })`.
 4. **`defineFrom(target, source)`** — descriptor-preserving copy (`Object.defineProperties(target, Object.getOwnPropertyDescriptors(source))`).
+
+---
+
+## 6. Follow-Up Companion Refactor: `Object.fromEntries(ownEntries(..., true))`
+
+There are **5** identical `Object.fromEntries(ownEntries(x, true))` calls flattening prototype chains into plain objects:
+- `packages/library/src/common/runtime/reflection.library.ts:136`
+- `packages/tempo/src/support/support.init.ts:375, 376, 409, 417`
+
+### Generator vs. `flattenObject` Trade-Off
+- **Generator (`*walkEntries`):** `Object.fromEntries()` natively consumes any `Iterable`/`Generator` without an intermediate `entries[]` array. Walking child-to-parent with a `seen` `Set` avoids allocating `levels[]`, though it changes key insertion order (child keys first vs. parent-first via `levels.reverse()`). Where parent-first insertion order is required (e.g. `Enum` tests), `levels.reverse()` is still needed.
+- **`flattenObject(obj)` helper:** Even without changing `ownEntries` to a generator, exporting a concise `flattenObject(obj)` (e.g. `Object.fromEntries(ownEntries(obj, true))`) in `#library` eliminates all 5 repeated expressions cleanly.
