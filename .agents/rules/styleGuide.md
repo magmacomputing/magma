@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: General TypeScript code style, assertion library, export, and formatting conventions
+---
+
 # General Code & Style Guide
 
 This style guide defines common coding conventions, formatting standards, and TypeScript idioms across all packages in the repository.
@@ -24,10 +29,13 @@ This style guide defines common coding conventions, formatting standards, and Ty
 
 ## 2. Prefer Assertion Library Functions
 - **Assertion Functions First**: Always prefer fast, idiomatic assertion functions (e.g. from `#library/assertion.library.js` or package support modules) over manual `typeof`, `instanceof`, or bespoke null-checks:
-  - **Primitives**: `isString(x)`, `isNumber(x)`, `isInteger(x)` (bigint), `isDigit(x)` (number or bigint), `isBoolean(x)`, `isSymbol(x)`.
+  - **Primitives**: `isString(x)`, `isNumber(x)` (finite numbers via `Number.isFinite`), `isBigInt(x)` (bigint), `isDigit(x)` (number or bigint), `isBoolean(x)`, `isSymbol(x)`.
   - **Strings & Text**: Prefer `isText(x)` over manual non-empty string checks like `isString(x) && x.trim().length > 0` or `!isString(x) || x.trim().length === 0`.
   - **Callables**: `isCallable(x)` or `isFunction(x)` for any invocable function, method, or class constructor (`typeof x === 'function'`).
-  - **Objects**: `isPlainObject(x)` for plain dictionary `{}` or `Object.create(null)` objects. Avoid manual, fragile checks such as `typeof x === 'object' && x !== null` or `x.constructor === Object`.
+  - **Objects & References**:
+    - `isPlainObject(x)` for plain dictionary `{}` or `Object.create(null)` objects. Avoid manual checks such as `typeof x === 'object' && x !== null` or `x.constructor === Object`.
+    - `isObject(x)` delegates to `isType(x, 'Object')` (via `getType`): plain objects such as `{}` pass, while array-like objects (`{ length: 0 }`) and objects with a custom `Symbol.toStringTag` return `false`.
+    - `isReference(x)` (or `isReference(x) && !isFunction(x)`) for any non-null, non-primitive object reference including `Proxy`, `Object.create(...)`, and custom `Symbol.toStringTag` instances.
   - **Nullish & Presence**: Prefer positive assertions: `isUndefined(x)`, `isNullish(x)`, `isNull(x)`, `isDefined(x)`. Prefer `isUndefined(x)` over negated `!isDefined(x)` for clearer readability.
 
 ---
@@ -120,3 +128,31 @@ This style guide defines common coding conventions, formatting standards, and Ty
   - **Minimizes Bundle Size & Dead Code**: Prevents tree-shaking ambiguities and unused symbols leaking into distribution bundles.
   - **Prevents Accidental Coupling**: Guarantees that internal implementation details can be refactored freely without breaking dependent modules.
   - **Keeps Autocomplete Focused**: Keeps IDE suggestion lists clean and relevant for consumers.
+
+---
+
+## 10. Helper Function Placement (`#library` vs. Local Module)
+- **Evaluate Reusability & Consumer Merit**: Before creating a new helper function inside a feature or package module (e.g. `tempo`, `tempo-fns`, or a plugin), consider whether it has general-purpose merit for `@magmacomputing/library` (`#library`):
+  - **Promote to `#library` when general-purpose**: If the helper is domain-agnostic (e.g., object/prototype traversal, string/number formatting, Temporal/Intl utilities, runtime proxy/reflection guards) and would be useful across packages or to library consumers, place it in the appropriate `#library` module with unit tests and JSDoc.
+  - **Keep isolated when domain-specific**: If the helper is tightly coupled to Tempo's internal engine state, token grammar, or a single module's implementation details, keep it private/isolated in that non-library module rather than polluting `#library`'s public surface.
+
+---
+
+## 11. Prefer Memoized, Lazy Evaluation
+- **Defer Until Needed**: Avoid computing expensive or derived values eagerly during construction, setup, or before conditional branches; evaluate them lazily only when a code path actually requests them.
+- **Memoize Repeated Reads**: Cache the result on first evaluation (e.g., via `??=`, per-instance `#memo` fields, `WeakMap`/`WeakCache`, or local per-call lazy helpers) so repeated accesses within the same instance or invocation reuse the computed value without redundant work.
+- **Reuse Existing Memoized Getters**: When an instance (such as `Tempo`) already exposes memoized getters (e.g. `.yow`, `.woy`, `.doy`), read from them whenever the target state matches rather than re-running the underlying calculation.
+
+---
+
+## 10. Helper Function Placement (`#library` vs. Local Module)
+- **Evaluate Reusability & Consumer Merit**: Before creating a new helper function inside a feature or package module (e.g. `tempo`, `tempo-fns`, or a plugin), consider whether it has general-purpose merit for `@magmacomputing/library` (`#library`):
+  - **Promote to `#library` when general-purpose**: If the helper is domain-agnostic (e.g., object/prototype traversal, string/number formatting, Temporal/Intl utilities, runtime proxy/reflection guards) and would be useful across packages or to library consumers, place it in the appropriate `#library` module with unit tests and JSDoc.
+  - **Keep isolated when domain-specific**: If the helper is tightly coupled to Tempo's internal engine state, token grammar, or a single module's implementation details, keep it private/isolated in that non-library module rather than polluting `#library`'s public surface.
+
+---
+
+## 11. Prefer Memoized, Lazy Evaluation
+- **Defer Until Needed**: Avoid computing expensive or derived values eagerly during construction, setup, or before conditional branches; evaluate them lazily only when a code path actually requests them.
+- **Memoize Repeated Reads**: Cache the result on first evaluation (e.g., via `??=`, per-instance `#memo` fields, `WeakMap`/`WeakCache`, or local per-call lazy helpers) so repeated accesses within the same instance or invocation reuse the computed value without redundant work.
+- **Reuse Existing Memoized Getters**: When an instance (such as `Tempo`) already exposes memoized getters (e.g. `.yow`, `.woy`, `.doy`), read from them whenever the target state matches rather than re-running the underlying calculation.

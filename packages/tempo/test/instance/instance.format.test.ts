@@ -45,9 +45,9 @@ describe(`${label} format method`, () => {
     expect(t.format('{www}')).toBe('Mon');
   });
 
-  test('formats {nano} as a string', () => {
+  test('formats {epoch.ns} as a string', () => {
     const t = new Tempo('2024-05-20');
-    const nano = t.format('{nano}');
+    const nano = t.format('{epoch.ns}');
     expect(typeof nano).toBe('string');
     expect(nano).toMatch(/^[0-9]+$/);
   });

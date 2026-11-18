@@ -1,5 +1,5 @@
 import { protoType, getType, cast } from '#library/type.library.js';
-import { enumify } from '#library/enumerate.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { looseIndex } from '#library/object.library.js';
 import type { Singular, CountOf, AssertEqual, Cast, KeyOf, ValueOf, EntryOf, RemoveIndex, LiteralKey } from '#library/type.library.js';
 
@@ -27,7 +27,7 @@ describe('Type Library (Compile-Time)', () => {
 		expect(testOptionalEntry).toBe(true);
 
 		// Loose enums: unwinding the loose index signature & extracting correlated entry pairs
-		const testEnum = looseIndex<string, string>()(enumify({
+		const testEnum = looseIndex<string, string>()(Enum.from({
 			North: 'north',
 			South: 'south',
 		}, false));

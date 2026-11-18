@@ -10,7 +10,7 @@ If you have a native `Temporal.ZonedDateTime` and want to format it using Tempo'
 import { format } from '@magmacomputing/tempo/format';
 
 const zdt = Temporal.Now.zonedDateTimeISO();
-const str = format(zdt, '{mon} {dd:ord}, {yyyy}'); 
+const str = format(zdt, '{mon} {dd:ord}, {yyyy}');
 
 console.log(str); // e.g., "October 24th, 2026"
 ```
@@ -81,7 +81,7 @@ Tempo.use(FormatModule);
 ## 🔠 Supported Tokens
 
 > [!NOTE]
-> **Tempo is heavily opinionated.** To provide maximum predictability and eliminate common timezone or regional bugs, Tempo strictly defaults to **ISO-8601 standards**. This means ISO weeks always start on Monday (`1`), and mathematical bounds (like ISO week-of-year `{woy}` and year-of-week `{yow}` calculations) adhere to the rigorous ISO specification (with the exception of `{ww}`, which counts 7-day groups from the first day of the configured calendar year, regardless of weekday).
+> **Tempo is heavily opinionated.** To provide maximum predictability and eliminate common timezone or regional bugs, Tempo strictly defaults to **ISO-8601 standards**. This means ISO weeks always start on Monday (`1`), and mathematical bounds (like ISO week-of-year `{woy}` and year-of-week `{yow}` calculations) adhere to the rigorous ISO specification (with the exception of `{woy:cal}`, which counts 7-day groups from the first day of the configured calendar year, regardless of weekday).
 
 > [!TIP]
 > **Format Dialects & Migration**
@@ -110,8 +110,7 @@ Tempo.use(FormatModule);
 | `{eon}` | Absolute Year within Era | `200` |
 | `{era}` | Era Designator (e.g., AD/BC, CE/BCE) | `AD` |
 | `{yow}` | ISO Year of Week | `2026` |
-| `{woy}` | Zero-padded ISO Week of Year | `43` |
-| `{ww}` | Zero-padded Calendar Week of Year (configured calendar's day-of-year basis; `01`–`53` starting Jan 1 in ISO, can exceed `53` in lunisolar calendars) | `43` |
+| `{woy}` | Zero-padded ISO Week of Year (`{woy:cal}` for Calendar Week of Year, `{woy:month}` for Week of Month) | `43` |
 | `{mon}` | Full Month Name | `October` |
 | `{mmm}` | Short Month Name | `Oct` |
 | `{mm}` | Zero-padded Month | `10` |
@@ -122,7 +121,6 @@ Tempo.use(FormatModule);
 | `{doy}` | Day of Year (1-366) | `297` |
 | `{intl.<prop>}` | Regional metadata via `Intl.LocaleInfo` (`{intl.region}`, `{intl.script}`, `{intl.firstDay}`, `{intl.direction}`, `{intl.hourCycle}`) | `US`, `Latn`, `7`, `ltr` |
 | `{hh}` | Zero-padded Hour (24h) | `15` |
-| `{h24}` | Zero-padded Hour synonym (24h) | `15` |
 | `{h12}` | Zero-padded Hour (12h) plus meridiem | `03pm` |
 | `{mer}` | am/pm meridiem marker | `pm` |
 | `{mi}` | Zero-padded Minutes | `30` |
@@ -137,13 +135,13 @@ Tempo.use(FormatModule);
 | `{ymd}` | Compact Date (yyyymmdd) | `20261024` |
 | `{hms}` | Compact Time (24h) | `153045` |
 | `{time}` | Time (24h, or localized format via `:locale`) | `15:30:45` |
-| `{nano}` | Nanosecond Timestamp | `1792843200000000000` |
 | `{dim}` | Total Days in Month (28-31) | `31` |
-| `{cen}` | 2-digit Century (`{century}`) | `20` |
-| `{jj}` | Astronomical Julian Day Number (`{julian}`) | `2461338` |
-| `{wom}` | Week of Month (1-5, aliases `{ww:month}`, `{woy:month}`) | `4` |
+| `{jj}` | Astronomical Julian Day Number | `2461338` |
 | `{tz}` | Time Zone ID | `Australia/Sydney` |
 | `{cal}` | Calendar System | `iso8601` |
+
+> [!NOTE]
+> **Why `t.yy` returns `2026` while `{yy}` formats `'26'`**: Instance getters return full data values so arithmetic and comparisons never lose century information (`t.yy === 2026`). Format tokens, by contrast, follow universal date-formatting conventions where `{yy}` outputs a 2-digit year (`'26'`) and `{yyyy}` outputs a 4-digit year (`'2026'`). If you reach for `{yy}` and want all four digits, use `{yyyy}` or `{yy:long}`.
 
 ### 🎛️ Token Modifiers
 You can append modifiers to any token using a colon (`:`) to transform its output. Multiple modifiers can be chained together (e.g., `{mon:locale:title}`).
@@ -161,17 +159,17 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:space`| Universal | Injects leading space padding for numeric tokens (e.g. `{dd:space}` → ` 5`, `{doy:3:space}` → `  5`), or a leading space before string/meridiem elements | `{dd:space}` → ` 5`, `{h12}:{mi}{mer:space:dots}` → `03:30 a.m.` |
 | `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{woy:locale}` / `{yow:locale}` to locale week rules, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{dow:locale:0}` → `0`, `{woy:locale}` → `01`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
 | `:short` | Universal / String | Yields a short or abbreviated style (e.g. `{mon:short}` → `Oct`, `{yow:short}` → `26`, `{dmy:short}` → `241026`) | `{mon:short}` → `Oct`, `{yow:short}` → `26` |
-| `:long` | String | Yields a full-length style | `{mon:long}` → `October` |
+| `:long` | Universal / String | Yields a full-length style (e.g. `{mmm:long}` → `October`, `{yy:long}` → `2026`; negative years preserve a leading `-` zero-padded to 4+ digits like `-0003`, and 5+ digit years retain all digits) | `{mmm:long}` → `October`, `{yy:long}` → `2026` |
 | `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |
 | `:offset` | `{tz}` | Converts timezone identifier to numeric UTC offset. Supports granular sub-modifiers (`:hh`, `:mi`, `:ss`) | `{tz:offset}` → `+10:00`, `{tz:offset:hh}` → `+10` |
-| `:zero` / `:0` | Number | Shifts 1-based counters to zero-indexed (`{doy:zero}` → `000`–`365`, `{dow:zero}` → `0`–`6` Sunday=0, `{dow:locale:0}` → `0`–`6` locale week start=0, `{mm:zero}` → `00`–`11`, `{woy:zero}` → `00`–`52`, `{wom:zero}` → `0`–`4`) | `{dow:0}` → `6`, `{dow:locale:0}` → `0`, `{mm:raw:0}` → `9` |
+| `:zero` / `:0` | Number | Shifts 1-based counters to zero-indexed (`{doy:zero}` → `000`–`365`, `{dow:zero}` → `0`–`6` Sunday=0, `{dow:locale:0}` → `0`–`6` locale week start=0, `{mm:zero}` → `00`–`11`, `{woy:zero}` → `00`–`52`, `{woy:month:zero}` → `0`–`4`) | `{dow:0}` → `6`, `{dow:locale:0}` → `0`, `{mm:raw:0}` → `9` |
 | `:day` | Unit Scope | Expresses time units cumulatively over the day (`{ss:day}` → `0`–`86399`, `{mi:day}` → `0`–`1439`, `{ms:day}`, `{ns:day}`) | `{ss:day}` → `55845` |
 | `:week` | Unit Scope | Expresses time units cumulatively over the week (`{hh:week}` → `0`–`167`, `{mi:week}`, `{ss:week}`) or day within the week (`{dd:week}` → `1`–`7`) | `{hh:week}` → `135`, `{dd:week}` → `6` |
-| `:month` | Unit Scope | Scopes counters to the month (`{wom}` / `{woy:month}` → `1`–`5`, `{dd:month}` → `1`–`31`) | `{wom}` → `4` |
+| `:month` | Unit Scope | Scopes counters to the month (`{woy:month}` → `1`–`5`, `{dd:month}` → `1`–`31`) | `{woy:month}` → `4` |
 | `:year` | Unit Scope | Scopes counters to the year (`{dd:year}` → `001`–`366`, `{mm:year}` → `01`–`12`) | `{dd:year}` → `297` |
 
 > [!TIP]
-> **Timezone Formatting & Extended Offset Variations**  
+> **Timezone Formatting & Extended Offset Variations**
 > `{tz}` defaults to the IANA timezone identifier (e.g. `Australia/Sydney`). Modifiers can be composed seamlessly:
 > * **Named Styles**: `{tz:short}` → `AEST`, `{tz:long}` → `Australian Eastern Standard Time`.
 > * **Chained Offsets**: `{tz:offset}` → `+10:00`, `{tz:offset:short}` → `+10`, `{tz:offset:compact}` → `+1000`.
@@ -184,21 +182,20 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 > * **Dialect Compatibility**: For LDML and Moment-style timezone masks (`z`, `zz`, `zzz`), use `@magmacomputing/tempo-plugin-dialects`.
 
 > [!TIP]
-> **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**  
+> **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**
 > You can pass any integer width directly as a modifier (e.g. `{doy:3}`, `{yyyy:-3}`, `{yow:-2}`, `{ns:6}`).
 > * **Positive width (`+N`)**: Zero-pads integers to the specified width. Negative values maintain proper sign formatting (e.g. `-5` with `:3` yields `"-05"`).
 > * **Negative width (`-N`)**: Slices the last $N$ characters from the right (`slice(-N)`). Ideal for year variations such as 3-digit year (`{yyyy:-3}` → `'026'`), 1-digit year (`{yyyy:-1}` → `'6'`), or 2-digit ISO week-year (`{yow:-2}` / `{yow:short}` → `'26'`).
-> * **Fractional seconds (`{ff}`)**: Slices the 9-digit fractional second string to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds).
+> * **Fractional seconds (`{ff}`)**: Emits the 9-character zero-padded fractional digit string without a leading `0.` (designed to follow a literal `.` as in `{hh}:{mi}:{ss}.{ff}`), and slices left-to-right to the specified precision length (e.g. `{ff:1}` for tenths, `{ff:2}` for hundredths, `{ff:3}` for milliseconds, `{ff:6}` for microseconds). By contrast, the `t.ff` getter returns a `[0, 1)` floating-point number (`0.123456789`) for numeric/second math such as `t.ss + t.ff`.
 
 > [!TIP]
-> **Specialized Tokens, Calendrical Counters & Designed Composability**  
+> **Specialized Tokens, Calendrical Counters & Designed Composability**
 > Rather than proliferating one-off tokens for every niche format requirement, Tempo promotes an orthogonal matrix of composable unit scopes (`:day`, `:week`, `:month`, `:year`) alongside specialized tokens:
-> * **Astronomical Julian Day (`{jj}`, `{julian}`)**: Emits continuous 7-digit day count since 4713 BC (`2461331` for 2026-10-17, matching Oracle `J`).
+> * **Astronomical Julian Day (`{jj}`)**: Emits continuous 7-digit day count since 4713 BC (`2461331` for 2026-10-17, matching Oracle `J`).
 > * **Julian Day vs. Day of Year**: `{jj}` is the astronomical Julian Day number, whereas `{dd:year}` (or `{doy}`) is the day of the year (`1`–`366`, matching mainframe "Julian dates" like `YYYYDDD`).
 > * **Days in Month (`{dim}`)**: Total count of days in the current month (`28`–`31`, matching PHP `t`). (Convenience alias for `.zdt.daysInMonth`).
-> * **Century (`{cen}`, `{century}`)**: 2-digit century number (`20` for `2026`, matching POSIX `%C`).
-> * **Week of Month (`{wom}`)**: 1-based week counter within the month (`1`–`5`, matching Oracle `W` and Unicode LDML `W`). Semantic aliases: `{ww:month}`, `{woy:month}`.
-> * **Calendar Week (`{ww}`)**: Week of year computed from the configured calendar's day of year (starts on January 1st with range `01`–`53` in ISO calendars, matching Oracle `WW`, and can exceed `53` in lunisolar calendars; aliases `{woy:cal}` and `{ww:cal}`). For ISO 8601 week of year, use `{woy}`.
+> * **Week of Month (`{woy:month}`)**: 1-based week counter within the month (`1`–`5`, matching Oracle `W` and Unicode LDML `W`).
+> * **Calendar Week (`{woy:cal}`)**: Week of year computed from the configured calendar's day of year (starts on January 1st with range `01`–`53` in ISO calendars, matching Oracle `WW`, and can exceed `53` in lunisolar calendars). For ISO 8601 week of year, use `{woy}`.
 > * **Dimensional Time-Scope Modifiers**: Compose time units over a specified duration scope:
 >   * `{ss:day}`: Seconds past midnight (`0`–`86399`, matching Oracle `SSSSS`).
 >   * `{mi:day}`: Minute of the day (`0`–`1439`).
@@ -212,12 +209,12 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 >   * `{dow:zero}` / `{dow:0}`: `0`–`6` with Sunday = 0 (matching POSIX `%w`, JavaScript `Date.prototype.getDay()` parity).
 >   * `{mm:zero}` / `{mm:0}`: `00`–`11` (or `{mm:raw:0}` → `0`–`11`, matching JavaScript `Date.prototype.getMonth()` parity).
 >   * `{woy:zero}` / `{woy:0}`: `00`–`52`.
->   * `{wom:zero}` / `{wom:0}`: `0`–`4`.
+>   * `{woy:month:zero}` / `{woy:month:0}`: `0`–`4`.
 
 <!-- markdownlint-disable-next-line MD028 -->
 > [!TIP]
 > **Implicit Localization Bridge**
-> The `:short` and `:long` styling modifiers act as an automatic bridge to the browser's native `Intl` API! 
+> The `:short` and `:long` styling modifiers act as an automatic bridge to the browser's native `Intl` API!
 > By default, core tokens like `{mon}` or `{wkd}` run at zero-cost using Tempo's lightning-fast internal enums (yielding English results). If you want a localized string, you don't need to explicitly chain the `:locale` modifier. Simply using a styling modifier like `{mon:long}` will automatically translate the string using the instance's configured locale!
 
 ### 🔄 Automatic Meridiem
@@ -226,7 +223,7 @@ If your format string contains `{h12}` (12-hour clock) but lacks a `{mer}` token
 *(If you explicitly want a 12-hour digit without an auto-appended meridiem, use the `:raw` modifier: `{h12:raw}`)*
 
 > [!NOTE]
-> **Why `{h12}` and `{h24}`?** In other date libraries, `{hh}` could mean 12-hour and `{HH}` could mean 24-hour time. This is confusing and error-prone. Tempo standardizes `{hh}` on the default 24-hour expectation, but provides explicit `{h12}` and `{h24}` tokens to completely eliminate ambiguity. This keeps all token definitions fully lowercase and semantic, without relying on uppercase variations like `{HH}`. 
+> **Why `{hh}` and `{h12}`?** In other date libraries, `{hh}` could mean 12-hour and `{HH}` could mean 24-hour time. This is confusing and error-prone. Tempo standardizes `{hh}` on the 24-hour clock and provides `{h12}` for the 12-hour clock, keeping all token definitions lowercase and semantic without relying on uppercase variations like `{HH}`.
 
 ```typescript
 t.format('{h12}:{mi}');           // "03:30pm" (auto-append standard meridiem)
@@ -244,15 +241,15 @@ Here are a few real-world examples demonstrating how tokens and modifiers can be
 const t = new Tempo('2026-10-05T15:30:00');
 
 // Injecting tokens directly into sentences
-t.format('Today is the {dd:ord} of {mon:title}'); 
+t.format('Today is the {dd:ord} of {mon:title}');
 // "Today is the 5th of October"
 
 // Building standard UI formats
-t.format('{wkd}, {mmm} {dd:raw}, {yyyy} @ {h12}:{mi}'); 
+t.format('{wkd}, {mmm} {dd:raw}, {yyyy} @ {h12}:{mi}');
 // "Monday, Oct 5, 2026 @ 03:30pm"
 
 // Forcing fully lowercase strings
-t.format('{wkd:lower} afternoon'); 
+t.format('{wkd:lower} afternoon');
 // "monday afternoon"
 ```
 
@@ -351,7 +348,7 @@ t.format('{geo.city:locale}');          // "Sydney (Australie)"
 
 ## 🌍 Complex Native Intl Formatting
 
-While Tempo's template tokens (`{dd}`, `{mon}`, etc.) combined with the `:locale` modifier are incredibly powerful for structured formats, there are times when you want the full power of the native `Intl.DateTimeFormat` API for complete, culturally-specific sentence formatting (like Arabic numerals or full-length descriptive dates). 
+While Tempo's template tokens (`{dd}`, `{mon}`, etc.) combined with the `:locale` modifier are incredibly powerful for structured formats, there are times when you want the full power of the native `Intl.DateTimeFormat` API for complete, culturally-specific sentence formatting (like Arabic numerals or full-length descriptive dates).
 
 Because Tempo's philosophy is to "humanize" the rigid `Temporal` API, you can pass an `Intl.DateTimeFormatOptions` object *directly* into the `.format()` method. While `Intl.DateTimeFormat` still strictly validates your locales and option values, Tempo catches Temporal mismatch failures for you. It automatically retries formatting using `zdt.epochMilliseconds` for Temporal/Intl mismatch cases, safely injects the necessary `timeZone` and `calendar` metadata, but will explicitly rethrow any `withTimeZone` or `withCalendar` failures (e.g. from invalid timezones).
 
@@ -419,7 +416,7 @@ Tempo.init({
         tokens: {
             // A simple math-based token
             'myDay': (zdt) => String(zdt.day - 1),
-            
+
             // A deeply localized custom token using native Intl
             'wkd-fr': (zdt, { config }) => {
                 const dtOptions = config?.intl?.dateTimeFormat ?? {};

@@ -147,15 +147,17 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    isolate: true,
     projects: [
       {
         extends: './packages/tempo/vitest.config.ts',
         test: {
           name: 'Tempo',
           color: 'cyan',
+          isolate: true,
           include: ['packages/tempo/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**', '**/test/**/*.core.test.ts', '**/test/**/*.lazy.test.ts'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+          setupFiles: ['./packages/library/test/support/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       },
       {
@@ -163,9 +165,10 @@ export default defineConfig({
         test: {
           name: 'Tempo: Core',
           color: 'blue',
+          isolate: true,
           include: ['packages/tempo/test/**/*.core.test.ts', 'packages/tempo/test/**/*.lazy.test.ts'],
           exclude: ['**/node_modules/**'],
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+          setupFiles: ['./packages/library/test/support/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       },
       {
@@ -173,6 +176,7 @@ export default defineConfig({
         test: {
           name: 'Library',
           color: 'magenta',
+          isolate: false,
           include: ['packages/library/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**', '**/dist/**', '**/test/dom/**'],
           setupFiles: ['./packages/library/test/setup.ts'],
@@ -184,6 +188,7 @@ export default defineConfig({
           name: 'Browser: DOM',
           color: 'blue',
           environment: 'happy-dom',
+          isolate: true,
           include: ['packages/library/test/dom/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**', '**/dist/**'],
           setupFiles: ['./packages/library/test/setup.ts'],
@@ -194,6 +199,7 @@ export default defineConfig({
         test: {
           name: 'Functions',
           color: 'yellow',
+          isolate: false,
           include: ['packages/functions/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**'],
           setupFiles: ['./packages/functions/test/setup.ts'],
@@ -204,10 +210,11 @@ export default defineConfig({
         test: {
           name: 'Plugins',
           color: 'green',
+          isolate: true,
           include: ['packages/plugins/*/test/**/*.{test,spec}.ts'],
           exclude: ['**/node_modules/**'],
           maxWorkers: process.env.CI ? 2 : undefined,
-          setupFiles: ['./packages/tempo/bin/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
+          setupFiles: ['./packages/library/test/support/temporal-polyfill.ts', './packages/tempo/test/support/setup.console-spy.ts'],
         } as any
       }
     ]

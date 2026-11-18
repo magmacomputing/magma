@@ -2,12 +2,12 @@ import '#library/temporal.polyfill.js';
 import { fromRoman } from '#library/number.library.js';
 import { asType } from '#library/type.library.js';
 import { LOG } from '#library/logger.class.js';
-import { isNull, isString, isObject, isPlainObject, isZonedDateTime, isInstant, isNotNullish, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
+import { isNull, isString, isObject, isPlainObject, isReference, isZonedDateTime, isInstant, isNotNullish, isUndefined, isEmpty, isNumber, isDigit, isNumeric, isFunction, isText } from '#library/assertion.library.js';
 import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
-import { ownKeys, ownEntries, hasOwn } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, hasOwn, unwrap } from '#library/primitive.library.js';
 import { Enum } from '#library/enumerate.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
@@ -101,7 +101,8 @@ function compileBracedPattern(fmt: string): RegExp {
 			const rawToken = fmt.slice(i + 1, end).trim();
 			const [tok, ...modifiers] = rawToken.split(':');
 			const token = tok.toLowerCase();
-			const isRoman = modifiers.some(m => m.toLowerCase() === 'roman');
+			const normMods = modifiers.map(m => m.toLowerCase());
+			const isRoman = normMods.includes('roman');
 			const romanOr = (fallback: string) => isRoman ? RE_ROMAN_DIGITS : fallback;
 
 			switch (token) {
@@ -110,7 +111,9 @@ function compileBracedPattern(fmt: string): RegExp {
 					pattern += group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'));
 					break;
 				case 'yy':
-					pattern += group('yy', romanOr('\\d{2}'));
+					pattern += normMods.includes('long')
+						? group('yyyy', romanOr('[+-]\\d{4,6}|\\d{4}'))
+						: group('yy', romanOr('\\d{2}'));
 					break;
 				case 'mm':
 				case 'month':
@@ -127,7 +130,6 @@ function compileBracedPattern(fmt: string): RegExp {
 					pattern += group('dd', romanOr('\\d{1,2}(?:st|nd|rd|th)?'));
 					break;
 				case 'hh':
-				case 'h24':
 				case 'hour':
 					pattern += group('hh', romanOr('\\d{1,2}'));
 					break;
@@ -557,10 +559,32 @@ const _ParseEngine = {
 
 				// 2. TermHook.ordinal: e.g. "3rd day of #qtr.2"
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
-					const rawLocalOrdinals = { ...state.config?.registry?.ordinals, ...(state.options as any)?.registry?.ordinals };
 					const localOrdinals: Record<string, number> = {};
-					for (const [k, v] of Object.entries(rawLocalOrdinals))
-						localOrdinals[k.toLowerCase()] = v as number;
+					const collectOrdinals = (registry: any) => {
+						if (!isReference(registry) || isFunction(registry)) return;
+						const visited = new WeakSet<object>();
+						let curr: any = registry;
+						while (curr && curr !== Object.prototype) {
+							if (visited.has(curr)) break;
+							visited.add(curr);
+							for (const [k, v] of Object.entries(curr)) {
+								if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
+									localOrdinals[k.toLowerCase()] = v;
+							}
+							const level = unwrap(curr);
+							if (level !== curr) {
+								if (visited.has(level)) break;
+								visited.add(level);
+								for (const [k, v] of ownEntries(level)) {
+									if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
+										localOrdinals[k.toLowerCase()] = v;
+								}
+							}
+							curr = Object.getPrototypeOf(level);
+						}
+					};
+					collectOrdinals((state.options as any)?.registry?.ordinals);
+					collectOrdinals(state.config?.registry?.ordinals);
 
 					const allOrdKeys = Array.from(new Set([
 						...(Enum.keys(enums.ORDINAL) as string[]),

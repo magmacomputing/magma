@@ -207,11 +207,11 @@ describe('Dialect Explain & Migration Helper', () => {
 	it('translates Phase 4 specialized tokens across Oracle, PHP, Strftime, and LDML', () => {
 		// Oracle J, SSSSS, WW, W
 		const resOracle = Tempo.dialects.explain('J SSSSS WW W', DIALECT.Oracle);
-		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {ww} {wom}');
+		expect(resOracle.pattern).toBe('{jj} {ss:day:5} {woy:cal} {woy:month}');
 
 		// Oracle unpadded FM
 		const resOracleFm = Tempo.dialects.explain('FMJ SSSSS WW W', DIALECT.Oracle);
-		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {ww:raw} {wom}');
+		expect(resOracleFm.pattern).toBe('{jj} {ss:day:raw} {woy:cal:raw} {woy:month}');
 
 		// Oracle WW boundary formatting (2024-12-30 is Calendar Week 53, ISO Week 01)
 		const resOracleWw = Tempo.dialects.explain('WW', DIALECT.Oracle);
@@ -222,13 +222,14 @@ describe('Dialect Explain & Migration Helper', () => {
 		const resPhp = Tempo.dialects.explain('z t', DIALECT.Php);
 		expect(resPhp.pattern).toBe('{doy:raw:0} {dim}');
 
-		// Strftime %C and %w
+		// Strftime %C (unsupported in Tempo) and %w
 		const resStrftime = Tempo.dialects.explain('%C %w', DIALECT.Strftime);
-		expect(resStrftime.pattern).toBe('{cen} {dow:0}');
+		expect(resStrftime.tokens.some(t => t.source === '%C' && t.tempo === '')).toBe(true);
+		expect(resStrftime.pattern).toContain('{dow:0}');
 
 		// LDML W (week of month)
 		const resLdml = Tempo.dialects.explain('yyyy-MM W', DIALECT.Ldml);
-		expect(resLdml.pattern).toBe('{yyyy}-{mm} {wom}');
+		expect(resLdml.pattern).toBe('{yyyy}-{mm} {woy:month}');
 	});
 
 	it('accepts options object as second argument { dialect: ... }', () => {

@@ -22,8 +22,8 @@ The **`.zdt`** getter provides direct, zero-overhead access to the underlying na
 | **`.mm`**<br>`zdt.month` | `number` | Month number (1 = Jan, 12 = Dec) | `10` |
 | **`.dd`**<br>`zdt.day` | `number` | Day of the month (1–31) | `24` |
 | **`.dim`**<br>`zdt.daysInMonth` | `number` | Total days in the month (28–31) | `31` |
-| **`.era`**<br>`zdt.era` | `string \| undefined` | Calendar era identifier | `'ce'`, `'bce'`, `'ad'`, `'bc'` |
-| **`.eon`**<br>`zdt.eraYear` | `number \| undefined` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> | `2026`, `4` |
+| **`.era`**<br>`getTemporalEra(zdt)` | `string` | Canonical calendar era identifier (falls back to `'ce'` / `'bce'` on calendars without Temporal eras, such as `iso8601`, `chinese` and `dangi`; use `t.zdt.era` for raw Temporal) | `'ce'`, `'bce'`, `'reiwa'` |
+| **`.eon`**<br>`getTemporalEra(zdt).eraYear` | `number` | Positive integer year within current `.era` <sup>[[1]](#fn-eon)</sup> (use `t.zdt.eraYear` for raw Temporal) | `2026`, `4` |
 | **`.jj`** | `number` | Integer Julian Day number for the local ISO date (ignoring time of day) <sup>[[2]](#fn-jj)</sup> | `2461331` |
 
 <small>
@@ -141,7 +141,7 @@ In addition to scalar getters, `Tempo` provides structured sub-namespaces for do
 | **`.intl`** | `TempoIntlNamespace` | Internationalization metadata and locale engine:<br>• `.info` (`object`) — cultural metadata (`firstDay`, `weekend`, `calendar`, `minimalDays`)<br>• `.locale` (`Intl.Locale`) — native locale instance | `t.intl.info.firstDay` → `1`<br>`t.intl.locale.baseName` → `'en-US'` |
 | **`.geo`** | `Readonly<GeoConfig>` | Geographic coordinates and location data:<br>• `.sphere` (`'north' \| 'south' \| 'equator'`; always resolved)<br>• `.latitude`, `.longitude` (`number \| undefined`)<br>• `.elevation` (`number \| undefined`) | `t.geo.sphere` → `'south'`<br>`t.geo.latitude` → `-33.87` |
 | **`.term`** | `TempoTermRegistry` | Dynamic delegator accessing resolved terminology from loaded `TermPlugin` modules | `t.term.season` → `'summer'`<br>`t.term.quarter` → `'Q1'` |
-| **`.fmt`** | `Record<string,`<br>`string \| undefined>` | Dynamic delegator evaluating and memoizing individual format token strings | `t.fmt.yyyy` → `'2026'`<br>`t.fmt.wkd` → `'Saturday'` |
+| **`.fmt`** | `Record<string,`<br>`string \| undefined>` | Dynamic delegator evaluating named format presets from `Tempo.enums.FORMAT` and `config.registry.formats` | `t.fmt.date` → `'2026-10-24'`<br>`t.fmt.display` → `'Sat, 24 Oct 2026'` |
 
 ---
 
@@ -153,8 +153,6 @@ Beyond date-time properties, `Tempo` instances expose read-only inspection gette
 | :--- | :--- | :--- | :--- |
 | **`.config`** | `Readonly<Config>` | Active configuration proxy reflecting resolved global defaults and local instance overrides. | `t.config.timeZone` |
 | **`.parse`** | `Internal.Parse` | Shadowed view of internal parse state, including active `mode`, `anchor`, and matched AST tokens (`.result`). | `t.parse.anchor`<br>`t.parse.result` |
-| **`.terms`** | `Readonly<Record<...>>` | Dictionary of all registered `TermPlugin` scopes and their available range keys. | `t.terms.season` → `['summer', 'autumn', ...]` |
-| **`.ranges`** | `Readonly<Record<...>>` | Dictionary mapping every registered term key to its *currently active* range value for this date. | `t.ranges` → `{ season: 'summer', quarter: 'Q1' }` |
 
 ---
 

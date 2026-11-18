@@ -143,6 +143,14 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 		expect(mixedGroups).toBeDefined();
 		expect(mixedGroups.ord.toLowerCase()).toBe('penultimate');
 		expect(mixedGroups.value).toBe(-2);
+
+		const Step1 = Tempo.extend({ registry: { ordinals: { customstep: 1 } } });
+		const Step2 = Step1.extend({ registry: { ordinals: { CUSTOMSTEP: 2 } } });
+		const Step3 = Step2.extend({ registry: { ordinals: { customstep: 3 } } });
+		Step3.use(CaseHook);
+		const tStep = Step3.from('customstep day of #casehook', { anchor });
+		expect(tStep.isValid).toBe(true);
+		expect(mixedGroups.value).toBe(3);
 	});
 
 	it('should support negative ordinals like "-2nd day of #cycle.2" in [TermHook.ordinal]', () => {

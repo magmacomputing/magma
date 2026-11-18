@@ -1,3 +1,8 @@
+---
+trigger: always_on
+description: Tempo package ground-truth documentation and Temporal-first guardrails
+---
+
 # Tempo Package Rules & Reference Integration
 
 Whenever writing, reviewing, refactoring, testing, or discussing code involving `@magmacomputing/tempo` or its plugins:

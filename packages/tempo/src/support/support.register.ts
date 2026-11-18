@@ -1,9 +1,10 @@
 import { clearCache } from '#library/function.library.js';
 import { isEqual } from '#library/object.library.js';
-import { isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
-import { ownKeys, unwrap, hasOwn } from '#library/primitive.library.js';
+import { isFunction, isNotNullish, isNullish, isPlainObject, isSymbol, isUndefined } from '#library/assertion.library.js';
+import { ownKeys, ownValues, unwrap, hasOwn } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
 import type { Property } from '#library/type.library.js';
+import type { Internal } from '../tempo.type.js';
 
 import { getRuntime } from './support.runtime.js';
 import { setProperty, logWarn } from './support.util.js';
@@ -21,6 +22,25 @@ export function onRegistryReset(hook: () => void) {
 	resetHooks().add(hook);
 }
 
+/** @internal Register a hook to be called when global configuration changes; returns an unsubscribe callback. */
+export function onConfigChange(hook: (config: Internal.Config) => void): () => void {
+	rt.configHooks.add(hook);
+	return () => { rt.configHooks.delete(hook); };
+}
+
+/** @internal Notify registered config-change hooks after a global configuration update. */
+export function notifyConfigChange(config: Internal.Config): void {
+	for (const hook of [...rt.configHooks]) {
+		try {
+			const res: any = hook(config);
+			if (isFunction(res?.then))
+				Promise.resolve(res).catch(err => logWarn('[tempo] onConfigChange hook failed', {}, err));
+		} catch (err) {
+			logWarn('[tempo] onConfigChange hook failed', {}, err);
+		}
+	}
+}
+
 /** Reset all extendable registries to their original built-in defaults */
 export function registryReset() {
 	ownKeys(STATE).forEach(name => {
@@ -30,7 +50,7 @@ export function registryReset() {
 
 		// 1. Purge all own-properties from state and target (if configurable and extensible)
 		[state, target].filter(obj => obj != null).forEach(obj => {
-			const symInternal = Object.values(sym);								// these are the Symbols we want to preserve
+			const symInternal = ownValues(sym, true);							// these are the Symbols we want to preserve
 			Reflect.ownKeys(obj)
 				.filter(key => !isSymbol(key) || !symInternal.includes(key as any))
 				.forEach(key => {

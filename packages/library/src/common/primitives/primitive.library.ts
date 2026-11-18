@@ -62,13 +62,17 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 	}
 
 	const levels: any[] = [];
-	const limit = 50;
-	let depth = 0;
+	const visited = new WeakSet<object>();
 	let curr: any = tgt;
 
-	while (curr && curr !== Object.prototype && depth++ < limit) {
-		levels.push(unwrap(curr));
-		curr = Object.getPrototypeOf(curr);
+	while (curr && curr !== Object.prototype) {
+		if (levels.length >= 256)
+			throw new RangeError('ownEntries: prototype chain exceeded maximum traversal depth (256).');
+		const level = unwrap(curr);
+		if (visited.has(level)) break;
+		visited.add(level);
+		levels.push(level);
+		curr = Object.getPrototypeOf(level);
 	}
 
 	const entries: [PropertyKey, any][] = [];

@@ -1,7 +1,9 @@
+import { inspect } from 'node:util';
 import { Tempo } from '#tempo/core';
 import { Enum } from '#library/enumerate.library.js';
+import { delegator } from '#library/proxy.library.js';
 import { FormatModule } from '#tempo/format';
-import { parseWeekday, parseDate } from '#tempo/engine/engine.lexer.js';
+import { parseWeekday, parseDate, resolveNumber } from '#tempo/engine/engine.lexer.js';
 import '#tempo/parse';
 
 Tempo.use(FormatModule);
@@ -167,9 +169,9 @@ describe('Core Ordinal Offset Parsing', () => {
 			expect(t10th.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
 		});
 
-		it('supports user extensibility via Enum.derive and Tempo.init registry', () => {
+		it('supports user extensibility via Enum.extend and Tempo.init registry', () => {
 			try {
-				const CustomOrd = Enum.derive(Tempo.enums.ORDINAL, {
+				const CustomOrd = Enum.extend(Tempo.enums.ORDINAL, {
 					zeroth: 0,
 				});
 				expect(CustomOrd.zeroth).toBe(0);
@@ -186,6 +188,14 @@ describe('Core Ordinal Offset Parsing', () => {
 
 				expect(Tempo.enums.ORDINAL.penultimate).toBe(-2);
 				expect(Tempo.enums.ORDINAL.twelfth).toBe(12);
+				expect(Enum.isEnum(Tempo.registry.ordinals)).toBe(true);
+				expect(Tempo.registry.ordinals?.penultimate).toBe(-2);
+
+				for (const showProxy of [false, true]) {
+					const out = inspect(Tempo.registry, { showProxy });
+					expect(out).not.toContain('Proxy');
+					expect(out).toContain('penultimate: -2');
+				}
 
 				const t12th = new Tempo('twelfth day of May 2026');
 				expect(t12th.isValid).toBe(true);
@@ -236,6 +246,44 @@ describe('Core Ordinal Offset Parsing', () => {
 
 			// Verify global enums.ORDINAL was not polluted
 			expect((Tempo.enums.ORDINAL as any).eleventh).toBeUndefined();
+		});
+
+		it('retains earlier local registry.numbers aliases across chained Tempo.extend extensions', () => {
+			const First = Tempo.extend({ registry: { numbers: { uno: 1 } } });
+			const Second = First.extend({ registry: { numbers: { dos: 2 } } });
+			const anchor = new Second('2026-05-01');
+
+			const tUno = new Second('uno days hence', { anchor });
+			const tDos = new Second('dos days hence', { anchor });
+
+			expect(tUno.isValid).toBe(true);
+			expect(tUno.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-02');
+			expect(tDos.isValid).toBe(true);
+			expect(tDos.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
+
+			const Third = Second.extend({ registry: { numbers: { uno: 2 } } });
+			const tUnoOverride = new Third('uno days hence', { anchor });
+			expect(tUnoOverride.isValid).toBe(true);
+			expect(tUnoOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
+
+			const Fourth = Third.extend({ registry: { numbers: { DOS: 9 } } });
+			const tDosCaseOverride = new Fourth('dos days hence', { anchor });
+			expect(tDosCaseOverride.isValid).toBe(true);
+			expect(tDosCaseOverride.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-10');
+
+			let Deep = Tempo.extend({ registry: { numbers: { deepuno: 2 }, ordinals: { customsecond: 2 } } });
+			for (let i = 0; i < 52; i++) {
+				Deep = Deep.extend({ registry: { numbers: { [`n${i}`]: i + 10 }, ordinals: { [`o${i}`]: i + 10 } } });
+			}
+			const tDeepNum = new Deep('deepuno days hence', { anchor });
+			expect(tDeepNum.isValid).toBe(true);
+			expect(tDeepNum.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-03');
+			const tDeepOrd = new Deep('customsecond day of May 2026', { anchor });
+			expect(tDeepOrd.isValid).toBe(true);
+			expect(tDeepOrd.format('{yyyy}-{mm}-{dd}')).toBe('2026-05-02');
+
+			const delegatedNumbers = delegator(['customcount'], () => 37);
+			expect(resolveNumber('customcount', { registry: { numbers: delegatedNumbers } })).toBe(37);
 		});
 	});
 });

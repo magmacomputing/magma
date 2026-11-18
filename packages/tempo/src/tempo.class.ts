@@ -13,7 +13,7 @@ import { compare as compareValues } from '#library/number.library.js';
 import { getType, cast } from '#library/type.library.js';
 import { clone } from '#library/serialize.library.js';
 import { isEmpty, isNotNullish, isUndefined, isString, isText, isObject, isPlainObject, isSymbol, isFunction, isClass, isCallable, isZonedDateTime, isInstant, isDurationLike, isNumber, isNull } from '#library/assertion.library.js';
-import { instant, getTemporalIds, normalizeUtcOffset, compareByUnit, getISOWeekOfYear } from '#library/temporal.library.js';
+import { instant, getTemporalIds, normalizeUtcOffset, compareByUnit, getISOWeekOfYear, getTemporalEra } from '#library/temporal.library.js';
 import { toJulianDay } from '#library/calendar.library.js';
 import { getDateTimeFormat, getHemisphere, canonicalLocales, resolveLocale, getLC, getLI, getIntlNamespace, type ResolvedLocaleInfo, type TempoIntlNamespace } from '#library/international.library.js';
 import { evaluate } from '#library/evaluation.library.js';
@@ -37,7 +37,7 @@ import { $Identity, $Discover, $LogConfig } from '#library/symbol.library.js';
 
 import { resolveMonthDay, setProperty, proto } from './support/support.util.js';
 import { datePattern } from './support/support.default.js';
-import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, isCompareUnit, resolveCompareUnit, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
+import { sym, markConfig, TermError, getRuntime, init, extendState, setPatterns, isTempo, isSandbox, registryUpdate, registryReset, onRegistryReset, notifyConfigChange, Token, Snippet, Layout, Ignore, Default, Guard, enums, STATE, DISCOVERY, $Internal, $setConfig, $setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $Tempo, $Register, $errored, $guard, $setDiscovery, isCompareUnit, resolveCompareUnit, logError, logDebug, logWarn, logTempo, setLogLevel, createCacheFacade, usePlugin, createSandbox, _lifecycle, ClassStates } from '#tempo/support';
 import * as t from './tempo.type.js';												// namespaced types (Tempo.*)
 
 declare module '#library/type.library.js' {
@@ -372,6 +372,8 @@ export class Tempo {
 			setPatterns(shape);
 			this[$buildGuard](shape);
 		}
+		if (shape === _global && !_lifecycle.initialising)
+			notifyConfigChange(shape.config);
 	}
 
 	/** support "Global Discovery" of user-options */
@@ -471,9 +473,9 @@ export class Tempo {
 		const state = targetState ?? this[$Internal]();
 		const wordsList = [
 			...Enum.keys(enums.NUMBER),
-			...Object.keys(state.config.registry?.numbers ?? {}),
+			...ownKeys(state.config.registry?.numbers ?? {}, true).filter(isString),
 			...Enum.keys(enums.ORDINAL),
-			...Object.keys(state.config.registry?.ordinals ?? {}),
+			...ownKeys(state.config.registry?.ordinals ?? {}, true).filter(isString),
 			...Enum.keys(enums.WEEKDAY),
 			...Enum.keys(enums.WEEKDAYS),
 			...Enum.keys(enums.MONTH),
@@ -583,21 +585,21 @@ export class Tempo {
 	 * ```ts
 	 * // Factory mode with `using`
 	 * {
-	 *   using sb = Tempo.derive({ discovery: 'test' });
+	 *   using sb = Tempo.extend({ discovery: 'test' });
 	 *   sb.use(MyPlugin);
 	 * }
 	 *
 	 * // Scoped callback mode
-	 * const result = Tempo.derive((sb) => {
+	 * const result = Tempo.extend((sb) => {
 	 *   sb.use(MyPlugin);
 	 *   return sb('2026-05-10').format();
 	 * });
 	 * ```
 	 */
-	static derive(options?: t.Options): typeof Tempo;
-	static derive<R>(fn: (sandbox: typeof Tempo) => R): R;
-	static derive<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
-	static derive<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
+	static extend(options?: t.Options): typeof Tempo;
+	static extend<R>(fn: (sandbox: typeof Tempo) => R): R;
+	static extend<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
+	static extend<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
 		return createSandbox(this, arg1, arg2);
 	}
 
@@ -745,6 +747,8 @@ export class Tempo {
 			setPatterns(state);																		// rebuild the global patterns (Master Guard etc)
 
 			_lifecycle.ready = true;
+			if (isBase)
+				notifyConfigChange(state.config);
 			return this;
 		} catch (err) {
 			_lifecycle.ready = false;
@@ -1179,15 +1183,17 @@ export class Tempo {
 	/** underlying Temporal ZonedDateTime */									#zdt!: Temporal.ZonedDateTime;
 	/** memoized instance properties */
 	#memo: {
-		tz?: string;
-		cal?: string;
+		zdt?: {
+			tzCal?: [string, string];
+			jj?: number;
+			epoch?: Readonly<{ ss: number; ms: number; us: number; ns: bigint }>;
+			iso?: string;
+			isoWeek?: { weekOfYear: number; yearOfWeek: number };
+			eraInfo?: { era: string; eraYear: number };
+		};
 		sphere?: t.COMPASS | undefined;
 		geo?: t.GeoConfig | undefined;
 		fmt?: Record<string, string | undefined>;
-		jj?: number;
-		epoch?: Readonly<{ ss: number; ms: number; us: number; ns: bigint }>;
-		iso?: string;
-		isoWeek?: { weekOfYear: number; yearOfWeek: number };
 		config?: Readonly<t.Internal.Config>;
 	} = {};
 	/** indicator that the instance failed to parse */				#errored = false;
@@ -1210,8 +1216,6 @@ export class Tempo {
 		logError(msg, config);
 	}
 
-
-
 	/**
 	 * @internal Internal access to instance private state.
 	 * This surface is not part of the public contract and is subject to change.
@@ -1220,7 +1224,12 @@ export class Tempo {
 		const self: Tempo = unwrap(this);
 		const out = {
 			get zdt() { return self.#zdt },
-			set zdt(val: any) { self.#zdt = val },
+			set zdt(val: any) {
+				if (self.#zdt !== val) {
+					self.#zdt = val;
+					delete self.#memo.zdt;
+				}
+			},
 			get errored() { return self.#errored },
 			set errored(val: any) { self.#errored = val },
 			get parseDepth() { return self.#parseDepth },
@@ -1330,14 +1339,6 @@ export class Tempo {
 	/** @internal check if a module is loaded */
 	hasModule(name: string): boolean {
 		return (this.constructor as typeof Tempo).hasModule(name);
-	}
-
-	/** returns a [timezone, calendar] tuple derived from the underlying date-time. */
-	#temporalIds(): [string, string] {
-		if (!this.#memo.tz || !this.#memo.cal) {
-			[this.#memo.tz, this.#memo.cal] = getTemporalIds(this.toDateTime());
-		}
-		return [this.#memo.tz, this.#memo.cal];
 	}
 
 	/** Resolve the instance to a Temporal.ZonedDateTime (with optional callback) */
@@ -1524,10 +1525,6 @@ export class Tempo {
 	}
 
 	/** 4-digit year (e.g., 2024) */													get yy() { return this.toDateTime().year }
-	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return this.toDateTime().era; }
-	/** Year within the era (positive integer) */							get eon() { return this.toDateTime().eraYear; }
-	/** 4-digit ISO week-numbering year */										get yow() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
-	/** ISO week number of the year */												get woy() { return (this.#memo.isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
 	/** Month number: Jan=1, Dec=12 */												get mm() { return this.toDateTime().month as t.mm }
 	/** Day of the month (1-31) */														get dd() { return this.toDateTime().day as t.dd }
 	/** Hour of the day (0-23) */															get hh() { return this.toDateTime().hour as t.hh }
@@ -1537,8 +1534,12 @@ export class Tempo {
 	/** Microseconds of the millisecond (0-999) */						get us() { return this.toDateTime().microsecond as t.us }
 	/** Nanoseconds of the microsecond (0-999) */							get ns() { return this.toDateTime().nanosecond as t.ns }
 	/** Fractional seconds (e.g., 0.123456789) */							get ff() { return +(`0.${pad(this.ms, 3)}${pad(this.us, 3)}${pad(this.ns, 3)}`) }
-	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return this.#temporalIds()[0] }
-	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return this.#temporalIds()[1] }
+	/** IANA Time Zone ID (e.g., 'Australia/Sydney') */				get tz() { return ((this.#memo.zdt ??= {}).tzCal ??= getTemporalIds(this.toDateTime()))[0] }
+	/** Temporal Calendar ID (e.g., 'iso8601' | 'gregory') */	get cal() { return ((this.#memo.zdt ??= {}).tzCal ??= getTemporalIds(this.toDateTime()))[1] }
+	/** Era string for the calendar (e.g., 'ce', 'bce') */		get era() { return ((this.#memo.zdt ??= {}).eraInfo ??= getTemporalEra(this.toDateTime())).era; }
+	/** Year within the era (positive integer) */							get eon() { return ((this.#memo.zdt ??= {}).eraInfo ??= getTemporalEra(this.toDateTime())).eraYear; }
+	/** 4-digit ISO week-numbering year */										get yow() { return ((this.#memo.zdt ??= {}).isoWeek ??= getISOWeekOfYear(this.toDateTime())).yearOfWeek; }
+	/** ISO week number of the year */												get woy() { return ((this.#memo.zdt ??= {}).isoWeek ??= getISOWeekOfYear(this.toDateTime())).weekOfYear as t.woy; }
 	/** Internationalization namespace (info, locale) */			get intl(): TempoIntlNamespace { return getIntlNamespace(this.locale, this.tz); }
 	/** Resolved BCP 47 locale (e.g., 'en-US') */							get locale(): string { return Tempo.#locale(this.#local.config.locale ?? (this as any)[$Internal]().config.locale) }
 	#getRawGeo(): t.GeoConfig | undefined {
@@ -1587,42 +1588,9 @@ export class Tempo {
 	/** Day of year: 1-366 */																	get doy() { return this.toDateTime().dayOfYear }
 	/** Days in current month, using instance calendar. */		get dim() { return this.toDateTime().daysInMonth }
 	/** Days in current year, using instance calendar. */			get diy() { return this.toDateTime().daysInYear }
-	/** Julian day number for the local ISO calendar date. */	get jj() { return (this.#memo.jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
-	/** Standard ISO 8601 string in UTC */										get iso() { return (this.#memo.iso ??= this.toDateTime().toInstant().toString()); }
+	/** Julian day number for the local ISO calendar date. */	get jj() { return ((this.#memo.zdt ??= {}).jj ??= toJulianDay(this.toPlainDate().withCalendar('iso8601'))); }
+	/** Standard ISO 8601 string in UTC */										get iso() { return ((this.#memo.zdt ??= {}).iso ??= this.toDateTime().toInstant().toString()); }
 	/** `true` if the underlying date-time is valid. */				get isValid() { return this.#resolve(zdt => !this.#errored && isZonedDateTime(zdt)); }
-
-	/** list of registered terms and their available range keys */
-	get terms(): Readonly<Record<string, readonly string[]>> {
-		const base: Record<string, string[]> = {};
-		Tempo.terms.forEach(term => {
-			const source = (term as any).ranges || (term as any).groups || [];				// check both ranges and groups
-			const list = Array.isArray(source) ? source : Object.values(source).flat(Infinity) as any[];
-			const ranges = [...new Set(list.map(r => r.key).filter(isString))];				// collect unique range keys
-			base[term.key] = ranges;
-		});
-
-		return delegate(base, (key) => {
-			if (!isString(key)) return undefined;
-			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
-			return term ? base[term.key] : undefined;
-		});
-	}
-
-	/** current range key for every registered term */
-	get ranges(): Readonly<Record<string, string>> {
-		const base: Record<string, string> = {};
-
-		Tempo.terms.forEach(term => {
-			const val = (this as Tempo).term[term.key];						// access the term-delegate (forces evaluation)
-			if (isString(val)) base[term.key] = val;
-		});
-
-		return delegate(base, (key) => {
-			if (!isString(key)) return undefined;
-			const term = Tempo.terms.find((t: any) => t.key === key || t.scope === key || asArray(t.aliases).includes(key));
-			return term ? base[term.key] : undefined;
-		});
-	}
 
 	/** current Tempo configuration */
 	get config(): Readonly<t.Internal.Config> {
@@ -1676,7 +1644,7 @@ export class Tempo {
 	/** returns the underlying Temporal.ZonedDateTime */			get zdt(): Temporal.ZonedDateTime { return this.toDateTime(); }
 	/** Keyed results for all resolved terms */								get term(): TempoTermRegistry { return this.#term ??= this.#setDelegator('term'); }
 	/** Formatted results for all pre-defined format codes */ get fmt(): Record<string, string | undefined> { return this.#memo.fmt ??= this.#setDelegator('fmt'); }
-	/** units since epoch for this date-time instance */			get epoch() { return (this.#memo.epoch ??= Tempo.#getEpoch(this.toDateTime())); }
+	/** units since epoch for this date-time instance */			get epoch() { return ((this.#memo.zdt ??= {}).epoch ??= Tempo.#getEpoch(this.toDateTime())); }
 
 	/**
 	 * @Immutable class decorators wrap the class but leave internal lexical bindings pointing to the original, undecorated class.

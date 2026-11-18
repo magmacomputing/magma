@@ -5,7 +5,7 @@ import { spies } from '../support/setup.console-spy.js';
 
 describe('Sandbox Factory Pattern', () => {
 	it('should identify authentic Sandbox classes and instances via @Branded', () => {
-		const Sandbox = Tempo.derive({ locale: 'en-GB' });
+		const Sandbox = Tempo.extend({ locale: 'en-GB' });
 		const sInstance = new Sandbox('2026-07-01');
 		const tInstance = new Tempo('2026-07-01');
 
@@ -43,7 +43,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should return a subclass when create is called with options', () => {
-		const Sandbox = Tempo.derive({ locale: 'en-GB' });
+		const Sandbox = Tempo.extend({ locale: 'en-GB' });
 		expect(Sandbox).not.toBe(Tempo);
 		expect(Object.getPrototypeOf(Sandbox)).toBe(Tempo);
 		expect(Sandbox.name).toBe('SandboxTempo');
@@ -51,7 +51,7 @@ describe('Sandbox Factory Pattern', () => {
 
 
 	it('should maintain isolated registries for sandboxes', () => {
-		const MyTempo = Tempo.derive({
+		const MyTempo = Tempo.extend({
 			registry: {
 				periods: {
 					'tea-time': '16:00'
@@ -71,7 +71,7 @@ describe('Sandbox Factory Pattern', () => {
 		const warnCountBefore = spies.warn.mock.calls.length;
 
 		// Global 'noon' is 12:00
-		const EarlyNoon = Tempo.derive({
+		const EarlyNoon = Tempo.extend({
 			registry: {
 				periods: {
 					'noon': '11:00'
@@ -93,7 +93,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should record traceability info in parse results', () => {
-		const MyTempo = Tempo.derive({
+		const MyTempo = Tempo.extend({
 			registry: {
 				periods: {
 					'half-hour': function (this: AliasContext) { return `${this.hh}:30` }
@@ -111,7 +111,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should allow instance-specific overrides to shadow sandbox aliases', () => {
-		const MyTempo = Tempo.derive({
+		const MyTempo = Tempo.extend({
 			registry: {
 				periods: {
 					'break': '10:00'
@@ -135,7 +135,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should guarantee immutability of the Sandbox class', () => {
-		const Sandbox = Tempo.derive({ locale: 'fr-FR' });
+		const Sandbox = Tempo.extend({ locale: 'fr-FR' });
 
 		// Attempting to modify static property should fail (if @Immutable is working)
 		try {
@@ -148,8 +148,8 @@ describe('Sandbox Factory Pattern', () => {
 	it('should share terms across sandboxes by default', () => {
 		// Terms are currently stored in the singleton Runtime pluginsDb
 		// This is expected behavior as plugins are "library level" extensions
-		const Sandbox1 = Tempo.derive({});
-		const Sandbox2 = Tempo.derive({});
+		const Sandbox1 = Tempo.extend({});
+		const Sandbox2 = Tempo.extend({});
 
 		expect(Sandbox1.terms).toEqual(Sandbox2.terms);
 	});
@@ -165,14 +165,14 @@ describe('Sandbox Factory Pattern', () => {
 				'sandbox_tz': 'Australia/Sydney'
 			}
 		};
-		const Sandbox = Tempo.derive({ discovery });
+		const Sandbox = Tempo.extend({ discovery });
 
 		const t = new Sandbox('2026-06-03 12:00:00', { timeZone: 'sandbox_tz' });
 		expect(t.format('sandboxed_fmt')).toBe('03/06/2026');
 	});
 
 	it('should support Symbol.asyncDispose on Sandbox class', async () => {
-		const Sandbox = Tempo.derive({ locale: 'de-DE' });
+		const Sandbox = Tempo.extend({ locale: 'de-DE' });
 		expect((Sandbox as any).isDisposed).toBe(false);
 		await (Sandbox as any)[Symbol.asyncDispose]();
 		expect((Sandbox as any).isDisposed).toBe(true);
@@ -180,7 +180,7 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should automatically dispose after synchronous scoped callback', () => {
 		let capturedSb: any;
-		const result = Tempo.derive((sb) => {
+		const result = Tempo.extend((sb) => {
 			capturedSb = sb;
 			expect((sb as any).isDisposed).toBe(false);
 			return 42;
@@ -192,7 +192,7 @@ describe('Sandbox Factory Pattern', () => {
 	it('should rethrow synchronous error in scoped callback and dispose', () => {
 		let capturedSb: any;
 		expect(() => {
-			Tempo.derive((sb) => {
+			Tempo.extend((sb) => {
 				capturedSb = sb;
 				throw new Error('sync callback error');
 			});
@@ -203,7 +203,7 @@ describe('Sandbox Factory Pattern', () => {
 	it('should defer disposal until async scoped callback promise settles', async () => {
 		let capturedSb: any;
 		let ranAsync = false;
-		const promise = Tempo.derive(async (sb) => {
+		const promise = Tempo.extend(async (sb) => {
 			capturedSb = sb;
 			expect((sb as any).isDisposed).toBe(false);
 			await new Promise(r => setTimeout(r, 10));
@@ -222,7 +222,7 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should rethrow async rejection in scoped callback and dispose', async () => {
 		let capturedSb: any;
-		const promise = Tempo.derive(async (sb) => {
+		const promise = Tempo.extend(async (sb) => {
 			capturedSb = sb;
 			await new Promise(r => setTimeout(r, 5));
 			throw new Error('async callback error');
@@ -233,7 +233,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should handle disposal state cleanly for lookups and guards without altering non-sandbox classes', () => {
-		const Sandbox = Tempo.derive({ locale: 'en-US' });
+		const Sandbox = Tempo.extend({ locale: 'en-US' });
 		const instance = new Sandbox();
 
 		// Brand identity and initial state
@@ -286,7 +286,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should retain sandbox configuration rather than falling back to global config after disposal', () => {
-		const S = Tempo.derive({ locale: 'fr-FR', timeZone: 'Africa/Cairo' });
+		const S = Tempo.extend({ locale: 'fr-FR', timeZone: 'Africa/Cairo' });
 		const beforeInst = new S('2026-01-01');
 		expect(beforeInst.locale).toBe('fr-FR');
 		expect(beforeInst.config.timeZone).toBe('Africa/Cairo');
@@ -315,7 +315,7 @@ describe('Sandbox Factory Pattern', () => {
 		expect(mutated.zdt.timeZoneId).toBe('Africa/Cairo');
 
 		// Derived children retain parent sandbox configuration
-		const child = (S as any).derive();
+		const child = (S as any).extend();
 		const childInst = new child('2026-01-01');
 		expect(childInst.locale).toBe('fr-FR');
 		expect(childInst.config.timeZone).toBe('Africa/Cairo');
@@ -324,9 +324,9 @@ describe('Sandbox Factory Pattern', () => {
 
 	it('should restore the nearest live predecessor when disposing named sandboxes out of order', () => {
 		const discKey = 'shared-predecessor-test';
-		const sb1 = Tempo.derive({ discovery: discKey });
-		const sb2 = Tempo.derive({ discovery: discKey });
-		const sb3 = Tempo.derive({ discovery: discKey });
+		const sb1 = Tempo.extend({ discovery: discKey });
+		const sb2 = Tempo.extend({ discovery: discKey });
+		const sb3 = Tempo.extend({ discovery: discKey });
 
 		const globalSlot = Symbol.for(discKey);
 		expect((globalThis as any)[globalSlot]?.sandbox).toBe(sb3);
@@ -357,11 +357,11 @@ describe('Sandbox Factory Pattern', () => {
 			install: () => { }
 		};
 
-		const sbA = Tempo.derive();
+		const sbA = Tempo.extend();
 		sbA.use(pluginA);
 		expect(Tempo.versions['TestPluginAPlugin']).toBe('1.0.0');
 
-		const sbB = Tempo.derive();
+		const sbB = Tempo.extend();
 		sbB.use(pluginB);
 		expect(Tempo.versions['TestPluginAPlugin']).toBe('2.0.0');
 
@@ -381,13 +381,13 @@ describe('Sandbox Factory Pattern', () => {
 		let nestedSandbox: any;
 
 		expect(() => {
-			Tempo.derive({
+			Tempo.extend({
 				discovery: discKey,
 				plugins: [
 					{
 						name: 'FailingPlugin',
 						install: () => {
-							nestedSandbox = Tempo.derive({ discovery: discKey });
+							nestedSandbox = Tempo.extend({ discovery: discKey });
 							throw new Error('Boom');
 						}
 					}
@@ -401,8 +401,8 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should ensure instanceof checks differentiate between distinct sandbox classes', () => {
-		const SandboxA = Tempo.derive({ locale: 'en-US' });
-		const SandboxB = Tempo.derive({ locale: 'ja-JP' });
+		const SandboxA = Tempo.extend({ locale: 'en-US' });
+		const SandboxB = Tempo.extend({ locale: 'ja-JP' });
 
 		const instanceA = new SandboxA('2026-01-01');
 		const instanceB = new SandboxB('2026-01-01');
@@ -454,7 +454,7 @@ describe('Sandbox Factory Pattern', () => {
 		};
 
 		expect(() => {
-			Tempo.derive({
+			Tempo.extend({
 				plugins: [plugin1, failingPlugin]
 			});
 		}).toThrow('Install failed');
@@ -464,9 +464,9 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('should hand version back to live predecessor across multi-sandbox lifecycles', () => {
-		const S_A = Tempo.derive({});
-		const S_B = Tempo.derive({});
-		const S_C = Tempo.derive({});
+		const S_A = Tempo.extend({});
+		const S_B = Tempo.extend({});
+		const S_C = Tempo.extend({});
 
 		S_A.use({ name: 'Chained', version: '1.0.0', install: () => { } });
 		expect(Tempo.versions['ChainedPlugin']).toBe('1.0.0');
@@ -491,11 +491,11 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('preserves predecessor owner on failed same-name install so version cleans up on disposal', () => {
-		const S_A = Tempo.derive({});
+		const S_A = Tempo.extend({});
 		S_A.use({ name: 'Preserved', version: '1.0.0', install: () => { } });
 		expect(Tempo.versions['PreservedPlugin']).toBe('1.0.0');
 
-		const S_B = Tempo.derive({});
+		const S_B = Tempo.extend({});
 		expect(() => {
 			S_B.use({
 				name: 'Preserved',
@@ -517,10 +517,10 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('allows child sandboxes to use modules and install plugins after parent disposal', () => {
-		const parent = Tempo.derive({});
+		const parent = Tempo.extend({});
 		parent.use({ name: 'SharedMod', install: () => { } });
 
-		const child = (parent as any).derive({});
+		const child = (parent as any).extend({});
 
 		expect(child.hasModule('SharedMod')).toBe(true);
 		expect(new child('2026-01-01').hasModule('SharedMod')).toBe(true);
@@ -545,7 +545,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('preserves writtenVersions across failed install in the same sandbox', () => {
-		const sb = Tempo.derive({});
+		const sb = Tempo.extend({});
 		sb.use({
 			name: 'MultiInstallPlugin',
 			version: '1.0.0',
@@ -573,7 +573,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('rolls back installed marker and version when a non-properties plugin install throws', () => {
-		const sb = Tempo.derive({});
+		const sb = Tempo.extend({});
 		expect(() => {
 			sb.use({
 				name: 'ThrowingModule',
@@ -604,7 +604,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('preserves same-key nested plugin version when outer install throws', () => {
-		const sb = Tempo.derive({});
+		const sb = Tempo.extend({});
 		expect(() => {
 			sb.use({
 				name: 'NestedPreserve',
@@ -629,7 +629,7 @@ describe('Sandbox Factory Pattern', () => {
 	});
 
 	it('restores previous version writer when nested install fails for the same version key', () => {
-		const sb = Tempo.derive({});
+		const sb = Tempo.extend({});
 		const outerPlugin: any = {
 			name: 'WriterTest',
 			version: '1.0.0',

@@ -7,7 +7,7 @@ import swc from 'unplugin-swc';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
 
-const polyfill = resolve(__dirname, './bin/temporal-polyfill.ts');
+const polyfill = resolve(__dirname, '../library/test/support/temporal-polyfill.ts');
 const consoleSpySetup = resolve(__dirname, './test/support/setup.console-spy.ts');
 
 export default defineConfig({
@@ -23,6 +23,7 @@ export default defineConfig({
 	],
 	test: {
 		globals: true,
+		isolate: true,
 		pool: 'forks',
 		maxWorkers: process.env.CI ? 2 : undefined,
 		slowTestThreshold: 2_000,

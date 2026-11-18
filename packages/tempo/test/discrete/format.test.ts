@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { format } from '#tempo/format';
 
 describe('Tempo.format() refinements', () => {
   const t = new Tempo('2024-05-20T10:00:00Z');
@@ -25,16 +26,15 @@ describe('Tempo.format() refinements', () => {
     expect(typeof t2.format('{dd}')).toBe('string');
   })
 
-  it('should handle yow for ISO year, woy for ISO week, and ww for calendar week', () => {
+  it('should handle yow for ISO year, woy for ISO week, and woy:cal for calendar week', () => {
     const t3 = new Tempo('2024-12-30');										// Monday, ISO Week 1 of 2025, Calendar Week 53 of 2024
     expect(t3.yow).toBe(2025);
     expect(t3.woy).toBe(1);
     expect(t3.format('{yow}{woy}')).toBe('202501');
-    expect(t3.format('{yyyy}-{ww}')).toBe('2024-53');
+    expect(t3.format('{yyyy}-{woy:cal}')).toBe('2024-53');
     expect(t3.format('{woy:cal}')).toBe('53');
 
     const tHebrew = new Tempo('2024-10-02');
-    expect(tHebrew.format('{ww}', { calendar: 'hebrew' })).toBe('55');
     expect(tHebrew.format('{woy:cal}', { calendar: 'hebrew' })).toBe('55');
   })
 
@@ -220,8 +220,8 @@ describe('Tempo.format() refinements', () => {
     const tNum = new Tempo('2024-05-09T03:05:07.042000005Z');
 
     it('zero-fills numeric tokens to specified width', () => {
-      expect(tNum.format('{day:2}')).toBe('09');
-      expect(tNum.format('{day:3}')).toBe('009');
+      expect(tNum.format('{dd:2}')).toBe('09');
+      expect(tNum.format('{dd:3}')).toBe('009');
       expect(tNum.format('{dow:2}')).toBe('04');
       expect(tNum.format('{doy}')).toBe('130');
       expect(tNum.format('{doy:4}')).toBe('0130');
@@ -232,8 +232,8 @@ describe('Tempo.format() refinements', () => {
 
     it('leaves unpadded numbers untouched if width is already equal or smaller', () => {
       const tBig = new Tempo('2024-11-25T15:30:45');
-      expect(tBig.format('{day:2}')).toBe('25');
-      expect(tBig.format('{day:1}')).toBe('25');
+      expect(tBig.format('{dd:2}')).toBe('25');
+      expect(tBig.format('{dd:1}')).toBe('25');
     })
 
     it('works with custom registered tokens returning numeric values (including negative values)', () => {
@@ -294,6 +294,8 @@ describe('Tempo.format() refinements', () => {
 
     it('supports positive numeric modifiers for minimum zero padding', () => {
       expect(dt.format('{yyyy:6}')).toBe('002026');
+      expect(dt.format('{yy}')).toBe('26');
+      expect(dt.format('{yy:long}')).toBe('2026');
       expect(dt.format('{dd:3}')).toBe('005');
       expect(dt.format('{mi:4}')).toBe('0007');
     })
@@ -420,13 +422,11 @@ describe('Tempo.format() refinements', () => {
     const tFebLeap = new Tempo('2024-02-15T00:00:00Z');
     const tFebNonLeap = new Tempo('2026-02-15T00:00:00Z');
 
-    it('formats astronomical Julian day ({jj} and {julian}) and provides .jj getter', () => {
+    it('formats astronomical Julian day ({jj}) and provides .jj getter', () => {
       expect(tEpoch.format('{jj}')).toBe('2440588');
-      expect(tEpoch.format('{julian}')).toBe('2440588');
       expect(tEpoch.jj).toBe(2440588);
 
       expect(tTarget.format('{jj}')).toBe('2461331');
-      expect(tTarget.format('{julian}')).toBe('2461331');
       expect(tTarget.jj).toBe(2461331);
     });
 
@@ -443,36 +443,26 @@ describe('Tempo.format() refinements', () => {
       expect(tTarget.dim).toBe(31);
     });
 
-    it('formats century ({cen} and {century})', () => {
-      expect(tTarget.format('{cen}')).toBe('20');
-      expect(tTarget.format('{century}')).toBe('20');
-      expect(new Tempo('1999-12-31').format('{cen}')).toBe('19');
-      expect(new Tempo('0750-01-01').format('{cen}')).toBe('07');
-      expect(new Tempo('-000050-01-01').format('{cen}')).toBe('01');
-    });
-
-    it('formats week of month ({wom}) and calendar week ({ww} / {woy:cal})', () => {
+    it('formats week of month ({woy:month}) and calendar week ({woy:cal})', () => {
       // October 1 is Day 1 -> Week 1 of month
       const tOct1 = new Tempo('2026-10-01T00:00:00');
-      expect(tOct1.format('{wom}')).toBe('1');
-      expect(tOct1.format('{ww:month}')).toBe('1');
+      expect(tOct1.format('{woy:month}')).toBe('1');
+      expect(tOct1.format('{woy:month:zero}')).toBe('0');
 
       // October 8 is Day 8 -> Week 2 of month
       const tOct8 = new Tempo('2026-10-08T00:00:00');
-      expect(tOct8.format('{wom}')).toBe('2');
+      expect(tOct8.format('{woy:month}')).toBe('2');
 
       // October 31 is Day 31 -> Week 5 of month
       const tOct31 = new Tempo('2026-10-31T00:00:00');
-      expect(tOct31.format('{wom}')).toBe('5');
+      expect(tOct31.format('{woy:month}')).toBe('5');
 
       // Jan 1 to Jan 7 is Week 1 of year (Jan 1 basis)
       const tJan1 = new Tempo('2026-01-01T00:00:00');
-      expect(tJan1.format('{ww}')).toBe('01');
-      expect(tJan1.format('{ww:raw}')).toBe('1');
       expect(tJan1.format('{woy:cal}')).toBe('01');
+      expect(tJan1.format('{woy:cal:raw}')).toBe('1');
 
       const tJan8 = new Tempo('2026-01-08T00:00:00');
-      expect(tJan8.format('{ww}')).toBe('02');
       expect(tJan8.format('{woy:cal}')).toBe('02');
     });
 
@@ -607,6 +597,81 @@ describe('Tempo.format() refinements', () => {
       } finally {
         delete (Tempo.prototype as any).customTag;
       }
+    });
+  });
+
+  describe('standalone format(zdt, ...) parity for {iso}, {sphere}, and {locale}', () => {
+    it('resolves {iso}, {sphere}, and {locale} identically for native ZonedDateTime and Tempo instances', () => {
+      const tSyd = new Tempo('2026-06-15T12:00:00', { timeZone: 'Australia/Sydney', locale: 'en-AU' });
+      const zdtSyd = tSyd.toDateTime();
+
+      expect(format(zdtSyd, '{iso}')).toBe(tSyd.format('{iso}'));
+      expect(format(zdtSyd, '{locale}', { locale: 'en-AU' })).toBe(tSyd.format('{locale}'));
+      expect(format(zdtSyd, '{locale}', { locale: 'fr-FR' })).toBe('fr-FR');
+      expect(tSyd.format('{locale}', { locale: 'fr-FR' })).toBe('fr-FR');
+      expect(tSyd.format('{locale}', { registry: { tokens: { locale: () => 'custom-locale' } } })).toBe('custom-locale');
+      expect(format(zdtSyd, '{sphere}', { timeZone: 'Australia/Sydney' })).toBe('south');
+      expect(format(zdtSyd, '{sphere}', { timeZone: 'Australia/Sydney' })).toBe(tSyd.format('{sphere}'));
+
+      expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe('north');
+      expect(format(zdtSyd, '{sphere}', { sphere: 'north' })).toBe(tSyd.format('{sphere}', { sphere: 'north' }));
+
+      expect(tSyd.format('{iso}', { registry: { tokens: { iso: () => 'custom-iso' } } })).toBe('custom-iso');
+      expect(tSyd.format('{sphere}', { registry: { tokens: { sphere: () => 'custom-sphere' } } })).toBe('custom-sphere');
+
+      const NyTempo = Tempo.extend({ timeZone: 'America/New_York' });
+      const nyScopedSyd = new NyTempo('2026-06-15T12:00:00', { timeZone: 'Australia/Sydney' });
+      expect(nyScopedSyd.sphere).toBe('south');
+      expect(nyScopedSyd.format('{sphere}', { timeZone: 'America/New_York' })).toBe('north');
+
+      Tempo.init({ timeZone: 'Australia/Sydney', sphere: 'north' });
+      try {
+        const nativeSyd = Temporal.ZonedDateTime.from('2026-06-15T12:00:00[Australia/Sydney]');
+        expect(format(nativeSyd, '{sphere}')).toBe('north');
+        expect(format(nativeSyd, '{sphere}', { geo: { lat: -33.87, lng: 151.2 } as any })).toBe('south');
+      } finally {
+        Tempo.init({});
+      }
+    });
+  });
+
+  describe('{ts} formatting across all TimeStamp units', () => {
+    it('honours ss, ms, us, and ns via instance config and format options, matching t.ts', () => {
+      const units = ['ss', 'ms', 'us', 'ns'] as const;
+      for (const timeStamp of units) {
+        const tUnit = new Tempo('2026-06-15T12:34:56.789123456Z', { timeStamp });
+        const zdt = tUnit.toDateTime();
+
+        expect(tUnit.format('{ts}')).toBe(String(tUnit.ts));
+        expect(format(zdt, '{ts}', { timeStamp })).toBe(String(tUnit.ts));
+      }
+    });
+  });
+
+  describe('{yy:long} format and explicit parse round-trip', () => {
+    it('formats and parses a 4-digit year with {dd}-{mm}-{yy:long}', () => {
+      const original = new Tempo('2026-10-24');
+      const formatted = original.format('{dd}-{mm}-{yy:long}');
+      expect(formatted).toBe('24-10-2026');
+
+      const parsed = new Tempo(formatted, { format: '{dd}-{mm}-{yy:long}' });
+      expect(parsed.isValid).toBe(true);
+      expect(parsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-10-24');
+
+      const compact = new Tempo('2026-11-25').format('{yy:long}{mm}{dd}');
+      expect(compact).toBe('20261125');
+      const compactParsed = new Tempo(compact, { format: '{yy:long}{mm}{dd}' });
+      expect(compactParsed.isValid).toBe(true);
+      expect(compactParsed.format('{yyyy}-{mm}-{dd}')).toBe('2026-11-25');
+
+      expect(new Tempo('-000001-01-01').format('{yy:long}')).toBe('-0001');
+
+      const ext = new Tempo('+012345-06-15');
+      const extFormatted = ext.format('{dd}-{mm}-{yy:long}');
+      expect(extFormatted).toBe('15-06-+12345');
+      const extParsed = new Tempo(extFormatted, { format: '{dd}-{mm}-{yy:long}' });
+      expect(extParsed.isValid).toBe(true);
+      expect(extParsed.yy).toBe(12345);
     });
   });
 })

@@ -1,5 +1,5 @@
-import { isString, isEmpty, isUndefined, isNotNullish, isNullish, isTemporal, isInstant, isNumber, isNumeric, RE_COMBINING_MARKS } from '#library/assertion.library.js';
-import { ownKeys, ownEntries } from '#library/primitive.library.js';
+import { isString, isEmpty, isUndefined, isNotNullish, isNullish, isTemporal, isInstant, isNumber, isNumeric, isReference, isFunction, RE_COMBINING_MARKS } from '#library/assertion.library.js';
+import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
@@ -14,7 +14,7 @@ const RE_ERA_BCE = /b\.?c\.?(?:e\.?)?|bc/i;
 const RE_ZONE_OFFSET = /^([+-])(\d{1,2})(?::?(\d{2}))?$/;
 
 /**
- * Internal Lexer helpers for the Tempo parsing engine.  
+ * Internal Lexer helpers for the Tempo parsing engine.
  * Extracted from Tempo class to reduce core file size.
  */
 
@@ -22,6 +22,27 @@ namespace Lexer {
 	export type GroupWkd = { wkd?: t.WEEKDAY; mod?: t.Modifier; nbr?: string; sfx?: t.Relative; afx?: t.Relative } & { [K in 'hh' | 'mi' | 'ss' | 'ms' | 'us' | 'ns' | 'ff' | 'mer']?: string };
 	export type GroupDate = { mod?: t.Modifier; nbr?: string; afx?: t.Relative; unt?: string; yy?: string; mm?: string; dd?: string; }
 	export type GroupModifier = { mod?: t.Modifier | t.Relative, adjust: number, offset: number, period: number }
+}
+
+function findRegistryEntry(registry: any, low: string): number | undefined {
+	if (!isReference(registry) || isFunction(registry) || !low) return undefined;
+	const visited = new WeakSet<object>();
+	let curr: any = registry;
+	while (curr && curr !== Object.prototype) {
+		if (visited.has(curr)) break;
+		visited.add(curr);
+		for (const [k, v] of Object.entries(curr))
+			if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
+		const level = unwrap(curr);
+		if (level !== curr) {
+			if (visited.has(level)) break;
+			visited.add(level);
+			for (const [k, v] of ownEntries(level))
+				if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
+		}
+		curr = Object.getPrototypeOf(level);
+	}
+	return undefined;
 }
 
 /** return a new object, with only numeric values */
@@ -41,11 +62,10 @@ function num(groups: Record<string, string | number>, config?: any) {
 
 			if (config?.registry?.numbers) {
 				const low = isString(val) ? val.trim().toLowerCase() : '';
-				for (const [k, n] of Object.entries(config.registry.numbers)) {
-					if (k.toLowerCase() === low && isNumber(n)) {
-						acc[key] = n as number;
-						return acc;
-					}
+				const n = findRegistryEntry(config.registry.numbers, low);
+				if (isNumber(n)) {
+					acc[key] = n;
+					return acc;
 				}
 			}
 
@@ -77,11 +97,8 @@ function num(groups: Record<string, string | number>, config?: any) {
 export function resolveNumber(str: any, config?: any): t.Number | number | any {
 	if (!isString(str)) return str;
 	const low = str.trim().toLowerCase();
-	if (config?.registry?.numbers) {
-		for (const [k, v] of Object.entries(config.registry.numbers)) {
-			if (k.toLowerCase() === low && isNumber(v)) return v;
-		}
-	}
+	const matched = findRegistryEntry(config?.registry?.numbers, low);
+	if (isNumber(matched)) return matched;
 	return Enum.keys(enums.NUMBER).find((key: string) => key.startsWith(low)) ?? str;
 }
 
@@ -99,11 +116,8 @@ export function resolveNth(str: any, config?: any): number {
 		return Number.isFinite(num) ? num : 1;
 	}
 	const low = str.trim().toLowerCase();
-	if (config?.registry?.ordinals) {
-		for (const [k, v] of Object.entries(config.registry.ordinals)) {
-			if (k.toLowerCase() === low && isNumber(v)) return v as number;
-		}
-	}
+	const matched = findRegistryEntry(config?.registry?.ordinals, low);
+	if (isNumber(matched)) return matched;
 	const ordValue = enums.ORDINAL[low];
 	if (isNumber(ordValue)) return ordValue;
 

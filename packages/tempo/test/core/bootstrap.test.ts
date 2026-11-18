@@ -19,7 +19,7 @@ describe('Tempo.bootstrap()', () => {
 
 		const t = new Tempo('custom-bootstrap-period');
 		expect(t.isValid).toBe(true);
-		expect(t.format('{h24}:{mi}')).toBe('13:00');
+		expect(t.format('{hh}:{mi}')).toBe('13:00');
 	});
 
 	it('should allow explicitly passing a configFile', async () => {
@@ -32,6 +32,6 @@ describe('Tempo.bootstrap()', () => {
 
 		const t = new Tempo('custom-bootstrap-period');
 		expect(t.isValid).toBe(true);
-		expect(t.format('{h24}:{mi}')).toBe('13:00');
+		expect(t.format('{hh}:{mi}')).toBe('13:00');
 	});
 });

@@ -52,6 +52,8 @@ export class TempoRuntime {
 	readonly installed: Set<any> = new Set();
 	/** decentralized reset hooks — fired on every registryReset() call */
 	readonly resetHooks: Set<() => void> = new Set();
+	/** decentralized config-change hooks — fired when global Tempo.init() updates configuration */
+	readonly configHooks: Set<(config: Internal.Config) => void> = new Set();
 	/** mapping of registered terms by key and alias */
 	readonly termMap: Map<string, TermPlugin> = new Map();
 	/** registry of installed plugin versions */
@@ -202,6 +204,7 @@ export function getRuntime(): TempoRuntime {
 		if (!existing.modules) (existing as any).modules = {};
 		if (!existing.installed) (existing as any).installed = new Set();
 		if (!existing.resetHooks) (existing as any).resetHooks = new Set();
+		if (!existing.configHooks) (existing as any).configHooks = new Set();
 		if (!existing.versionOwners) (existing as any).versionOwners = new Map();
 		return existing;
 	}

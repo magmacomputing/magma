@@ -2,8 +2,8 @@ import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
 
 describe('Enum (Static Reflection & v5 Architecture)', () => {
 	it('should enumerate keys, values, and entries across prototypal extension via Enum.*', () => {
-		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.derive(BASE, { C: 3 });
+		const BASE = Enum.from({ A: 1, B: 2 });
+		const EXTENDED = Enum.extend(BASE, { C: 3 });
 
 		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
 		expect(Enum.values(EXTENDED)).toEqual([1, 2, 3]);
@@ -12,16 +12,16 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should correctly handle JSON.stringify() for extended enums', () => {
-		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.derive(BASE, { C: 3 });
+		const BASE = Enum.from({ A: 1, B: 2 });
+		const EXTENDED = Enum.extend(BASE, { C: 3 });
 
 		const json = JSON.parse(JSON.stringify(EXTENDED));
 		expect(json).toEqual({ A: 1, B: 2, C: 3 });
 	});
 
 	it('should distinguish own vs inherited properties via Enum.hasOwn() and Enum.has()', () => {
-		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.derive(BASE, { C: 3 });
+		const BASE = Enum.from({ A: 1, B: 2 });
+		const EXTENDED = Enum.extend(BASE, { C: 3 });
 
 		expect(Enum.has(EXTENDED, 'A')).toBe(true);
 		expect(Enum.hasOwn(EXTENDED, 'A')).toBe(false);
@@ -30,9 +30,9 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should handle multiple levels of extension', () => {
-		const BASE = enumify({ A: 1 });
-		const MID = Enum.derive(BASE, { B: 2 });
-		const TOP = Enum.derive(MID, { C: 3 });
+		const BASE = Enum.from({ A: 1 });
+		const MID = Enum.extend(BASE, { B: 2 });
+		const TOP = Enum.extend(MID, { C: 3 });
 
 		expect(Enum.keys(TOP)).toEqual(['A', 'B', 'C']);
 		expect(Enum.count(TOP)).toBe(3);
@@ -40,8 +40,8 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should allow shadowing of inherited keys', () => {
-		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.derive(BASE, { B: 20, C: 3 });
+		const BASE = Enum.from({ A: 1, B: 2 });
+		const EXTENDED = Enum.extend(BASE, { B: 20, C: 3 });
 
 		expect(Enum.keys(EXTENDED)).toEqual(['A', 'B', 'C']);
 		expect(EXTENDED.B).toBe(20);
@@ -50,7 +50,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 	it('should support Symbol keys in enums via Enum.*', () => {
 		const sym = Symbol('test');
-		const MyEnum = enumify({
+		const MyEnum = Enum.from({
 			[sym]: 'symbol-value',
 			standard: 'string-value'
 		});
@@ -61,7 +61,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should safely retrieve values via Enum.get() without prototype or method bleed', () => {
-		const MyEnum = enumify({ A: 1, Zero: 0, False: false, Empty: '', Undef: undefined, Null: null });
+		const MyEnum = Enum.from({ A: 1, Zero: 0, False: false, Empty: '', Undef: undefined, Null: null });
 		expect(Enum.get(MyEnum, 'A')).toBe(1);
 		expect(Enum.get(MyEnum, 'Zero')).toBe(0);
 		expect(Enum.get(MyEnum, 'False')).toBe(false);
@@ -82,8 +82,8 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should support Enum.get() on extended enums across prototype chain', () => {
-		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.derive(BASE, { C: 3 });
+		const BASE = Enum.from({ A: 1, B: 2 });
+		const EXTENDED = Enum.extend(BASE, { C: 3 });
 
 		expect(Enum.get(EXTENDED, 'A')).toBe(1);
 		expect(Enum.get(EXTENDED, 'B')).toBe(2);
@@ -103,7 +103,7 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should support aliased enums in Enum.invert() with last-key-wins', () => {
-		const Aliased = enumify({ Primary: 100, Secondary: 100, Other: 200 });
+		const Aliased = Enum.from({ Primary: 100, Secondary: 100, Other: 200 });
 		const inverted = Enum.invert(Aliased);
 		expect(inverted['200']).toBe('Other');
 		expect(inverted['100']).toBeDefined();
@@ -111,13 +111,13 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 	});
 
 	it('should support Symbol.hasInstance check', () => {
-		const Status = enumify(['Active', 'Inactive']);
+		const Status = Enum.from(['Active', 'Inactive']);
 		expect(Status instanceof (Enum as any)).toBe(true);
 		expect({} instanceof (Enum as any)).toBe(false);
 	});
 
 	it('should cleanly support enums with colliding member names (has, get, keys, values, hasOwn)', () => {
-		const HttpVerbs = enumify(['get', 'post', 'has', 'keys', 'values', 'hasOwn']);
+		const HttpVerbs = Enum.from(['get', 'post', 'has', 'keys', 'values', 'hasOwn']);
 
 		// Member property values are preserved
 		expect(HttpVerbs.get).toBe(0);
@@ -147,8 +147,8 @@ describe('Enum (Static Reflection & v5 Architecture)', () => {
 
 describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 	it('should confirm prototype methods are removed from enum instances', () => {
-		const BASE = enumify({ A: 1, B: 2 });
-		const EXTENDED = Enum.derive(BASE, { C: 3 });
+		const BASE = Enum.from({ A: 1, B: 2 });
+		const EXTENDED = Enum.extend(BASE, { C: 3 });
 
 		// Prototype methods are no longer attached to instances
 		expect((BASE as any).keys).toBeUndefined();
@@ -184,9 +184,9 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.invert(EXTENDED)).toEqual({ '1': 'A', '2': 'B', '3': 'C' });
 	});
 
-	it('should support Enum.derive with a plain object base retaining base members', () => {
+	it('should support Enum.extend with a plain object base retaining base members', () => {
 		const plainBase = { Alpha: 10, Beta: 20 };
-		const derived = Enum.derive(plainBase, { Gamma: 30 });
+		const derived = Enum.extend(plainBase, { Gamma: 30 });
 
 		expect(derived.Alpha).toBe(10);
 		expect(derived.Beta).toBe(20);
@@ -203,7 +203,7 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 			[Symbol.toStringTag]: 'Enumify',
 			Alpha: 10,
 		};
-		const derived = Enum.derive(spoofed, { Beta: 20 });
+		const derived = Enum.extend(spoofed, { Beta: 20 });
 		expect(derived.Alpha).toBe(10);
 		expect(derived.Beta).toBe(20);
 		expect(Enum.keys(derived)).toEqual(['Alpha', Symbol.toStringTag, 'Beta']);
@@ -249,5 +249,50 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.keys(derived)).toEqual(['A', 'B']);
 		(base as any).C = 3;
 		expect(Enum.keys(derived)).toEqual(['A', 'C', 'B']);
+	});
+
+	it('should merge multiple enums and plain objects left-to-right via Enum.merge', () => {
+		const FIRST = Enum.extend(Enum.from({ A: 1, B: 2 }), { C: 3 });
+		const SECOND = Enum.from({ B: 20, D: 4 });
+		const MERGED = Enum.merge(FIRST, SECOND, { E: 5 });
+
+		expect(Enum.isEnum(MERGED)).toBe(true);
+		expect(() => { (MERGED as any).A = 999; }).toThrow(TypeError);
+		expect(Enum.entries(MERGED)).toEqual([
+			['A', 1],
+			['B', 20],
+			['C', 3],
+			['D', 4],
+			['E', 5],
+		]);
+		expect(Enum.hasOwn(MERGED, 'A')).toBe(true);
+		expect(Enum.hasOwn(MERGED, 'C')).toBe(true);
+
+		const ARR_MERGED = Enum.merge(['Alpha', 'Beta'] as const);
+		expect(ARR_MERGED.Alpha).toBe(0);
+		expect(ARR_MERGED.Beta).toBe(1);
+
+		const dynamicSources: { A: number }[] = [{ A: 1 }];
+		const LIST_MERGED = Enum.merge(...dynamicSources);
+		expect(LIST_MERGED.A).toBe(1);
+
+		const sparse = new Array<string>(2);
+		sparse[1] = 'Ready';
+		const SPARSE_MERGED = Enum.merge(sparse as any);
+		expect(Enum.entries(SPARSE_MERGED)).toEqual([['Ready', 1]]);
+
+		const LENGTH_MERGED = Enum.merge(['length'] as const, {});
+		expect(Enum.entries(LENGTH_MERGED)).toEqual([['length', 0]]);
+		expect(LENGTH_MERGED.length).toBe(0);
+
+		const emptyDynamic: { A: string }[] = [];
+		const DYNAMIC_TAIL = Enum.merge({ A: 42 }, ...emptyDynamic);
+		const checkUnion: number | string = DYNAMIC_TAIL.A;
+		expect(checkUnion).toBe(42);
+
+		const undefDynamic: { A: string | undefined }[] = [{ A: undefined }];
+		const UNDEF_TAIL = Enum.merge({ A: 42 }, ...undefDynamic);
+		const checkUndefUnion: number | string | undefined = UNDEF_TAIL.A;
+		expect(checkUndefUnion).toBeUndefined();
 	});
 });

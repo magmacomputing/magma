@@ -22,7 +22,7 @@ describe('isSameFiscalQuarter', () => {
 	});
 
 	it('should prioritize FiscalTerm when loaded', () => {
-		const FiscalTempo = Tempo.derive();
+		const FiscalTempo = Tempo.extend();
 		FiscalTempo.use(FiscalTerm);
 
 		// With fiscal startMonth = 2 (Feb 1):
@@ -45,7 +45,7 @@ describe('isSameFiscalQuarter', () => {
 	});
 
 	it('should throw when FiscalTerm resolves for only one of the two dates', () => {
-		const FiscalTempo = Tempo.derive();
+		const FiscalTempo = Tempo.extend();
 		FiscalTempo.use(FiscalTerm);
 
 		const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -72,7 +72,7 @@ describe('isSameFiscalQuarter', () => {
 	});
 
 	it('should return true for dates in the same fiscal quarter even across differing time zones', () => {
-		const FiscalTempo = Tempo.derive();
+		const FiscalTempo = Tempo.extend();
 		FiscalTempo.use(FiscalTerm);
 
 		const tUtc = new FiscalTempo('2026-08-15T12:00:00Z', { timeZone: 'UTC', pluginOptions: { fiscal: { country: 'AU' } } });

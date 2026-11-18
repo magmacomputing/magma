@@ -1,5 +1,5 @@
 import { isObject, isEmpty, isNumber, isError, isString } from '#library/assertion.library.js';
-import { enumify } from '#library/enumerate.library.js';
+import { Enum } from '#library/enumerate.library.js';
 import { sym } from '#library/symbol.library.js';
 import { Branded } from '#library/decorator.library.js';
 import type { KeyOf, ValueOf } from '#library/type.library.js';
@@ -16,7 +16,7 @@ type LoggerTypeGuard = (val: unknown) => val is Logger;
 /**
  * Enumeration of available log levels from lowest to highest verbosity.
  */
-export const LOG = enumify(['Off', 'Error', 'Warn', 'Info', 'Debug', 'Trace']);
+export const LOG = Enum.from(['Off', 'Error', 'Warn', 'Info', 'Debug', 'Trace']);
 /**
  * Type representing a numeric log level value.
  */

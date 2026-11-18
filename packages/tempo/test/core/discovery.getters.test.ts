@@ -40,50 +40,27 @@ describe(`${label} static Tempo.terms`, () => {
   });
 });
 
-describe(`${label} instance t.terms`, () => {
+describe(`${label} static Tempo.terms.keys & instance t.term`, () => {
   beforeEach(() => { Tempo.init() });
 
-  test('returns available range keys for qtr', () => {
-    const t = new Tempo();
-    expect(t.terms.qtr).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
+  test('exposes available range keys on Tempo.terms.<key>.keys and t.term.<scope>.keys', () => {
+    const t = new Tempo('2024-04-15');
+    expect(Tempo.terms.qtr.keys).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
+    expect(t.term.quarter.keys).toEqual(['Q1', 'Q2', 'Q3', 'Q4']);
+    expect(t.term.timeOfDay.keys).toContain('Morning');
+    expect(t.term.timeOfDay.keys).toContain('Night');
   });
 
-  test('returns available range keys for zodiac (flattened groups)', () => {
-    Tempo.use(ZodiacTerm);
-    const t = new Tempo();
-    expect(t.terms.zodiac).toContain('Aries');
-    expect(t.terms.zodiac).toContain('Pisces');
-  });
-
-  test('returns available range keys for timeOfDay (Timeline)', () => {
-    const t = new Tempo();
-    expect(t.terms.timeOfDay).toContain('Morning');
-    expect(t.terms.timeOfDay).toContain('Night');
-  });
-});
-
-describe(`${label} instance t.ranges`, () => {
-  beforeEach(() => { Tempo.init() });
-
-  test('reports current active ranges for fixed date (North-sphere)', () => {
-    Tempo.init({ sphere: 'north' });										// Lock to North for deterministic results
+  test('exposes active term values and range keys after Tempo.use()', () => {
+    Tempo.init({ sphere: 'north' });
     Tempo.use(ZodiacTerm);
     const t = new Tempo('2024-04-15');
-    const ranges = t.ranges;
 
-    expect(ranges.qtr).toBe('Q2');
-    expect(ranges.quarter).toBe('Q2');
-
-    expect(ranges.zdc).toBe('Aries');
-    expect(ranges.zodiac).toBe('Aries');
-  });
-
-
-  test('forces lazy evaluation of terms', () => {
-    const t = new Tempo();
-    // Initially, the raw delegator target is empty
-    // accessing .ranges should fill it
-    const summary = t.ranges;
-    expect(Object.keys(summary).length).toBeGreaterThan(0);
+    expect(t.term.qtr).toBe('Q2');
+    expect(t.term.quarter.key).toBe('Q2');
+    expect(t.term.zdc).toBe('Aries');
+    expect(t.term.zodiac.key).toBe('Aries');
+    expect(t.term.zodiac.keys).toContain('Aries');
+    expect(t.term.zodiac.keys).toContain('Pisces');
   });
 });

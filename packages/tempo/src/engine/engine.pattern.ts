@@ -123,7 +123,7 @@ export class PatternCompiler {
 			const localNumbers = state.config.registry?.numbers ?? {};
 			const keys = Array.from(new Set([
 				...(Enum.keys(enums.NUMBER) as string[]),
-				...Object.keys(localNumbers)
+				...ownKeys(localNumbers, true).filter(isString)
 			])).map((w: string) => Match.escape(w));
 			const nbr = new RegExp(`(?<nbr>[0-9]+|${keys.sort((a: string, b: string) => b.length - a.length).join('|')})`);
 
@@ -160,7 +160,7 @@ export class PatternCompiler {
 			const localOrdinals = state.config.registry?.ordinals ?? {};
 			const ordKeys = Array.from(new Set([
 				...(Enum.keys(enums.ORDINAL) as string[]),
-				...Object.keys(localOrdinals)
+				...ownKeys(localOrdinals, true).filter(isString)
 			])).map((w: string) => Match.escape(w));
 			const ordWordPattern = ordKeys.sort((a: string, b: string) => b.length - a.length).join('|');
 			snippet[Token.nth] = new RegExp(`(?<nth>(?:[0-9]{0,2}11th|[0-9]{0,2}12th|[0-9]{0,2}13th|[0-9]{0,2}[04-9]th|[0-9]{0,2}[02-9]1st|1st|[0-9]{0,2}[02-9]2nd|2nd|[0-9]{0,2}[02-9]3rd|3rd|[1-9][0-9]{0,2})|${ordWordPattern})`, 'i');

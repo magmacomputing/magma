@@ -1,10 +1,2 @@
-import { Temporal } from '@js-temporal/polyfill';
-
-if (typeof globalThis.Temporal === 'undefined') {
-	Object.defineProperty(globalThis, 'Temporal', {
-		value: Temporal,
-		enumerable: false,
-		configurable: true,
-		writable: true,
-	});
-}
+// @ts-ignore This test-support module is intentionally outside the tempo bin project.
+import '../../library/test/support/temporal-polyfill.js';

@@ -1,2 +1,1 @@
-import { Temporal } from '@js-temporal/polyfill';
-(globalThis as any).Temporal = Temporal;
+import '../../../library/test/support/temporal-polyfill.js';

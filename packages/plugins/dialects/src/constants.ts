@@ -1,4 +1,4 @@
-import { enumify, Enum } from '@magmacomputing/tempo/library';
+import { Enum } from '@magmacomputing/tempo/library';
 import type { ValueOf, KeyOf } from '@magmacomputing/tempo/library';
 
 /**
@@ -15,7 +15,7 @@ export const DIALECT: Enum.wrap<{
 	Mysql: 'mysql';
 	DotNet: 'dotnet';
 	Sheet: 'sheet';
-}> = enumify({
+}> = Enum.from({
 	Ldml: 'ldml',
 	Strftime: 'strftime',
 	Moment: 'moment',
@@ -58,7 +58,7 @@ export const DIALECT_ALIAS: Enum.wrap<{
 	spreadsheet: 'sheet';
 	excel: 'sheet';
 	sheets: 'sheet';
-}> = enumify({
+}> = Enum.from({
 	luxon: 'ldml',
 	datefns: 'ldml',
 	cldr: 'ldml',

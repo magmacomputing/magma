@@ -48,6 +48,8 @@ Several legacy and ambiguous instance getters have been removed in favor of cano
 | `t.yw` | `t.yow` | 4-digit ISO week-numbering year. |
 | `t.day` | `t.dd` | Day of the month (`1`–`31` number). Use `t.format('{dd}')` when zero-padded text is needed. For day-of-week use `t.dow`, and for day-of-year use `t.doy`. |
 | `t.nano` | `t.epoch.ns` | High-precision nanoseconds since Unix epoch (`bigint`). |
+| `t.terms` | `Tempo.terms` / `t.term.<scope>.keys` | Registered term definitions and available range keys (`keys` on static `Tempo.terms.<key>` or instance `t.term.<scope>`). |
+| `t.ranges` | `t.term.<key>` | Active range key for a specific term evaluated lazily on demand. |
 | `t.clone()` | `Tempo.from(t, t.config)` | Canonical instance cloning constructor (preserves instance-local configuration). |
 
 ```typescript
@@ -67,6 +69,9 @@ const dayVal = t.dd;
 const nanoVal = t.epoch.ns;
 const copy = Tempo.from(t, t.config);
 ```
+
+> [!NOTE]
+> **Humanized `t.era` & `t.eon` on `iso8601`**: In v5.0.0, `t.era` (`'ce'` / `'bce'`) and `t.eon` (positive era year) always resolve even on the `iso8601` calendar instead of returning `undefined`. If you need the raw TC39 Temporal behavior where `iso8601` omits eras, access `t.zdt.era` and `t.zdt.eraYear`.
 
 ---
 
@@ -111,15 +116,20 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
 * **Week & Week-Year Token Aliases (`{yw}` → `{yow}`, `{wy}` → `{woy}`):**
   * The legacy shorthand aliases `{yw}` (week-numbering year) and `{wy}` (week of year) have been removed.
   * Replace `{yw}` with `{yow}` (and `{yw:locale}` with `{yow:locale}`), and replace `{wy}` with `{woy}` (and `{wy:locale}` with `{woy:locale}`).
-* **Calendar Week vs. ISO / Locale Week Token (`{ww}` vs. `{woy}`):**
-  * In v5.0.0, `{ww}` formats the **Calendar Week of Year** starting on the first day of the calendar year (e.g., January 1st with range `01`–`53` in ISO calendars; lunisolar calendars may exceed `53`, matching Oracle `WW`), replacing the v4.7 transitional `{woy:cal}` modifier (which remains supported as an alias).
-  * Callers formatting **ISO 8601 Week of Year** or **Locale Week of Year** should use `{woy}` or `{woy:locale}` (replacing `{ww}` / `{ww:locale}`).
+* **Calendar Week, Week of Month & Century Tokens (`{ww}`, `{wom}`, `{cen}` Removed):**
+  * `{ww}` has been removed in favor of `{woy}` (for **ISO 8601 / Locale Week of Year**: `{woy}` / `{woy:locale}`) and `{woy:cal}` (for **Calendar Week of Year** starting on January 1st, matching Oracle `WW`).
+  * `{wom}` has been removed in favor of `{woy:month}` (week of month `1`–`5`).
+  * `{cen}` / `{century}` have been removed; compute century directly via `String(Math.abs(Math.floor(t.yy / 100))).padStart(2, '0')`.
+  * `{julian}` and `{h24}` aliases have been removed; use canonical `{jj}` and `{hh}` instead.
 * **Year Modifier Aliases (`:yy` and `:year`):**
   * The `:yy` and `:year` sub-modifier aliases on year tokens have been removed.
   * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).
 * **Legacy Offset Modifiers on `{tz}`:**
   * Legacy modifier cases (`offsetshort`, `offsetcompact`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
   * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+* **Removed Legacy Getter Tokens (`{day}`, `{nano}`):**
+  * `{day}` (from removed `t.day`) and `{nano}` (from removed `t.nano`) have been removed.
+  * Use `{dd}` or `{dd:raw}` in place of `{day}`. For `{nano}`, use `{ts}` with `{ timeStamp: 'ns' }` (for example, `format(zdt, '{ts}', { timeStamp: 'ns' })`, which works for both `Tempo` and native `Temporal` values), or `{epoch.ns}` when formatting `Tempo` instances (standalone `format(zdt, ...)` on native `Temporal` values leaves `{epoch.ns}` literal).
 
 ```typescript
 // ❌ v4.x (Deprecated)

@@ -2,15 +2,16 @@ import '#library/temporal.polyfill.js';
 import { pad, toTitleCase } from '#library/string.library.js';
 import { deepMerge } from '#library/object.library.js';
 import { suffix, toRoman } from '#library/number.library.js';
-import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isNotNullish, isFunction, isSafeKey, isNullish, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
+import { isString, isObject, isZonedDateTime, isInstant, isPlainDate, isPlainDateTime, isUndefined, isNotNullish, isFunction, isSafeKey, isNullish, isNumber, RE_DIGITS, isDigits, RE_INTEGER } from '#library/assertion.library.js';
 import { evaluate, evaluateString } from '#library/evaluation.library.js';
-import { getISOWeekOfYear } from '#library/temporal.library.js';
-import { formatDayPeriod, getDTF, getPR, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi } from '#library/international.library.js';
+import { getISOWeekOfYear, getTemporalEra } from '#library/temporal.library.js';
+import { formatDayPeriod, getDTF, getPR, getLocaleWeekOfYear, getLanguage, getLI, getLC, canonicalLocales, localizeDigits, isolateBidi, getHemisphere } from '#library/international.library.js';
+import { coerceGeo, getStashedGeo } from '#library/mapper.library.js';
 import { delegator } from '#library/proxy.library.js';
 import { hasOwn } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 
-import { isTempo, enums, Enum, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise } from '#tempo/support';
+import { isTempo, enums, Enum, Match, getRuntime, $Internal, TermHook, hasNativeFormatBraces, raise, Default } from '#tempo/support';
 import { defineInterpreterModule } from '../plugin/plugin.util.js';
 import { findTermPlugin } from '../plugin/term/term.util.js';
 import type { FormatOptions, ValidateFormat, TempoFormatTokens } from '../tempo.type.js';
@@ -54,6 +55,13 @@ const RE_DOT = /\./g;
 const RE_HASH_PREFIX = /^#/;
 const RE_COLON = /:/g;
 
+function getCustomTokenFn(config: any, token: string): ((zdt: any, ctx: any) => any) | undefined {
+	const customTokens = config?.registry?.tokens;
+	if (!customTokens) return undefined;
+	const fn = customTokens[token];
+	return hasOwn(customTokens, token) && isFunction(fn) ? fn : undefined;
+}
+
 /**
  * Resolves dot-delimited namespace tokens (e.g. '{geo.city}', '{custom.tag.name}')
  * against a Tempo instance with safety guards and graceful fallback.
@@ -65,9 +73,8 @@ function resolveNamespaceToken(obj: unknown, token: string): string {
 	const [root, ...rest] = parts;
 	let curr = (obj as any)[root];
 
-	if (isNullish(curr)) {
+	if (isNullish(curr))
 		return root === 'geo' ? '' : `{${token}}`;
-	}
 
 	for (const key of rest) {
 		if (isNullish(curr)) return '';
@@ -136,8 +143,8 @@ export function format(obj: any, fmt: string | symbol, options?: any): string;
  * Formats a supported date-time value using a named format, template, or internationalization options.
  * Scoped day/week time fields count wall-clock units from local midnight or Monday, independent of offset transitions.
  * The roman modifier converts integers 1-3999 and leaves other values unchanged.
- * `{ww}` counts seven-day groups from the first day of the resolved date's calendar year, padded to two digits;
- * `{ww:raw}` removes padding.
+ * `{woy:cal}` counts seven-day groups from the first day of the resolved date's calendar year, padded to two digits;
+ * `{woy:cal:raw}` removes padding.
  *
  * @param obj - The value to format; omitted values use the current date and time.
  * @param fmt - A registered format name or literal format template.
@@ -295,6 +302,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 	}
 
 	const li = getLI(canonicalLocales(config?.locale)[0]);
+	let isoWeek: { weekOfYear: number; yearOfWeek: number } | undefined;
+	let localeWeek: { weekOfYear: number; yearOfWeek: number } | undefined;
+	const getIsoWeek = () => (isoWeek ??= (isTempo(obj) && zdt === (obj as any).toDateTime()
+		? { yearOfWeek: (obj as any).yow, weekOfYear: (obj as any).woy }
+		: getISOWeekOfYear(zdt)));
+	const getLocaleWeek = () => (localeWeek ??= getLocaleWeekOfYear(zdt, li));
 
 	const result = template.replace(RE_FORMAT_BRACES, (_match: string, fullToken: string) => {
 		let [token, ...modifiers] = fullToken.split(':');
@@ -303,22 +316,16 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 
 		switch (token) {
 			case 'yyyy': res = pad(zdt.year, 4); break;
-			case 'yy': res = pad(zdt.year % 100); break;
+			case 'yy':
+				res = normMods.includes('long')
+					? (zdt.year < 0 ? `-${pad(Math.abs(zdt.year), 4)}` : (zdt.year > 9999 ? `+${zdt.year}` : pad(zdt.year, 4)))
+					: pad(zdt.year % 100);
+				break;
 			case 'yow': {
 				const yow = normMods.includes('locale')
-					? getLocaleWeekOfYear(zdt, li).yearOfWeek
-					: getISOWeekOfYear(zdt).yearOfWeek;
+					? getLocaleWeek().yearOfWeek
+					: getIsoWeek().yearOfWeek;
 				res = normMods.includes('short') ? pad(Math.abs(yow) % 100) : pad(yow, 4);
-				break;
-			}
-			case 'ww': {
-				if (normMods.includes('month')) {
-					const w = Math.ceil(zdt.day / 7);
-					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
-				} else {
-					const w = Math.ceil(zdt.dayOfYear / 7);
-					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
-				}
 				break;
 			}
 			case 'woy': {
@@ -329,17 +336,12 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					const w = Math.ceil(zdt.day / 7);
 					res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
 				} else if (normMods.includes('locale')) {
-					const w = getLocaleWeekOfYear(zdt, li).weekOfYear;
+					const w = getLocaleWeek().weekOfYear;
 					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
 				} else {
-					const w = getISOWeekOfYear(zdt).weekOfYear;
+					const w = getIsoWeek().weekOfYear;
 					res = pad(normMods.includes('zero') || normMods.includes('0') ? w - 1 : w);
 				}
-				break;
-			}
-			case 'wom': {
-				const w = Math.ceil(zdt.day / 7);
-				res = (normMods.includes('zero') || normMods.includes('0') ? w - 1 : w).toString();
 				break;
 			}
 			case 'era': {
@@ -352,10 +354,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				break;
 			}
 			case 'eon':
-				res = (zdt.eraYear ?? Math.abs(zdt.year <= 0 ? zdt.year - 1 : zdt.year)).toString();
-				break;
-			case 'cen': case 'century':
-				res = pad(Math.abs(Math.floor(zdt.year / 100)), 2);
+				res = getTemporalEra(zdt).eraYear.toString();
 				break;
 			case 'dim':
 				res = zdt.daysInMonth.toString();
@@ -367,7 +366,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					: zdt.daysInYear.toString();
 				break;
 			}
-			case 'jj': case 'julian': {
+			case 'jj': {
 				const pd = zdt.toPlainDate().withCalendar('iso8601');
 				const epochDays = Math.floor(pd.since(Temporal.PlainDate.from('1970-01-01'), { largestUnit: 'day' }).days);
 				res = (2440588 + epochDays).toString();
@@ -380,8 +379,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'mon': res = Enum.keyOf(enums.MONTHS, zdt.month); break;
 			case 'mmm': res = Enum.keyOf(enums.MONTH, zdt.month); break;
-			case 'dd':
-			case 'day': {
+			case 'dd': {
 				if (normMods.includes('year')) {
 					const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.dayOfYear - 1 : zdt.dayOfYear;
 					res = pad(d, 3);
@@ -389,7 +387,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 					res = (normMods.includes('zero') || normMods.includes('0')) ? (zdt.dayOfWeek % 7).toString() : zdt.dayOfWeek.toString();
 				} else {
 					const d = (normMods.includes('zero') || normMods.includes('0')) ? zdt.day - 1 : zdt.day;
-					res = token === 'day' ? d.toString() : pad(d);
+					res = pad(d);
 				}
 				break;
 			}
@@ -414,7 +412,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 			case 'wkd': res = Enum.keyOf(enums.WEEKDAYS, zdt.dayOfWeek); break;
 			case 'www': res = Enum.keyOf(enums.WEEKDAY, zdt.dayOfWeek); break;
-			case 'h24': case 'hh': {
+			case 'hh': {
 				if (normMods.includes('week')) {
 					res = ((zdt.dayOfWeek - 1) * 24 + zdt.hour).toString();
 				} else if (normMods.includes('locale') && token === 'hh') {
@@ -510,16 +508,71 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				}
 				break;
 			}
-			case 'ts': res = ((config?.timeStamp ?? 'ms') === 'ss')
-				? Math.trunc(zdt.epochMilliseconds / 1000).toString()
-				: zdt.epochMilliseconds.toString(); break;
-			case 'nano': res = zdt.epochNanoseconds.toString(); break;
+			case 'ts': {
+				switch (config?.timeStamp ?? baseConfig?.timeStamp ?? 'ms') {
+					case 'ss': res = Math.trunc(zdt.epochMilliseconds / 1_000).toString(); break;
+					case 'us': res = Number(zdt.epochNanoseconds / 1_000n).toString(); break;
+					case 'ns': res = zdt.epochNanoseconds.toString(); break;
+					default: res = zdt.epochMilliseconds.toString(); break;
+				}
+				break;
+			}
 			case 'tz': res = zdt.timeZoneId; break;
 			case 'cal': res = zdt.calendarId; break;
+			case 'locale': {
+				const customLocale = getCustomTokenFn(config, token);
+				if (customLocale) {
+					res = customLocale(zdt, { modifiers, config });
+					break;
+				}
+				res = (isTempo(obj) && !options?.locale)
+					? (obj as any).locale
+					: getLC(canonicalLocales(config?.locale)[0]);
+				break;
+			}
+			case 'iso': {
+				const customIso = getCustomTokenFn(config, token);
+				if (customIso) {
+					res = customIso(zdt, { modifiers, config });
+					break;
+				}
+				res = (isTempo(obj) && !options?.timeZone && !options?.calendar)
+					? (obj as any).iso
+					: zdt.toInstant().toString();
+				break;
+			}
+			case 'sphere': {
+				const customSphere = getCustomTokenFn(config, token);
+				if (customSphere) {
+					res = customSphere(zdt, { modifiers, config });
+					break;
+				}
+				const s = (isTempo(obj) && !options?.sphere && !options?.geo && !options?.timeZone)
+					? (obj as any).sphere
+					: (() => {
+						const baseTz = isTempo(obj) ? (obj as any).tz : state?.config?.timeZone;
+						const zdtTz = zdt.timeZoneId;
+						const hasTzOverride = isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' && (isUndefined(baseTz) || String(zdtTz).toLowerCase() !== String(baseTz).toLowerCase());
+						const rawGeo = options?.geo ?? config?.geo ?? getStashedGeo();
+						const geo = rawGeo ? coerceGeo(rawGeo as any) : undefined;
+						const lat = geo?.latitude ?? (rawGeo as any)?.latitude;
+						return evaluate(
+							options && hasOwn(options, 'sphere') ? options.sphere : undefined,
+							rawGeo?.sphere,
+							isNumber(lat) ? (lat > 0.001 ? 'north' : (lat < -0.001 ? 'south' : 'equator')) : undefined,
+							hasTzOverride ? () => getHemisphere(String(zdtTz)) : undefined,
+							isTempo(obj) ? (obj as any).sphere : undefined,
+							state?.config?.sphere,
+							() => (isNotNullish(zdtTz) && String(zdtTz).toLowerCase() !== 'utc' ? getHemisphere(String(zdtTz)) : undefined),
+							Default.sphere
+						);
+					})();
+				res = isNotNullish(s) ? String(s) : '{sphere}';
+				break;
+			}
 			default: {
-				const customTokens = (config?.registry as any)?.tokens ?? {};
-				const customTokenFn = customTokens[token];
-				if (hasOwn(customTokens, token) && isFunction(customTokenFn)) {
+				const customTokenFn = getCustomTokenFn(config, token);
+				if (customTokenFn) {
 					res = customTokenFn(zdt, { modifiers, config });
 				} else if (token.startsWith('#') && isTempo(obj)) {
 					const termName = token.slice(1).split('.')[0];

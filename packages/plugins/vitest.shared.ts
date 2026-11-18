@@ -6,7 +6,7 @@ import swc from 'unplugin-swc';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const isDist = process.env.TEST_DIST === 'true';
-const polyfill = resolve(__dirname, '../tempo/bin/temporal-polyfill.ts');
+const polyfill = resolve(__dirname, '../library/test/support/temporal-polyfill.ts');
 const spy = resolve(__dirname, '../tempo/test/support/setup.console-spy.ts');
 
 const termsDist = resolve(__dirname, '.terms/dist/index.js');
@@ -30,6 +30,7 @@ export default defineConfig({
 	],
 	test: {
 		globals: true,
+		isolate: true,
 		environment: 'node',
 		include: ['test/**/*.{test,spec}.ts'],
 		setupFiles: [polyfill, spy],

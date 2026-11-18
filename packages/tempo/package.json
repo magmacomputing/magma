@@ -298,8 +298,8 @@
     "test:leaks": "cross-env NODE_OPTIONS=\"--expose-gc\" vitest run",
     "test:dist": "TEST_DIST=true vitest run",
     "test:ci": "TZ=America/New_York LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 vitest run",
-    "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
-    "repl:dist": "tsx -i --import ./bin/temporal-polyfill.ts --import ./bin/repl.ts",
+    "repl": "tsx --tsconfig ./src/tsconfig.repl.json -i --import ../library/test/support/temporal-polyfill.ts --import ./bin/repl.ts",
+    "repl:dist": "tsx -i --import ../library/test/support/temporal-polyfill.ts --import ./bin/repl.ts",
     "repl:node": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/repl.ts",
     "repl:lite": "tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal",
     "repl:core": "cross-env TEMPO_LITE=true tsx --tsconfig ./src/tsconfig.repl.json -i --harmony-temporal --import ./bin/core.ts",
@@ -325,19 +325,19 @@
     "dist/"
   ],
   "dependencies": {
-    "tslib": "^2.8.1"
+    "tslib": "^2.9.1"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/library": "*",
     "@magmacomputing/tempo-cli": "*",
     "@magmacomputing/tempo-plugin-ticker": "*",
-    "@rollup/plugin-alias": "^6.0.0",
-    "@rollup/plugin-terser": "^1.0.0",
-    "@rollup/plugin-typescript": "^12.3.0",
-    "magic-string": "^1.4.2",
+    "@rollup/plugin-alias": "^6.0.1",
+    "@rollup/plugin-terser": "^1.0.2",
+    "@rollup/plugin-typescript": "^12.3.1",
+    "magic-string": "^1.4.5",
     "markdown-it-mathjax3": "^4.3.2",
-    "mermaid": "^11.17.2",
+    "mermaid": "^12.3.0",
     "typedoc": "^0.28.20",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17"

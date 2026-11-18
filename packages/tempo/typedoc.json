@@ -5,7 +5,7 @@
   "plugin": [],
   "excludeInternal": true,
   "navigationLinks": {
-    "API Overview": "/api/index.html",
+    "API Overview": "/magma/api/index.html",
     "⬅ Back to Guides": "/magma/"
   }
 }

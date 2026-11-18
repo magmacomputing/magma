@@ -178,10 +178,10 @@ describe('Tempo Core Caching Architecture', () => {
 				// lacks setStatic
 			};
 
-			const S = Tempo.derive({
+			const S = Tempo.extend({
 				cache: fakeCache as any
 			});
-			const S2 = S.derive({
+			const S2 = S.extend({
 				cache: new Map([['custom_key', 'custom_val']]) as any
 			});
 			const rawCache = (S2 as any)[Symbol.for('magmacomputing/tempo/internal')]().cache;

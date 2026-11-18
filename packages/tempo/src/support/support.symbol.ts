@@ -1,6 +1,5 @@
 import { looseIndex } from '#library/object.library.js';
 import { isBranded } from '#library/assertion.library.js';
-import type { LiteralKey, RemoveIndex } from '#library/type.library.js';
 import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $Register as $LibRegister, $SerializerRegistry, $Identity } from '#library/symbol.library.js';
 export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity };
 
@@ -104,17 +103,15 @@ export type TempoBrand = {
 export const Token = looseIndex<string, symbol>()({
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Snippet Symbols
 	/** year */																								yy: Symbol('yy'),
-	/** ISO yearOfWeek */																			yw: Symbol('yw'),
 	/** month */																							mm: Symbol('mm'),
-	/** week */																								ww: Symbol('ww'),
 	/** day */																								dd: Symbol('dd'),
 	/** hour */																								hh: Symbol('hh'),
 	/** minute */																							mi: Symbol('mi'),
 	/** second */																							ss: Symbol('ss'),
 	/** fraction */																						ff: Symbol('ff'),
+	/** ISO yearOfWeek */																			yow: Symbol('yow'),
 	/** ordinal suffix */																			ord: Symbol('ord'),
 	/** meridiem */																						mer: Symbol('mer'),
-	/** short weekday name */																	www: Symbol('www'),
 	/** relative-suffix */																		afx: Symbol('afx'),
 	/** time-suffix */																				sfx: Symbol('sfx'),
 	/** time unit */																					unt: Symbol('unt'),

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.12.0"
   },
   "description": "Magma Computing Monorepo",
   "repository": {
@@ -41,7 +41,7 @@
     "catalog:sync": "tempo-cli catalog-sync",
     "providers:sync": "npm run build:library && tempo-cli sync-providers",
     "repl": "npm run repl --workspace=@magmacomputing/tempo",
-    "repl:plugins": "tsx --import ./packages/plugins/.bin/temporal-polyfill.mts ./packages/plugins/.bin/repl.mts",
+    "repl:plugins": "tsx --import ./packages/library/test/support/temporal-polyfill.ts ./packages/plugins/.bin/repl.mts",
     "repl:dist": "npm run repl:dist --workspace=@magmacomputing/tempo",
     "repl:core": "npm run repl:core --workspace=@magmacomputing/tempo",
     "docs:dev": "npm run docs:dev --workspace=@magmacomputing/tempo",
@@ -56,35 +56,33 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
+    "@rollup/plugin-alias": "^6.0.1",
     "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-terser": "^1.0.2",
+    "@rollup/plugin-typescript": "^12.3.1",
     "@types/google.maps": "^3.66.10",
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.1",
     "@types/node": "^26.6.6",
     "cross-env": "^10.1.0",
     "happy-dom": "^21.0.4",
-    "rollup": "^4.68.0",
+    "magic-string": "^1.4.5",
+    "rollup": "^4.68.3",
     "tslib": "^2.9.1",
-    "tsup": "^8.5.1",
+    "tsup": "^9.0.0",
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-7": "npm:typescript@^7.0.2",
-    "unplugin-swc": "^1.6.0",
-    "vitest": "4.1.11"
+    "unplugin-swc": "^2.0.0",
+    "vitest": "^5.1.0",
+    "vue": "^3.5.45"
   },
   "overrides": {
-    "esbuild": "^0.28.0"
+    "esbuild": "^0.28.0",
+    "mermaid": "^12.3.0"
   },
   "allowScripts": {
     "@swc/core@1.15.47": true,
     "esbuild@0.28.2": true
-  },
-  "dependencies": {
-    "@rollup/plugin-alias": "^6.0.1",
-    "@rollup/plugin-terser": "^1.0.2",
-    "@rollup/plugin-typescript": "^12.3.1",
-    "magic-string": "^1.4.5",
-    "typescript-7": "npm:typescript@^7.0.2",
-    "vue": "^3.5.45"
   }
 }
