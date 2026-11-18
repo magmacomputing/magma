@@ -76,9 +76,13 @@ describe('Primitive Library', () => {
 		});
 
 		it('flattens prototype-chained properties via flattenObject', () => {
-			const base = { a: 1, b: 2 };
+			const base = { a: 1, b: 2, visible: 1 };
 			const child = Object.assign(Object.create(base), { b: 20, c: 3 });
+			defineProp(child, 'visible', 2, 'hidden');
 			expect(flattenObject(child)).toEqual({ a: 1, b: 20, c: 3 });
+
+			const proxyWithGhostKey = new Proxy(Object.create({ a: 1 }), { ownKeys: () => ['a'] });
+			expect(flattenObject(proxyWithGhostKey)).toEqual({ a: 1 });
 		});
 	});
 
@@ -116,6 +120,11 @@ describe('Primitive Library', () => {
 			expect(clone.pub).toBe(42);
 			expect(Object.getOwnPropertyDescriptor(clone, 'pub')?.writable).toBe(false);
 			expect(Object.getOwnPropertyDescriptor(clone, 'pub')?.configurable).toBe(true);
+
+			const lockedLazy: { ans?: number } = {};
+			defineLazy(lockedLazy, 'ans', () => 99);
+			Object.defineProperty(lockedLazy, 'ans', { configurable: false });
+			expect(lockedLazy.ans).toBe(99);
 		});
 	});
 });

@@ -57,6 +57,7 @@ const RE_EXTENDED_YEAR = '[+-]?\\d{4,6}';
 const RE_COMPACT_LONG_YEAR = '[+-]\\d{4,6}|\\d{4}';
 const RE_TWO_DIGITS = '\\d{1,2}';
 const RE_DIGIT_CHAR = /\d/;
+const RE_ALPHA_TOKEN = /^(?:mmm|mon|wkd|weekday|mer|ampm|era)(?::|$)/i;
 
 /** Parses a capture group as Roman numerals if it matches Roman characters, otherwise parses as decimal */
 function parseRomanOrDecimal(val: string): number {
@@ -116,7 +117,9 @@ function compileBracedPattern(fmt: string): RegExp {
 					break;
 				case 'yy': {
 					const nextChar = fmt[end + 1];
-					const compact = nextChar === '{' || (nextChar !== undefined && RE_DIGIT_CHAR.test(nextChar));
+					const nextClose = nextChar === '{' ? fmt.indexOf('}', end + 1) : -1;
+					const nextIsAlpha = nextClose !== -1 && RE_ALPHA_TOKEN.test(fmt.slice(end + 2, nextClose).trim());
+					const compact = (nextChar === '{' && !nextIsAlpha) || (nextChar !== undefined && RE_DIGIT_CHAR.test(nextChar));
 					pattern += normMods.includes('long')
 						? group('yyyy', romanOr(compact ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
 						: group('yy', romanOr('\\d{2}'));

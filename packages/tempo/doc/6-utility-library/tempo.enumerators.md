@@ -34,7 +34,7 @@ export const SEASON = Enum.from({ Summer: 'summer', Autumn: 'autumn', Winter: 'w
 
 ### Lock-Down Flag (`frozen`)
 Both `Enum.from(source, frozen = true)` and `Enum.extend(base, source, frozen = true)` accept an optional `frozen` boolean:
-- **`true` (default):** Freezes the underlying target object with `Object.freeze()` and wraps it in a read-only `Proxy`.
+- **`true` (default):** Wraps the enum in a read-only `Proxy` that rejects writes, deletions, and extensions (note: `deepFreeze` skips targets carrying the `Enumify` tag, and nested object values remain mutable through existing external references).
 - **`false`:** Leaves the underlying target object unfrozen/extensible while the returned `Proxy` wrapper still enforces read-only access for consumers.
 
 ### Type Inference
@@ -44,9 +44,9 @@ After defining an `Enum` object, simple TypeScript helper aliases pull out the t
 export type SEASON = ValueOf<typeof SEASON>; // Type: 'summer' | 'autumn' | 'winter' | 'spring'
 export type Season = KeyOf<typeof SEASON>;   // Type: 'Summer' | 'Autumn' | 'Winter' | 'Spring'
 ```
-The above types allow for the use of `Season` and `SEASON` as type arguments, providing type safety for both the keys and values of the `Enum`.
+The above types allow for the use of `Season` and `SEASON` to type function parameters, variables, and return types.
 
-Use `KeyOf` (`Season`) for key-based helpers (`Enum.has()`, `Enum.hasOwn()`, `Enum.get()`) and `ValueOf` (`SEASON`) for value-based helpers (`Enum.includes()`, `Enum.keyOf()`).
+When calling `Enum.*` reflection helpers (`Enum.has()`, `Enum.hasOwn()`, `Enum.get()`, `Enum.includes()`, `Enum.keyOf()`), rely on TypeScript inference or pass `typeof SEASON` as the generic argument rather than `KeyOf` or `ValueOf`.
 
 **Note:** TypeScript provides automatic typing for native `enum`s, whereas `Enum.from` uses `KeyOf` / `ValueOf` type helpers.
 
@@ -197,7 +197,7 @@ console.log(Enum.isEnum(ALL_TAGS));  // true (frozen Proxy-wrapped Enum)
 | **Structure** | Single flat `Enum` (all own properties) | Prototype-chained `Enum` (`child → parent`) |
 | **Lookup Speed** | Direct `O(1)` own-property lookup | Walks prototype chain for inherited keys |
 | **`Enum.hasOwn()`** | `true` for all merged keys | `true` only for keys added in that layer |
-| **Precedence** | Last-source-wins by exact key; insertion order preserved across distinct keys | Child layer always precedes parent layer (essential for custom/case-insensitive lookups like `registry.numbers`) |
+| **Precedence** | Last-source-wins by exact key; insertion order preserved across distinct keys | Exact-key shadows resolve child → parent; `Enum.entries()` enumerates ancestor keys first (prototype-walking lookups such as `registry.numbers` inspect child → parent directly) |
 | **Memory on Chain** | Copies entries into a new flat object | Allocates only the delta properties |
 | **`frozen` Flag** | Always `true` | Configurable (`true` by default) |
 

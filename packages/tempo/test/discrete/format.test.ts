@@ -680,6 +680,10 @@ describe('Tempo.format() refinements', () => {
       const digitLiteralFollower = new Tempo('2024111-15', { format: '{yy:long}1{mm}-{dd}' });
       expect(digitLiteralFollower.isValid).toBe(true);
       expect(digitLiteralFollower.format('{yyyy}-{mm}-{dd}')).toBe('2024-11-15');
+
+      const alphaFollower = new Tempo('10000Jan01', { format: '{yy:long}{mmm}{dd}' });
+      expect(alphaFollower.isValid).toBe(true);
+      expect(alphaFollower.yy).toBe(10000);
     });
   });
 })

@@ -75,6 +75,19 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 		curr = Object.getPrototypeOf(level);
 	}
 
+	const resolved = new Set<PropertyKey>();
+	const enumerableKeys = new Set<PropertyKey>();
+	for (const level of levels) {
+		for (const k of Reflect.ownKeys(level)) {
+			if (resolved.has(k)) continue;
+			const desc = Object.getOwnPropertyDescriptor(level, k);
+			if (!desc) continue;
+			resolved.add(k);
+			if (desc.enumerable)
+				enumerableKeys.add(k);
+		}
+	}
+
 	const entries: [PropertyKey, any][] = [];
 	const seen = new Set<PropertyKey>();
 
@@ -82,7 +95,7 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 		const keys = Reflect.ownKeys(level);
 
 		for (const k of keys) {
-			if (seen.has(k)) continue;
+			if (seen.has(k) || !enumerableKeys.has(k)) continue;
 
 			const desc = Object.getOwnPropertyDescriptor(level, k);
 			if (!desc || !desc.enumerable) continue;
@@ -527,7 +540,7 @@ export function defineLazy<T extends object, V = unknown>(
 		get(this: T) {
 			const value = factory.call(this);
 			const dest = unwrap(this);
-			if (Object.isExtensible(dest))
+			if (Object.isExtensible(dest) && Object.getOwnPropertyDescriptor(dest, key)?.configurable !== false)
 				Object.defineProperty(dest, key, { value, enumerable, writable: false, configurable: true });
 			return value;
 		},
