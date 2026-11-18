@@ -672,6 +672,10 @@ describe('Tempo.format() refinements', () => {
       const extParsed = new Tempo(extFormatted, { format: '{dd}-{mm}-{yy:long}' });
       expect(extParsed.isValid).toBe(true);
       expect(extParsed.yy).toBe(12345);
+
+      const unsignedExt = new Tempo('01-01-10000', { format: '{dd}-{mm}-{yy:long}' });
+      expect(unsignedExt.isValid).toBe(true);
+      expect(unsignedExt.yy).toBe(10000);
     });
   });
 })

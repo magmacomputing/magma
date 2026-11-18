@@ -5,6 +5,7 @@ import { sortKey, byKey } from '#library/array.library.js';
 import { compare } from '#library/number.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { deepFreeze } from '#library/utility.library.js';
+import { defineProp } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 
 import { TEMPO_VERSION } from '../../tempo.version.js';
@@ -45,9 +46,8 @@ export const defineTerm = <T extends TermPlugin, Opts = any>(term: T): TermFacto
 
 	const { name, ...rest } = termObj as any;
 	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'term' });
-	if (name) {
-		Object.defineProperty(result, 'name', { value: name, configurable: true });
-	}
+	if (name)
+		defineProp(result, 'name', name, 'configurable');
 
 	registerTerm(result);
 	return deepFreeze(result) as TermFactory<T, Opts>;

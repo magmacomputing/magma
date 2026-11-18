@@ -1,7 +1,7 @@
 import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
-import { unwrap } from '#library/primitive.library.js';
+import { unwrap, defineFrom, defineProp } from '#library/primitive.library.js';
 import { isString, isFunction, isSymbol, isDefined, isNullish, isNumber, isObject, isPlainObject, isReference, isSafeKey } from '#library/assertion.library.js';
 import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
@@ -236,8 +236,7 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			const out: Record<string, unknown> = {};
 			rootSeen.set(recv, out);
 			const snapshot = snapshotInspect(raw, rootSeen, depth);
-			Object.defineProperties(out, Object.getOwnPropertyDescriptors(snapshot));
-			return out;
+			return defineFrom(out, snapshot);
 		}
 		return snapshotInspect(recv, seen ?? new WeakMap(), depth);
 	};
@@ -282,14 +281,8 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 	const hasAccessorCtor = Boolean(ctorDesc && !('value' in ctorDesc));
 
 	// Expose Node custom inspection directly on supported targets so util.inspect finds it after unwrapping the Proxy
-	if (frozen && !hasAccessorCtor && (Boolean(keys) || isInspectableTarget || hasInheritedCustomInspect) && !hasOwnCustomInspect && !hasGeneratedInspect && Object.isExtensible(tgt)) {
-		Object.defineProperty(tgt, sym.$Inspect, {
-			value: createTargetInspectHook(tgt, isEnumTarget),
-			enumerable: false,
-			configurable: true,
-			writable: false,
-		});
-	}
+	if (frozen && !hasAccessorCtor && (Boolean(keys) || isInspectableTarget || hasInheritedCustomInspect) && !hasOwnCustomInspect && !hasGeneratedInspect && Object.isExtensible(tgt))
+		defineProp(tgt, sym.$Inspect, createTargetInspectHook(tgt, isEnumTarget), 'configurable');
 
 	// 2. Harden the target if requested
 	if (lock) deepFreeze(tgt, skip ? { skip } : undefined);
@@ -425,24 +418,29 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 	return result;
 }
 
+/** Proxy immutability mode: `'frozen'` locks target & proxy, `'readonly'` blocks proxy writes only, `'mutable'` allows writes. */
+export type ProxyMode = 'frozen' | 'readonly' | 'mutable';
+
 /**
  * Creates a Stealth Proxy pattern to allow for on-demand lazy property discovery and registration.
  * Provides deep-freezing and bounding capabilities depending on options.
  *
  * @param target - The object to proxify
- * @param frozen - Whether the proxy should throw on mutation (default: true)
- * @param lock - Whether to deep-freeze the underlying target (default: frozen)
+ * @param mode - Immutability mode (`'frozen'` by default)
  * @param skip - A WeakSet of objects to skip during deep-freeze
  * @returns The proxified object
  * @example
  * ```ts
  * const p = proxify({ a: 1 });
+ * const r = proxify({ a: 1 }, 'readonly');
  * ```
  */
-export function proxify<T extends object>(target: T, frozen?: true, lock?: boolean, skip?: WeakSet<object>): Readonly<T>;
-export function proxify<T extends object>(target: T, frozen: false, lock?: boolean, skip?: WeakSet<object>): T;
-export function proxify<T extends object>(target: T, frozen?: boolean, lock?: boolean, skip?: WeakSet<object>): Readonly<T> | T;
-export function proxify<T extends object>(target: T, frozen = true, lock = frozen, skip = new WeakSet<object>()): any {
+export function proxify<T extends object>(target: T, mode?: 'frozen' | 'readonly', skip?: WeakSet<object>): Readonly<T>;
+export function proxify<T extends object>(target: T, mode: 'mutable', skip?: WeakSet<object>): T;
+export function proxify<T extends object>(target: T, mode?: ProxyMode, skip?: WeakSet<object>): Readonly<T> | T;
+export function proxify<T extends object>(target: T, mode: ProxyMode = 'frozen', skip = new WeakSet<object>()): any {
+	const frozen = mode !== 'mutable';
+	const lock = mode === 'frozen';
 	return factory(target, { frozen, lock, skip, bind: frozen });
 }
 
@@ -452,18 +450,18 @@ export function proxify<T extends object>(target: T, frozen = true, lock = froze
  *
  * @param target - The base object
  * @param onGet - Callback fired when an unknown property is accessed
- * @param readonly - Whether the proxy should prevent mutations (default: true)
+ * @param mode - Immutability mode (`'readonly'` by default)
  * @returns The delegated Proxy
  * @example
  * ```ts
  * const d = delegate({}, (key) => console.log('Requested:', key));
  * ```
  */
-export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly?: true): Readonly<T>;
-export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly: false): T;
-export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly?: boolean): Readonly<T> | T;
-export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, readonly = true): any {
-	return factory(target, { onGet, frozen: readonly });
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode?: 'readonly' | 'frozen'): Readonly<T>;
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode: 'mutable'): T;
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode?: ProxyMode): Readonly<T> | T;
+export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode: ProxyMode = 'readonly'): any {
+	return factory(target, { onGet, frozen: mode !== 'mutable' });
 }
 
 /**
@@ -552,7 +550,7 @@ export function indexedArray<T extends object>(
 		return (isString(key) && key !== 'length' && !(key in Array.prototype) && !isNumber(Number(key)))
 			? finder(key)
 			: undefined;
-	}, readonly) as any;
+	}, readonly ? 'readonly' : 'mutable') as any;
 }
 
 /**

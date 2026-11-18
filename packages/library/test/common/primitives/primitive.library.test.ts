@@ -1,4 +1,15 @@
-import { toArray, ownEntries, ownKeys, ownValues, unwrap, distinct } from '#library/primitive.library.js';
+import {
+	toArray,
+	ownEntries,
+	ownKeys,
+	ownValues,
+	unwrap,
+	distinct,
+	defineProp,
+	defineLazy,
+	defineFrom,
+	flattenObject,
+} from '#library/primitive.library.js';
 
 describe('Primitive Library', () => {
 	describe('toArray', () => {
@@ -62,6 +73,49 @@ describe('Primitive Library', () => {
 			expect(ownEntries(obj)).toEqual([['a', 1], ['b', 2]]);
 			expect(ownKeys(obj)).toEqual(['a', 'b']);
 			expect(ownValues(obj)).toEqual([1, 2]);
+		});
+
+		it('flattens prototype-chained properties via flattenObject', () => {
+			const base = { a: 1, b: 2 };
+			const child = Object.assign(Object.create(base), { b: 20, c: 3 });
+			expect(flattenObject(child)).toEqual({ a: 1, b: 20, c: 3 });
+		});
+	});
+
+	describe('descriptor helpers', () => {
+		it('handles defineProp, defineLazy, and defineFrom', () => {
+			const target: Record<string, any> = {};
+			defineProp(target, 'secret', 123, 'hidden');
+			expect(target.secret).toBe(123);
+			expect(Object.keys(target)).not.toContain('secret');
+
+			defineProp(target, 'locked', 'ok', 'readonly');
+			expect(target.locked).toBe('ok');
+			expect(() => { target.locked = 'fail'; }).toThrow(TypeError);
+
+			defineProp(target, 'sealedFlag', true, 'sealed');
+			expect(Object.getOwnPropertyDescriptor(target, 'sealedFlag')).toEqual({
+				value: true,
+				enumerable: false,
+				writable: false,
+				configurable: false,
+			});
+
+			const spy = vi.fn(() => ({ computed: true }));
+			defineLazy(target, 'lazyProp', spy);
+			expect(target.lazyProp).toEqual({ computed: true });
+			expect(target.lazyProp).toEqual({ computed: true });
+			expect(spy).toHaveBeenCalledTimes(1);
+
+			const symKey = Symbol('meta');
+			const src = {};
+			defineProp(src, symKey, 'symVal', 'hidden');
+			defineProp(src, 'pub', 42, ['readonly', 'configurable']);
+			const clone = defineFrom({} as any, src);
+			expect(clone[symKey]).toBe('symVal');
+			expect(clone.pub).toBe(42);
+			expect(Object.getOwnPropertyDescriptor(clone, 'pub')?.writable).toBe(false);
+			expect(Object.getOwnPropertyDescriptor(clone, 'pub')?.configurable).toBe(true);
 		});
 	});
 });

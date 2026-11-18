@@ -1,5 +1,5 @@
 import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
-import { ownKeys, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
+import { ownKeys, hasOwn, hasAnyOf, hasNoneOf, defineProp } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
 
@@ -204,13 +204,7 @@ export function createSandbox<R>(
 	};
 
 	data.sandbox = SandboxTempo;
-
-	Object.defineProperty(SandboxTempo.prototype, Symbol.toStringTag, {
-		value: 'TempoSandbox',
-		configurable: true,
-		writable: false,
-		enumerable: false,
-	});
+	defineProp(SandboxTempo.prototype, Symbol.toStringTag, 'TempoSandbox', 'configurable');
 
 	try {
 		state = init(options, false, (TempoClass as any)[$Internal]());

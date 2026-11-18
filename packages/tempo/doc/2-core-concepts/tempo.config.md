@@ -230,9 +230,9 @@ Tempo.init({
 ```
 
 > [!TIP]
-> **Single-App vs. Sandboxed Environments (`Tempo.init()` vs. `Tempo.derive()`)**
+> **Single-App vs. Sandboxed Environments (`Tempo.init()` vs. `Tempo.extend()`)**
 > - **`Tempo.init()`**: Designed for single-app entry points (such as client-side SPAs or CLI tools) to establish baseline defaults globally across the runtime.
-> - **`Tempo.derive()`**: Designed for multi-tenant SSR servers (e.g. Next.js, Fastify), reusable npm libraries, or isolated unit test suites. [`Tempo.derive()`](../4-advanced-reference/sandbox-factory.md) branches off an isolated, sandboxed class constructor with its own state. Term plugins are not isolated: they register in a runtime-wide term map shared by every sandbox.
+> - **`Tempo.extend()`**: Designed for multi-tenant SSR servers (e.g. Next.js, Fastify), reusable npm libraries, or isolated unit test suites. [`Tempo.extend()`](../4-advanced-reference/sandbox-factory.md) branches off an isolated, sandboxed class constructor with its own state. Term plugins are not isolated: they register in a runtime-wide term map shared by every sandbox.
 
 ### Available Options
 

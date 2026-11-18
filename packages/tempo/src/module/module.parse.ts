@@ -51,8 +51,11 @@ const RE_SIGNED_LEADING_DIGITS = /^-?\d+/;
 const RE_ORDINAL_SUFFIX = /(?:st|nd|rd|th)/;
 const RE_TERM_ID = /#[\w.]+/;
 
-const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
 const RE_ROMAN_CHARS = /^[IVXLCDMivxlcdm]+$/;
+const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
+const RE_EXTENDED_YEAR = '[+-]?\\d{4,6}';
+const RE_COMPACT_LONG_YEAR = '[+-]\\d{4,6}|\\d{4}';
+const RE_TWO_DIGITS = '\\d{1,2}';
 
 /** Parses a capture group as Roman numerals if it matches Roman characters, otherwise parses as decimal */
 function parseRomanOrDecimal(val: string): number {
@@ -108,16 +111,16 @@ function compileBracedPattern(fmt: string): RegExp {
 			switch (token) {
 				case 'yyyy':
 				case 'year':
-					pattern += group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'));
+					pattern += group('yyyy', romanOr(RE_EXTENDED_YEAR));
 					break;
 				case 'yy':
 					pattern += normMods.includes('long')
-						? group('yyyy', romanOr('[+-]\\d{4,6}|\\d{4}'))
+						? group('yyyy', romanOr(fmt[end + 1] === '{' ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
 						: group('yy', romanOr('\\d{2}'));
 					break;
 				case 'mm':
 				case 'month':
-					pattern += group('mm', romanOr('\\d{1,2}'));
+					pattern += group('mm', romanOr(RE_TWO_DIGITS));
 					break;
 				case 'mmm':
 					pattern += group('mmm', '[A-Za-z]{3,}');
@@ -127,11 +130,11 @@ function compileBracedPattern(fmt: string): RegExp {
 					break;
 				case 'dd':
 				case 'day':
-					pattern += group('dd', romanOr('\\d{1,2}(?:st|nd|rd|th)?'));
+					pattern += group('dd', romanOr(`${RE_TWO_DIGITS}(?:st|nd|rd|th)?`));
 					break;
 				case 'hh':
 				case 'hour':
-					pattern += group('hh', romanOr('\\d{1,2}'));
+					pattern += group('hh', romanOr(RE_TWO_DIGITS));
 					break;
 				case 'h12':
 					pattern += group('h12', '1[0-2]|0?[1-9]');
@@ -139,12 +142,12 @@ function compileBracedPattern(fmt: string): RegExp {
 				case 'mi':
 				case 'min':
 				case 'minute':
-					pattern += group('mi', '\\d{1,2}');
+					pattern += group('mi', RE_TWO_DIGITS);
 					break;
 				case 'ss':
 				case 'sec':
 				case 'second':
-					pattern += group('ss', '\\d{1,2}');
+					pattern += group('ss', RE_TWO_DIGITS);
 					break;
 				case 'ms':
 				case 'millisecond':

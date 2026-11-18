@@ -1,6 +1,6 @@
 import { asType, getType } from '#library/type.library.js';
 import { isNumeric, isBranded, isReference } from '#library/assertion.library.js';
-import { ownEntries, unwrap } from '#library/primitive.library.js';
+import { ownEntries, unwrap, defineFrom, defineProp } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
@@ -205,9 +205,8 @@ function mergeEnum<const T extends readonly Property<any>[]>(...sources: T): Enu
 				merged[k] = v;
 		}
 	}
-	const target = Object.create(ENUM);
-	Object.defineProperties(target, Object.getOwnPropertyDescriptors(merged));
-	return proxify(target, true, true) as any;
+	const target = defineFrom(Object.create(ENUM), merged);
+	return proxify(target, 'frozen') as any;
 }
 
 export const Enum: Readonly<enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));
@@ -245,7 +244,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	switch (arg.type) {
 		case 'Enumify':
 		case 'Object':
-			Object.defineProperties(target, Object.getOwnPropertyDescriptors(arg.value));
+			defineFrom(target, arg.value);
 			break;
 
 		case 'Array':
@@ -254,12 +253,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 					throw new TypeError(`Enumify: numeric keys are not supported ("${key}").`);
 				if (Object.hasOwn(target, key))
 					throw new TypeError(`Enumify: duplicate member key "${key}" found in array definition.`);
-				Object.defineProperty(target, key, {
-					value: index,
-					enumerable: true,
-					writable: false,
-					configurable: false
-				});
+				defineProp(target, key, index, 'readonly');
 			});
 			break;
 
@@ -267,7 +261,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 			throw new TypeError(`Enumify: invalid argument type: ${arg.type}`);
 	}
 
-	return proxify(target, true, frozen);											// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
+	return proxify(target, frozen ? 'frozen' : 'readonly');				// proxy is ALWAYS read-only, target is frozen if requested
 }
 
 /** create an entry in the Serialization Registry to describe how to rebuild an Enum */

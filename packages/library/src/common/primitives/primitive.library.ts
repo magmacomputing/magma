@@ -96,6 +96,16 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 }
 
 /**
+ * Flattens own and inherited enumerable properties of `obj` into a fresh plain object.
+ *
+ * @param obj - Source object (including prototype-chained or Proxy-wrapped objects)
+ * @returns A plain object containing all enumerable entries
+ */
+export function flattenObject<T extends Obj>(obj: T): Record<PropertyKey, any> {
+	return Object.fromEntries(ownEntries(obj, true));
+}
+
+/**
  * Returns an array of all enumerable property keys for an object.
  * 
  * @param json - The object to extract keys from
@@ -444,3 +454,95 @@ export function toArray<T>(arr?: ArrayLike<T> | null): T[] {
 	return res;
 }
 
+
+/** Descriptor flag or preset name for {@link defineProp}. */
+export type PropFlag = 'mutable' | 'readonly' | 'hidden' | 'sealed' | 'writable' | 'enumerable' | 'configurable';
+
+const PROP_PRESETS: Record<PropFlag, { enumerable: boolean; writable: boolean; configurable: boolean }> = {
+	mutable:      { enumerable: true,  writable: true,  configurable: true  },
+	readonly:     { enumerable: true,  writable: false, configurable: false },
+	hidden:       { enumerable: false, writable: true,  configurable: true  },
+	sealed:       { enumerable: false, writable: false, configurable: false },
+	writable:     { enumerable: false, writable: true,  configurable: false },
+	enumerable:   { enumerable: true,  writable: false, configurable: false },
+	configurable: { enumerable: false, writable: false, configurable: true  },
+};
+
+/**
+ * Defines a data property on `target` using readable descriptor presets or combined flags.
+ *
+ * @param target - Object to attach the property to
+ * @param key - Property key or symbol
+ * @param value - Value to assign
+ * @param flags - Preset or list of flags (`'mutable'` by default)
+ * @returns The target object
+ * @example
+ * ```ts
+ * defineProp(obj, 'id', 42, 'readonly');
+ * defineProp(obj, 'meta', {}, 'hidden');
+ * defineProp(obj, 'res', [], ['readonly', 'configurable']);
+ * ```
+ */
+export function defineProp<T extends object>(
+	target: T,
+	key: PropertyKey,
+	value: unknown,
+	flags: PropFlag | readonly PropFlag[] = 'mutable',
+): T {
+	let desc: { enumerable: boolean; writable: boolean; configurable: boolean };
+	if (!Array.isArray(flags)) {
+		desc = PROP_PRESETS[flags as PropFlag] ?? PROP_PRESETS.mutable;
+	} else {
+		desc = { enumerable: false, writable: false, configurable: false };
+		for (const f of flags as readonly PropFlag[]) {
+			const p = PROP_PRESETS[f];
+			if (!p) continue;
+			if (p.enumerable) desc.enumerable = true;
+			if (p.writable) desc.writable = true;
+			if (p.configurable) desc.configurable = true;
+		}
+	}
+	Object.defineProperty(target, key, { ...desc, value });
+	return target;
+}
+
+/**
+ * Defines a lazy getter on `target` that caches its computed value as an own read-only property on first access.
+ *
+ * @param target - Object to attach the lazy property to
+ * @param key - Property key or symbol
+ * @param factory - Computation evaluated on first access with `this` bound to the receiver
+ * @param enumerable - Whether the property is enumerable (default `true`)
+ * @returns The target object
+ */
+export function defineLazy<T extends object, V = unknown>(
+	target: T,
+	key: PropertyKey,
+	factory: (this: T) => V,
+	enumerable = true,
+): T {
+	Object.defineProperty(target, key, {
+		enumerable,
+		configurable: true,
+		get(this: T) {
+			const value = factory.call(this);
+			if (Object.isExtensible(this))
+				Object.defineProperty(this, key, { value, enumerable, writable: false, configurable: true });
+			return value;
+		},
+	});
+	return target;
+}
+
+/**
+ * Copies all own property descriptors (including symbols, getters, and non-enumerable entries)
+ * from `source` onto `target`.
+ *
+ * @param target - Destination object
+ * @param source - Source object whose own descriptors are copied
+ * @returns The target object
+ */
+export function defineFrom<T extends object>(target: T, source: object): T {
+	Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+	return target;
+}

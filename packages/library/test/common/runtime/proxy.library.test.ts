@@ -10,7 +10,7 @@ describe('proxy method binding', () => {
 			getValue() { return this.value; }
 		};
 
-		const proxy = proxify(target, true, false);
+		const proxy = proxify(target, 'readonly');
 		const first = proxy.getValue;
 		const second = proxy.getValue;
 
@@ -30,7 +30,7 @@ describe('proxy method binding', () => {
 			enumerable: true,
 		});
 
-		const proxy = proxify(target, true, false) as typeof target & { fixed: typeof fixed };
+		const proxy = proxify(target, 'readonly') as typeof target & { fixed: typeof fixed };
 
 		expect(proxy.fixed).toBe(fixed);
 		expect(proxy.fixed()).toBe(11);
@@ -41,8 +41,8 @@ describe('proxy method binding', () => {
 		const a = { value: 3, getValue: shared };
 		const b = { value: 9, getValue: shared };
 
-		const proxyA = proxify(a, true, false);
-		const proxyB = proxify(b, true, false);
+		const proxyA = proxify(a, 'readonly');
+		const proxyB = proxify(b, 'readonly');
 
 		expect(proxyA.getValue).not.toBe(proxyB.getValue);
 		expect(proxyA.getValue()).toBe(3);
@@ -56,13 +56,13 @@ describe('proxy method binding', () => {
 		}
 
 		const instance = new CustomTarget();
-		const proxy = proxify(instance, false, false);
+		const proxy = proxify(instance, 'mutable');
 
 		expect(proxy.constructor).toBe(CustomTarget);
 		expect(proxy.constructor === CustomTarget).toBe(true);
 
 		const plain = { a: 1 };
-		const plainProxy = proxify(plain, false, false);
+		const plainProxy = proxify(plain, 'mutable');
 		expect(plainProxy.constructor).toBe(Object);
 		expect(plainProxy.constructor === Object).toBe(true);
 	});
@@ -101,12 +101,12 @@ describe('secure serialization', () => {
 	});
 
 	test('formats proxify and enumify objects cleanly via util.inspect without Proxy wrapper', () => {
-		const obj = proxify({ a: 1 }, true);
+		const obj = proxify({ a: 1 }, 'frozen');
 		const objOut = inspect(obj);
 		expect(objOut).not.toContain('Proxy');
 		expect(objOut).toContain('a: 1');
 
-		const list = proxify(['alpha', 'beta'], true);
+		const list = proxify(['alpha', 'beta'], 'frozen');
 		const listOut = inspect(list);
 		expect(listOut).not.toContain('Proxy');
 		expect(listOut).toContain('alpha');
@@ -122,17 +122,17 @@ describe('secure serialization', () => {
 	});
 
 	test('retains native diagnostic inspection for Error and Map instances', () => {
-		const errOut = inspect(proxify(new Error('failed'), true));
+		const errOut = inspect(proxify(new Error('failed'), 'frozen'));
 		expect(errOut).toContain('Error: failed');
 
-		const mapOut = inspect(proxify(new Map([['k', 'v']]), true));
+		const mapOut = inspect(proxify(new Map([['k', 'v']]), 'frozen'));
 		expect(mapOut).toContain('Map(1)');
 		expect(mapOut).toContain("'k' => 'v'");
 	});
 
 	test('isolates virtual sym.$Inspect across multiple proxies sharing one target', () => {
 		const shared: Record<string, string> = {};
-		proxify(shared, true, false);
+		proxify(shared, 'readonly');
 		const first = revocable(shared, { frozen: true, keys: ['a'], onGet: (k) => `${String(k)}-1` });
 		const second = revocable(shared, { frozen: true, keys: ['b'], onGet: (k) => `${String(k)}-2` });
 
@@ -143,7 +143,7 @@ describe('secure serialization', () => {
 		expect(inspect(first.proxy)).toContain("a: 'a-1'");
 		expect(inspect(second.proxy)).toContain("b: 'b-2'");
 
-		const combinedParent = proxify({ x: first.proxy, y: second.proxy }, true, false);
+		const combinedParent = proxify({ x: first.proxy, y: second.proxy }, 'readonly');
 		const combinedInspect = inspect(combinedParent);
 		expect(combinedInspect).toContain("a: 'a-1'");
 		expect(combinedInspect).toContain("b: 'b-2'");
@@ -167,7 +167,7 @@ describe('secure serialization', () => {
 			get boom() {
 				throw new Error('unavailable');
 			}
-		}, true, false);
+		}, 'readonly');
 
 		const out = inspect(obj);
 		expect(out).toContain('a: 1');
@@ -182,7 +182,7 @@ describe('secure serialization', () => {
 			enumerable: true,
 			configurable: true,
 		});
-		const pArr = proxify(arr, true, false);
+		const pArr = proxify(arr, 'readonly');
 		expect(inspect(pArr)).toContain('[Getter]');
 
 		const ctorObj = {
@@ -190,20 +190,20 @@ describe('secure serialization', () => {
 				throw new Error('unexpected constructor read');
 			}
 		};
-		expect(() => inspect(proxify(ctorObj, true, false))).not.toThrow();
+		expect(() => inspect(proxify(ctorObj, 'readonly'))).not.toThrow();
 
 		const circObj: Record<string, any> = { a: 1 };
 		circObj.self = circObj;
-		const circObjOut = inspect(proxify(circObj, true, false), { depth: null });
+		const circObjOut = inspect(proxify(circObj, 'readonly'), { depth: null });
 		expect(circObjOut).toContain('[Circular');
 
 		const circArr: unknown[] = [1];
 		circArr.push(circArr);
-		const circArrOut = inspect(proxify(circArr, true, false), { depth: null });
+		const circArrOut = inspect(proxify(circArr, 'readonly'), { depth: null });
 		expect(circArrOut).toContain('[Circular');
 
 		const child = delegator(['answer'], () => 42);
-		expect(inspect(proxify({ child }, true, false))).toContain('answer: 42');
+		expect(inspect(proxify({ child }, 'readonly'))).toContain('answer: 42');
 
 		const redacted = {
 			token: 'secret-xyz',
@@ -211,7 +211,7 @@ describe('secure serialization', () => {
 				return '[redacted]';
 			}
 		};
-		const redactedOut = inspect(proxify({ nested: redacted }, true, false));
+		const redactedOut = inspect(proxify({ nested: redacted }, 'readonly'));
 		expect(redactedOut).toContain('[redacted]');
 		expect(redactedOut).not.toContain('secret-xyz');
 
@@ -219,9 +219,9 @@ describe('secure serialization', () => {
 		for (let i = 0; i < 20_000; i++) {
 			deep = { next: deep };
 		}
-		expect(() => inspect(proxify(deep, true, false), { depth: 0 })).not.toThrow();
+		expect(() => inspect(proxify(deep, 'readonly'), { depth: 0 })).not.toThrow();
 
-		const nestedArrOut = inspect(proxify({ child: proxify([1], true, false) }, true, false));
+		const nestedArrOut = inspect(proxify({ child: proxify([1], 'readonly') }, 'readonly'));
 		expect(nestedArrOut).toContain('[ 1 ]');
 
 		const keyedSecret = revocable({
@@ -230,19 +230,19 @@ describe('secure serialization', () => {
 				return '[redacted]';
 			}
 		}, { frozen: true, keys: ['token'] });
-		const nestedKeyedSecretOut = inspect(proxify({ nested: keyedSecret.proxy }, true, false));
+		const nestedKeyedSecretOut = inspect(proxify({ nested: keyedSecret.proxy }, 'readonly'));
 		expect(nestedKeyedSecretOut).toContain('[redacted]');
 		expect(nestedKeyedSecretOut).not.toContain('secret-xyz');
 		keyedSecret.revoke();
 
 		const selfTarget: Record<string, any> = {};
-		const selfProxy = proxify(selfTarget, true, false);
+		const selfProxy = proxify(selfTarget, 'readonly');
 		selfTarget.self = selfProxy;
 		expect(inspect(selfProxy, { depth: null })).toContain('[Circular');
 		expect(() => (selfProxy as any)[sym.$Inspect](null)).not.toThrow();
 
 		const nestedRev = revocable({ a: 1 }, { frozen: true });
-		const parentOfRevoked = proxify({ child: nestedRev.proxy }, true, false);
+		const parentOfRevoked = proxify({ child: nestedRev.proxy }, 'readonly');
 		nestedRev.revoke();
 		expect(() => inspect(parentOfRevoked)).not.toThrow();
 
@@ -261,7 +261,7 @@ describe('secure serialization', () => {
 			keys: ['next'],
 			onGet: (k) => (k === 'next' ? keyedLeaf.proxy : undefined),
 		});
-		const keyedParent = proxify({ child: keyedMid.proxy }, true, false);
+		const keyedParent = proxify({ child: keyedMid.proxy }, 'readonly');
 		const shallowSnap = (keyedParent as any)[sym.$Inspect](1);
 		expect(shallowSnap.child.next).toBe(keyedLeaf.proxy);
 		expect(leafInspectCalls).toBe(0);
@@ -269,21 +269,21 @@ describe('secure serialization', () => {
 		keyedMid.revoke();
 
 		// Non-enumerable own properties suppress inherited enumerable snapshot properties
-		const baseProxy = proxify({ status: 'old', keep: 1 }, true, false);
+		const baseProxy = proxify({ status: 'old', keep: 1 }, 'readonly');
 		const shadowedChild = Object.create(baseProxy);
 		Object.defineProperty(shadowedChild, 'status', {
 			value: 'new',
 			enumerable: false,
 			configurable: true,
 		});
-		const proxiedChild = proxify(shadowedChild, true, false);
+		const proxiedChild = proxify(shadowedChild, 'readonly');
 		const childSnap = (proxiedChild as any)[sym.$Inspect]();
 		expect(childSnap).toEqual({ keep: 1 });
 		expect('status' in childSnap).toBe(false);
 
 		// Live prototype mutation adding a custom [sym.$Inspect] hook is honored
 		const unlockedTarget = { token: 'secret-xyz' };
-		const unlockedProxy = proxify(unlockedTarget, true, false);
+		const unlockedProxy = proxify(unlockedTarget, 'readonly');
 		Object.setPrototypeOf(unlockedTarget, {
 			[sym.$Inspect]() {
 				return '[redacted-live]';
@@ -318,7 +318,7 @@ describe('secure serialization', () => {
 				return {};
 			},
 		};
-		inspect(proxify({ child: childWithProtoGetter }, true, false));
+		inspect(proxify({ child: childWithProtoGetter }, 'readonly'));
 		expect(protoGetterCalls).toBe(0);
 
 		// Proxying a child of a proxified base still honors the base's inherited custom hook
@@ -327,10 +327,10 @@ describe('secure serialization', () => {
 				return '[redacted-base]';
 			},
 		});
-		const proxifiedBase = proxify(baseWithHook, true, false);
+		const proxifiedBase = proxify(baseWithHook, 'readonly');
 		const derivedChild = Object.create(proxifiedBase);
 		derivedChild.token = 'secret-child';
-		const proxifiedDerived = proxify(derivedChild, true, false);
+		const proxifiedDerived = proxify(derivedChild, 'readonly');
 		expect(inspect(proxifiedDerived)).toContain('[redacted-base]');
 		expect(inspect(proxifiedDerived)).not.toContain('secret-child');
 	});
@@ -343,7 +343,7 @@ describe('secure serialization', () => {
 			}
 		}
 
-		const modelProxy = proxify(new CustomModel(), true);
+		const modelProxy = proxify(new CustomModel(), 'frozen');
 		expect(inspect(modelProxy)).toBe('CustomModel<42>');
 		expect((modelProxy as any)[sym.$Inspect]()).toBe('CustomModel<42>');
 
@@ -353,8 +353,8 @@ describe('secure serialization', () => {
 			}
 		}
 		const listTarget = new CustomList(1, 2);
-		const firstListProxy = proxify(listTarget, true);
-		const secondListProxy = proxify(listTarget, true);
+		const firstListProxy = proxify(listTarget, 'frozen');
+		const secondListProxy = proxify(listTarget, 'frozen');
 		expect(inspect(firstListProxy)).toBe('L');
 		expect(inspect(secondListProxy)).toBe('L');
 		expect((secondListProxy as any)[sym.$Inspect]()).toBe('L');
@@ -365,6 +365,6 @@ describe('secure serialization', () => {
 				throw new Error('toStringTag boom');
 			}
 		};
-		expect(() => proxify(throwingTag, false)).not.toThrow();
+		expect(() => proxify(throwingTag, 'mutable')).not.toThrow();
 	});
 });

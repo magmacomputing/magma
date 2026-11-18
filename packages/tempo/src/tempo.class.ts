@@ -5,7 +5,7 @@ import { asArray, asError } from '#library/coercion.library.js';
 import { getStorage, setStorage, isTestEnvironment } from '#library/storage.library.js';
 import { secure, proxify, delegate, indexedArray, dynamicProxy } from '#library/proxy.library.js';
 import { getContext, CONTEXT } from '#library/utility.library.js';
-import { ownKeys, ownEntries, ownValues, unwrap, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, ownValues, unwrap, hasOwn, hasAnyOf, hasNoneOf, defineProp } from '#library/primitive.library.js';
 import { getAccessors, omit } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
 import { pad, trimAll } from '#library/string.library.js';
@@ -592,7 +592,7 @@ export class Tempo {
 	 * // Scoped callback mode
 	 * const result = Tempo.extend((sb) => {
 	 *   sb.use(MyPlugin);
-	 *   return sb('2026-05-10').format();
+	 *   return new sb('2026-05-10').format();
 	 * });
 	 * ```
 	 */
@@ -676,12 +676,8 @@ export class Tempo {
 			const currentLocale = options.locale ?? config.locale;
 			const locale = currentLocale ?? Tempo.#locale();
 
-			if (!hasOwn(config, 'get')) {
-				Object.defineProperty(config, 'get', {
-					value: function (key: string) { return this[key] },
-					enumerable: false, writable: true, configurable: true
-				});
-			}
+			if (!hasOwn(config, 'get'))
+				defineProp(config, 'get', function (this: any, key: string) { return this[key] }, 'hidden');
 
 			_usrCount = 0;																				// reset user-key counter
 			for (const key of Object.keys(Token))									// purge user-allocated Tokens
@@ -699,7 +695,7 @@ export class Tempo {
 				discovery: normalizedDiscovery,
 				registry: {
 					formats: config.registry?.formats ?? config.formats ?? enums.FORMAT,
-					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, true, true)
+					locales: config.registry?.locales ?? config.locales ?? proxify(STATE.LOCALE, 'frozen')
 				},
 				scope: 'global',
 				catch: options.catch ?? config.catch ?? false
@@ -995,16 +991,8 @@ export class Tempo {
 		const descriptors = omit(Object.getOwnPropertyDescriptors(state.config), 'value', 'anchor', 'result');
 
 		Object.defineProperties(out, descriptors);
-		Object.defineProperty(out, 'toJSON',										// bare-bones: only show global overrides
-			{
-				value: () => Object.fromEntries(Object.entries(out)),// proxify sees own toJSON, skips allObject
-				enumerable: false, configurable: true
-			});
-		Object.defineProperty(out, sym.$Inspect,
-			{
-				value: () => Object.fromEntries(Object.entries(out)),
-				enumerable: false, configurable: true
-			});
+		defineProp(out, 'toJSON', () => Object.fromEntries(Object.entries(out)), 'configurable');
+		defineProp(out, sym.$Inspect, () => Object.fromEntries(Object.entries(out)), 'configurable');
 
 		return dynamicProxy(proxify(out)) as t.Internal.Config;
 	}
@@ -1402,7 +1390,7 @@ export class Tempo {
 						set = true;
 						// Promote to own property on target for subsequent calls (memoization) if extensible
 						if (Reflect.isExtensible(target))
-							Object.defineProperty(target, name, { value: memo, enumerable: true, configurable: true, writable: false });
+							defineProp(target, name, memo, ['readonly', 'configurable']);
 					}
 					return memo;
 				}
@@ -1466,7 +1454,7 @@ export class Tempo {
 					return undefined;
 				}
 			}
-		}, true);
+		}, 'readonly');
 
 		// Eager support during construction
 		if (!this.#local.parse.lazy) this.#discover(host, target);
@@ -1611,7 +1599,7 @@ export class Tempo {
 			enumerable: false, configurable: true
 		});
 
-		const configProxy = dynamicProxy(proxify(out, true, false)) as Readonly<t.Internal.Config>;
+		const configProxy = dynamicProxy(proxify(out, 'readonly')) as Readonly<t.Internal.Config>;
 		if (this.#zdt) this.#memo.config = configProxy;
 		return configProxy;
 	}
@@ -1628,15 +1616,11 @@ export class Tempo {
 		const keys = ['anchor', 'isAnchored', 'mode', 'lazy', 'pivot'] as const;
 		for (const key of keys) {
 			if (self.#local.parse[key] !== undefined)
-				Object.defineProperty(out, key, { value: self.#local.parse[key], enumerable: true, configurable: true });
+				defineProp(out, key, self.#local.parse[key], ['readonly', 'configurable']);
 		}
 
 		// Always surface the result (prioritizing current operation matches)
-		Object.defineProperty(out, 'result', {
-			value: self.#matches ?? self.#local.parse.result ?? [],
-			enumerable: true,
-			configurable: true
-		});
+		defineProp(out, 'result', self.#matches ?? self.#local.parse.result ?? [], ['readonly', 'configurable']);
 
 		return out as t.Internal.Parse;
 	}
@@ -1802,12 +1786,7 @@ export class Tempo {
 		};
 		setProperty(this.#local.parse, 'result', [...(options.result ?? [])]);
 
-		Object.defineProperty(this.#local, 'tempoInstance', {		// Link this instance to its state for static alias access
-			value: self,
-			writable: false,
-			configurable: true,
-			enumerable: false
-		});
+		defineProp(this.#local, 'tempoInstance', self, 'configurable'); // Link this instance to its state for static alias access
 
 		(this.constructor as any)[$setConfig](this.#local, optionsSnapshot);				// set #local config
 	}

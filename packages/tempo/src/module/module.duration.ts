@@ -1,6 +1,6 @@
 import { getTemporalIds } from '#library/temporal.library.js';
 import { isString, isObject, isDefined, isNotNullish, isNullish, isUndefined, isFunction } from '#library/assertion.library.js';
-import { hasKey } from '#library/primitive.library.js';
+import { hasKey, defineProp } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
 import { ifDefined } from '#library/object.library.js';
@@ -59,8 +59,7 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 				unit: undefined
 			} as Tempo.Duration);
 
-	Object.defineProperty(edo, 'balance', {
-		value: function (opts: any = {}) {
+	defineProp(edo, 'balance', function (opts: any = {}) {
 			const { nominal, largestUnit = 'year', relativeTo: customAnchor } = opts;
 
 			if (nominal) {
@@ -97,12 +96,9 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			const balanced = dur.round({ largestUnit: temporalUnit, relativeTo: anchor });
 
 			return toDuration(balanced, { ...ctx, relativeTo: anchor });
-		},
-		enumerable: false
-	});
+		}, 'sealed');
 
-	Object.defineProperty(edo, 'format', {
-		value: function (opts: any = {}) {
+	defineProp(edo, 'format', function (this: any, opts: any = {}) {
 			const { locales, ...intlOpts } = opts;
 			const locale = locales || ctx.locale;
 
@@ -135,9 +131,7 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 			if (parts.length === 0) return '0';										// fallback for completely empty duration
 
 			return formatList(parts, locale, 'conjunction', 'long');
-		},
-		enumerable: false
-	});
+		}, 'sealed');
 
 	return edo;
 }

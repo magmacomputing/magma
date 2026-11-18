@@ -1,4 +1,4 @@
-import { distinct, ownKeys, ownEntries, toArray } from '#library/primitive.library.js';
+import { distinct, ownKeys, ownEntries, toArray, defineProp, flattenObject } from '#library/primitive.library.js';
 import { asType, getType } from '#library/type.library.js';
 import { isEmpty, isFunction, isPrimitive, isReference, isSymbol } from '#library/assertion.library.js';
 import type { Obj, KeyOf, Primitives } from '#library/type.library.js';
@@ -51,7 +51,7 @@ function _exclude<T extends Obj>(obj: T, exclusions: string[], visited: WeakSet<
 /**
  * Mutates an object or array by removing specified properties or indices.
  * If no keys are provided, it removes all properties (like a clear operation).
- * 
+ *
  * @param obj - The object or array to mutate
  * @param keys - The keys or indices to omit
  * @returns The mutated object reference
@@ -91,7 +91,7 @@ export function omit<T extends Obj>(obj: T, ...keys: PropertyKey[]) {
 
 /**
  * Removes all own properties from an object or array.
- * 
+ *
  * @param obj - The object or array to purge
  * @returns The mutated object reference
  * @example
@@ -106,7 +106,7 @@ export function purge<T extends Obj>(obj: T) {
 /**
  * Resets an object by purging all its existing own properties and replacing them
  * with the properties from another object.
- * 
+ *
  * @param orig - The original object to reset
  * @param obj - The object containing the new properties
  * @returns The mutated original object reference
@@ -120,9 +120,9 @@ export function reset<T extends Obj>(orig: T, obj?: T) {
 }
 
 /**
- * Returns a new object containing all 'own' and 'inherited' enumerable properties 
+ * Returns a new object containing all 'own' and 'inherited' enumerable properties
  * from the prototype chain of the provided object.
- * 
+ *
  * @param json - The object to extract properties from
  * @returns A plain object containing the flattened properties
  * @example
@@ -133,13 +133,13 @@ export function reset<T extends Obj>(orig: T, obj?: T) {
 export function allObject<T extends Obj>(json: T) {
 	return Array.isArray(json)
 		? toArray(json) as any
-		: Object.fromEntries(ownEntries(json, true));
+		: flattenObject(json);
 }
 
 /**
  * Creates a new object and shadow-copies all own-descriptors (including getters/setters)
  * from the source object.
- * 
+ *
  * @param source - The object to copy descriptors from
  * @returns A new object with identical descriptors
  * @example
@@ -153,7 +153,7 @@ export const allDescriptors = <T extends object>(source: T) => {
 
 /**
  * Retrieves a distinct array of 'getter' names from an object and its prototype chain.
- * 
+ *
  * @param obj - The object to inspect
  * @returns An array of property keys that have getter functions
  * @example
@@ -167,7 +167,7 @@ export const getAccessors = (obj: any = {}) => {
 
 /**
  * Retrieves a distinct array of 'setter' names from an object and its prototype chain.
- * 
+ *
  * @param obj - The object to inspect
  * @returns An array of property keys that have setter functions
  * @example
@@ -213,7 +213,7 @@ const ownAccessors = (obj: any = {}, type: 'get' | 'set') => {
 /**
  * Defines a lazy method on a prototype that reifies (shadows) itself upon first access.
  * This allows heavy logic to be deferred while maintaining a clean, synchronous public API.
- * 
+ *
  * @param target - The prototype or object to define the method on
  * @param key - The method name
  * @param factory - A function returning the actual method implementation
@@ -229,14 +229,8 @@ export function lazyMethod<T extends object>(target: T, key: PropertyKey, factor
 		get() {
 			const impl = factory.call(this);
 
-			if (Reflect.isExtensible(this)) {
-				Object.defineProperty(this, key, {									// reify on the instance (shadowing prototype)
-					value: impl,
-					writable: true,
-					configurable: true,
-					enumerable: false
-				});
-			}
+			if (Reflect.isExtensible(this))
+				defineProp(this, key, impl, 'hidden');							// reify on the instance (shadowing prototype)
 
 			return impl;
 		}

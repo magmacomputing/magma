@@ -132,3 +132,13 @@ There are **5** identical `Object.fromEntries(ownEntries(x, true))` calls flatte
 ### Generator vs. `flattenObject` Trade-Off
 - **Generator (`*walkEntries`):** `Object.fromEntries()` natively consumes any `Iterable`/`Generator` without an intermediate `entries[]` array. Walking child-to-parent with a `seen` `Set` avoids allocating `levels[]`, though it changes key insertion order (child keys first vs. parent-first via `levels.reverse()`). Where parent-first insertion order is required (e.g. `Enum` tests), `levels.reverse()` is still needed.
 - **`flattenObject(obj)` helper:** Even without changing `ownEntries` to a generator, exporting a concise `flattenObject(obj)` (e.g. `Object.fromEntries(ownEntries(obj, true))`) in `#library` eliminates all 5 repeated expressions cleanly.
+
+---
+
+## 7. Follow-Up Tooling Fix: Parse "Outside diff range comments" in `tempo-cli review-pr`
+
+Currently, `packages/tempo-cli/commands/review-pr.js` (`npm run review:pr`, used by `/pull`) only fetches inline `reviewThreads` and issue-level `comments`. CodeRabbit embeds **Outside diff range comments** inside the PR **review `body`** (`reviews` on the PR, e.g. `pulls/<pr>/reviews/<id>`), so `review:pr --json` misses them.
+
+**Task:**
+1. Update `packages/tempo-cli/commands/review-pr.js` to also inspect the latest/active CodeRabbit PR review bodies and extract any `⚠️ Outside diff range comments` blocks into `topLevelComments` / `outsideDiffFindings` (surfacing `file`, `line`, `severity`, and `comment` in both human-readable and `--json` output).
+2. Ensure `/pull` evaluates and remediates outside-diff findings alongside inline `reviewThreads` (reporting them in the Step 7 summary/fallback since review bodies have no `threadId` for `--reply`/`--resolve`).
