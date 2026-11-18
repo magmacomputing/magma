@@ -1,9 +1,11 @@
+import { sym } from '#library/symbol.library.js';
 import {
 	toArray,
 	ownEntries,
 	ownKeys,
 	ownValues,
 	unwrap,
+	walkPrototype,
 	distinct,
 	defineProp,
 	defineLazy,
@@ -125,6 +127,88 @@ describe('Primitive Library', () => {
 			defineLazy(lockedLazy, 'ans', () => 99);
 			Object.defineProperty(lockedLazy, 'ans', { configurable: false });
 			expect(lockedLazy.ans).toBe(99);
+
+			expect(() => defineProp({}, 'bad', 1, 'readOnly' as any)).toThrow(TypeError);
+			expect(() => defineProp({}, 'badArr', 1, ['readonly', 'bogus' as any])).toThrow(TypeError);
+		});
+	});
+
+	describe('walkPrototype', () => {
+		it('returns empty for non-reference and function inputs', () => {
+			for (const input of [null, undefined, 0, 42, 'str', true, Symbol('x'), () => {}])
+				expect(Array.from(walkPrototype(input))).toEqual([]);
+		});
+
+		it('walks null-prototype and Object.prototype-terminated chains without yielding Object.prototype', () => {
+			const grand = Object.create(null);
+			grand.a = 1;
+			const parent = Object.create(grand);
+			parent.b = 2;
+			const child = Object.create(parent);
+			child.c = 3;
+
+			expect(Array.from(walkPrototype(child))).toEqual([child, parent, grand]);
+
+			const plainParent = { p: 1 };
+			const plainChild = Object.create(plainParent);
+			expect(Array.from(walkPrototype(plainChild))).toEqual([plainChild, plainParent]);
+			expect(Array.from(walkPrototype(Object.prototype))).toEqual([]);
+		});
+
+		it('supports Proxy unwrapping (unwrapProxies = true vs false)', () => {
+			const base = { a: 1 };
+			const target = Object.create(base);
+			const proxy = new Proxy(target, {
+				get(t, prop, receiver) {
+					if (prop === sym.$Target)
+						return t;
+					return Reflect.get(t, prop, receiver);
+				},
+			});
+
+			expect(Array.from(walkPrototype(proxy))).toEqual([target, base]);
+			expect(Array.from(walkPrototype(proxy, false))).toEqual([proxy, base]);
+
+			const wrappedRoot = new Proxy({}, {
+				get(t, prop, receiver) {
+					if (prop === sym.$Target)
+						return Object.prototype;
+					return Reflect.get(t, prop, receiver);
+				},
+			});
+			expect(Array.from(walkPrototype(wrappedRoot))).toEqual([]);
+		});
+
+		it('guards against cyclic $Target chains and enforces maxDepth', () => {
+			const a: any = {};
+			const b: any = {};
+			a[sym.$Target] = b;
+			b[sym.$Target] = a;
+			expect(Array.from(walkPrototype(a))).toEqual([b]);
+
+			const makeInfinite = (): object => new Proxy({}, {
+				getPrototypeOf: makeInfinite,
+			});
+			expect(() => Array.from(walkPrototype(makeInfinite(), true, 5))).toThrow(RangeError);
+		});
+
+		it('stops lazily on early break', () => {
+			let protoCalls = 0;
+			const first = new Proxy({}, {
+				getPrototypeOf(t) {
+					protoCalls++;
+					return Object.getPrototypeOf(t);
+				},
+			});
+
+			const yielded: object[] = [];
+			for (const level of walkPrototype(first, false)) {
+				yielded.push(level);
+				break;
+			}
+			expect(protoCalls).toBe(0);
+			expect(yielded.length).toBe(1);
+			expect(yielded[0]).toBe(first);
 		});
 	});
 });

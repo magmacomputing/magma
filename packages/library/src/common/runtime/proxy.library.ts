@@ -1,7 +1,7 @@
 import { sym } from '#library/symbol.library.js';
 import { allObject } from '#library/reflection.library.js';
 import { deepFreeze } from '#library/utility.library.js';
-import { unwrap, defineFrom, defineProp } from '#library/primitive.library.js';
+import { unwrap, defineFrom, defineProp, walkPrototype } from '#library/primitive.library.js';
 import { isString, isFunction, isSymbol, isDefined, isNullish, isNumber, isObject, isPlainObject, isReference, isSafeKey } from '#library/assertion.library.js';
 import { registerType, type Constructor, type Evaluated, type Secure } from '#library/type.library.js';
 
@@ -41,14 +41,10 @@ export type Proxified<T extends object = object> = Proxied<T> & {
 };
 
 function isEnumifyTarget(obj: object): boolean {
-	const visited = new WeakSet<object>();
-	let curr: object | null = obj;
-	while (curr && curr !== Object.prototype) {
-		if (visited.has(curr)) break;
-		visited.add(curr);
+	for (const curr of walkPrototype(obj, false)) {
 		const desc = Object.getOwnPropertyDescriptor(curr, Symbol.toStringTag);
-		if (desc) return 'value' in desc && desc.value === 'Enumify';
-		curr = Object.getPrototypeOf(curr);
+		if (desc)
+			return 'value' in desc && desc.value === 'Enumify';
 	}
 	return false;
 }
@@ -139,17 +135,7 @@ function snapshotInspect(src: object, seen = new WeakMap<object, object>(), dept
 
 	const out: Record<PropertyKey, unknown> = {};
 	seen.set(unwrapped, out);
-	const levels: object[] = [];
-	const visited = new WeakSet<object>();
-	let curr: any = unwrapped;
-
-	while (curr && curr !== Object.prototype) {
-		const level = unwrap(curr);
-		if (visited.has(level)) break;
-		visited.add(level);
-		levels.push(level);
-		curr = Object.getPrototypeOf(level);
-	}
+	const levels = Array.from(walkPrototype(unwrapped));
 
 	for (const level of levels.reverse()) {
 		for (const k of Reflect.ownKeys(level)) {
@@ -176,11 +162,7 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 		const recv = isReference(this) && !isFunction(this) ? this : fallbackTarget;
 		if (!isEnum) {
 			const liveTarget = isReference(recv) ? unwrap(recv) : fallbackTarget;
-			const visited = new WeakSet<object>();
-			let proto = Object.getPrototypeOf(liveTarget);
-			while (proto && proto !== Object.prototype) {
-				if (visited.has(proto)) break;
-				visited.add(proto);
+			for (const proto of walkPrototype(Object.getPrototypeOf(liveTarget), false)) {
 				const desc = Object.getOwnPropertyDescriptor(proto, sym.$Inspect);
 				if (desc) {
 					const fn = 'value' in desc ? desc.value : Reflect.get(proto, sym.$Inspect, liveTarget);
@@ -189,7 +171,6 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 					if (!generatedInspectHooks.has(fn))
 						return fn.apply(liveTarget, [depth, ...args]);
 				}
-				proto = Object.getPrototypeOf(proto);
 			}
 		}
 		const proxyInspector = proxyInspectors.get(recv);
@@ -421,6 +402,14 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 /** Proxy immutability mode: `'frozen'` locks target & proxy, `'readonly'` blocks proxy writes only, `'mutable'` allows writes. */
 export type ProxyMode = 'frozen' | 'readonly' | 'mutable';
 
+const PROXY_MODES = new Set<ProxyMode>(['frozen', 'readonly', 'mutable']);
+
+function assertProxyMode(mode: unknown): ProxyMode {
+	if (!isString(mode) || !PROXY_MODES.has(mode as ProxyMode))
+		throw new TypeError(`Invalid proxy mode '${String(mode)}'. Expected 'frozen', 'readonly', or 'mutable'.`);
+	return mode as ProxyMode;
+}
+
 /**
  * Creates a Stealth Proxy pattern to allow for on-demand lazy property discovery and registration.
  * Provides deep-freezing and bounding capabilities depending on options.
@@ -439,8 +428,9 @@ export function proxify<T extends object>(target: T, mode?: 'frozen' | 'readonly
 export function proxify<T extends object>(target: T, mode: 'mutable', skip?: WeakSet<object>): T;
 export function proxify<T extends object>(target: T, mode?: ProxyMode, skip?: WeakSet<object>): Readonly<T> | T;
 export function proxify<T extends object>(target: T, mode: ProxyMode = 'frozen', skip = new WeakSet<object>()): any {
-	const frozen = mode !== 'mutable';
-	const lock = mode === 'frozen';
+	const validMode = assertProxyMode(mode);
+	const frozen = validMode !== 'mutable';
+	const lock = validMode === 'frozen';
 	return factory(target, { frozen, lock, skip, bind: frozen });
 }
 
@@ -461,7 +451,8 @@ export function delegate<T extends object>(target: T, onGet: (key: string | symb
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode: 'mutable'): T;
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode?: ProxyMode): Readonly<T> | T;
 export function delegate<T extends object>(target: T, onGet: (key: string | symbol, target: T) => any, mode: ProxyMode = 'readonly'): any {
-	return factory(target, { onGet, frozen: mode !== 'mutable', lock: mode === 'frozen' });
+	const validMode = assertProxyMode(mode);
+	return factory(target, { onGet, frozen: validMode !== 'mutable', lock: validMode === 'frozen' });
 }
 
 /**

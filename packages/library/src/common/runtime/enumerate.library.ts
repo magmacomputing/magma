@@ -1,6 +1,6 @@
 import { asType, getType } from '#library/type.library.js';
-import { isNumeric, isBranded, isReference } from '#library/assertion.library.js';
-import { ownEntries, unwrap, defineFrom, defineProp } from '#library/primitive.library.js';
+import { isNumeric, isBranded, isReference, isFunction } from '#library/assertion.library.js';
+import { ownEntries, unwrap, defineFrom, defineProp, walkPrototype } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
@@ -44,12 +44,11 @@ export function isEnum<T extends Property<any> = any>(val: unknown): val is Enum
 }
 
 function isChainFrozen(obj: unknown): boolean {
-	if (!obj || (typeof obj !== 'object' && typeof obj !== 'function')) return false;
-	let curr: any = unwrap(obj as object);
-	while (curr && curr !== Object.prototype) {
-		if (typeof curr !== 'object' && typeof curr !== 'function') return false;
-		if (!Object.isFrozen(curr)) return false;
-		curr = Object.getPrototypeOf(curr);
+	if (!isReference(obj) || isFunction(obj))
+		return false;
+	for (const level of walkPrototype(obj)) {
+		if (!Object.isFrozen(level))
+			return false;
 	}
 	return true;
 }

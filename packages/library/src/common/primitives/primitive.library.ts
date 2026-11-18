@@ -35,6 +35,48 @@ export function unwrap<T extends object>(obj: T): T {
 }
 
 /**
+ * Lazily yields each object along `target`'s prototype chain up to (excluding) `Object.prototype`,
+ * guarding against cyclic prototype chains and optionally unwrapping Proxy layers.
+ *
+ * @param target - The starting value whose prototype chain to walk
+ * @param unwrapProxies - Whether to unwrap `$Target` Proxy layers at each step (default `true`)
+ * @param maxDepth - Maximum prototype chain depth before throwing `RangeError` (default `256`)
+ * @throws RangeError if the prototype chain exceeds `maxDepth`
+ */
+export function* walkPrototype(
+	target: unknown,
+	unwrapProxies = true,
+	maxDepth = 256,
+): Generator<Obj> {
+	if (!target || typeof target !== 'object')
+		return;
+
+	const visited = new WeakSet<object>();
+	let curr: any = target;
+	let depth = 0;
+
+	while (curr && curr !== Object.prototype) {
+		if (depth++ >= maxDepth)
+			throw new RangeError(`walkPrototype: prototype chain exceeded maximum traversal depth (${maxDepth}).`);
+		if (visited.has(curr))
+			break;
+		visited.add(curr);
+
+		const level = unwrapProxies ? unwrap(curr) : curr;
+		if (level === Object.prototype)
+			break;
+		if (level !== curr) {
+			if (visited.has(level))
+				break;
+			visited.add(level);
+		}
+
+		yield level;
+		curr = Object.getPrototypeOf(level);
+	}
+}
+
+/**
  * Returns an array of all enumerable [key, value] entries for an object,
  * including properties inherited from the prototype chain if `all` is true.
  * 
@@ -61,20 +103,7 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 		return entries as EntryOf<T>[];
 	}
 
-	const levels: any[] = [];
-	const visited = new WeakSet<object>();
-	let curr: any = tgt;
-
-	while (curr && curr !== Object.prototype) {
-		if (levels.length >= 256)
-			throw new RangeError('ownEntries: prototype chain exceeded maximum traversal depth (256).');
-		const level = unwrap(curr);
-		if (visited.has(level)) break;
-		visited.add(level);
-		levels.push(level);
-		curr = Object.getPrototypeOf(level);
-	}
-
+	const levels = Array.from(walkPrototype(tgt));
 	const resolved = new Set<PropertyKey>();
 	const enumerableKeys = new Set<PropertyKey>();
 	for (const level of levels) {
@@ -504,12 +533,16 @@ export function defineProp<T extends object>(
 ): T {
 	let desc: { enumerable: boolean; writable: boolean; configurable: boolean };
 	if (!Array.isArray(flags)) {
-		desc = PROP_PRESETS[flags as PropFlag] ?? PROP_PRESETS.mutable;
+		const preset = Object.hasOwn(PROP_PRESETS, flags as string) ? PROP_PRESETS[flags as PropFlag] : undefined;
+		if (!preset)
+			throw new TypeError(`defineProp: unknown flag '${String(flags)}'.`);
+		desc = preset;
 	} else {
 		desc = { enumerable: false, writable: false, configurable: false };
 		for (const f of flags as readonly PropFlag[]) {
-			const p = PROP_PRESETS[f];
-			if (!p) continue;
+			const p = Object.hasOwn(PROP_PRESETS, f) ? PROP_PRESETS[f] : undefined;
+			if (!p)
+				throw new TypeError(`defineProp: unknown flag '${String(f)}'.`);
 			if (p.enumerable) desc.enumerable = true;
 			if (p.writable) desc.writable = true;
 			if (p.configurable) desc.configurable = true;

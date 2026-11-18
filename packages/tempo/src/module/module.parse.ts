@@ -7,7 +7,7 @@ import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
-import { ownKeys, ownEntries, hasOwn, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, hasOwn, unwrap, walkPrototype } from '#library/primitive.library.js';
 import { Enum } from '#library/enumerate.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
@@ -54,10 +54,10 @@ const RE_TERM_ID = /#[\w.]+/;
 const RE_ROMAN_CHARS = /^[IVXLCDMivxlcdm]+$/;
 const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
 const RE_EXTENDED_YEAR = '[+-]?\\d{4,6}';
-const RE_COMPACT_LONG_YEAR = '[+-]\\d{4,6}|\\d{4,6}?';
+const RE_COMPACT_LONG_YEAR = '[+-]?\\d{4,6}?';
 const RE_TWO_DIGITS = '\\d{1,2}';
 const RE_DIGIT_CHAR = /\d/;
-const RE_ALPHA_TOKEN = /^(?:mmm|mon|wkd|weekday|mer|ampm|era)(?::|$)/i;
+const RE_ALPHA_TOKEN = /^(?:mmm|mon|wkd|weekday|mer|ampm|era|skip|_|\*)(?::|$)/i;
 
 /** Parses a capture group as Roman numerals if it matches Roman characters, otherwise parses as decimal */
 function parseRomanOrDecimal(val: string): number {
@@ -571,26 +571,18 @@ const _ParseEngine = {
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
 					const localOrdinals: Record<string, number> = {};
 					const collectOrdinals = (registry: any) => {
-						if (!isReference(registry) || isFunction(registry)) return;
-						const visited = new WeakSet<object>();
-						let curr: any = registry;
-						while (curr && curr !== Object.prototype) {
-							if (visited.has(curr)) break;
-							visited.add(curr);
+						for (const curr of walkPrototype(registry, false)) {
 							for (const [k, v] of Object.entries(curr)) {
 								if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
 									localOrdinals[k.toLowerCase()] = v;
 							}
 							const level = unwrap(curr);
 							if (level !== curr) {
-								if (visited.has(level)) break;
-								visited.add(level);
 								for (const [k, v] of ownEntries(level)) {
 									if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
 										localOrdinals[k.toLowerCase()] = v;
 								}
 							}
-							curr = Object.getPrototypeOf(level);
 						}
 					};
 					collectOrdinals((state.options as any)?.registry?.ordinals);
@@ -719,13 +711,10 @@ const _ParseEngine = {
 			if (!guard) {
 				const keys = (obj: any) => {
 					const res = new Set<string>();
-					let curr = obj;
-					while (curr && curr !== Object.prototype) {
-						ownKeys(curr).forEach(k => res.add(String(k)));
-						curr = Object.getPrototypeOf(curr);
-					}
+					for (const level of walkPrototype(obj))
+						ownKeys(level).forEach(k => res.add(String(k)));
 					return res;
-				}
+				};
 
 				const local = [...keys(state.parse.event), ...keys(state.parse.period)];
 				const lowTrim = trim.toLowerCase();

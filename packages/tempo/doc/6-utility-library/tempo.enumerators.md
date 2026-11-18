@@ -11,7 +11,7 @@ Tempo's core enumerators (like Weekdays, Months, Seasons) are built using `Enum.
 Under the hood, `Enum.from` returns a **`Proxy`-wrapped, frozen object based on a null-prototype**:
 1. **Null-Prototype Root (`Object.create(null)`):** The base prototype is completely detached from `Object.prototype`. Standard prototype properties like `toString`, `valueOf`, `constructor`, or `hasOwnProperty` do not exist on the object, eliminating key collision and prototype pollution risks.
 2. **Strict Runtime Immutability:** The object is locked down with `Object.freeze()` and wrapped in a read-only `Proxy` that rejects writes, deletions, or runtime property additions.
-3. **Prototypal Extensibility:** Even though each enum is deeply frozen and immutable, enums remain extensible through JavaScript prototypal inheritance via `Enum.extend()`.
+3. **Prototypal Extensibility:** Even though each enum's top-level properties are read-only and immutable, enums remain extensible through JavaScript prototypal inheritance via `Enum.extend()`.
 
 ### Array-based Definitions
 When you pass an array to `Enum.from`, the strings become the **keys**, and the **values** are their zero-indexed positions:
@@ -34,7 +34,7 @@ export const SEASON = Enum.from({ Summer: 'summer', Autumn: 'autumn', Winter: 'w
 
 ### Lock-Down Flag (`frozen`)
 Both `Enum.from(source, frozen = true)` and `Enum.extend(base, source, frozen = true)` accept an optional `frozen` boolean:
-- **`true` (default):** Wraps the enum in a read-only `Proxy` that rejects writes, deletions, and extensions (note: `deepFreeze` freezes nested plain objects and arrays in place, so existing external references to them are also frozen; it skips targets carrying the `Enumify` tag, `$Extensible`-marked objects, and nested `Map`, `Set`, `Date`, `RegExp`, `Error`, or `Promise` values, whose contents remain mutable).
+- **`true` (default):** Wraps the enum in a read-only `Proxy` that rejects writes, deletions, and extensions and freezes the top-level target with `Object.freeze()` (note: `deepFreeze` skips targets carrying the `Enumify` tag, so nested object values remain mutable).
 - **`false`:** Leaves the underlying target object unfrozen/extensible while the returned `Proxy` wrapper still enforces read-only access for consumers.
 
 ### Type Inference

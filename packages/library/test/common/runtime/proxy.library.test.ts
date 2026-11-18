@@ -456,4 +456,11 @@ describe('secure serialization', () => {
 		const nestedDelegate = delegate({ nested: { value: 1 } }, () => undefined, 'frozen');
 		expect(() => { (nestedDelegate.nested as any).value = 2; }).toThrow(TypeError);
 	});
+
+	test('throws TypeError for unsupported runtime proxy modes in proxify and delegate', () => {
+		expect(() => proxify({}, false as any)).toThrow(TypeError);
+		expect(() => proxify({}, 'invalid' as any)).toThrow(TypeError);
+		expect(() => delegate({}, () => undefined, true as any)).toThrow(TypeError);
+		expect(() => delegate({}, () => undefined, 'invalid' as any)).toThrow(TypeError);
+	});
 });
