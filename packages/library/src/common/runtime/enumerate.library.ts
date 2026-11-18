@@ -169,14 +169,22 @@ function extendEnum(enumObj: any, list: any, frozen?: boolean): any {
 
 type NormalizeMergeSource<S> = S extends readonly any[] ? Index<S> : S;
 
-type MergeSources<T extends readonly Property<any>[]> =
+type MergeDynamic<H, T> = {
+	[K in keyof H | keyof T]: K extends keyof T
+		? (K extends keyof H ? H[K] | Exclude<T[K], undefined> : T[K])
+		: K extends keyof H ? H[K] : never;
+};
+
+/** @internal */
+export type MergeSources<T extends readonly Property<any>[]> =
 	T extends readonly []
 		? {}
-		: T extends readonly [
-			infer Head extends Property<any>,
-			...infer Tail extends readonly Property<any>[],
-		]
-			? Omit<NormalizeMergeSource<Head>, keyof MergeSources<Tail>> & MergeSources<Tail>
+		: T extends readonly [infer Head extends Property<any>, ...infer Tail extends readonly Property<any>[]]
+			? Tail extends readonly []
+				? NormalizeMergeSource<Head>
+				: Tail extends readonly [any, ...any[]]
+					? Omit<NormalizeMergeSource<Head>, keyof MergeSources<Tail>> & MergeSources<Tail>
+					: MergeDynamic<NormalizeMergeSource<Head>, MergeSources<Tail>>
 			: T extends readonly (infer Elem extends Property<any>)[]
 				? Partial<NormalizeMergeSource<Elem>>
 				: {};

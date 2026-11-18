@@ -284,5 +284,10 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		const LENGTH_MERGED = Enum.merge(['length'] as const, {});
 		expect(Enum.entries(LENGTH_MERGED)).toEqual([['length', 0]]);
 		expect(LENGTH_MERGED.length).toBe(0);
+
+		const emptyDynamic: { A: string }[] = [];
+		const DYNAMIC_TAIL = Enum.merge({ A: 42 }, ...emptyDynamic);
+		const checkUnion: number | string = DYNAMIC_TAIL.A;
+		expect(checkUnion).toBe(42);
 	});
 });
