@@ -649,6 +649,29 @@ describe('Tempo.format() refinements', () => {
   });
 
   describe('{yy:long} format and explicit parse round-trip', () => {
+    it.each(['{yyyy}', '{year}', '{yy:long}'])('parses unsigned extended years with %s', token => {
+      for (const year of [9999, 10000, 99999, 100000]) {
+        const parsed = new Tempo(`${year}/06/15`, { format: `${token}/{mm}/{dd}`, timeZone: 'UTC' });
+        expect(parsed.isValid).toBe(true);
+        expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([year, 6, 15]);
+      }
+    });
+
+    it.each(['123/06/15', '1000000/06/15', '10000x/06/15'])('rejects invalid extended year input %s', input => {
+      expect(() => new Tempo(input, { format: '{yy:long}/{mm}/{dd}', timeZone: 'UTC' }).yy).toThrow();
+    });
+
+    it.each([
+      ['20261125', '{yy:long}{mm}{dd}', 2026, 11, 25],
+      ['+12345/06/15', '{yy:long}/{mm}/{dd}', 12345, 6, 15],
+      ['-0001/01/02', '{yy:long}/{mm}/{dd}', -1, 1, 2],
+      ['2024111-15', '{yy:long}1{mm}-{dd}', 2024, 11, 15],
+    ])('keeps compact year boundaries in %s', (input, format, yy, mm, dd) => {
+      const parsed = new Tempo(input, { format, timeZone: 'UTC' });
+      expect(parsed.isValid).toBe(true);
+      expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([yy, mm, dd]);
+    });
+
     it('formats and parses a 4-digit year with {dd}-{mm}-{yy:long}', () => {
       const original = new Tempo('2026-10-24');
       const formatted = original.format('{dd}-{mm}-{yy:long}');

@@ -4,6 +4,83 @@ import { Enum } from '#library/enumerate.library.js';
 import { defineLazy } from '#library/primitive.library.js';
 import { delegate, delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
 
+describe('proxy immutability modes', () => {
+	it.each(['frozen', 'readonly'] as const)('blocks mutation through a %s proxy', mode => {
+		const target = { value: 1 };
+		const proxy = proxify(target, mode);
+		expect(() => Reflect.set(proxy, 'value', 2)).toThrow(TypeError);
+		expect(() => Reflect.deleteProperty(proxy, 'value')).toThrow(TypeError);
+		expect(() => Object.defineProperty(proxy, 'added', { value: 3 })).toThrow(TypeError);
+		expect(target.value).toBe(1);
+		expect(Object.hasOwn(target, 'added')).toBe(false);
+	});
+
+	it('defaults to freezing the target and its nested objects', () => {
+		const target = { nested: { value: 1 } };
+		proxify(target);
+		expect(Object.isFrozen(target)).toBe(true);
+		expect(Object.isFrozen(target.nested)).toBe(true);
+	});
+
+	it('readonly mode observes direct target changes without freezing nested values', () => {
+		const target = { value: 1, nested: { value: 2 } };
+		const proxy = proxify(target, 'readonly');
+		target.value = 3;
+		target.nested.value = 4;
+		expect(proxy.value).toBe(3);
+		expect(proxy.nested.value).toBe(4);
+		expect(Object.isFrozen(target)).toBe(false);
+		expect(Object.isFrozen(target.nested)).toBe(false);
+	});
+
+	it('mutable mode forwards assignment, definition and deletion to the target', () => {
+		const target = { value: 1 };
+		const proxy = proxify(target, 'mutable');
+		proxy.value = 2;
+		expect(target.value).toBe(2);
+		Object.defineProperty(proxy, 'added', { value: 3, configurable: true });
+		expect(Reflect.get(target, 'added')).toBe(3);
+		expect(Reflect.deleteProperty(proxy, 'added')).toBe(true);
+		expect(Object.hasOwn(target, 'added')).toBe(false);
+	});
+
+	it('honors the skip set in frozen mode while freezing other descendants', () => {
+		const skipped = { value: 1 };
+		const target = { skipped, nested: { value: 2 } };
+		proxify(target, 'frozen', new WeakSet([skipped]));
+		expect(Object.isFrozen(target)).toBe(true);
+		expect(Object.isFrozen(target.nested)).toBe(true);
+		expect(Object.isFrozen(skipped)).toBe(false);
+		skipped.value = 3;
+		expect(target.skipped.value).toBe(3);
+	});
+
+	it.each(['readonly', 'frozen', 'mutable'] as const)('delegates missing keys in %s mode', mode => {
+		const target = { present: 1, nested: { value: 2 } };
+		const resolve = vi.fn(() => 42);
+		const proxy = delegate(target, resolve, mode);
+		expect(proxy.present).toBe(1);
+		expect(resolve).not.toHaveBeenCalled();
+		expect(Reflect.get(proxy, 'missing')).toBe(42);
+		expect(resolve).toHaveBeenCalledWith('missing', target);
+		expect(Object.isFrozen(target)).toBe(mode === 'frozen');
+		expect(Object.isFrozen(target.nested)).toBe(mode === 'frozen');
+		if (mode === 'mutable') {
+			expect(Reflect.set(proxy, 'present', 9)).toBe(true);
+			expect(target.present).toBe(9);
+		} else
+			expect(() => Reflect.set(proxy, 'present', 9)).toThrow(TypeError);
+	});
+
+	it('defaults delegate to readonly without freezing its target', () => {
+		const target = { value: 1 };
+		const proxy = delegate(target, () => undefined);
+		expect(() => Reflect.set(proxy, 'value', 2)).toThrow(TypeError);
+		target.value = 3;
+		expect(proxy.value).toBe(3);
+	});
+});
+
 describe('proxy method binding', () => {
 	test('returns a stable bound wrapper for repeated method access', () => {
 		const target = {

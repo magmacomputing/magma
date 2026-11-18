@@ -1,4 +1,38 @@
 import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
+import { unwrap } from '#library/primitive.library.js';
+
+describe('Enum descriptor preservation', () => {
+	it('preserves accessors and hidden symbol descriptors without evaluating getters', () => {
+		const getter = vi.fn(() => 42);
+		const key = Symbol('metadata');
+		const source = Object.defineProperties({}, {
+			answer: { get: getter, enumerable: true, configurable: true },
+			[key]: { value: 'hidden', enumerable: false, configurable: true },
+		});
+		const result = Enum.from(source, false);
+		expect(getter).not.toHaveBeenCalled();
+		expect(Object.getOwnPropertyDescriptor(unwrap(result), 'answer')?.get).toBe(getter);
+		expect(Object.getOwnPropertyDescriptor(unwrap(result), key)).toEqual(Object.getOwnPropertyDescriptor(source, key));
+		expect(Reflect.get(result, 'answer')).toBe(42);
+	});
+
+	it('keeps a non-frozen enum proxy readonly while allowing raw target updates', () => {
+		const result = Enum.from({ A: 1 }, false);
+		const target = unwrap(result);
+		expect(Object.isFrozen(target)).toBe(false);
+		expect(() => Reflect.set(result, 'A', 2)).toThrow(TypeError);
+		Reflect.set(target, 'A', 3);
+		expect(result.A).toBe(3);
+	});
+
+	it('defines array members as enumerable immutable numeric values', () => {
+		const result = Enum.from(['First', 'Second'] as const);
+		expect(Enum.entries(result)).toEqual([['First', 0], ['Second', 1]]);
+		expect(Object.getOwnPropertyDescriptor(unwrap(result), 'First')).toEqual({
+			value: 0, enumerable: true, writable: false, configurable: false,
+		});
+	});
+});
 
 describe('Enum (Static Reflection & v5 Architecture)', () => {
 	it('should enumerate keys, values, and entries across prototypal extension via Enum.*', () => {

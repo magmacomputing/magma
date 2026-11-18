@@ -1,4 +1,41 @@
-import { omit, purge, allObject } from '#library/reflection.library.js';
+import { omit, purge, allObject, lazyMethod } from '#library/reflection.library.js';
+
+describe('lazyMethod descriptors', () => {
+	it('reifies a hidden mutable method on each receiver independently', () => {
+		const prototype = { value: 0 };
+		const factory = vi.fn(function (this: typeof prototype) {
+			const value = this.value;
+			return () => value;
+		});
+		lazyMethod(prototype, 'method', factory);
+		const first = Object.assign(Object.create(prototype), { value: 1 });
+		const second = Object.assign(Object.create(prototype), { value: 2 });
+		expect(factory).not.toHaveBeenCalled();
+		expect(first.method()).toBe(1);
+		expect(first.method()).toBe(1);
+		expect(second.method()).toBe(2);
+		expect(factory).toHaveBeenCalledTimes(2);
+		expect(Object.getOwnPropertyDescriptor(first, 'method')).toEqual({
+			value: first.method, enumerable: false, writable: true, configurable: true,
+		});
+		expect(Object.getOwnPropertyDescriptor(prototype, 'method')?.get).toBeDefined();
+		first.method = () => 3;
+		expect(first.method()).toBe(3);
+		expect(second.method()).toBe(2);
+	});
+
+	it('returns the method without caching on non-extensible receivers', () => {
+		const prototype = {};
+		const method = () => 42;
+		const factory = vi.fn(() => method);
+		lazyMethod(prototype, 'method', factory);
+		const receiver = Object.preventExtensions(Object.create(prototype));
+		expect(receiver.method()).toBe(42);
+		expect(receiver.method).toBe(method);
+		expect(factory).toHaveBeenCalledTimes(2);
+		expect(Object.hasOwn(receiver, 'method')).toBe(false);
+	});
+});
 
 describe('Reflection Library', () => {
 	describe('allObject on Array', () => {
