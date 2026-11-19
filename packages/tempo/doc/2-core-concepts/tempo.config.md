@@ -232,7 +232,7 @@ Tempo.init({
 > [!TIP]
 > **Single-App vs. Sandboxed Environments (`Tempo.init()` vs. `Tempo.extend()`)**
 > - **`Tempo.init()`**: Designed for single-app entry points (such as client-side SPAs or CLI tools) to establish baseline defaults globally across the runtime.
-> - **`Tempo.extend()`**: Designed for multi-tenant SSR servers (e.g. Next.js, Fastify), reusable npm libraries, or isolated unit test suites. [`Tempo.extend()`](../4-advanced-reference/sandbox-factory.md) branches off an isolated, sandboxed class constructor with its own state. Each sandbox snapshots its base term list at creation, though term discovery and lookup still read the shared runtime term map and may observe terms registered globally afterward.
+> - **`Tempo.extend()`**: Designed for multi-tenant SSR servers (e.g. Next.js, Fastify), reusable npm libraries, or isolated unit test suites. [`Tempo.extend()`](../4-advanced-reference/sandbox-factory.md) branches off an isolated, sandboxed class constructor with its own state. Each sandbox snapshots its base term list at creation, but term registration is not isolated between sandboxes: terms registered in one sandbox enter the shared runtime term map, affect discovery and lookup in other sandboxes, and can prevent another sandbox from registering a different term with the same key. In addition, direct term lookup reads the shared runtime term map whereas `Object.keys(instance.term)` enumerates only the base `Tempo` term list, so sandbox-only terms may be accessible by name yet absent from enumeration (do not rely on enumeration to find sandbox-only terms).
 
 ### Available Options
 

@@ -30,12 +30,14 @@ export default withMermaid(defineConfig({
       options: {
         _render(src, env, md) {
           const html = md.render(src, env);
+          if (env.frontmatter?.search === false)
+            return '';
           if (env.relativePath === 'doc/4-advanced-reference/glossary.md') {
             const entries = JSON.parse(readFileSync(fileURLToPath(new URL('../doc/glossary.json', import.meta.url)), 'utf-8'));
-            const glossaryHtml = entries
-              .map((e: any) => `<h2 id="${e.slug}">${e.term}</h2><p>${e.summary}${e.details ? ' ' + e.details : ''}</p>`)
-              .join('\n');
-            return `${html}\n${glossaryHtml}`;
+            const glossaryMd = entries
+              .map((e: any) => `## ${e.term} {#${e.slug}}\n\n${e.summary}${e.details ? `\n\n${e.details}` : ''}`)
+              .join('\n\n');
+            return `${html}\n${md.render(glossaryMd, env)}`;
           }
           return html;
         },

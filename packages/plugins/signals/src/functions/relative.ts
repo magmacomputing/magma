@@ -7,7 +7,7 @@ import {
 	isText,
 } from '@magmacomputing/tempo/plugin/sdk';
 import { localeSignal } from '../core/config.js';
-import { createDisposableSignal } from '../core/disposable.js';
+import { createDisposableSignal, unrefTimer } from '../core/disposable.js';
 import type { DisposableSignal, RelativeSignalOptions, RelativeSignalTarget } from '../types/index.js';
 
 const RTF_CACHE = new Map<string, Intl.RelativeTimeFormat>();
@@ -164,6 +164,7 @@ export function toRelativeSignal(
 			bucketState.set(next);
 			scheduleNext(next.nextDelayMs);
 		}, delayMs);
+		unrefTimer(timer);
 	};
 
 	scheduleNext(bucketState.get().nextDelayMs);

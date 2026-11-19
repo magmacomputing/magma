@@ -6,6 +6,7 @@ import {
 	isFunction,
 	isNumber,
 } from '@magmacomputing/tempo/plugin/sdk';
+import { unrefTimer } from '../core/disposable.js';
 import type { IntervalSignalOptions, IntervalSignalState } from '../types/index.js';
 
 const DEFAULT_PROGRESS_INTERVAL_MS = 1_000;
@@ -126,6 +127,7 @@ export function intervalSignal(
 					}
 					progressState.set(computeProgress(tickNow, startMs, endMs));
 				}, progressInterval);
+				unrefTimer(timers.progressTimer);
 			}
 		} else {
 			stopProgressTicker(timers);
@@ -142,6 +144,7 @@ export function intervalSignal(
 				timers.boundaryTimer = null;
 				syncState();
 			}, delay);
+			unrefTimer(timers.boundaryTimer);
 		}
 	};
 

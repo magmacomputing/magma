@@ -240,12 +240,16 @@ describe('toRelativeSignal()', () => {
 		let nowMs = baseMs;
 
 		const sig = toRelativeSignal(baseMs + 5_000, {
-			locale: 'en-US',
+			style: 'long',
+			now: () => nowMs,
+		});
+		using activeSig = toRelativeSignal(baseMs + 5_000, {
 			style: 'long',
 			now: () => nowMs,
 		});
 
 		expect(sig.get()).toBe('in 5 seconds');
+		expect(activeSig.get()).toBe('in 5 seconds');
 		sig.dispose();
 		expect(sig.disposed).toBe(true);
 		// Calling dispose again is a no-op
@@ -257,6 +261,20 @@ describe('toRelativeSignal()', () => {
 		expect(sig.get()).toBe('in 5 seconds');
 
 		Tempo.init({ locale: 'fr-FR' });
+		expect(activeSig.get()).toBe('dans 2 secondes');
 		expect(sig.get()).toBe('in 5 seconds');
+	});
+
+	it('truncates future targets toward zero when now has advanced by a few milliseconds', () => {
+		const baseMs = Date.UTC(2026, 6, 1, 12, 0, 0);
+		const target = new Tempo(baseMs).add({ minutes: 5 });
+
+		using sig = toRelativeSignal(target, {
+			locale: 'en-US',
+			style: 'long',
+			now: () => baseMs + 2,
+		});
+
+		expect(sig.get()).toBe('in 4 minutes');
 	});
 });

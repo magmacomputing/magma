@@ -262,7 +262,7 @@ const activeLetters = computed(() => new Set(groupedEntries.value.map(([letter])
   margin-right: 4px;
 }
 
-.card-card:hover .card-anchor {
+.glossary-card:hover .card-anchor {
   opacity: 1;
 }
 

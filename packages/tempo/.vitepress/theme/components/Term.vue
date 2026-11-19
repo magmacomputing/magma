@@ -16,8 +16,37 @@ for (const entry of entries) {
 }
 
 const entry = computed(() => termIndex.get(props.name.trim().toLowerCase()));
-const open = ref(false);
+const hovered = ref(false);
+const focused = ref(false);
+const dismissed = ref(false);
+const open = computed(() => !dismissed.value && (hovered.value || focused.value));
 const tooltipId = useId();
+
+const onMouseEnter = () => {
+  hovered.value = true;
+  dismissed.value = false;
+};
+
+const onMouseLeave = () => {
+  hovered.value = false;
+  if (!focused.value)
+    dismissed.value = false;
+};
+
+const onFocusIn = () => {
+  focused.value = true;
+  dismissed.value = false;
+};
+
+const onFocusOut = () => {
+  focused.value = false;
+  if (!hovered.value)
+    dismissed.value = false;
+};
+
+const onEscape = () => {
+  dismissed.value = true;
+};
 
 const href = computed(() =>
   entry.value ? withBase(`/doc/4-advanced-reference/glossary#${entry.value.slug}`) : undefined
@@ -28,11 +57,11 @@ const href = computed(() =>
   <span
     v-if="entry"
     class="glossary-term-wrap"
-    @mouseenter="open = true"
-    @mouseleave="open = false"
-    @focusin="open = true"
-    @focusout="open = false"
-    @keydown.escape="open = false"
+    @mouseenter="onMouseEnter"
+    @mouseleave="onMouseLeave"
+    @focusin="onFocusIn"
+    @focusout="onFocusOut"
+    @keydown.escape="onEscape"
   >
     <a
       :href="href"

@@ -110,21 +110,23 @@ function compileBracedPattern(fmt: string): RegExp {
 			const isRoman = normMods.includes('roman');
 			const romanOr = (fallback: string) => isRoman ? RE_ROMAN_DIGITS : fallback;
 
+			const isCompactBoundary = () => {
+				const nextChar = fmt[end + 1];
+				const nextClose = nextChar === '{' ? fmt.indexOf('}', end + 1) : -1;
+				const nextIsAlpha = nextClose !== -1 && RE_ALPHA_TOKEN.test(fmt.slice(end + 2, nextClose).trim());
+				return (nextChar === '{' && !nextIsAlpha) || (nextChar !== undefined && RE_DIGIT_CHAR.test(nextChar));
+			};
+
 			switch (token) {
 				case 'yyyy':
 				case 'year':
-					pattern += group('yyyy', romanOr(RE_EXTENDED_YEAR));
+					pattern += group('yyyy', romanOr(isCompactBoundary() ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR));
 					break;
-				case 'yy': {
-					const nextChar = fmt[end + 1];
-					const nextClose = nextChar === '{' ? fmt.indexOf('}', end + 1) : -1;
-					const nextIsAlpha = nextClose !== -1 && RE_ALPHA_TOKEN.test(fmt.slice(end + 2, nextClose).trim());
-					const compact = (nextChar === '{' && !nextIsAlpha) || (nextChar !== undefined && RE_DIGIT_CHAR.test(nextChar));
+				case 'yy':
 					pattern += normMods.includes('long')
-						? group('yyyy', romanOr(compact ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
+						? group('yyyy', romanOr(isCompactBoundary() ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
 						: group('yy', romanOr('\\d{2}'));
 					break;
-				}
 				case 'mm':
 				case 'month':
 					pattern += group('mm', romanOr('1[0-2]|0?[1-9]'));

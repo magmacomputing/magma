@@ -42,9 +42,9 @@ describe('Side-Effect Installation (../src/install.js)', () => {
 		expect(typeof rel.get()).toBe('string');
 
 		const interval = new Interval(new Tempo(nowMs - 5_000), new Tempo(nowMs + 5_000));
-		expect(typeof (interval as any).toSignal).toBe('function');
+		expect(typeof interval.toSignal).toBe('function');
 
-		using iv = (interval as any).toSignal({
+		using iv = interval.toSignal({
 			now: () => nowMs,
 			progressInterval: false,
 		});

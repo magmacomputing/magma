@@ -1,4 +1,4 @@
-import type { ReadonlySignal, Interval, Tempo } from '@magmacomputing/tempo/plugin/sdk';
+import type { ReadonlySignal, Interval as TempoInterval, Tempo } from '@magmacomputing/tempo/plugin/sdk';
 
 /**
  * A readonly reactive signal that supports explicit and `using`-based disposal.
@@ -103,7 +103,7 @@ export interface TempoSignalsNamespace {
 	/** Creates an adaptive, self-updating relative-time signal for a temporal target. */
 	relative(target: RelativeSignalTarget, options?: RelativeSignalOptions): DisposableSignal<string>;
 	/** Creates a boundary-scheduled reactive state projection for an `Interval`. */
-	interval(interval: Interval<any>, options?: IntervalSignalOptions): IntervalSignalState;
+	interval(interval: TempoInterval<any>, options?: IntervalSignalOptions): IntervalSignalState;
 	/** Detaches global configuration observers registered by `SignalsPlugin`. */
 	dispose(): void;
 	/** `Symbol.dispose` alias for `using` declarations. */
@@ -124,5 +124,13 @@ declare module '@magmacomputing/tempo' {
 		 * relative to the current time and updates only at unit-bucket boundaries.
 		 */
 		toRelativeSignal(options?: RelativeSignalOptions): DisposableSignal<string>;
+	}
+
+	interface Interval<T = any> {
+		/**
+		 * Returns a boundary-scheduled `IntervalSignalState` tracking `isCurrent`,
+		 * `isPast`, `isFuture`, and normalized `progress` for this interval.
+		 */
+		toSignal(options?: IntervalSignalOptions): IntervalSignalState;
 	}
 }

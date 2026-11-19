@@ -682,6 +682,8 @@ describe('Tempo.format() refinements', () => {
       ['20261231', '{yy:long}{mm}{dd}', 2026, 12, 31],
       ['20260101', '{yy:long}{mm}{dd}', 2026, 1, 1],
       ['-00010102', '{yy:long}{mm}{dd}', -1, 1, 2],
+      ['20241115', '{yyyy}{mm}{dd}', 2024, 11, 15],
+      ['20241115', '{year}{mm}{dd}', 2024, 11, 15],
     ] as const)('parses adjacent year tokens in %s', (input, format, yy, mm, dd) => {
       const parsed = new Tempo(input, { format, timeZone: 'UTC' });
       expect(parsed.isValid).toBe(true);

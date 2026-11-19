@@ -1,5 +1,16 @@
-import { Finalizer, type SignifyNode } from '@magmacomputing/tempo/plugin/sdk';
+import { Finalizer, isFunction, type SignifyNode } from '@magmacomputing/tempo/plugin/sdk';
 import type { DisposableSignal } from '../types/index.js';
+
+/**
+ * Unreferences a Node.js timer handle so un-disposed signals do not keep the
+ * process event loop alive, while remaining a no-op for numeric browser handles.
+ *
+ * @internal
+ */
+export function unrefTimer(timer: unknown): void {
+	if (isFunction((timer as any)?.unref))
+		(timer as any).unref();
+}
 
 /**
  * Wraps a `SignifyNode` (such as `Signify.State` or `Signify.Computed`) into a frozen,
@@ -14,10 +25,18 @@ export function createDisposableSignal<T>(
 ): DisposableSignal<T> {
 	let isDisposed = false;
 	let frozenValue: T | undefined = undefined;
-	let hasFrozenValue = false;
+	let frozenError: unknown = undefined;
+	let hasFrozenError = false;
 	let frozenEpoch = 0;
 
-	const readValue = (): T => (isDisposed && hasFrozenValue) ? (frozenValue as T) : source.get();
+	const readValue = (): T => {
+		if (isDisposed) {
+			if (hasFrozenError)
+				throw frozenError;
+			return frozenValue as T;
+		}
+		return source.get();
+	};
 
 	const accessor = function (this: any): T {
 		return readValue();
@@ -30,10 +49,10 @@ export function createDisposableSignal<T>(
 			return;
 		try {
 			frozenValue = source.get();
-			hasFrozenValue = true;
 			frozenEpoch = source.epoch;
-		} catch {
-			// Ignore if source was already disposed
+		} catch (err) {
+			frozenError = err;
+			hasFrozenError = true;
 		}
 		isDisposed = true;
 		unregisterFinalizer();

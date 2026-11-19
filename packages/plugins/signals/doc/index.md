@@ -12,7 +12,7 @@ Core `@magmacomputing/tempo` is a static, immutable, zero-timer snapshot engine.
 
 ## Key Features
 
-- **Tree-Shakeable Functions & Explicit Installation**: Standalone functions (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) are tree-shakeable, while importing the root entry registers `SignalsPlugin` in the plugin registry (`Tempo.use(SignalsPlugin)` or `/install` mounts `Tempo.signals`, `tempo.toRelativeSignal()`, and `interval.toSignal()`).
+- **Tree-Shakeable Functions & Explicit Installation**: Standalone functions (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) and `SignalsPlugin` are exported from the root entry with zero side effects; registration occurs only via `Tempo.use(SignalsPlugin)` or the `/install` entry (which mounts `Tempo.signals`, `tempo.toRelativeSignal()`, and `interval.toSignal()`).
 - **Two Integration Patterns**: Use standalone tree-shakeable functions directly, or mount `Tempo.signals`, `tempo.toRelativeSignal()`, and `interval.toSignal()` via `Tempo.use(SignalsPlugin)` or `/install`.
 - **Adaptive Relative-Time Signals**: `toRelativeSignal` schedules one-shot `setTimeout` updates at exact unit-bucket boundaries (`second` → `minute` → `hour` → `day` → `month` → `year`) instead of polling every second, and automatically tracks global `Tempo.init({ locale })` updates.
 - **Boundary-Scheduled Interval Observation**: `intervalSignal` tracks `isCurrent`, `isPast`, `isFuture`, and normalized `progress` ($\in [0, 1]$) with zero polling while future or past.
@@ -46,7 +46,7 @@ Tempo.use(SignalsPlugin);
 const meeting = new Tempo().add({ minutes: 5 });
 using relative = meeting.toRelativeSignal();
 
-console.log(relative.get()); // e.g. "in 5 minutes"
+console.log(relative.get()); // e.g. "in 4 minutes" (truncates toward zero once the clock advances by a few ms)
 ```
 
 Or use the side-effect `/install` entrypoint to auto-register `SignalsPlugin` on import:
@@ -58,7 +58,7 @@ import { Tempo } from '@magmacomputing/tempo';
 const deadline = new Tempo().add({ hours: 2 });
 using relative = deadline.toRelativeSignal({ style: 'long' });
 
-console.log(relative.value); // e.g. "in 2 hours"
+console.log(relative.value); // e.g. "in 1 hour"
 ```
 
 ### Tree-Shakeable Standalone Functions {#tree-shakeable-functions}
@@ -72,7 +72,7 @@ import { toRelativeSignal } from '@magmacomputing/tempo-plugin-signals';
 const target = new Tempo().add({ minutes: 10 });
 using relative = toRelativeSignal(target, { style: 'short' });
 
-console.log(relative.get()); // e.g. "in 10 min."
+console.log(relative.get()); // e.g. "in 9 min."
 ```
 
 | Approach | Import Syntax | Side Effects | Ideal For |
@@ -141,11 +141,11 @@ using relative = toRelativeSignal(target, {
 });
 
 const label = Signify.computed(() => `Starts ${relative.get()}`);
-console.log(label.get()); // "Starts in 5 minutes"
+console.log(label.get()); // "Starts in 4 minutes"
 
 // Automatically updates when Tempo.init({ locale }) changes
 Tempo.init({ locale: 'es-ES' });
-console.log(label.get()); // "Starts dentro de 5 minutos"
+console.log(label.get()); // "Starts dentro de 4 minutos"
 ```
 
 ### Accepted Targets (`RelativeSignalTarget`) {#relative-signal-target}
