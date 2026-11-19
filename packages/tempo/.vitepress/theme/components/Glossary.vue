@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
 import { withBase } from 'vitepress';
 import { data as entries, type GlossaryCategory, type GlossaryEntry } from '../../../doc/glossary.data';
 
@@ -47,6 +47,34 @@ const groupedEntries = computed(() => {
 });
 
 const activeLetters = computed(() => new Set(groupedEntries.value.map(([letter]) => letter)));
+
+const revealHashEntry = async () => {
+  if (typeof window === 'undefined')
+    return;
+  const slug = window.location.hash.replace(/^#/, '');
+  if (!slug)
+    return;
+  const target = entries.find((e) => e.slug === slug);
+  if (!target)
+    return;
+  const isVisible = filteredEntries.value.some((e) => e.slug === slug);
+  if (!isVisible) {
+    selectedCategory.value = 'all';
+    query.value = '';
+    await nextTick();
+    document.getElementById(slug)?.scrollIntoView();
+  }
+};
+
+onMounted(() => {
+  void revealHashEntry();
+  window.addEventListener('hashchange', revealHashEntry);
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined')
+    window.removeEventListener('hashchange', revealHashEntry);
+});
 </script>
 
 <template>
@@ -114,7 +142,7 @@ const activeLetters = computed(() => new Set(groupedEntries.value.map(([letter])
         >
           <header class="card-header">
             <h3 class="card-title">
-              <a :href="`#${entry.slug}`" class="card-anchor">#</a>
+              <a :href="`#${entry.slug}`" class="card-anchor" :aria-label="`Permalink to ${entry.term}`">#</a>
               {{ entry.term }}
             </h3>
             <span class="card-badge">{{ CATEGORY_LABELS[entry.category] }}</span>

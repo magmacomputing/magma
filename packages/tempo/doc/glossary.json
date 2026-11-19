@@ -123,7 +123,7 @@
     "term": "Interval",
     "slug": "interval",
     "category": "temporal-math",
-    "summary": "A half-open or bounded [start, end] span between two temporal points supporting containment, overlap, union, and reactive state observation.",
+    "summary": "A half-open [start, end) span (inclusive start, exclusive end) between two temporal points supporting containment, overlap, union, and reactive state observation.",
     "seeAlso": [
       { "label": "Intervals & Scheduling", "link": "/doc/2-core-concepts/tempo.interval" }
     ]
@@ -247,7 +247,7 @@
     "term": "Sandbox",
     "slug": "sandbox",
     "category": "architecture",
-    "summary": "An isolated Tempo subclass created via Tempo.extend() with its own configuration, plugins, and term snapshot for multi-tenant SSR or testing.",
+    "summary": "An isolated Tempo subclass created via Tempo.extend() with its own configuration and plugin isolation for multi-tenant SSR or testing (term access uses the shared runtime term map, so tenants registering different terms under the same key can conflict).",
     "seeAlso": [
       { "label": "Sandbox Factory", "link": "/doc/4-advanced-reference/sandbox-factory" }
     ]

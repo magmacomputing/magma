@@ -504,4 +504,16 @@ describe('secure serialization', () => {
 		const proxied = proxify(target, 'readonly');
 		expect(inspect(proxied)).toBe('[redacted-fn-proto]');
 	});
+
+	test('preserves inherited sym.$Inspect hooks for proxied callable class constructors', () => {
+		class Base {
+			static [sym.$Inspect]() {
+				return '[base-ctor-inspect]';
+			}
+		}
+		class Child extends Base {}
+		const proxiedChild = proxify(Child, 'readonly');
+		expect((proxiedChild as any)[sym.$Inspect]()).toBe('[base-ctor-inspect]');
+		expect(inspect(proxiedChild)).toBe('[base-ctor-inspect]');
+	});
 });

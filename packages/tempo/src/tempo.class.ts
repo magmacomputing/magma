@@ -596,10 +596,10 @@ export class Tempo {
 	 * });
 	 * ```
 	 */
-	static extend(options?: t.Options): typeof Tempo;
-	static extend<R>(fn: (sandbox: typeof Tempo) => R): R;
-	static extend<R>(options: t.Options, fn: (sandbox: typeof Tempo) => R): R;
-	static extend<R>(arg1?: t.Options | ((sandbox: typeof Tempo) => R), arg2?: (sandbox: typeof Tempo) => R): (typeof Tempo) | R {
+	static extend(options?: t.Options): t.TempoSandbox;
+	static extend<R>(fn: (sandbox: t.TempoSandbox) => R): R;
+	static extend<R>(options: t.Options, fn: (sandbox: t.TempoSandbox) => R): R;
+	static extend<R>(arg1?: t.Options | ((sandbox: t.TempoSandbox) => R), arg2?: (sandbox: t.TempoSandbox) => R): t.TempoSandbox | R {
 		return createSandbox(this, arg1, arg2);
 	}
 

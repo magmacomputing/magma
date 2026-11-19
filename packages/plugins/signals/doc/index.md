@@ -46,7 +46,7 @@ Tempo.use(SignalsPlugin);
 const meeting = new Tempo().add({ minutes: 5 });
 using relative = meeting.toRelativeSignal();
 
-console.log(relative.get()); // e.g. "in 4 minutes" (truncates toward zero once the clock advances by a few ms)
+console.log(relative.get()); // e.g. "in 4m" (default 'narrow' style, truncating toward zero once the clock advances by a few ms)
 ```
 
 Or use the side-effect `/install` entrypoint to auto-register `SignalsPlugin` on import:

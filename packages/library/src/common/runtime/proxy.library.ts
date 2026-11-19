@@ -162,9 +162,10 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 		const recv = isReference(this) && !isFunction(this) ? this : fallbackTarget;
 		if (!isEnum) {
 			const liveTarget = isReference(recv) ? unwrap(recv) : fallbackTarget;
-			for (const proto of walkPrototype(liveTarget, false)) {
-				if (proto === liveTarget)
-					continue;
+			const seen = new WeakSet<object>();
+			let proto: any = Object.getPrototypeOf(liveTarget);
+			while (isReference(proto) && proto !== Object.prototype && proto !== Function.prototype && !seen.has(proto)) {
+				seen.add(proto);
 				const desc = Object.getOwnPropertyDescriptor(proto, sym.$Inspect);
 				if (desc) {
 					const fn = 'value' in desc ? desc.value : Reflect.get(proto, sym.$Inspect, liveTarget);
@@ -173,6 +174,7 @@ function createTargetInspectHook(fallbackTarget: object, isEnum = false) {
 					if (!generatedInspectHooks.has(fn))
 						return fn.apply(liveTarget, [depth, ...args]);
 				}
+				proto = Object.getPrototypeOf(proto);
 			}
 		}
 		const proxyInspector = proxyInspectors.get(recv);

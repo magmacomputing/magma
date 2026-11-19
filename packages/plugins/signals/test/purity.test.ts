@@ -2,20 +2,22 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Interval, Tempo } from '@magmacomputing/tempo';
 import {
+	SignalsPlugin,
 	createConfigSignals,
 	disposeConfigSignals,
+	intervalSignal,
 	localeSignal,
 	timeZoneSignal,
-} from '../src/core/config.js';
-import { intervalSignal } from '../src/functions/interval.js';
-import { toRelativeSignal } from '../src/functions/relative.js';
+	toRelativeSignal,
+} from '../src/index.js';
 
 describe('Tree-Shakeability & Purity (without install.js)', () => {
 	afterEach(() => {
 		disposeConfigSignals();
 	});
 
-	it('does NOT install SignalsPlugin onto Tempo when importing tree-shakeable helper modules', () => {
+	it('does NOT install SignalsPlugin onto Tempo when importing the root entry', () => {
+		expect(SignalsPlugin.name).toBe('signals');
 		expect((Tempo as any).signals).toBeUndefined();
 		expect((Tempo.prototype as any).toRelativeSignal).toBeUndefined();
 		expect((Interval.prototype as any).toSignal).toBeUndefined();

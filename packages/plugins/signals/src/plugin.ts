@@ -3,11 +3,13 @@ import {
 } from '@magmacomputing/tempo';
 import {
 	Signify,
-	definePlugin,
 	deepFreeze,
+	defineProp,
 	hasOwn,
+	isFunction,
 	isObject,
 	isText,
+	sym,
 	type Interval,
 	type TempoPlugin,
 } from '@magmacomputing/tempo/plugin/sdk';
@@ -28,16 +30,8 @@ import type {
 	TempoSignalsNamespace,
 } from './types/index.js';
 
-/**
- * ## SignalsPlugin
- * Extends Tempo with reactive TC39 Signals (`Signify`) for global config
- * (`Tempo.signals.locale`, `Tempo.signals.timeZone`), adaptive relative-time
- * formatting (`tempo.toRelativeSignal()`), and boundary-scheduled interval
- * observation (`interval.toSignal()`).
- */
-export const SignalsPlugin: TempoPlugin<SignalsPluginOptions> = definePlugin({
-	name: 'signals',
-	install(this: any, TempoClass: any, options?: SignalsPluginOptions) {
+function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
+	const install = function (this: any, TempoClass: any, options?: SignalsPluginOptions) {
 		const installedClass = TempoClass || this;
 
 		const classOpts = installedClass.config?.pluginOptions?.signals ?? installedClass.config?.plugins?.signals;
@@ -50,34 +44,58 @@ export const SignalsPlugin: TempoPlugin<SignalsPluginOptions> = definePlugin({
 		if (isGlobalTempo)
 			initConfigSignals(effectiveOptions, () => installedClass.config);
 
-		if (!hasOwn(installedClass, 'signals')) {
-			const signalsNamespace: TempoSignalsNamespace = isGlobalTempo
-				? {
-						get locale() {
-							return localeSignal();
+		if (!hasOwn(installedClass, 'signals') && Object.isExtensible(installedClass)) {
+			let signalsNamespace: TempoSignalsNamespace;
+			if (isGlobalTempo) {
+				signalsNamespace = {
+					get locale() {
+						return localeSignal();
+					},
+					get timeZone() {
+						return timeZoneSignal();
+					},
+					relative: toRelativeSignal,
+					interval: intervalSignal,
+					dispose: disposeConfigSignals,
+					[Symbol.dispose]: disposeConfigSignals,
+				};
+			} else {
+				const resolveSandboxLocale = (): string => {
+					const raw = installedClass.config?.locale ?? effectiveOptions.locale;
+					const loc = isFunction(raw) ? raw() : raw;
+					return isText(loc) ? loc : (Intl.DateTimeFormat().resolvedOptions().locale || 'en');
+				};
+				const resolveSandboxTimeZone = (): string => {
+					const raw = installedClass.config?.timeZone ?? effectiveOptions.timeZone;
+					const tz = isFunction(raw) ? raw() : raw;
+					return isText(tz) ? tz : (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+				};
+				const sbLocaleState = new Signify.State<string>(resolveSandboxLocale());
+				const sbTimeZoneState = new Signify.State<string>(resolveSandboxTimeZone());
+
+				const origInit = installedClass.init;
+				if (isFunction(origInit)) {
+					Object.defineProperty(installedClass, 'init', {
+						value: function (this: any, ...args: any[]) {
+							const res = origInit.apply(this, args);
+							sbLocaleState.set(resolveSandboxLocale());
+							sbTimeZoneState.set(resolveSandboxTimeZone());
+							return res;
 						},
-						get timeZone() {
-							return timeZoneSignal();
-						},
-						relative: toRelativeSignal,
-						interval: intervalSignal,
-						dispose: disposeConfigSignals,
-						[Symbol.dispose]: disposeConfigSignals,
-					}
-				: {
-						locale: Signify.computed(() => {
-							const loc = installedClass.config?.locale ?? effectiveOptions.locale;
-							return isText(loc) ? loc : (Intl.DateTimeFormat().resolvedOptions().locale || 'en');
-						}),
-						timeZone: Signify.computed(() => {
-							const tz = installedClass.config?.timeZone ?? effectiveOptions.timeZone;
-							return isText(tz) ? tz : (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
-						}),
-						relative: toRelativeSignal,
-						interval: intervalSignal,
-						dispose: () => {},
-						[Symbol.dispose]: () => {},
-					};
+						writable: true,
+						configurable: true,
+					});
+				}
+
+				signalsNamespace = {
+					locale: Signify.computed(() => sbLocaleState.get()),
+					timeZone: Signify.computed(() => sbTimeZoneState.get()),
+					relative: toRelativeSignal,
+					interval: intervalSignal,
+					dispose: () => {},
+					[Symbol.dispose]: () => {},
+				};
+			}
 
 			Object.defineProperty(installedClass, 'signals', {
 				value: deepFreeze(signalsNamespace),
@@ -104,8 +122,27 @@ export const SignalsPlugin: TempoPlugin<SignalsPluginOptions> = definePlugin({
 				return intervalSignal(this, opts);
 			};
 		}
-	},
-});
+	};
+
+	const factory = (options?: SignalsPluginOptions) => ({
+		name: 'signals',
+		install,
+		options,
+		[sym.$PluginType]: 'plugin',
+	});
+	const result = Object.assign(factory, { install, [sym.$PluginType]: 'plugin' });
+	defineProp(result, 'name', 'signals', 'configurable');
+	return result as unknown as TempoPlugin<SignalsPluginOptions>;
+}
+
+/**
+ * ## SignalsPlugin
+ * Extends Tempo with reactive TC39 Signals (`Signify`) for global config
+ * (`Tempo.signals.locale`, `Tempo.signals.timeZone`), adaptive relative-time
+ * formatting (`tempo.toRelativeSignal()`), and boundary-scheduled interval
+ * observation (`interval.toSignal()`).
+ */
+export const SignalsPlugin: TempoPlugin<SignalsPluginOptions> = createSignalsPlugin();
 
 export const signalsPlugin = SignalsPlugin;
 export default SignalsPlugin;

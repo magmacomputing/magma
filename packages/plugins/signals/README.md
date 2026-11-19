@@ -26,10 +26,10 @@ npm install @magmacomputing/tempo-plugin-signals
 import '@magmacomputing/tempo-plugin-signals/install';
 import { Tempo } from '@magmacomputing/tempo';
 
-const target = new Tempo().add({ minute: 5 });
+const target = new Tempo().add({ minutes: 5 });
 const relative = target.toRelativeSignal();
 
-console.log(relative.get()); // e.g. "in 5 minutes"
+console.log(relative.get()); // e.g. "in 4m"
 relative.dispose();
 ```
 
@@ -39,7 +39,7 @@ relative.dispose();
 
 ## ✨ Features & Architecture
 
-* ⚡ **Tree-Shakeable Functions & Explicit Registration**: Standalone helpers (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) are tree-shakeable, while importing the package registers `SignalsPlugin` in the plugin registry (`Tempo.use(SignalsPlugin)` or `/install` mounts `Tempo.signals` and prototype methods).
+* ⚡ **Tree-Shakeable Functions & Explicit Registration**: Standalone helpers (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) and `SignalsPlugin` are exported from the root entry with zero side effects; registration occurs only via `Tempo.use(SignalsPlugin)` or `@magmacomputing/tempo-plugin-signals/install` (which mounts `Tempo.signals` and prototype methods).
 * ⏱️ **Adaptive Relative Time**: Schedules updates only when the formatted relative unit boundary changes rather than polling every second.
 * 📅 **Event-Driven Interval Tracking**: Tracks active, past, and future interval states (`isCurrent`, `isPast`, `isFuture`, `progress`) with boundary timeouts.
 * 🌐 **Global Config Reactivity**: Exposes reactive `locale` and `timeZone` signals synchronized with `Tempo.init()` via `onConfigChange`.

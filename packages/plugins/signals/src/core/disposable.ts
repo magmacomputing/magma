@@ -42,7 +42,7 @@ export function createDisposableSignal<T>(
 		return readValue();
 	} as DisposableSignal<T>;
 
-	const unregisterFinalizer = Finalizer.register(accessor, onDispose);
+	const unregisterFinalizer = Finalizer.register(source, onDispose);
 
 	const dispose = (): void => {
 		if (isDisposed)

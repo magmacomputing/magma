@@ -63,7 +63,7 @@ const t2 = new FinTempo('market-open'); // Success: 09:30
 ```
 
 #### Mode 2: Scoped Callback Execution (`Tempo.extend(fn)`)
-For unit tests, request-scoped operations, or short-lived calculations, pass an execution callback. `Tempo.extend` invokes your callback with a freshly isolated sandbox and **automatically disposes of it** when the function completes:
+For unit tests, request-scoped operations, or short-lived calculations, pass an execution callback. `Tempo.extend` invokes your callback with a freshly isolated sandbox and **automatically disposes of it** when the function completes (note that automatic disposal does not remove terms registered by the callback from the shared runtime term map, so later tests or requests may still see those terms or encounter a key collision):
 
 ```typescript
 import { Tempo } from '@magmacomputing/tempo';

@@ -56,10 +56,10 @@ export function* walkPrototype(
 	let depth = 0;
 
 	while (curr && curr !== Object.prototype) {
-		if (depth++ >= maxDepth)
-			throw new RangeError(`walkPrototype: prototype chain exceeded maximum traversal depth (${maxDepth}).`);
 		if (visited.has(curr))
 			break;
+		if (depth++ >= maxDepth)
+			throw new RangeError(`walkPrototype: prototype chain exceeded maximum traversal depth (${maxDepth}).`);
 		visited.add(curr);
 
 		const level = unwrapProxies ? unwrap(curr) : curr;

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { Signify, isText, onConfigChange, type ReadonlySignal } from '@magmacomputing/tempo/plugin/sdk';
+import { Signify, isFunction, isText, onConfigChange, type ReadonlySignal } from '@magmacomputing/tempo/plugin/sdk';
 import type { ConfigSignals, SignalsPluginOptions } from '../types/index.js';
 
 let _localeState: Signify.State<string> | null = null;
@@ -8,19 +8,21 @@ let _unsubscribeConfig: (() => void) | null = null;
 let _fallbackLocale: string | undefined = undefined;
 let _fallbackTimeZone: string | undefined = undefined;
 
-/** Resolves a BCP 47 locale string with Intl runtime fallback. */
+/** Resolves a BCP 47 locale string (or supplier) with Intl runtime fallback. */
 function resolveLocale(value: unknown, fallback?: string): string {
-	if (isText(value))
-		return value;
+	const resolved = isFunction(value) ? value() : value;
+	if (isText(resolved))
+		return resolved;
 	if (isText(fallback))
 		return fallback;
 	return Intl.DateTimeFormat().resolvedOptions().locale || 'en';
 }
 
-/** Resolves an IANA time zone identifier with Intl runtime fallback. */
+/** Resolves an IANA time zone identifier (or supplier) with Intl runtime fallback. */
 function resolveTimeZone(value: unknown, fallback?: string): string {
-	if (isText(value))
-		return value;
+	const resolved = isFunction(value) ? value() : value;
+	if (isText(resolved))
+		return resolved;
 	if (isText(fallback))
 		return fallback;
 	return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';

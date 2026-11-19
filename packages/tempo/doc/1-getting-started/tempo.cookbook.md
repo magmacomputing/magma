@@ -63,7 +63,7 @@ Tempo.init({
 ### Parsing "Ambiguous" Digits (US vs UK)
 Tempo intelligently resolves ambiguous dates like `04012026` based on your timezone.
 ```typescript
-const us = new Tempo('04012026', { timeZone: 'America/New_York' }); 
+const us = new Tempo('04012026', { timeZone: 'America/New_York' });
 console.log(us.format('{mon} {dd}')); // "April 01"
 ```
 👉 **Learn More:** [Ambiguity Resolution Guide](../2-core-concepts/tempo.parse.md)
@@ -261,7 +261,7 @@ t.format('{mon:long:upper} {dd}');   // "MAI 15" (Native French Intl output)
 👉 **Learn More:** See the [Smart Formatting Guide](../2-core-concepts/tempo.format.md) for the complete list of available modifiers.
 
 ::: tip
-**Tired of typing styling modifiers?**  
+**Tired of typing styling modifiers?**
 If you find yourself repeatedly writing `:long` or `:short` for the same localized date structure, save it to the global **FORMATS** registry! This creates a clean, reusable shortcut:
 ```typescript
 Tempo.init({
@@ -281,7 +281,7 @@ t.format('ui-date'); // Resolved with all modifiers intact!
 
 👉 **Learn More:** To build custom zero-overhead logic evaluators (like Fiscal Years or native Intl bridges), read the [Custom Format Tokens Deep Dive](../2-core-concepts/tempo.format.md#🛠️-custom-format-tokens).
 
-👉 **Learn More:** 
+👉 **Learn More:**
 - [Smart Formatting Guide](../2-core-concepts/tempo.format.md)
 - [Internationalization & Locale](../4-advanced-reference/tempo.intl.md)
 - [Smart Parsing Guide](../2-core-concepts/tempo.parse.md)
@@ -340,7 +340,7 @@ const tempo = new Tempo(new Date());
 
 ### Converting to `Temporal` Objects
 ```typescript
-const zdt = new Tempo().zdt;             // Temporal.ZonedDateTime (or .toDateTime())
+const zdt = new Tempo().toDateTime();    // Temporal.ZonedDateTime (or .toDateTime())
 const instant = new Tempo().toInstant(); // Temporal.Instant
 const pdt = new Tempo().toPlainDate();   // Temporal.PlainDate
 ```

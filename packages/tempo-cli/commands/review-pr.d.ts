@@ -9,3 +9,4 @@ export interface TopLevelReviewComment {
 }
 
 export function parseTopLevelReviewComments(rawBody: string, prRef?: string): TopLevelReviewComment[];
+export function reviewPr(args?: string[]): Promise<void>;

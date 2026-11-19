@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { withBase } from 'vitepress';
 import { data as entries, type GlossaryEntry } from '../../../doc/glossary.data';
 
@@ -21,6 +21,25 @@ const focused = ref(false);
 const dismissed = ref(false);
 const open = computed(() => !dismissed.value && (hovered.value || focused.value));
 const tooltipId = useId();
+const tooltipRef = ref<HTMLElement | null>(null);
+const shiftPx = ref(0);
+const placeBelow = ref(false);
+
+const updateTooltipPosition = async () => {
+  shiftPx.value = 0;
+  placeBelow.value = false;
+  await nextTick();
+  if (typeof window === 'undefined' || !tooltipRef.value)
+    return;
+  const rect = tooltipRef.value.getBoundingClientRect();
+  const pad = 8;
+  if (rect.top < pad)
+    placeBelow.value = true;
+  if (rect.left < pad)
+    shiftPx.value = pad - rect.left;
+  else if (rect.right > window.innerWidth - pad)
+    shiftPx.value = (window.innerWidth - pad) - rect.right;
+};
 
 const onMouseEnter = () => {
   hovered.value = true;
@@ -48,6 +67,29 @@ const onEscape = () => {
   dismissed.value = true;
 };
 
+const onDocumentKeydown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape')
+    onEscape();
+};
+
+watch(open, (isOpen) => {
+  if (typeof document === 'undefined')
+    return;
+  if (isOpen) {
+    document.addEventListener('keydown', onDocumentKeydown);
+    void updateTooltipPosition();
+  } else {
+    document.removeEventListener('keydown', onDocumentKeydown);
+    shiftPx.value = 0;
+    placeBelow.value = false;
+  }
+});
+
+onBeforeUnmount(() => {
+  if (typeof document !== 'undefined')
+    document.removeEventListener('keydown', onDocumentKeydown);
+});
+
 const href = computed(() =>
   entry.value ? withBase(`/doc/4-advanced-reference/glossary#${entry.value.slug}`) : undefined
 );
@@ -72,9 +114,12 @@ const href = computed(() =>
     </a>
     <span
       v-show="open"
+      ref="tooltipRef"
       :id="tooltipId"
       role="tooltip"
       class="glossary-tooltip"
+      :class="{ 'glossary-tooltip--below': placeBelow }"
+      :style="shiftPx ? { transform: `translateX(calc(-50% + ${shiftPx}px))` } : undefined"
     >
       <strong class="tooltip-title">{{ entry.term }}</strong>
       <span class="tooltip-summary">{{ entry.summary }}</span>
@@ -123,6 +168,11 @@ const href = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.glossary-tooltip--below {
+  bottom: auto;
+  top: calc(100% + 8px);
 }
 
 .glossary-tooltip::after {

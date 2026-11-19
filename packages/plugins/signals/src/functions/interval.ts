@@ -78,6 +78,8 @@ export function intervalSignal(
 	const startMs = nsToMs(interval.startNs);
 	const endMs = nsToMs(interval.endNs);
 	const nowFn = isFunction(options.now) ? options.now : Date.now;
+	if (isNumber(options.progressInterval) && options.progressInterval > MAX_TIMEOUT_MS)
+		throw new RangeError(`progressInterval must be <= ${MAX_TIMEOUT_MS} ms`);
 	const progressInterval = options.progressInterval === false
 		? 0
 		: (isNumber(options.progressInterval) ? Math.max(0, options.progressInterval) : DEFAULT_PROGRESS_INTERVAL_MS);
@@ -121,7 +123,7 @@ export function intervalSignal(
 					if (timers.isDisposed)
 						return;
 					const tickNow = nowFn();
-					if (tickNow >= endMs) {
+					if (tickNow < startMs || tickNow >= endMs) {
 						syncState();
 						return;
 					}
@@ -152,25 +154,51 @@ export function intervalSignal(
 
 	const teardown = createIntervalCleanup(timers);
 
+	return createIntervalStateHandle(
+		isCurrentState,
+		isPastState,
+		isFutureState,
+		progressState,
+		timers,
+		teardown,
+	);
+}
+
+/**
+ * Builds the `IntervalSignalState` handle in a dedicated closure scope so `syncState`
+ * and pending timer callbacks never retain `stateHandle` via V8's shared context.
+ */
+function createIntervalStateHandle(
+	isCurrentState: Signify.State<boolean>,
+	isPastState: Signify.State<boolean>,
+	isFutureState: Signify.State<boolean>,
+	progressState: Signify.State<number>,
+	timers: IntervalTimers,
+	teardown: () => void,
+): IntervalSignalState {
 	let unregisterFinalizer: (() => boolean) | null = null;
 	let stateHandle: IntervalSignalState;
 
 	// Retain stateHandle from each projected signal so destructuring a single signal
 	// (e.g. `const { progress } = intervalSignal(...)`) does not trigger premature finalization.
 	const isCurrent = Signify.computed(() => {
-		void stateHandle;
+		if (!stateHandle)
+			return false;
 		return isCurrentState.get();
 	});
 	const isPast = Signify.computed(() => {
-		void stateHandle;
+		if (!stateHandle)
+			return false;
 		return isPastState.get();
 	});
 	const isFuture = Signify.computed(() => {
-		void stateHandle;
+		if (!stateHandle)
+			return false;
 		return isFutureState.get();
 	});
 	const progress = Signify.computed(() => {
-		void stateHandle;
+		if (!stateHandle)
+			return 0;
 		return progressState.get();
 	});
 
@@ -194,6 +222,5 @@ export function intervalSignal(
 	};
 
 	unregisterFinalizer = Finalizer.register(stateHandle, teardown);
-
 	return Object.freeze(stateHandle);
 }
