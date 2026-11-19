@@ -112,7 +112,7 @@ const customDate = new Tempo('08*04*2026'); // Automatically matched against sta
 - **Disposable** (`reactivity`): An object implementing dispose() and Symbol.dispose for deterministic timer and subscription cleanup via TypeScript using declarations.
 - **Duration** (`temporal-math`): A signed span of calendar and clock units (years, months, days, hours, minutes, seconds, sub-seconds) used in Tempo arithmetic and formatting.
 - **Dynamic Functional Context (DFC)** (`architecture`): Tempo's pattern where configuration options (such as timeZone, locale, or calendar) accept lazy evaluator functions (() => T) resolved per request.
-- **Enum** (`architecture`): A Proxy-wrapped, null-prototype lookup dictionary built with Enum.from() or Enum.extend() that supports O(1) static reflection without prototype pollution.
+- **Enum** (`architecture`): A Proxy-wrapped, null-prototype lookup dictionary built with Enum.from() or Enum.extend() that supports static reflection without prototype pollution.
 - **Epoch** (`temporal-math`): Elapsed time since the Unix epoch (1970-01-01T00:00:00Z), exposed by Tempo as .epoch.ms (number) and .epoch.ns (bigint).
 - **IANA Time Zone** (`standards`): A canonical geographic region identifier (such as Australia/Sydney or America/New_York) carrying historical and DST offset rules.
 - **Instant** (`temporal-math`): A precise, absolute point on the universal temporal timeline, independent of time zones or calendars.

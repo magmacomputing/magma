@@ -90,10 +90,19 @@ const href = computed(() =>
   color: var(--vp-c-text-1);
   font-size: 0.8rem;
   line-height: 1.4;
-  pointer-events: none;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.glossary-tooltip::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 10px;
 }
 
 .tooltip-title {

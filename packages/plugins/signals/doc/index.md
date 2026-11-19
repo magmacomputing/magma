@@ -95,6 +95,8 @@ import {
   disposeConfigSignals,
 } from '@magmacomputing/tempo-plugin-signals';
 
+Tempo.init({ locale: 'en-US', timeZone: 'UTC' });
+
 const { locale, timeZone } = createConfigSignals({
   locale: 'en-US',
   timeZone: 'UTC',

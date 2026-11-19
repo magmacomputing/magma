@@ -255,5 +255,8 @@ describe('toRelativeSignal()', () => {
 		nowMs += 3_000;
 		vi.advanceTimersByTime(3_000);
 		expect(sig.get()).toBe('in 5 seconds');
+
+		Tempo.init({ locale: 'fr-FR' });
+		expect(sig.get()).toBe('in 5 seconds');
 	});
 });

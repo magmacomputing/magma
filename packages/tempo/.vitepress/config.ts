@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Temporal } from '@js-temporal/polyfill'
 import pluginsSidebar from './theme/data/plugins-sidebar.json'
@@ -25,7 +26,20 @@ export default withMermaid(defineConfig({
   ],
   themeConfig: {
     search: {
-      provider: 'local'
+      provider: 'local',
+      options: {
+        _render(src, env, md) {
+          const html = md.render(src, env);
+          if (env.relativePath === 'doc/4-advanced-reference/glossary.md') {
+            const entries = JSON.parse(readFileSync(fileURLToPath(new URL('../doc/glossary.json', import.meta.url)), 'utf-8'));
+            const glossaryHtml = entries
+              .map((e: any) => `<h2 id="${e.slug}">${e.term}</h2><p>${e.summary}${e.details ? ' ' + e.details : ''}</p>`)
+              .join('\n');
+            return `${html}\n${glossaryHtml}`;
+          }
+          return html;
+        },
+      },
     },
     nav: [
       { text: 'Guide', link: '/README' },

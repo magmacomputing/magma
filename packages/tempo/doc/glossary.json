@@ -81,7 +81,7 @@
     "term": "Enum",
     "slug": "enum",
     "category": "architecture",
-    "summary": "A Proxy-wrapped, null-prototype lookup dictionary built with Enum.from() or Enum.extend() that supports O(1) static reflection without prototype pollution.",
+    "summary": "A Proxy-wrapped, null-prototype lookup dictionary built with Enum.from() or Enum.extend() that supports static reflection without prototype pollution.",
     "seeAlso": [
       { "label": "Tempo Enumerators", "link": "/doc/6-utility-library/tempo.enumerators" }
     ]

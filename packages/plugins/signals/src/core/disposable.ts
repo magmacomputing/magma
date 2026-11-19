@@ -13,9 +13,14 @@ export function createDisposableSignal<T>(
 	tag: 'Signify.Computed' | 'Signify' = 'Signify.Computed',
 ): DisposableSignal<T> {
 	let isDisposed = false;
+	let frozenValue: T | undefined = undefined;
+	let hasFrozenValue = false;
+	let frozenEpoch = 0;
+
+	const readValue = (): T => (isDisposed && hasFrozenValue) ? (frozenValue as T) : source.get();
 
 	const accessor = function (this: any): T {
-		return source.get();
+		return readValue();
 	} as DisposableSignal<T>;
 
 	const unregisterFinalizer = Finalizer.register(accessor, onDispose);
@@ -23,20 +28,29 @@ export function createDisposableSignal<T>(
 	const dispose = (): void => {
 		if (isDisposed)
 			return;
+		try {
+			frozenValue = source.get();
+			hasFrozenValue = true;
+			frozenEpoch = source.epoch;
+		} catch {
+			// Ignore if source was already disposed
+		}
 		isDisposed = true;
 		unregisterFinalizer();
 		onDispose();
+		if (typeof (source as any).dispose === 'function')
+			(source as any).dispose();
 	};
 
 	Object.defineProperties(accessor, {
-		get: { value: () => source.get(), writable: false, configurable: false },
+		get: { value: readValue, writable: false, configurable: false },
 		value: {
-			get: () => source.get(),
+			get: readValue,
 			configurable: false,
 			enumerable: true,
 		},
 		epoch: {
-			get: () => source.epoch,
+			get: () => (isDisposed ? frozenEpoch : source.epoch),
 			configurable: false,
 			enumerable: true,
 		},
@@ -45,9 +59,20 @@ export function createDisposableSignal<T>(
 			configurable: false,
 			enumerable: true,
 		},
-		addConsumer: { value: (consumer: any) => source.addConsumer(consumer), writable: false, configurable: false },
+		addConsumer: {
+			value: (consumer: any) => {
+				if (!isDisposed)
+					source.addConsumer(consumer);
+			},
+			writable: false,
+			configurable: false,
+		},
 		removeConsumer: { value: (consumer: any) => source.removeConsumer(consumer), writable: false, configurable: false },
-		poll: { value: () => source.poll(), writable: false, configurable: false },
+		poll: {
+			value: () => (isDisposed ? false : source.poll()),
+			writable: false,
+			configurable: false,
+		},
 		dispose: { value: dispose, writable: false, configurable: false },
 		[Symbol.dispose]: { value: dispose, writable: false, configurable: false },
 		[Symbol.toStringTag]: { value: tag, writable: false, configurable: false },
