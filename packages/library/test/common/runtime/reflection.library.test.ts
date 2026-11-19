@@ -38,6 +38,30 @@ describe('lazyMethod descriptors', () => {
 });
 
 describe('Reflection Library', () => {
+	describe('allObject on prototype-backed objects', () => {
+		it('flattens inherited symbols and evaluates accessors against the derived receiver', () => {
+			const key = Symbol('inherited');
+			const nested = { value: 1 };
+			const getter = vi.fn(function (this: { value: number }) { return this.value * 2; });
+			const parent = Object.defineProperty({ value: 1, nested, [key]: 'base' }, 'computed', {
+				get: getter, enumerable: true,
+			});
+			const child = Object.assign(Object.create(parent), { value: 3 });
+			const result = allObject(child);
+			expect(result).toEqual({ value: 3, nested, [key]: 'base', computed: 6 });
+			expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+			expect(result.nested).toBe(nested);
+			expect(getter).toHaveBeenCalledTimes(1);
+			expect(getter.mock.contexts[0]).toBe(child);
+		});
+
+		it('omits inherited members shadowed by non-enumerable own properties', () => {
+			const child = Object.create({ hidden: 1, visible: 2 });
+			Object.defineProperty(child, 'hidden', { value: 3 });
+			expect(allObject(child)).toEqual({ visible: 2 });
+		});
+	});
+
 	describe('allObject on Array', () => {
 		it('should read array elements by numeric index rather than consuming custom Symbol.iterator', () => {
 			const arr = ['first', 'second'];

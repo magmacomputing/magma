@@ -3,6 +3,15 @@ import type { PropFlag } from '#library/primitive.library.js';
 import { proxify } from '#library/proxy.library.js';
 
 describe('defineProp', () => {
+	it.each(['invalid', 'toString', '__proto__', 'constructor'])('rejects unknown flag %s without modifying the target', flag => {
+		const target = { value: 1 };
+		const original = Object.getOwnPropertyDescriptor(target, 'value');
+		for (const flags of [flag, ['mutable', flag]]) {
+			expect(() => defineProp(target, 'value', 2, flags as PropFlag)).toThrow(TypeError);
+			expect(Object.getOwnPropertyDescriptor(target, 'value')).toEqual(original);
+		}
+	});
+
 	it.each<[PropFlag, boolean, boolean, boolean]>([
 		['mutable', true, true, true],
 		['readonly', true, false, false],
@@ -57,6 +66,29 @@ describe('defineProp', () => {
 });
 
 describe('defineLazy', () => {
+	it('can invalidate a cached value by deleting its configurable property', () => {
+		const target: { value?: number } = {};
+		const factory = vi.fn().mockReturnValueOnce(1).mockReturnValueOnce(2);
+		defineLazy(target, 'value', factory);
+		expect(target.value).toBe(1);
+		expect(Reflect.deleteProperty(target, 'value')).toBe(true);
+		defineLazy(target, 'value', factory);
+		expect(target.value).toBe(2);
+		expect(target.value).toBe(2);
+		expect(factory).toHaveBeenCalledTimes(2);
+	});
+
+	it('does not attempt to replace a frozen lazy accessor', () => {
+		const target: { value?: number } = {};
+		const factory = vi.fn(() => 42);
+		defineLazy(target, 'value', factory);
+		Object.freeze(target);
+		expect(target.value).toBe(42);
+		expect(target.value).toBe(42);
+		expect(factory).toHaveBeenCalledTimes(2);
+		expect(Object.getOwnPropertyDescriptor(target, 'value')?.get).toBeDefined();
+	});
+
 	it('defers computation and caches undefined as a read-only data property', () => {
 		const target: { value?: unknown } = {};
 		const factory = vi.fn(() => undefined);
@@ -123,6 +155,21 @@ describe('defineLazy', () => {
 });
 
 describe('defineFrom', () => {
+	it('replaces configurable accessors with data descriptors without reading them', () => {
+		const getter = vi.fn(() => 1);
+		const target = Object.defineProperty({}, 'value', { get: getter, configurable: true });
+		const source = { value: 2 };
+		defineFrom(target, source);
+		expect(getter).not.toHaveBeenCalled();
+		expect(Object.getOwnPropertyDescriptor(target, 'value')).toEqual(Object.getOwnPropertyDescriptor(source, 'value'));
+	});
+
+	it('rejects overwriting a non-configurable property', () => {
+		const target = Object.freeze({ value: 1 });
+		expect(() => defineFrom(target, { value: 2 })).toThrow(TypeError);
+		expect(target.value).toBe(1);
+	});
+
 	it('copies own descriptors without evaluating getters or copying inherited properties', () => {
 		const key = Symbol('hidden');
 		const getter = vi.fn(() => 42);

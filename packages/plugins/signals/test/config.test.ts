@@ -9,6 +9,22 @@ import {
 } from '../src/index.js';
 
 describe('Config-Change Signals (locale & timeZone)', () => {
+	it('reattaches one shared subscription after repeated disposal and initialization', () => {
+		const original = createConfigSignals();
+		disposeConfigSignals();
+		disposeConfigSignals();
+		Tempo.init({ locale: 'de-DE', timeZone: 'Europe/Berlin' });
+		expect(original.locale.get()).toBe('en-US');
+		const replacement = createConfigSignals();
+		expect(original.locale.get()).toBe('de-DE');
+		expect(replacement.timeZone.get()).toBe('Europe/Berlin');
+		Tempo.init({ locale: 'ja-JP', timeZone: 'Asia/Tokyo' });
+		expect(original.locale.get()).toBe('ja-JP');
+		expect(original.timeZone.get()).toBe('Asia/Tokyo');
+		expect(replacement.locale.get()).toBe('ja-JP');
+		expect(replacement.timeZone.get()).toBe('Asia/Tokyo');
+	});
+
 	beforeEach(() => {
 		disposeConfigSignals();
 		Tempo.init({ locale: 'en-US', timeZone: 'UTC' });

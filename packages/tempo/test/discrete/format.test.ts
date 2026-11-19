@@ -649,6 +649,30 @@ describe('Tempo.format() refinements', () => {
   });
 
   describe('{yy:long} format and explicit parse round-trip', () => {
+    it.each(['{yyyy}', '{year}', '{yy:long}'])('preserves signed years and year zero with %s', token => {
+      for (const [input, year] of [['0000', 0], ['-0001', -1], ['+10000', 10000], ['-10000', -10000]] as const) {
+        const parsed = new Tempo(`${input}/02/28`, { format: `${token}/{mm}/{dd}`, timeZone: 'UTC' });
+        expect(parsed.isValid).toBe(true);
+        expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([year, 2, 28]);
+      }
+    });
+
+    it.each(['00', '13', '99'])('rejects out-of-range numeric month %s in an explicit format', month => {
+      expect(() => new Tempo(`10000/${month}/15`, { format: '{yy:long}/{mm}/{dd}', timeZone: 'UTC' }).yy).toThrow();
+    });
+
+    it.each([
+      ['10000Jan02', '{yy:long}{mmm}{dd}', 10000, 1, 2],
+      ['100000December31', '{yy:long}{mon}{dd}', 100000, 12, 31],
+      ['20261231', '{yy:long}{mm}{dd}', 2026, 12, 31],
+      ['20260101', '{yy:long}{mm}{dd}', 2026, 1, 1],
+      ['-00010102', '{yy:long}{mm}{dd}', -1, 1, 2],
+    ] as const)('parses adjacent year tokens in %s', (input, format, yy, mm, dd) => {
+      const parsed = new Tempo(input, { format, timeZone: 'UTC' });
+      expect(parsed.isValid).toBe(true);
+      expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([yy, mm, dd]);
+    });
+
     it.each(['{yyyy}', '{year}', '{yy:long}'])('parses unsigned extended years with %s', token => {
       for (const year of [9999, 10000, 99999, 100000]) {
         const parsed = new Tempo(`${year}/06/15`, { format: `${token}/{mm}/{dd}`, timeZone: 'UTC' });
