@@ -45,6 +45,53 @@ describe('toRelativeSignal()', () => {
 		}
 	});
 
+	it.each([
+		[60_000, 'minute'],
+		[3_600_000, 'hour'],
+		[86_400_000, 'day'],
+		[2_592_000_000, 'month'],
+		[31_536_000_000, 'year'],
+	] as const)('changes units exactly at the %i ms past boundary', (boundary, unit) => {
+		vi.setSystemTime(0);
+		using sig = toRelativeSignal(1 - boundary, {
+			locale: 'en-US', style: 'long', numeric: 'always',
+		});
+		const before = sig.get();
+		vi.advanceTimersByTime(1);
+		expect(sig.get()).toBe(`1 ${unit} ago`);
+		expect(sig.get()).not.toBe(before);
+		expect(vi.getTimerCount()).toBe(1);
+	});
+
+	it.each([
+		{ epoch: { ns: -1_500_000_000n } },
+		{ epochNanoseconds: -1_500_000_000n },
+		-1_500_000_000n,
+	])('preserves negative subsecond precision for target %#', target => {
+		vi.setSystemTime(0);
+		using sig = toRelativeSignal(target, {
+			locale: 'en-US', style: 'long', numeric: 'always',
+		});
+		expect(sig.get()).toBe('1 second ago');
+		vi.advanceTimersByTime(499);
+		expect(sig.get()).toBe('1 second ago');
+		vi.advanceTimersByTime(1);
+		expect(sig.get()).toBe('2 seconds ago');
+	});
+
+	it('caps long delays and reschedules without a timeout overflow', () => {
+		vi.setSystemTime(0);
+		using sig = toRelativeSignal(-31_536_000_000, {
+			locale: 'en-US', style: 'long', numeric: 'always',
+		});
+		expect(sig.get()).toBe('1 year ago');
+		vi.advanceTimersByTime(2_147_483_647);
+		expect(sig.get()).toBe('1 year ago');
+		expect(vi.getTimerCount()).toBe(1);
+		sig.dispose();
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
 	it('exposes frozen callable DisposableSignal interface', () => {
 		const baseMs = Date.UTC(2026, 6, 1, 12, 0, 0);
 		using sig = toRelativeSignal(baseMs + 5_000, {

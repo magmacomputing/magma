@@ -635,6 +635,21 @@ describe('Tempo.format() refinements', () => {
     });
   });
 
+  describe('extended year parsing boundaries', () => {
+    it.each([
+      ['0000/02/29', '{yyyy}/{mm}/{dd}', 0, 2, 29],
+      ['-0004/02/29', '{yy:long}/{mm}/{dd}', -4, 2, 29],
+      ['100000/12/31', '{year}/{month}/{day}', 100000, 12, 31],
+      ['10000Dec31', '{yy:long}{mmm}{dd}', 10000, 12, 31],
+      ['20241231', '{yy:long}{mm}{dd}', 2024, 12, 31],
+      ['20240131', '{yy:long}{mm}{dd}', 2024, 1, 31],
+    ])('parses %s without consuming adjacent month or day digits', (input, format, yy, mm, dd) => {
+      const parsed = new Tempo(input, { format, timeZone: 'UTC' });
+      expect(parsed.isValid).toBe(true);
+      expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([yy, mm, dd]);
+    });
+  });
+
   describe('{ts} formatting across all TimeStamp units', () => {
     it('honours ss, ms, us, and ns via instance config and format options, matching t.ts', () => {
       const units = ['ss', 'ms', 'us', 'ns'] as const;

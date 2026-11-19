@@ -57,6 +57,28 @@ describe('defineProp', () => {
 });
 
 describe('defineLazy', () => {
+	it('recomputes on frozen receivers without trying to replace their getter', () => {
+		const target: { value?: number } = {};
+		const factory = vi.fn(() => 42);
+		defineLazy(target, 'value', factory);
+		Object.freeze(target);
+		expect(target.value).toBe(42);
+		expect(target.value).toBe(42);
+		expect(factory).toHaveBeenCalledTimes(2);
+		expect(Object.getOwnPropertyDescriptor(target, 'value')?.get).toBeDefined();
+	});
+
+	it('allows deleting a cached value to reveal the inherited lazy getter again', () => {
+		const prototype = {};
+		const factory = vi.fn().mockReturnValueOnce(1).mockReturnValueOnce(2);
+		defineLazy(prototype, 'value', factory);
+		const receiver = Object.create(prototype);
+		expect(receiver.value).toBe(1);
+		expect(Reflect.deleteProperty(receiver, 'value')).toBe(true);
+		expect(receiver.value).toBe(2);
+		expect(receiver.value).toBe(2);
+		expect(factory).toHaveBeenCalledTimes(2);
+	});
 	it('defers computation and caches undefined as a read-only data property', () => {
 		const target: { value?: unknown } = {};
 		const factory = vi.fn(() => undefined);

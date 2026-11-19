@@ -5,6 +5,15 @@ import { defineLazy } from '#library/primitive.library.js';
 import { delegate, delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
 
 describe('proxy immutability modes', () => {
+	it('mutable mode preserves native failures for locked properties and non-extensible targets', () => {
+		const target = Object.preventExtensions(Object.defineProperty({}, 'locked', { value: 1 }));
+		const proxy = proxify(target, 'mutable');
+		expect(Reflect.set(proxy, 'locked', 2)).toBe(false);
+		expect(Reflect.deleteProperty(proxy, 'locked')).toBe(false);
+		expect(Reflect.defineProperty(proxy, 'newKey', { value: 3 })).toBe(false);
+		expect(Reflect.get(proxy, 'locked')).toBe(1);
+		expect(Object.hasOwn(target, 'newKey')).toBe(false);
+	});
 	it.each(['frozen', 'readonly'] as const)('blocks mutation through a %s proxy', mode => {
 		const target = { value: 1 };
 		const proxy = proxify(target, mode);

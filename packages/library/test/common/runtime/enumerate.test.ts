@@ -2,6 +2,27 @@ import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
 import { unwrap } from '#library/primitive.library.js';
 
 describe('Enum descriptor preservation', () => {
+	it('refreshes every reflection view when a frozen child inherits a mutable enum', () => {
+		const parent = Enum.from({ A: 1 }, false);
+		const child = Enum.extend(parent, { B: 2 });
+		expect(Enum.keys(child)).toEqual(['A', 'B']);
+		expect(Enum.values(child)).toEqual([1, 2]);
+		expect(Enum.entries(child)).toEqual([['A', 1], ['B', 2]]);
+		expect(Enum.invert(child)).toEqual({ 1: 'A', 2: 'B' });
+		Object.assign(unwrap(parent), { A: 3, C: 4 });
+		expect(Enum.keys(child)).toEqual(['A', 'C', 'B']);
+		expect(Enum.values(child)).toEqual([3, 4, 2]);
+		expect(Enum.entries(child)).toEqual([['A', 3], ['C', 4], ['B', 2]]);
+		expect(Enum.invert(child)).toEqual({ 3: 'A', 4: 'C', 2: 'B' });
+	});
+
+	it('merges into an independent readonly snapshot of a live enum', () => {
+		const source = Enum.from({ A: 1 }, false);
+		const result = Enum.merge(source, { B: 2 });
+		Object.assign(unwrap(source), { A: 9, C: 3 });
+		expect(Enum.entries(result)).toEqual([['A', 1], ['B', 2]]);
+		expect(() => Reflect.set(result, 'A', 5)).toThrow(TypeError);
+	});
 	it('preserves accessors and hidden symbol descriptors without evaluating getters', () => {
 		const getter = vi.fn(() => 42);
 		const key = Symbol('metadata');
