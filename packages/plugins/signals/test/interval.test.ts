@@ -79,6 +79,65 @@ describe('intervalSignal()', () => {
 		expect(() => intervalSignal(null as any)).toThrow(TypeError);
 	});
 
+	it.each([false, 0, -100] as const)('preserves boundaries with progress interval %s', progressInterval => {
+		vi.setSystemTime(0);
+		using state = intervalSignal(new Interval(Temporal.Instant.fromEpochMilliseconds(0), Temporal.Instant.fromEpochMilliseconds(2_000)), { progressInterval });
+		expect(state.isCurrent.get()).toBe(true);
+		expect(vi.getTimerCount()).toBe(1);
+		vi.advanceTimersByTime(1_999);
+		expect(state.progress.get()).toBe(0);
+		vi.advanceTimersByTime(1);
+		expect(state.isPast.get()).toBe(true);
+		expect(state.progress.get()).toBe(1);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('keeps an entirely unbounded interval current without timers', () => {
+		using state = intervalSignal(new Interval(null, null), { now: () => 0 });
+		expect(state.isCurrent.get()).toBe(true);
+		expect(state.isFuture.get()).toBe(false);
+		expect(state.isPast.get()).toBe(false);
+		expect(state.progress.get()).toBe(0);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('enters an interval with an unbounded end and stops scheduling', () => {
+		vi.setSystemTime(0);
+		using state = intervalSignal(new Interval(Temporal.Instant.fromEpochMilliseconds(1_000), null));
+		expect(state.isFuture.get()).toBe(true);
+		vi.advanceTimersByTime(1_000);
+		expect(state.isCurrent.get()).toBe(true);
+		expect(state.isPast.get()).toBe(false);
+		expect(state.progress.get()).toBe(0);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('reschedules distant start boundaries at the maximum timeout', () => {
+		vi.setSystemTime(0);
+		const start = 2_147_483_647 + 1_000;
+		using state = intervalSignal(new Interval(new Tempo(start), new Tempo(start + 1_000)));
+		vi.advanceTimersByTime(2_147_483_647);
+		expect(state.isFuture.get()).toBe(true);
+		expect(vi.getTimerCount()).toBe(1);
+		vi.advanceTimersByTime(1_000);
+		expect(state.isCurrent.get()).toBe(true);
+		vi.advanceTimersByTime(1_000);
+		expect(state.isPast.get()).toBe(true);
+		expect(state.progress.get()).toBe(1);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('cancels a future boundary when disposed before the start', () => {
+		vi.setSystemTime(0);
+		const state = intervalSignal(new Interval(Temporal.Instant.fromEpochMilliseconds(1_000), Temporal.Instant.fromEpochMilliseconds(2_000)));
+		state.dispose();
+		vi.advanceTimersByTime(3_000);
+		expect(state.disposed).toBe(true);
+		expect(state.isFuture.get()).toBe(true);
+		expect(state.isPast.get()).toBe(false);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
 	it('transitions cleanly from future -> current (with progress) -> past across boundary timers', () => {
 		const baseMs = Date.UTC(2026, 6, 1, 12, 0, 0);
 		let nowMs = baseMs;

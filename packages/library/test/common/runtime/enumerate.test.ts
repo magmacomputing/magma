@@ -37,6 +37,13 @@ describe('Enum descriptor preservation', () => {
 		expect([...result]).toEqual([]);
 	});
 
+	it('merges into an independent readonly snapshot of a live enum', () => {
+		const source = Enum.from({ A: 1 }, false);
+		const result = Enum.merge(source, { B: 2 });
+		Object.assign(unwrap(source), { A: 9, C: 3 });
+		expect(Enum.entries(result)).toEqual([['A', 1], ['B', 2]]);
+		expect(() => Reflect.set(result, 'A', 5)).toThrow(TypeError);
+	});
 	it('preserves accessors and hidden symbol descriptors without evaluating getters', () => {
 		const getter = vi.fn(() => 42);
 		const key = Symbol('metadata');
