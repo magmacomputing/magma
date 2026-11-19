@@ -34,7 +34,7 @@ export const SEASON = Enum.from({ Summer: 'summer', Autumn: 'autumn', Winter: 'w
 
 ### Lock-Down Flag (`frozen`)
 Both `Enum.from(source, frozen = true)` and `Enum.extend(base, source, frozen = true)` accept an optional `frozen` boolean:
-- **`true` (default):** Wraps the enum in a read-only `Proxy` that rejects writes, deletions, and property definitions, while the underlying top-level target remains extensible because `deepFreeze` skips targets carrying the `Enumify` tag (note: nested object values remain mutable through existing external references).
+- **`true` (default):** Freezes the top-level target with `Object.freeze()` and wraps it in a read-only `Proxy` that rejects writes, deletions, and extensions (note: `deepFreeze` skips targets carrying the `Enumify` tag, so nested object values remain mutable through existing external references).
 - **`false`:** Leaves the underlying target object unfrozen/extensible while the returned `Proxy` wrapper still enforces read-only access for consumers.
 
 ### Type Inference

@@ -204,7 +204,7 @@ function mergeEnum<const T extends readonly Property<any>[]>(...sources: T): Enu
 				merged[k] = v;
 		}
 	}
-	const target = defineFrom(Object.create(ENUM), merged);
+	const target = Object.freeze(defineFrom(Object.create(ENUM), merged));
 	return proxify(target, 'frozen') as any;
 }
 
@@ -259,6 +259,9 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 		default:
 			throw new TypeError(`Enumify: invalid argument type: ${arg.type}`);
 	}
+
+	if (frozen)
+		Object.freeze(target);
 
 	return proxify(target, frozen ? 'frozen' : 'readonly');				// proxy is ALWAYS read-only, target is frozen if requested
 }
