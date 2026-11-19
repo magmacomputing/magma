@@ -44,7 +44,7 @@ async function updateLlmsTxt(version, glossarySection) {
 		if (glossarySection) {
 			const block = `<!-- GLOSSARY:START -->\n${glossarySection}\n<!-- GLOSSARY:END -->`;
 			if (/<!-- GLOSSARY:START -->[\s\S]*?<!-- GLOSSARY:END -->/.test(llmsTxt)) {
-				llmsTxt = llmsTxt.replace(/<!-- GLOSSARY:START -->[\s\S]*?<!-- GLOSSARY:END -->/, block);
+				llmsTxt = llmsTxt.replace(/<!-- GLOSSARY:START -->[\s\S]*?<!-- GLOSSARY:END -->/, () => block);
 			} else {
 				llmsTxt = `${llmsTxt.trimEnd()}\n\n${block}\n`;
 			}
