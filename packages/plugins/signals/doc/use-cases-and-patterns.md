@@ -42,7 +42,7 @@ import { intervalSignal } from '@magmacomputing/tempo-plugin-signals';
 
 const start = new Tempo().add({ minutes: 10 });
 const end = start.add({ minutes: 50 });
-const meetingWindow = Tempo.Interval.from(start, end);
+const meetingWindow = new Tempo.Interval(start, end);
 
 using state = intervalSignal(meetingWindow, { progressInterval: 1_000 });
 

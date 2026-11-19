@@ -10,14 +10,10 @@ const glossaryFile = join(__dirname, '../doc/glossary.json');
 const pkgFile = join(__dirname, '../package.json');
 
 async function buildGlossarySection() {
-	try {
-		const raw = JSON.parse(await readFile(glossaryFile, 'utf-8'));
-		const sorted = [...raw].sort((a, b) => a.term.localeCompare(b.term));
-		const lines = sorted.map((entry) => `- **${entry.term}** (\`${entry.category}\`): ${entry.summary}`);
-		return `## Glossary\n\n${lines.join('\n')}`;
-	} catch {
-		return '';
-	}
+	const raw = JSON.parse(await readFile(glossaryFile, 'utf-8'));
+	const sorted = [...raw].sort((a, b) => a.term.localeCompare(b.term));
+	const lines = sorted.map((entry) => `- **${entry.term}** (\`${entry.category}\`): ${entry.summary}`);
+	return `## Glossary\n\n${lines.join('\n')}`;
 }
 
 async function getMarkdownFiles(dir) {

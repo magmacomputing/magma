@@ -7,7 +7,6 @@ let _timeZoneState: Signify.State<string> | null = null;
 let _unsubscribeConfig: (() => void) | null = null;
 let _fallbackLocale: string | undefined = undefined;
 let _fallbackTimeZone: string | undefined = undefined;
-let _activeConfigSource: (() => Record<string, any> | undefined) | null = null;
 
 /** Resolves a BCP 47 locale string with Intl runtime fallback. */
 function resolveLocale(value: unknown, fallback?: string): string {
@@ -41,10 +40,8 @@ export function initConfigSignals(
 		_fallbackLocale = options.locale;
 	if (isText(options?.timeZone))
 		_fallbackTimeZone = options.timeZone;
-	if (config)
-		_activeConfigSource = typeof config === 'function' ? (config as () => Record<string, any> | undefined) : () => config;
 
-	const currentConfig = (typeof config === 'function' ? (config as () => Record<string, any> | undefined)() : config) ?? _activeConfigSource?.() ?? Tempo.config;
+	const currentConfig = (typeof config === 'function' ? (config as () => Record<string, any> | undefined)() : config) ?? Tempo.config;
 	const nextLocale = resolveLocale(currentConfig?.locale, _fallbackLocale);
 	const nextTimeZone = resolveTimeZone(currentConfig?.timeZone, _fallbackTimeZone);
 
@@ -105,5 +102,4 @@ export function disposeConfigSignals(): void {
 		_unsubscribeConfig();
 		_unsubscribeConfig = null;
 	}
-	_activeConfigSource = null;
 }

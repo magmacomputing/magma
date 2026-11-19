@@ -111,6 +111,9 @@ export function intervalSignal(
 		isPastState.set(isPast);
 		progressState.set(computeProgress(nowMs, startMs, endMs));
 
+		if (timers.isDisposed)
+			return;
+
 		if (isCurrent && progressInterval > 0 && Number.isFinite(startMs) && Number.isFinite(endMs)) {
 			if (timers.progressTimer === null) {
 				timers.progressTimer = setInterval(() => {

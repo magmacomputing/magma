@@ -1,10 +1,14 @@
 import {
+	Tempo,
+} from '@magmacomputing/tempo';
+import {
+	Signify,
 	definePlugin,
 	deepFreeze,
 	hasOwn,
 	isObject,
+	isText,
 	type Interval,
-	type Tempo,
 	type TempoPlugin,
 } from '@magmacomputing/tempo/plugin/sdk';
 import {
@@ -42,21 +46,38 @@ export const SignalsPlugin: TempoPlugin<SignalsPluginOptions> = definePlugin({
 			...(isObject(options) ? options : {}),
 		};
 
-		initConfigSignals(effectiveOptions, () => installedClass.config);
+		const isGlobalTempo = installedClass === Tempo;
+		if (isGlobalTempo)
+			initConfigSignals(effectiveOptions, () => installedClass.config);
 
 		if (!hasOwn(installedClass, 'signals')) {
-			const signalsNamespace: TempoSignalsNamespace = {
-				get locale() {
-					return localeSignal();
-				},
-				get timeZone() {
-					return timeZoneSignal();
-				},
-				relative: toRelativeSignal,
-				interval: intervalSignal,
-				dispose: disposeConfigSignals,
-				[Symbol.dispose]: disposeConfigSignals,
-			};
+			const signalsNamespace: TempoSignalsNamespace = isGlobalTempo
+				? {
+						get locale() {
+							return localeSignal();
+						},
+						get timeZone() {
+							return timeZoneSignal();
+						},
+						relative: toRelativeSignal,
+						interval: intervalSignal,
+						dispose: disposeConfigSignals,
+						[Symbol.dispose]: disposeConfigSignals,
+					}
+				: {
+						locale: Signify.computed(() => {
+							const loc = installedClass.config?.locale ?? effectiveOptions.locale;
+							return isText(loc) ? loc : (Intl.DateTimeFormat().resolvedOptions().locale || 'en');
+						}),
+						timeZone: Signify.computed(() => {
+							const tz = installedClass.config?.timeZone ?? effectiveOptions.timeZone;
+							return isText(tz) ? tz : (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+						}),
+						relative: toRelativeSignal,
+						interval: intervalSignal,
+						dispose: () => {},
+						[Symbol.dispose]: () => {},
+					};
 
 			Object.defineProperty(installedClass, 'signals', {
 				value: deepFreeze(signalsNamespace),

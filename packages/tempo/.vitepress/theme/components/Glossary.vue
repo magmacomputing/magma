@@ -64,6 +64,7 @@ const activeLetters = computed(() => new Set(groupedEntries.value.map(([letter])
           type="button"
           class="glossary-chip"
           :class="{ active: selectedCategory === 'all' }"
+          :aria-pressed="selectedCategory === 'all'"
           @click="selectedCategory = 'all'"
         >
           All ({{ entries.length }})
@@ -74,6 +75,7 @@ const activeLetters = computed(() => new Set(groupedEntries.value.map(([letter])
           type="button"
           class="glossary-chip"
           :class="{ active: selectedCategory === cat }"
+          :aria-pressed="selectedCategory === cat"
           @click="selectedCategory = cat"
         >
           {{ CATEGORY_LABELS[cat] }}
