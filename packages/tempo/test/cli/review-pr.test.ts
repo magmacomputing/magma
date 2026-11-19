@@ -10,6 +10,20 @@ Keep inherited configuration available.
 </details>`;
 
 describe('review parser outside diff sections', () => {
+	it('does not recognize a section inside a tilde fence', () => {
+		const body = ['~~~markdown', '**Outside diff range comments (1)**', finding, '~~~'].join('\n');
+		expect(parseTopLevelReviewComments(body)).toEqual([]);
+	});
+
+	it('ignores a fenced heading while parsing a later real section', () => {
+		const body = ['```markdown', '**Outside diff range comments (1)**', finding, '```',
+			'**Outside diff range comments (1)**', finding.replace('abc123', 'def456'),
+		].join('\n');
+		const results = parseTopLevelReviewComments(body);
+		expect(results).toHaveLength(1);
+		expect(results[0]).toMatchObject({ category: 'OutsideDiff', commentId: 'cr_def456' });
+	});
+
 	it.each([
 		'**Outside diff range comments**',
 		'**Outside diff range comments (1)**',

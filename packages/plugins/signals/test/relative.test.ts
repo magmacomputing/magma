@@ -2,6 +2,60 @@ import { Tempo } from '@magmacomputing/tempo';
 import { disposeConfigSignals, toRelativeSignal } from '../src/index.js';
 
 describe('toRelativeSignal()', () => {
+	it.each([
+		[59_999, 'in 59 seconds'],
+		[60_000, 'in 1 minute'],
+		[3_599_999, 'in 59 minutes'],
+		[3_600_000, 'in 1 hour'],
+		[86_399_999, 'in 23 hours'],
+		[86_400_000, 'in 1 day'],
+		[2_592_000_000, 'in 1 month'],
+		[31_536_000_000, 'in 1 year'],
+		[-59_999, '59 seconds ago'],
+		[-60_000, '1 minute ago'],
+		[-3_600_000, '1 hour ago'],
+		[-86_400_000, '1 day ago'],
+		[-2_592_000_000, '1 month ago'],
+		[-31_536_000_000, '1 year ago'],
+	])('selects the correct unit for an offset of %i ms', (offset, expected) => {
+		using signal = toRelativeSignal(offset, { locale: 'en-US', style: 'long', numeric: 'always', now: () => 0 });
+		expect(signal.get()).toBe(expected);
+	});
+
+	it.each([
+		{ epoch: { ns: -1_500_000_000n } },
+		{ epochNanoseconds: -1_500_000_000n },
+		-1_500_000_000n,
+	])('preserves negative nanosecond targets: %s', target => {
+		using signal = toRelativeSignal(target, { locale: 'en-US', style: 'long', numeric: 'always', now: () => 0 });
+		expect(signal.get()).toBe('1 second ago');
+	});
+
+	it('crosses a past minute boundary at the scheduled millisecond using the default clock', () => {
+		vi.setSystemTime(0);
+		using signal = toRelativeSignal(-59_999, { locale: 'en-US', style: 'long', numeric: 'always' });
+		expect(signal.get()).toBe('59 seconds ago');
+		expect(vi.getTimerCount()).toBe(1);
+		vi.advanceTimersByTime(1);
+		expect(signal.get()).toBe('1 minute ago');
+		expect(vi.getTimerCount()).toBe(1);
+		signal.dispose();
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('disposing one relative signal leaves other consumers updating', () => {
+		vi.setSystemTime(0);
+		using first = toRelativeSignal(-1_000, { locale: 'en-US', style: 'long' });
+		using second = toRelativeSignal(-1_000, { locale: 'en-US', style: 'long' });
+		expect(first.get()).toBe('1 second ago');
+		expect(second.get()).toBe('1 second ago');
+		first.dispose();
+		expect(vi.getTimerCount()).toBe(1);
+		vi.advanceTimersByTime(1_000);
+		expect(first.get()).toBe('1 second ago');
+		expect(second.get()).toBe('2 seconds ago');
+	});
+
 	beforeEach(() => {
 		vi.useFakeTimers();
 		Tempo.init({ locale: 'en-US', timeZone: 'UTC' });
@@ -43,6 +97,53 @@ describe('toRelativeSignal()', () => {
 		} finally {
 			errorSpy.mockRestore();
 		}
+	});
+
+	it.each([
+		[60_000, 'minute'],
+		[3_600_000, 'hour'],
+		[86_400_000, 'day'],
+		[2_592_000_000, 'month'],
+		[31_536_000_000, 'year'],
+	] as const)('changes units exactly at the %i ms past boundary', (boundary, unit) => {
+		vi.setSystemTime(0);
+		using sig = toRelativeSignal(1 - boundary, {
+			locale: 'en-US', style: 'long', numeric: 'always',
+		});
+		const before = sig.get();
+		vi.advanceTimersByTime(1);
+		expect(sig.get()).toBe(`1 ${unit} ago`);
+		expect(sig.get()).not.toBe(before);
+		expect(vi.getTimerCount()).toBe(1);
+	});
+
+	it.each([
+		{ epoch: { ns: -1_500_000_000n } },
+		{ epochNanoseconds: -1_500_000_000n },
+		-1_500_000_000n,
+	])('preserves negative subsecond precision for target %#', target => {
+		vi.setSystemTime(0);
+		using sig = toRelativeSignal(target, {
+			locale: 'en-US', style: 'long', numeric: 'always',
+		});
+		expect(sig.get()).toBe('1 second ago');
+		vi.advanceTimersByTime(499);
+		expect(sig.get()).toBe('1 second ago');
+		vi.advanceTimersByTime(1);
+		expect(sig.get()).toBe('2 seconds ago');
+	});
+
+	it('caps long delays and reschedules without a timeout overflow', () => {
+		vi.setSystemTime(0);
+		using sig = toRelativeSignal(-31_536_000_000, {
+			locale: 'en-US', style: 'long', numeric: 'always',
+		});
+		expect(sig.get()).toBe('1 year ago');
+		vi.advanceTimersByTime(2_147_483_647);
+		expect(sig.get()).toBe('1 year ago');
+		expect(vi.getTimerCount()).toBe(1);
+		sig.dispose();
+		expect(vi.getTimerCount()).toBe(0);
 	});
 
 	it('exposes frozen callable DisposableSignal interface', () => {

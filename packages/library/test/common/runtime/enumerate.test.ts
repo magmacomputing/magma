@@ -2,6 +2,48 @@ import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
 import { unwrap } from '#library/primitive.library.js';
 
 describe('Enum descriptor preservation', () => {
+	it('refreshes every reflection helper after a mutable parent changes', () => {
+		const parent = Enum.from({ A: 1 }, false);
+		const child = Enum.extend(parent, { B: 2 });
+		expect(Enum.keys(child)).toEqual(['A', 'B']);
+		expect(Enum.values(child)).toEqual([1, 2]);
+		expect(Enum.entries(child)).toEqual([['A', 1], ['B', 2]]);
+		expect(Enum.invert(child)).toEqual({ 1: 'A', 2: 'B' });
+		Object.assign(unwrap(parent), { A: 10, C: 3 });
+		expect(Enum.keys(child)).toEqual(['A', 'C', 'B']);
+		expect(Enum.values(child)).toEqual([10, 3, 2]);
+		expect(Enum.entries(child)).toEqual([['A', 10], ['C', 3], ['B', 2]]);
+		expect(Enum.invert(child)).toEqual({ 10: 'A', 3: 'C', 2: 'B' });
+		expect(Enum.keyOf(child, 1)).toBeUndefined();
+		expect(Enum.includes(child, 10)).toBe(true);
+	});
+
+	it('merges inherited members into an independent frozen snapshot', () => {
+		const source = Enum.from({ A: 1 }, false);
+		const derived = Enum.extend(source, { B: 2 });
+		const merged = Enum.merge(derived, { A: undefined, C: 3 });
+		Reflect.set(unwrap(source), 'A', 9);
+		expect(Enum.entries(merged)).toEqual([['A', undefined], ['B', 2], ['C', 3]]);
+		expect(Enum.hasOwn(merged, 'A')).toBe(true);
+		expect(Enum.hasOwn(merged, 'B')).toBe(true);
+		expect(Object.isFrozen(unwrap(merged))).toBe(true);
+		expect(() => Reflect.set(merged, 'C', 4)).toThrow(TypeError);
+	});
+
+	it('merges no sources into an empty genuine enum', () => {
+		const result = Enum.merge();
+		expect(Enum.isEnum(result)).toBe(true);
+		expect(Enum.entries(result)).toEqual([]);
+		expect([...result]).toEqual([]);
+	});
+
+	it('merges into an independent readonly snapshot of a live enum', () => {
+		const source = Enum.from({ A: 1 }, false);
+		const result = Enum.merge(source, { B: 2 });
+		Object.assign(unwrap(source), { A: 9, C: 3 });
+		expect(Enum.entries(result)).toEqual([['A', 1], ['B', 2]]);
+		expect(() => Reflect.set(result, 'A', 5)).toThrow(TypeError);
+	});
 	it('preserves accessors and hidden symbol descriptors without evaluating getters', () => {
 		const getter = vi.fn(() => 42);
 		const key = Symbol('metadata');
