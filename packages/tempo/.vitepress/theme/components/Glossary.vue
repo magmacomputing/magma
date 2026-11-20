@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
-import { withBase, useRoute } from 'vitepress';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
+import { withBase, useRouter } from 'vitepress';
 import { data as entries, type GlossaryCategory, type GlossaryEntry } from '../../../doc/glossary.data';
 
 const CATEGORY_LABELS: Record<GlossaryCategory, string> = {
@@ -66,23 +66,26 @@ const revealHashEntry = async () => {
   }
 };
 
-const route = useRoute();
+const router = useRouter();
+let prevAfterRouteChange: typeof router.onAfterRouteChange;
+let wrappedAfterRouteChange: typeof router.onAfterRouteChange;
 
 onMounted(() => {
   void revealHashEntry();
   window.addEventListener('hashchange', revealHashEntry);
-});
-
-watch(
-  () => [route.path, route.data],
-  () => {
+  prevAfterRouteChange = router.onAfterRouteChange;
+  wrappedAfterRouteChange = async (to: string) => {
+    await prevAfterRouteChange?.(to);
     void revealHashEntry();
-  },
-);
+  };
+  router.onAfterRouteChange = wrappedAfterRouteChange;
+});
 
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined')
     window.removeEventListener('hashchange', revealHashEntry);
+  if (router.onAfterRouteChange === wrappedAfterRouteChange)
+    router.onAfterRouteChange = prevAfterRouteChange;
 });
 </script>
 

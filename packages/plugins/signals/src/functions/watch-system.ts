@@ -14,8 +14,14 @@ export function watchSystemConfig(options: WatchSystemConfigOptions = {}): IntlW
 	return watchIntl(({ locale, timeZone }) => {
 		if (!syncLocale && !syncTimeZone)
 			return;
+		const parseState = (target as any).parse;
 		const patch: Record<string, any> = {
 			...(target.config ?? {}),
+			...(parseState ? {
+				pivot: parseState.pivot,
+				monthDay: parseState.monthDay,
+				planner: parseState.planner,
+			} : {}),
 		};
 		if (syncLocale)
 			patch.locale = locale;

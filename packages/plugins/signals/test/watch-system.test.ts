@@ -62,7 +62,12 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 	it('respects { locale: false } to keep a pinned locale while syncing timeZone', () => {
 		const state = mockSystemIntl('en-US', 'UTC');
 
-		Tempo.init({ locale: 'fr-FR', timeZone: 'UTC', calendar: 'hebrew' });
+		Tempo.init({
+			locale: 'fr-FR',
+			timeZone: 'UTC',
+			calendar: 'hebrew',
+			planner: { layoutOrder: ['dmy', 'mdy'] },
+		});
 
 		using watcher = watchSystemConfig({ locale: false });
 		state.locale = 'de-DE';
@@ -72,6 +77,7 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 		expect(Tempo.signals.locale.get()).toBe('fr-FR');
 		expect(Tempo.signals.timeZone.get()).toBe('Australia/Sydney');
 		expect(Tempo.config.calendar).toBe('hebrew');
+		expect(Tempo.parse.planner.layoutOrder).toEqual(['dmy', 'mdy']);
 	});
 
 	it('supports sandbox-scoped watchSystem() without mutating global Tempo', () => {

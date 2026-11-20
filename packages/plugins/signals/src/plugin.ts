@@ -96,7 +96,7 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 					timeZone: Signify.computed(() => sbTimeZoneState.get()),
 					relative: toRelativeSignal,
 					interval: intervalSignal,
-					watchSystem: (opts?: WatchSystemConfigOptions) => watchSystemConfig({ target: installedClass, ...opts }),
+					watchSystem: (opts?: WatchSystemConfigOptions) => watchSystemConfig({ ...opts, target: opts?.target ?? installedClass }),
 					dispose: () => {},
 					[Symbol.dispose]: () => {},
 				};
