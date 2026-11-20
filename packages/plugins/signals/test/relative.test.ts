@@ -277,4 +277,8 @@ describe('toRelativeSignal()', () => {
 
 		expect(sig.get()).toBe('in 4 minutes');
 	});
+
+	it('throws TypeError for non-finite bigint targets', () => {
+		expect(() => toRelativeSignal(10n ** 400n)).toThrow(TypeError);
+	});
 });

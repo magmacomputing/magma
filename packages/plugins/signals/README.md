@@ -41,7 +41,7 @@ relative.dispose();
 
 * ⚡ **Tree-Shakeable Functions & Explicit Registration**: Standalone helpers (`toRelativeSignal`, `intervalSignal`, `localeSignal`, `timeZoneSignal`) and `SignalsPlugin` are exported from the root entry with zero side effects; registration occurs only via `Tempo.use(SignalsPlugin)` or `@magmacomputing/tempo-plugin-signals/install` (which mounts `Tempo.signals` and prototype methods).
 * ⏱️ **Adaptive Relative Time**: Schedules updates only when the formatted relative unit boundary changes rather than polling every second.
-* 📅 **Event-Driven Interval Tracking**: Tracks active, past, and future interval states (`isCurrent`, `isPast`, `isFuture`, `progress`) with boundary timeouts.
+* 📅 **Event-Driven Interval Tracking**: Status transitions (`isCurrent`, `isPast`, `isFuture`) use boundary timeouts, while active `progress` runs a periodic timer every 1,000 ms by default (pass `progressInterval: false` for boundary-only updates).
 * 🌐 **Global Config Reactivity**: Exposes reactive `locale` and `timeZone` signals synchronized with `Tempo.init()` via `onConfigChange`.
 * 🧹 **Clean Resource Disposal**: Supports explicit `dispose()` and `Symbol.dispose` (`using`) to release timers and subscriptions deterministically.
 

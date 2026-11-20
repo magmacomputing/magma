@@ -139,6 +139,8 @@ export function toRelativeSignal(
 	options: RelativeSignalOptions = {},
 ): DisposableSignal<string> {
 	const targetMs = resolveTargetMs(target);
+	if (!Number.isFinite(targetMs))
+		throw new TypeError('Invalid target: resolved epoch milliseconds must be finite');
 	const nowFn = isFunction(options.now) ? options.now : Date.now;
 	const style = options.style ?? 'narrow';
 	const numeric = options.numeric ?? 'auto';

@@ -175,11 +175,6 @@ const href = computed(() =>
   top: calc(100% + 8px);
 }
 
-.glossary-tooltip--below::after {
-  top: auto;
-  bottom: 100%;
-}
-
 .glossary-tooltip::after {
   content: '';
   position: absolute;
@@ -187,6 +182,11 @@ const href = computed(() =>
   right: 0;
   top: 100%;
   height: 10px;
+}
+
+.glossary-tooltip--below::after {
+  top: auto;
+  bottom: 100%;
 }
 
 .tooltip-title {

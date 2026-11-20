@@ -1,4 +1,10 @@
-import type { ReadonlySignal, Interval as TempoInterval, Tempo } from '@magmacomputing/tempo/plugin/sdk';
+import type {
+	ReadonlySignal,
+	Interval as TempoInterval,
+	Tempo,
+	WatchIntlOptions,
+	IntlWatcher,
+} from '@magmacomputing/tempo/plugin/sdk';
 
 /**
  * A readonly reactive signal that supports explicit and `using`-based disposal.
@@ -93,6 +99,18 @@ export type RelativeSignalTarget =
 	| bigint;
 
 /**
+ * Options for {@link watchSystemConfig} and `Tempo.signals.watchSystem`.
+ */
+export interface WatchSystemConfigOptions extends WatchIntlOptions {
+	/** Sync `Tempo.init({ locale })` on system locale changes (default: `true`). */
+	locale?: boolean;
+	/** Sync `Tempo.init({ timeZone })` on system time-zone changes (default: `true`). */
+	timeZone?: boolean;
+	/** Target `Tempo` class or sandbox (default: `Tempo`). */
+	target?: typeof Tempo;
+}
+
+/**
  * Static `Tempo.signals` namespace mounted by `SignalsPlugin`.
  */
 export interface TempoSignalsNamespace {
@@ -104,6 +122,8 @@ export interface TempoSignalsNamespace {
 	relative(target: RelativeSignalTarget, options?: RelativeSignalOptions): DisposableSignal<string>;
 	/** Creates a boundary-scheduled reactive state projection for an `Interval`. */
 	interval(interval: TempoInterval<any>, options?: IntervalSignalOptions): IntervalSignalState;
+	/** Watches host locale/time-zone changes and calls `Tempo.init()` automatically. */
+	watchSystem(options?: WatchSystemConfigOptions): IntlWatcher;
 	/** Detaches global configuration observers registered by `SignalsPlugin`. */
 	dispose(): void;
 	/** `Symbol.dispose` alias for `using` declarations. */

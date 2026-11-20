@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue';
-import { withBase } from 'vitepress';
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import { withBase, useRoute } from 'vitepress';
 import { data as entries, type GlossaryCategory, type GlossaryEntry } from '../../../doc/glossary.data';
 
 const CATEGORY_LABELS: Record<GlossaryCategory, string> = {
@@ -66,10 +66,19 @@ const revealHashEntry = async () => {
   }
 };
 
+const route = useRoute();
+
 onMounted(() => {
   void revealHashEntry();
   window.addEventListener('hashchange', revealHashEntry);
 });
+
+watch(
+  () => [route.path, route.data],
+  () => {
+    void revealHashEntry();
+  },
+);
 
 onBeforeUnmount(() => {
   if (typeof window !== 'undefined')

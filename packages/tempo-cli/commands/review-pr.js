@@ -86,7 +86,7 @@ const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^
 const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
 const OUTSIDE_DIFF_SECTION_PATTERN = /(?:^[ \t]*\*\*[^\w]*Outside diff range comments(?:\s*\(\d+\))?\*\*[ \t]*$|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Outside diff range comments[\s\S]*?<\/summary>)/im;
 
-const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-ups?\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt (?:for|to)\b|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
+const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-ups?\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Outside diff range comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt (?:for|to)\b|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
 
 const ITEM_DETAILS_REGEX = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 const CR_COMMENT_CLOSE_PATTERN = /<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i;

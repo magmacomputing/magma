@@ -1,6 +1,6 @@
 import { getOffsets, getTemporalIds, getISOWeekOfYear } from '#library/temporal.library.js';
 import { memoizeFunction } from '#library/function.library.js';
-import { isFunction, isCallable, isString, isEmpty, isLocale } from '#library/assertion.library.js';
+import { isFunction, isCallable, isString, isNumber, isEmpty, isLocale } from '#library/assertion.library.js';
 import { hasOwn, hasKey } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { cast } from '#library/type.library.js';
@@ -879,4 +879,155 @@ export function getCountryFromTimeZone(timeZone?: string, regions?: readonly str
 
 	const key = regions && regions.length > 0 ? regions.map(r => r.toUpperCase()).join(',') : '*';
 	return getTimeZoneCountryMap(key).get(canonicalZone);
+}
+
+const MAX_WATCH_TIMEOUT_MS = 2_147_483_647;
+
+/** Snapshot of the host runtime's resolved `Intl` locale and IANA time zone. */
+export interface IntlSnapshot {
+	readonly locale: string;
+	readonly timeZone: string;
+}
+
+/** Configuration options for {@link watchIntl}. */
+export interface WatchIntlOptions {
+	/** Optional custom event subscription (e.g. Electron `powerMonitor` or Node signal). */
+	subscribe?: (trigger: () => void) => (() => void) | void;
+	/** Optional opt-in polling interval in ms for headless Node daemons (default: `false`). */
+	pollIntervalMs?: number | false;
+	/** Invoke `onChange` immediately with the initial snapshot (default: `false`). */
+	immediate?: boolean;
+}
+
+/** Disposable watcher handle returned by {@link watchIntl}. */
+export interface IntlWatcher extends Disposable {
+	/** Synchronously re-reads `Intl.DateTimeFormat().resolvedOptions()` and notifies if changed. */
+	check(): boolean;
+	/** Current last-observed `{ locale, timeZone }` snapshot. */
+	readonly current: IntlSnapshot;
+	/** Detaches all event listeners, custom subscriptions, and optional timers. */
+	dispose(): void;
+	/** `Symbol.dispose` alias for `using` declarations. */
+	[Symbol.dispose](): void;
+}
+
+function readSystemIntlSnapshot(): IntlSnapshot {
+	if (!hasIntl('DateTimeFormat'))
+		return { locale: 'en', timeZone: 'UTC' };
+	const resolved = Intl.DateTimeFormat().resolvedOptions();
+	return {
+		locale: resolved.locale || 'en',
+		timeZone: resolved.timeZone || 'UTC',
+	};
+}
+
+/**
+ * Watches the host runtime's resolved `Intl` locale and IANA time zone for changes.
+ *
+ * Uses zero-polling native browser events (`languagechange`, `focus`, `visibilitychange`,
+ * and `navigator.connection.change`) by default, and supports custom host triggers via
+ * `options.subscribe` or opt-in polling via `options.pollIntervalMs`.
+ */
+export function watchIntl(
+	onChange: (next: IntlSnapshot, prev: IntlSnapshot) => void,
+	options: WatchIntlOptions = {},
+): IntlWatcher {
+	if (!isFunction(onChange))
+		throw new TypeError('watchIntl requires an onChange callback');
+
+	if (isNumber(options.pollIntervalMs) && options.pollIntervalMs > MAX_WATCH_TIMEOUT_MS)
+		throw new RangeError(`pollIntervalMs must be <= ${MAX_WATCH_TIMEOUT_MS} ms`);
+
+	let current = readSystemIntlSnapshot();
+	let disposed = false;
+
+	const check = (): boolean => {
+		if (disposed)
+			return false;
+		const next = readSystemIntlSnapshot();
+		if (next.locale === current.locale && next.timeZone === current.timeZone)
+			return false;
+		const prev = current;
+		current = next;
+		onChange(next, prev);
+		return true;
+	};
+
+	const cleanups: Array<() => void> = [];
+
+	if (typeof window !== 'undefined' && isFunction(window.addEventListener)) {
+		window.addEventListener('languagechange', check);
+		window.addEventListener('focus', check);
+		cleanups.push(() => {
+			window.removeEventListener('languagechange', check);
+			window.removeEventListener('focus', check);
+		});
+	}
+
+	if (typeof document !== 'undefined' && isFunction(document.addEventListener)) {
+		const onVisibility = () => {
+			if (document.visibilityState === 'visible')
+				check();
+		};
+		document.addEventListener('visibilitychange', onVisibility);
+		cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
+	}
+
+	const conn = typeof navigator !== 'undefined' ? (navigator as any).connection : undefined;
+	if (conn && isFunction(conn.addEventListener) && isFunction(conn.removeEventListener)) {
+		conn.addEventListener('change', check);
+		cleanups.push(() => conn.removeEventListener('change', check));
+	}
+
+	const dispose = (): void => {
+		if (disposed)
+			return;
+		disposed = true;
+		const errors: unknown[] = [];
+		while (cleanups.length > 0) {
+			try {
+				cleanups.pop()!();
+			} catch (err) {
+				errors.push(err);
+			}
+		}
+		if (errors.length === 1)
+			throw errors[0];
+		if (errors.length > 1)
+			throw new AggregateError(errors, 'watchIntl: one or more cleanup handlers failed');
+	};
+
+	try {
+		if (isFunction(options.subscribe)) {
+			const unsub = options.subscribe(check);
+			if (isFunction(unsub))
+				cleanups.push(unsub);
+		}
+
+		if (isNumber(options.pollIntervalMs) && options.pollIntervalMs > 0) {
+			const timer = setInterval(check, options.pollIntervalMs);
+			if (isFunction((timer as any)?.unref))
+				(timer as any).unref();
+			cleanups.push(() => clearInterval(timer));
+		}
+
+		if (options.immediate)
+			onChange(current, current);
+	} catch (err) {
+		try {
+			dispose();
+		} catch {
+			// Preserve the original construction error
+		}
+		throw err;
+	}
+
+	return Object.freeze({
+		check,
+		get current() {
+			return current;
+		},
+		dispose,
+		[Symbol.dispose]: dispose,
+	});
 }

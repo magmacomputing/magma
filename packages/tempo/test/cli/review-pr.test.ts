@@ -61,4 +61,16 @@ ${finding.replace('abc123', 'def456')}
 		expect(results.map(result => result.category)).toEqual(['OutsideDiff', 'Additional']);
 		expect(results.map(result => result.commentId)).toEqual(['cr_abc123', 'cr_def456']);
 	});
+
+	it('extracts multiple nested findings inside an HTML Outside diff range comments wrapper', () => {
+		const secondFinding = finding
+			.replaceAll('packages/tempo/src/tempo.class.ts', 'packages/tempo/src/module/module.parse.ts')
+			.replace('abc123', 'def456');
+		const body = `<details><summary>Outside diff range comments (2)</summary>\n${finding}\n${secondFinding}\n</details>`;
+		const results = parseTopLevelReviewComments(body);
+		expect(results).toHaveLength(2);
+		expect(results.map(result => result.category)).toEqual(['OutsideDiff', 'OutsideDiff']);
+		expect(results.map(result => result.path)).toEqual(['packages/tempo/src/tempo.class.ts', 'packages/tempo/src/module/module.parse.ts']);
+		expect(results.map(result => result.commentId)).toEqual(['cr_abc123', 'cr_def456']);
+	});
 });

@@ -121,6 +121,22 @@ When `SignalsPlugin` is installed, the same signals are exposed on `Tempo.signal
 | `locale` | `string` | Runtime `Intl` locale (or `'en'`) | Fallback BCP 47 locale before `Tempo.init()` specifies one |
 | `timeZone` | `string` | Runtime `Intl` time zone (or `'UTC'`) | Fallback IANA time zone before `Tempo.init()` specifies one |
 
+### System Locale & Time-Zone Watchers (`watchSystemConfig`) {#watch-system-config}
+
+To synchronize `Tempo.init()` automatically when the host OS or browser changes its locale or time zone (e.g., laptop travel across time zones or `languagechange` events) with **zero background polling**:
+
+```typescript
+import { watchSystemConfig } from '@magmacomputing/tempo-plugin-signals';
+
+// Sync both locale and timeZone on browser focus/visibility/languagechange events
+using watcher = watchSystemConfig();
+
+// Or keep a pinned locale and sync only timeZone
+using tzOnly = watchSystemConfig({ locale: false });
+```
+
+When `SignalsPlugin` is installed, the same helper is available at `Tempo.signals.watchSystem(options?)`. Non-browser runtimes can pass a custom `subscribe(trigger)` hook (e.g., Electron `powerMonitor`), call `watcher.check()`, or opt into `pollIntervalMs`.
+
 ---
 
 ## Adaptive Relative-Time Signals (`toRelativeSignal`) {#adaptive-relative-time}

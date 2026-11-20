@@ -11,5 +11,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial release of `@magmacomputing/tempo-plugin-signals`.
 - **Tree-Shakeable Plugin Architecture**: Pure, side-effect-free root entrypoint (`.`) with isolated auto-registration entrypoint (`./install`) and `SignalsPlugin` for `Tempo.use()`.
 - **Reactive Relative Time Signals**: Adaptive, battery-friendly relative-time signal tracking that schedules updates only at meaningful unit boundaries.
-- **Interval State Signals**: Event-driven interval status and progress signals (`isCurrent`, `isPast`, `isFuture`, `progress`) without continuous polling.
+- **Interval State Signals**: Boundary-scheduled interval status transitions (`isCurrent`, `isPast`, `isFuture`) with periodic active `progress` updates every 1,000 ms by default (configurable via `progressInterval`, or `false` for boundary-only updates).
 - **Global Configuration Reactivity**: Reactive signals for global `Tempo` configuration (`locale`, `timeZone`) synchronized via `onConfigChange`.

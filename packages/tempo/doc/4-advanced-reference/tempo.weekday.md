@@ -20,15 +20,18 @@ Count-based relative expressions work across seconds, minutes, hours, days, week
 | `<count> <unit> from now` | `1 month from now` | `2026-12-20 10:00:00` |
 
 ```typescript
+import { Tempo } from '@magmacomputing/tempo';
+
 const anchor = new Tempo('2026-11-20T10:00:00[Australia/Sydney]');
 
-new Tempo('3 hours ago', { anchor });     // 2026-11-20 07:00:00
-new Tempo('in 5 minutes', { anchor });    // 2026-11-20 10:05:00
+new Tempo('3 hours ago', { anchor });      // 2026-11-20 07:00:00
+new Tempo('in 5 minutes', { anchor });     // 2026-11-20 10:05:00
 new Tempo('1 month from now', { anchor }); // 2026-12-20 10:00:00
 ```
 
 > [!NOTE]
-> Standalone keyword shifts without a count (such as `"next month"`) are not supported directly. Use a counted offset (`"1 month from now"`) or `.add({ months: 1 })`.
+> - Standalone keyword shifts without a count (such as `"next month"`) are not supported directly. Use a counted offset (`"1 month from now"`) or `.add({ months: 1 })`.
+> - When no `anchor` option is provided, unanchored calendar-unit offsets (such as `"2 weeks hence"` or `"1 month from now"`) reset the clock time to `00:00:00` on the target date; passing an explicit `anchor` preserves the anchor's clock time.
 
 ---
 

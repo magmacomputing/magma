@@ -80,3 +80,28 @@ console.log(locale.get(), timeZone.get()); // "fr-FR", "Europe/Paris"
 // Detach global config observer on app teardown
 disposeConfigSignals();
 ```
+
+---
+
+## 4. Travel & Live OS Time-Zone Sync (`watchSystemConfig`) {#travel-os-sync}
+
+For web apps, PWAs, or desktop apps where a user's device may cross time zones or change OS region settings while the app stays open, `watchSystemConfig()` (or `Tempo.signals.watchSystem()`) bridges host `Intl` changes into `Tempo.init()` without background polling:
+
+```typescript
+import { Tempo } from '@magmacomputing/tempo';
+import { SignalsPlugin, watchSystemConfig } from '@magmacomputing/tempo-plugin-signals';
+
+Tempo.use(SignalsPlugin);
+Tempo.init({ locale: 'en-AU', calendar: 'iso8601' });
+
+// Keep the pinned app locale while syncing OS time-zone changes on focus/visibility
+using watcher = watchSystemConfig({ locale: false });
+
+// Hybrid/desktop apps (e.g. Electron) can also attach native wake events:
+// using desktopWatcher = Tempo.signals.watchSystem({
+//   subscribe: (trigger) => {
+//     powerMonitor.on('resume', trigger);
+//     return () => powerMonitor.off('resume', trigger);
+//   },
+// });
+```

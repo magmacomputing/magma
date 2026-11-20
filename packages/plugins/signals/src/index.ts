@@ -12,6 +12,7 @@ export {
 // Tree-Shakeable Signal Helpers
 export { toRelativeSignal } from './functions/relative.js';
 export { intervalSignal } from './functions/interval.js';
+export { watchSystemConfig } from './functions/watch-system.js';
 
 // Signals Plugin Definition & Tempo.signals Namespace
 export { SignalsPlugin, signalsPlugin, default } from './plugin.js';

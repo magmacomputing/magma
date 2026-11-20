@@ -106,7 +106,28 @@ Tempo uses lightweight TypeScript class decorators internally to enforce immutab
 
 <br>
 
-## 8. Exhaustive API Reference
+## 8. System Intl Watchers (`watchIntl`) {#watch-intl}
+
+`watchIntl(onChange, options?)` observes the host runtime's resolved `Intl.DateTimeFormat().resolvedOptions()` (`locale` and `timeZone`) and invokes `onChange(next, prev)` only when either value changes:
+
+- **Zero-polling in browsers**: Automatically listens to `window` (`languagechange`, `focus`), `document` (`visibilitychange` when visible), and `navigator.connection` (`change`) with no background timers.
+- **Isomorphic host hooks**: Non-browser or hybrid runtimes (such as Electron, Tauri, or Node daemons) can pass a custom `subscribe(trigger)` hook, call `watcher.check()` manually, or opt into `pollIntervalMs`.
+- **Deterministic cleanup**: Returns a frozen `IntlWatcher` implementing `dispose()` and `Symbol.dispose` (`using`).
+
+```typescript
+import { watchIntl } from '@magmacomputing/tempo/library';
+
+using watcher = watchIntl((next, prev) => {
+  console.log(`Intl changed: ${prev.timeZone} → ${next.timeZone} (${next.locale})`);
+});
+
+// Optional manual check on demand
+watcher.check();
+```
+
+<br>
+
+## 9. Exhaustive API Reference
 
 > [!NOTE]
 > These are isolated, standalone utility functions and classes developed internally to support our various applications. They are entirely free to use and are documented here as a convenience reference for our users.

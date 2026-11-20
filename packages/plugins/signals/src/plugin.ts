@@ -21,6 +21,7 @@ import {
 } from './core/config.js';
 import { intervalSignal } from './functions/interval.js';
 import { toRelativeSignal } from './functions/relative.js';
+import { watchSystemConfig } from './functions/watch-system.js';
 import type {
 	DisposableSignal,
 	IntervalSignalOptions,
@@ -28,6 +29,7 @@ import type {
 	RelativeSignalOptions,
 	SignalsPluginOptions,
 	TempoSignalsNamespace,
+	WatchSystemConfigOptions,
 } from './types/index.js';
 
 function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
@@ -56,6 +58,7 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 					},
 					relative: toRelativeSignal,
 					interval: intervalSignal,
+					watchSystem: watchSystemConfig,
 					dispose: disposeConfigSignals,
 					[Symbol.dispose]: disposeConfigSignals,
 				};
@@ -93,6 +96,7 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 					timeZone: Signify.computed(() => sbTimeZoneState.get()),
 					relative: toRelativeSignal,
 					interval: intervalSignal,
+					watchSystem: (opts?: WatchSystemConfigOptions) => watchSystemConfig({ target: installedClass, ...opts }),
 					dispose: () => {},
 					[Symbol.dispose]: () => {},
 				};
