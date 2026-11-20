@@ -92,4 +92,43 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 		expect(sb.signals.timeZone.get()).toBe('America/Los_Angeles');
 		expect(Tempo.signals.timeZone.get()).toBe('UTC');
 	});
+
+	it('recalculates automatic monthDay ordering on host locale/timezone change', () => {
+		const state = mockSystemIntl('en-GB', 'Europe/London');
+
+		using sb = Tempo.extend({ locale: 'en-GB', timeZone: 'Europe/London', plugins: [SignalsPlugin] });
+		expect(sb.parse.monthDay.isExplicit).toBeFalsy();
+		expect(sb.parse.monthDay.active).toBe(false);
+
+		using watcher = sb.signals.watchSystem();
+
+		state.locale = 'en-US';
+		state.timeZone = 'America/New_York';
+		expect(watcher.check()).toBe(true);
+
+		expect(sb.parse.monthDay.isExplicit).toBeFalsy();
+		expect(sb.parse.monthDay.active).toBe(true);
+	});
+
+	it('preserves explicit monthDay override across host locale/timezone changes', () => {
+		const state = mockSystemIntl('en-GB', 'Europe/London');
+
+		using sb = Tempo.extend({
+			locale: 'en-GB',
+			timeZone: 'Europe/London',
+			monthDay: { active: true },
+			plugins: [SignalsPlugin],
+		});
+		expect(sb.parse.monthDay.isExplicit).toBe(true);
+		expect(sb.parse.monthDay.active).toBe(true);
+
+		using watcher = sb.signals.watchSystem();
+
+		state.locale = 'fr-FR';
+		state.timeZone = 'Europe/Paris';
+		expect(watcher.check()).toBe(true);
+
+		expect(sb.parse.monthDay.isExplicit).toBe(true);
+		expect(sb.parse.monthDay.active).toBe(true);
+	});
 });

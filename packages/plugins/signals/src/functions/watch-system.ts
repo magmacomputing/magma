@@ -2,6 +2,13 @@ import { Tempo } from '@magmacomputing/tempo';
 import { watchIntl, type IntlWatcher } from '@magmacomputing/tempo/plugin/sdk';
 import type { WatchSystemConfigOptions } from '../types/index.js';
 
+function preserveMonthDay(monthDay: any): any {
+	if (!monthDay || monthDay.isExplicit)
+		return monthDay;
+	const { active: _active, isExplicit: _isExplicit, ...rest } = monthDay;
+	return rest;
+}
+
 /**
  * Watches the host runtime's resolved `Intl` locale and IANA time zone and
  * synchronizes changes into `Tempo.init()` (or a target sandbox) without polling.
@@ -19,7 +26,7 @@ export function watchSystemConfig(options: WatchSystemConfigOptions = {}): IntlW
 			...(target.config ?? {}),
 			...(parseState ? {
 				pivot: parseState.pivot,
-				monthDay: parseState.monthDay,
+				monthDay: preserveMonthDay(parseState.monthDay),
 				planner: parseState.planner,
 			} : {}),
 		};
