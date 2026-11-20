@@ -101,7 +101,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.esm.js"
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -129,7 +129,7 @@ While you *could* import directly from the URL everywhere, the best practice is 
 {
   "imports": {
     "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@4",
+    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@5",
     "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2"
   }
 }
@@ -173,8 +173,8 @@ To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.index.js",
-    "@magmacomputing/tempo/plugin/sdk": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/plugin/plugin.sdk.js",
+    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.index.js",
+    "@magmacomputing/tempo/plugin/sdk": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/plugin/plugin.sdk.js",
 
     "@magmacomputing/tempo-plugin-celestial": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.js",
     "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@2/dist/index.js"
@@ -197,7 +197,7 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
 
 <!-- 2. Load the Tempo Global Bundle (Creates window.Magma) -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.min.js"></script>
 
 <!-- 3. Load any Community Plugins (Attaches to window.Magma.plugins) -->
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.global.min.js"></script>
@@ -241,7 +241,7 @@ When using the Lite build, the `Tempo` class will have almost no methods (like `
 
 We recommend pinning your versions in production environments to ensure stability. 
 
-*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/...` (Locks to major version 4)
+*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/...` (Locks to major version 5)
 *   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).
 
 ---

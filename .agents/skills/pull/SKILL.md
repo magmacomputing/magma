@@ -61,12 +61,18 @@ Fetches unresolved review comments and findings posted by CodeRabbit on the bran
        ```
      - If still ambiguous, unconfirmed, or the cited issue might persist elsewhere, do **not** auto-resolve; route it to the **Manual Review Fallback** (Step 7).
 
-   - **Category B: Active Threads Remediated Locally (`isOutdated: false`, Valid Finding)**:
-     - Post an explanatory reply comment to the thread:
+   - **Category B: Active Threads (`isOutdated: false`, Valid Finding)**:
+     - **If the fix is already in pushed `HEAD` (`origin/<branch>`)**:
+       Do **not** say `"pending push"` or auto-resolve the thread; instead, prod `@coderabbitai` to re-verify on the pushed PR head and resolve:
+       ```bash
+       npm run review:pr -- --reply "<THREAD_ID>" "@coderabbitai This is already addressed in pushed commit <sha> (<brief summary>). Please re-verify on the current PR head and resolve if addressed."
+       ```
+     - **If remediated locally (uncommitted in working tree)**:
+       Post an explanatory reply comment to the thread:
        ```bash
        npm run review:pr -- --reply "<THREAD_ID>" "Remediated locally (pending push): <Brief summary of local fix applied in working tree>"
        ```
-     - *(Note: Do NOT manually resolve this thread yet. CodeRabbit listens to GitHub comment webhooks and commit push events. When the user pushes the commit, CodeRabbit automatically inspects the AST, posts `✅ Confirmed as addressed by @...`, and resolves the thread under its own bot logic).*
+     - *(Note: Do NOT manually resolve active threads. CodeRabbit verifies the pushed code and resolves the thread under its own bot logic).*
 
    - **Category C: Deterministic Rejections / False Positives**:
      - When a finding contradicts repository invariants, strict typing rules, or documented guidelines (e.g. peer dependency locks, user documentation rules):

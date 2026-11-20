@@ -4,6 +4,7 @@
  * It provides curated access to the specific utilities Magma uses under the hood.
  */
 
+export { BoundedCache } from '#library/cache.class.js';
 export { Pledge } from '#library/pledge.class.js';
 export * as cipher from '#library/cipher.library.js';
 export * as webToken from '#library/webtoken.library.js';

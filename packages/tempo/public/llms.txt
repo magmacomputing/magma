@@ -116,7 +116,7 @@ const customDate = new Tempo('08*04*2026'); // Automatically matched against sta
 - **Epoch** (`temporal-math`): Elapsed time since the Unix epoch (1970-01-01T00:00:00Z), exposed by Tempo as .epoch.ms (number) and .epoch.ns (bigint).
 - **IANA Time Zone** (`standards`): A canonical geographic region identifier (such as Australia/Sydney or America/New_York) carrying historical and DST offset rules.
 - **Instant** (`temporal-math`): A precise, absolute point on the universal temporal timeline, independent of time zones or calendars.
-- **Interval** (`temporal-math`): A half-open or bounded [start, end] span between two temporal points supporting containment, overlap, union, and reactive state observation.
+- **Interval** (`temporal-math`): A half-open [start, end) span (inclusive start, exclusive end) between two temporal points supporting containment, overlap, union, and reactive state observation.
 - **ISO 8601** (`standards`): The international standard for date, time, UTC offset, duration, and week-date string representations.
 - **Lazy Evaluation** (`architecture`): Deferring expensive derived computations (such as calendar decompositions, formatted caches, and DFC options) until first read and memoizing the result.
 - **Locale** (`standards`): A BCP 47 language tag (such as en-AU or fr-FR) governing month/weekday names, relative-time phrasing, numbering systems, and regional date parsing.
@@ -129,7 +129,7 @@ const customDate = new Tempo('08*04*2026'); // Automatically matched against sta
 - **PlainDateTime** (`temporal-math`): A wall-clock date and time without an attached time zone or UTC offset.
 - **ReadonlySignal** (`reactivity`): A reactive accessor function adhering to the TC39 Signals proposal (Signify) that notifies subscribers of value and epoch changes.
 - **RFC 9557** (`standards`): The Internet Extended Date/Time Format (IXDTF) standard extending RFC 3339 with bracketed time zone and calendar annotations (e.g., [Australia/Sydney][u-ca=iso8601]).
-- **Sandbox** (`architecture`): An isolated Tempo subclass created via Tempo.extend() with its own configuration, plugins, and term snapshot for multi-tenant SSR or testing.
+- **Sandbox** (`architecture`): An isolated Tempo subclass created via Tempo.extend() with its own configuration and plugin isolation for multi-tenant SSR or testing (term access uses the shared runtime term map, so tenants registering different terms under the same key can conflict).
 - **Snippet** (`formatting`): A named regular-expression fragment registered in the parsing engine to match recurring sub-patterns (such as dates, times, or ordinals).
 - **Soft Freeze** (`architecture`): Tempo's immutability strategy that provides non-destructive mutations without incurring the heavy V8 runtime cost of deep recursive Object.freeze().
 - **Term** (`formatting`): A modular unit of temporal formatting, parsing, or range partitioning registered in the engine registry (e.g. #quarter, #season, #timeOfDay).
