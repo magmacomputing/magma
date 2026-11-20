@@ -26,7 +26,12 @@ describe('Config-Change Signals (locale & timeZone)', () => {
 	});
 
 	it('updates sandbox signals when sandbox.init() changes configuration without affecting global Tempo', () => {
+		Tempo.init({ locale: ['fr-FR', 'en-US'], timeZone: 'Europe/Paris' });
+		expect(localeSignal().get()).toBe('fr-FR');
+		expect(timeZoneSignal().get()).toBe('Europe/Paris');
+
 		Tempo.init({ locale: 'en-US', timeZone: 'UTC' });
+		Tempo.use(SignalsPlugin);
 
 		using sb = Tempo.extend({ locale: 'en-GB', timeZone: 'Europe/London', plugins: [SignalsPlugin] });
 
@@ -37,8 +42,8 @@ describe('Config-Change Signals (locale & timeZone)', () => {
 		expect(sb.signals.locale.get()).toBe('fr-FR');
 		expect(sb.signals.timeZone.get()).toBe('Europe/Paris');
 
-		expect(localeSignal().get()).toBe('en-US');
-		expect(timeZoneSignal().get()).toBe('UTC');
+		expect(Tempo.signals.locale.get()).toBe('en-US');
+		expect(Tempo.signals.timeZone.get()).toBe('UTC');
 	});
 
 	beforeEach(() => {

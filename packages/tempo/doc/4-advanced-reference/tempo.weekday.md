@@ -79,4 +79,4 @@ You can append a time component to a Weekday string. Tempo resolves the date fir
 1. **Normalization**: Weekday names are normalized to their 3-letter proper-case prefix (e.g., `monday` → `Mon`).
 2. **Anchor**: If no `anchor` option is provided, Tempo uses the current instant in the active `timeZone`.
 3. **Calculation**: The modifier and count determine the number of weeks to shift from the anchor date to locate the target Weekday.
-4. **Time Constraint**: If time components are provided, they are set on the resolved date; otherwise the time defaults to `00:00:00` on a primary parse pass.
+4. **Time Constraint**: If time components are provided, they are set on the resolved date. Otherwise, when no `anchor` option is provided, the time defaults to `00:00:00` on a primary parse pass. When an `anchor` option is provided, the anchor's time is kept.

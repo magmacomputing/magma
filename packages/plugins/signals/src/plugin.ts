@@ -63,7 +63,8 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 				const resolveSandboxLocale = (): string => {
 					const raw = installedClass.config?.locale ?? effectiveOptions.locale;
 					const loc = isFunction(raw) ? raw() : raw;
-					return isText(loc) ? loc : (Intl.DateTimeFormat().resolvedOptions().locale || 'en');
+					const first = Array.isArray(loc) ? loc[0] : loc;
+					return isText(first) ? first : (Intl.DateTimeFormat().resolvedOptions().locale || 'en');
 				};
 				const resolveSandboxTimeZone = (): string => {
 					const raw = installedClass.config?.timeZone ?? effectiveOptions.timeZone;

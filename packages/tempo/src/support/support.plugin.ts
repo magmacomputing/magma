@@ -191,7 +191,11 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						const hasExplicitOptions = (isObject(callSiteOptions) && !isEmpty(callSiteOptions)) ||
 							(isObject(options) && !isEmpty(options));
 
-						if (name && installed.has(name)) {
+						const isAlreadyInstalled = isFunction((installed as any).hasOwn)
+							? (installed as any).hasOwn(name)
+							: installed.has(name);
+
+						if (name && isAlreadyInstalled) {
 							if (pluginType === 'properties') {
 								logDebug(`Properties plugin already installed by name: ${name}`, state.config);
 								return;

@@ -11,8 +11,9 @@ let _fallbackTimeZone: string | undefined = undefined;
 /** Resolves a BCP 47 locale string (or supplier) with Intl runtime fallback. */
 function resolveLocale(value: unknown, fallback?: string): string {
 	const resolved = isFunction(value) ? value() : value;
-	if (isText(resolved))
-		return resolved;
+	const first = Array.isArray(resolved) ? resolved[0] : resolved;
+	if (isText(first))
+		return first;
 	if (isText(fallback))
 		return fallback;
 	return Intl.DateTimeFormat().resolvedOptions().locale || 'en';
