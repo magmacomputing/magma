@@ -635,6 +635,21 @@ describe('Tempo.format() refinements', () => {
     });
   });
 
+  describe('extended year parsing boundaries', () => {
+    it.each([
+      ['0000/02/29', '{yyyy}/{mm}/{dd}', 0, 2, 29],
+      ['-0004/02/29', '{yy:long}/{mm}/{dd}', -4, 2, 29],
+      ['100000/12/31', '{year}/{month}/{day}', 100000, 12, 31],
+      ['10000Dec31', '{yy:long}{mmm}{dd}', 10000, 12, 31],
+      ['20241231', '{yy:long}{mm}{dd}', 2024, 12, 31],
+      ['20240131', '{yy:long}{mm}{dd}', 2024, 1, 31],
+    ])('parses %s without consuming adjacent month or day digits', (input, format, yy, mm, dd) => {
+      const parsed = new Tempo(input, { format, timeZone: 'UTC' });
+      expect(parsed.isValid).toBe(true);
+      expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([yy, mm, dd]);
+    });
+  });
+
   describe('{ts} formatting across all TimeStamp units', () => {
     it('honours ss, ms, us, and ns via instance config and format options, matching t.ts', () => {
       const units = ['ss', 'ms', 'us', 'ns'] as const;
@@ -649,6 +664,60 @@ describe('Tempo.format() refinements', () => {
   });
 
   describe('{yy:long} format and explicit parse round-trip', () => {
+    it.each(['{yyyy}', '{year}', '{yy:long}'])('preserves signed years and year zero with %s', token => {
+      for (const [input, year] of [['0000', 0], ['-0001', -1], ['+10000', 10000], ['-10000', -10000]] as const) {
+        const parsed = new Tempo(`${input}/02/28`, { format: `${token}/{mm}/{dd}`, timeZone: 'UTC' });
+        expect(parsed.isValid).toBe(true);
+        expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([year, 2, 28]);
+      }
+    });
+
+    it.each(['00', '13', '99'])('rejects out-of-range numeric month %s in an explicit format', month => {
+      expect(() => new Tempo(`10000/${month}/15`, { format: '{yy:long}/{mm}/{dd}', timeZone: 'UTC' }).yy).toThrow();
+    });
+
+    it.each([
+      ['10000Jan02', '{yy:long}{mmm}{dd}', 10000, 1, 2],
+      ['100000December31', '{yy:long}{mon}{dd}', 100000, 12, 31],
+      ['20261231', '{yy:long}{mm}{dd}', 2026, 12, 31],
+      ['20260101', '{yy:long}{mm}{dd}', 2026, 1, 1],
+      ['-00010102', '{yy:long}{mm}{dd}', -1, 1, 2],
+      ['20241115', '{yyyy}{mm}{dd}', 2024, 11, 15],
+      ['20241115', '{year}{mm}{dd}', 2024, 11, 15],
+    ] as const)('parses adjacent year tokens in %s', (input, format, yy, mm, dd) => {
+      const parsed = new Tempo(input, { format, timeZone: 'UTC' });
+      expect(parsed.isValid).toBe(true);
+      expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([yy, mm, dd]);
+    });
+
+    it.each(['{yyyy}', '{year}', '{yy:long}'])('parses unsigned extended years with %s', token => {
+      for (const year of [9999, 10000, 99999, 100000]) {
+        const parsed = new Tempo(`${year}/06/15`, { format: `${token}/{mm}/{dd}`, timeZone: 'UTC' });
+        expect(parsed.isValid).toBe(true);
+        expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([year, 6, 15]);
+      }
+    });
+
+    it.each(['123/06/15', '1000000/06/15', '10000x/06/15'])('rejects invalid extended year input %s', input => {
+      expect(() => new Tempo(input, { format: '{yy:long}/{mm}/{dd}', timeZone: 'UTC' }).yy).toThrow();
+    });
+
+    it.each([
+      ['20261125', '{yy:long}{mm}{dd}', 2026, 11, 25],
+      ['-00010102', '{yy:long}{mm}{dd}', -1, 1, 2],
+      ['+123451/15', '{yy:long}{mm:raw}/{dd}', 12345, 1, 15],
+      ['20261101', '{yy:long}{mm:raw}{dd}', 2026, 11, 1],
+      ['+12345/06/15', '{yy:long}/{mm}/{dd}', 12345, 6, 15],
+      ['-0001/01/02', '{yy:long}/{mm}/{dd}', -1, 1, 2],
+      ['2024111-15', '{yy:long}1{mm}-{dd}', 2024, 11, 15],
+      ['100001/06/15', '{yy:long}1/{mm}/{dd}', 10000, 6, 15],
+      ['12345suffix-01-02', '{yy:long}{skip}-{mm}-{dd}', 12345, 1, 2],
+    ])('keeps compact year boundaries in %s', (input, format, yy, mm, dd) => {
+      const parsed = new Tempo(input, { format, timeZone: 'UTC' });
+      expect(parsed.isValid).toBe(true);
+      expect([parsed.yy, parsed.mm, parsed.dd]).toEqual([yy, mm, dd]);
+    });
+
     it('formats and parses a 4-digit year with {dd}-{mm}-{yy:long}', () => {
       const original = new Tempo('2026-10-24');
       const formatted = original.format('{dd}-{mm}-{yy:long}');
@@ -672,6 +741,18 @@ describe('Tempo.format() refinements', () => {
       const extParsed = new Tempo(extFormatted, { format: '{dd}-{mm}-{yy:long}' });
       expect(extParsed.isValid).toBe(true);
       expect(extParsed.yy).toBe(12345);
+
+      const unsignedExt = new Tempo('01-01-10000', { format: '{dd}-{mm}-{yy:long}' });
+      expect(unsignedExt.isValid).toBe(true);
+      expect(unsignedExt.yy).toBe(10000);
+
+      const digitLiteralFollower = new Tempo('2024111-15', { format: '{yy:long}1{mm}-{dd}' });
+      expect(digitLiteralFollower.isValid).toBe(true);
+      expect(digitLiteralFollower.format('{yyyy}-{mm}-{dd}')).toBe('2024-11-15');
+
+      const alphaFollower = new Tempo('10000Jan01', { format: '{yy:long}{mmm}{dd}' });
+      expect(alphaFollower.isValid).toBe(true);
+      expect(alphaFollower.yy).toBe(10000);
     });
   });
 })

@@ -1,5 +1,5 @@
 import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isSymbol, isEmpty, isFunction, isCallable, isReference } from '#library/assertion.library.js';
-import { ownKeys, hasOwn, hasAnyOf, hasNoneOf } from '#library/primitive.library.js';
+import { ownKeys, hasOwn, hasAnyOf, hasNoneOf, defineProp } from '#library/primitive.library.js';
 import { cast } from '#library/type.library.js';
 import { Branded } from '#library/decorator.library.js';
 
@@ -32,11 +32,11 @@ const findLivePredecessor = (prev: any): any => {
  */
 export function createSandbox<R>(
 	TempoClass: typeof Tempo,
-	arg1?: t.Options | ((sandbox: typeof Tempo) => R),
-	arg2?: (sandbox: typeof Tempo) => R,
-): (typeof Tempo) | R {
+	arg1?: t.Options | ((sandbox: t.TempoSandbox) => R),
+	arg2?: (sandbox: t.TempoSandbox) => R,
+): t.TempoSandbox | R {
 	let options: t.Options = {};
-	let fn: ((sandbox: typeof Tempo) => R) | undefined;
+	let fn: ((sandbox: t.TempoSandbox) => R) | undefined;
 
 	if (isFunction(arg1)) {
 		fn = arg1 as (sandbox: typeof Tempo) => R;
@@ -204,13 +204,7 @@ export function createSandbox<R>(
 	};
 
 	data.sandbox = SandboxTempo;
-
-	Object.defineProperty(SandboxTempo.prototype, Symbol.toStringTag, {
-		value: 'TempoSandbox',
-		configurable: true,
-		writable: false,
-		enumerable: false,
-	});
+	defineProp(SandboxTempo.prototype, Symbol.toStringTag, 'TempoSandbox', 'configurable');
 
 	try {
 		state = init(options, false, (TempoClass as any)[$Internal]());
@@ -259,7 +253,7 @@ export function createSandbox<R>(
 		throw err;
 	}
 
-	const sb = cast<typeof Tempo>(SandboxTempo);
+	const sb = cast<t.TempoSandbox>(SandboxTempo);
 
 	if (fn) {
 		let isAsync = false;

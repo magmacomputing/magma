@@ -1,5 +1,5 @@
 import { isString, isEmpty, isUndefined, isNotNullish, isNullish, isTemporal, isInstant, isNumber, isNumeric, isReference, isFunction, RE_COMBINING_MARKS } from '#library/assertion.library.js';
-import { ownKeys, ownEntries, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, unwrap, walkPrototype } from '#library/primitive.library.js';
 import { asArray } from '#library/coercion.library.js';
 
 import { pad, singular } from '#library/string.library.js';
@@ -25,22 +25,20 @@ namespace Lexer {
 }
 
 function findRegistryEntry(registry: any, low: string): number | undefined {
-	if (!isReference(registry) || isFunction(registry) || !low) return undefined;
-	const visited = new WeakSet<object>();
-	let curr: any = registry;
-	while (curr && curr !== Object.prototype) {
-		if (visited.has(curr)) break;
-		visited.add(curr);
-		for (const [k, v] of Object.entries(curr))
-			if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
+	if (!low)
+		return undefined;
+	for (const curr of walkPrototype(registry, false)) {
+		for (const [k, v] of Object.entries(curr)) {
+			if (isString(k) && k.toLowerCase() === low && isNumber(v))
+				return v as number;
+		}
 		const level = unwrap(curr);
 		if (level !== curr) {
-			if (visited.has(level)) break;
-			visited.add(level);
-			for (const [k, v] of ownEntries(level))
-				if (isString(k) && k.toLowerCase() === low && isNumber(v)) return v as number;
+			for (const [k, v] of ownEntries(level)) {
+				if (isString(k) && k.toLowerCase() === low && isNumber(v))
+					return v as number;
+			}
 		}
-		curr = Object.getPrototypeOf(level);
 	}
 	return undefined;
 }

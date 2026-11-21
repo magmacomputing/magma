@@ -3,6 +3,7 @@ import { Enum } from '#library/enumerate.library.js';
 import { proxify } from '#library/proxy.library.js';
 import { allDescriptors } from '#library/reflection.library.js';
 import { looseIndex } from '#library/object.library.js';
+import { defineProp } from '#library/primitive.library.js';
 import type { OwnOf, KeyOf, ValueOf, LooseUnion } from '#library/type.library.js';
 
 /** calendar seasons */
@@ -165,7 +166,7 @@ export const STATE = {
 	LOCALE: allDescriptors(DEFAULTS.LOCALE),
 }
 
-const defineExtensible = (target: any) => Object.defineProperty(target, sym.$Extensible, { value: true, enumerable: false, configurable: false, writable: false });
+const defineExtensible = (target: any) => defineProp(target, sym.$Extensible, true, 'sealed');
 defineExtensible(STATE.NUMBER);
 defineExtensible(STATE.ORDINAL);
 defineExtensible(STATE.FORMAT);
@@ -206,7 +207,7 @@ export type ORDINAL = typeof ORDINAL;
 export type Ordinal = KeyOf<typeof ORDINAL>;
 
 /** common time-zone aliases */
-export const TIMEZONE = looseIndex<string, string>()(proxify(STATE.TIMEZONE, true, false));
+export const TIMEZONE = looseIndex<string, string>()(proxify(STATE.TIMEZONE, 'readonly'));
 export type TIMEZONE = typeof TIMEZONE;
 export type Timezone = ValueOf<typeof TIMEZONE>
 
@@ -232,13 +233,13 @@ export type Formats = {
 export type FormatEnum = Enum.wrap<Formats>;
 
 /** Temporal limits (min/max date bounds) */
-export const LIMIT = proxify(STATE.LIMIT, true, false);
+export const LIMIT = proxify(STATE.LIMIT, 'readonly');
 
 /** regional month-day-year parsing settings */
-export const MONTH_DAY = proxify(STATE.MONTH_DAY, true, false);
+export const MONTH_DAY = proxify(STATE.MONTH_DAY, 'readonly');
 
 /** localized dictionary translations */
-export const LOCALE = proxify(STATE.LOCALE, true, true);
+export const LOCALE = proxify(STATE.LOCALE, 'frozen');
 
 /** date-time element tokens */
 const elementKeys = ['yy', 'mm', 'wy', 'ww', 'woy', 'dd', 'hh', 'mi', 'ss', 'ms', 'us', 'ns'] as const;

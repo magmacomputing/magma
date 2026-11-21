@@ -1,5 +1,6 @@
 import { isText } from '#library/assertion.library.js';
 import { markExtensible } from '#library/symbol.library.js';
+import { defineProp } from '#library/primitive.library.js';
 import { sym } from './support.symbol.js';
 import { TEMPO_VERSION } from '../tempo.version.js';
 import type { Plugin } from '../plugin/plugin.type.js';
@@ -217,21 +218,11 @@ export function getRuntime(): TempoRuntime {
 	// Pin as a single hardened slot if it doesn't already exist.
 	// This avoids Redefinition errors if multiple bundles are loaded.
 	if (!existing) {
-		Object.defineProperty(globalThis, sym.$Bridge, {
-			value: rt,
-			enumerable: false,
-			configurable: false,
-			writable: false,
-		});
+		defineProp(globalThis, sym.$Bridge, rt, 'sealed');
 	} else {
 		const desc = Object.getOwnPropertyDescriptor(globalThis, sym.$Bridge);
 		if (desc && desc.configurable !== false) {
-			Object.defineProperty(globalThis, sym.$Bridge, {
-				value: rt,
-				enumerable: false,
-				configurable: false,
-				writable: false,
-			});
+			defineProp(globalThis, sym.$Bridge, rt, 'sealed');
 		} else {																								// Cannot overwrite a non-configurable global
 			localFallbackRuntime = rt;														// use local fallback
 		}

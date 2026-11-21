@@ -29,7 +29,7 @@ function getNs(point: TemporalPoint | unknown): bigint {
 /** Represents a continuous span of time with optional start and end boundaries, supporting set operations. */
 @Immutable
 @Branded('Interval')
-export class Interval<T extends TemporalPoint = TemporalPoint> {
+export class Interval<T = any> {
 	/** Type guard to check if a value is an authentic Interval instance */
 	declare static isInterval: IntervalTypeGuard;
 

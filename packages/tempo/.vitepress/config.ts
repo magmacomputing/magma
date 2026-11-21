@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress'
 import { withMermaid } from 'vitepress-plugin-mermaid'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Temporal } from '@js-temporal/polyfill'
 import pluginsSidebar from './theme/data/plugins-sidebar.json'
@@ -25,7 +26,25 @@ export default withMermaid(defineConfig({
   ],
   themeConfig: {
     search: {
-      provider: 'local'
+      provider: 'local',
+      options: {
+        _render(src, env, md) {
+          const html = md.render(src, env);
+          if (env.frontmatter?.search === false)
+            return '';
+          if (env.relativePath === 'doc/4-advanced-reference/glossary.md') {
+            const entries = JSON.parse(readFileSync(fileURLToPath(new URL('../doc/glossary.json', import.meta.url)), 'utf-8'));
+            const glossaryMd = entries
+              .map((e: any) => {
+                const slug = e.slug ?? e.term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                return `## ${e.term} {#${slug}}\n\n${e.summary}${e.details ? `\n\n${e.details}` : ''}`;
+              })
+              .join('\n\n');
+            return `${html}\n${md.render(glossaryMd, env)}`;
+          }
+          return html;
+        },
+      },
     },
     nav: [
       { text: 'Guide', link: '/README' },
@@ -124,8 +143,9 @@ export default withMermaid(defineConfig({
             { text: 'Parse Planner', link: '/doc/4-advanced-reference/tempo.planner' },
             { text: 'Internationalization & Locale', link: '/doc/4-advanced-reference/tempo.intl' },
             { text: 'Shorthand Engine', link: '/doc/4-advanced-reference/tempo.shorthand' },
-            { text: 'Weekday Engine', link: '/doc/4-advanced-reference/tempo.weekday' },
-            { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' }
+            { text: 'Relative & Weekday Parsing', link: '/doc/4-advanced-reference/tempo.weekday' },
+            { text: 'Debugging', link: '/doc/4-advanced-reference/tempo.debugging' },
+            { text: 'Glossary', link: '/doc/4-advanced-reference/glossary' }
           ]
         },
         {
@@ -252,7 +272,7 @@ export default withMermaid(defineConfig({
       target: 'esnext'
     },
     optimizeDeps: {
-      include: ['mermaid', 'fastdom', 'dayjs', '@braintree/sanitize-url', 'cytoscape', 'khroma'],
+      include: ['mermaid', 'dayjs', '@braintree/sanitize-url', 'cytoscape', 'khroma'],
       esbuildOptions: {
         target: 'esnext',
         supported: {

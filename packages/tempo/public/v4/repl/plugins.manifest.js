@@ -17,7 +17,7 @@ export const SUPPORTED_EXTRA_PLUGINS = {
 	"finance": {
 		name: "@magmacomputing/tempo-plugin-finance",
 		version: "1.1.0",
-		loader: () => import("@magmacomputing/tempo-plugin-finance").catch(() => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-finance" + "@1.1.0"))
+		loader: () => import('https://esm.sh/' + "@magmacomputing/tempo-plugin-finance" + "@1.1.0")
 	},
 	"snap": {
 		name: "@magmacomputing/tempo-plugin-snap",

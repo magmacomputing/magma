@@ -22,7 +22,7 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   > **Do not include `"src"` in `"files"`**. The build step (`tsup && tsc`) generates all production artifacts, source maps, and declaration types into `dist/`. Publishing `"src"` adds unnecessary weight to the npm package tarball without providing runtime or typing benefits.
 - **Dependencies (`peerDependencies` vs `devDependencies`)**:
   - `peerDependencies`: Always declare `@magmacomputing/tempo` as a peer dependency (e.g. `"^4.5.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
-  - `devDependencies`: **Must** include `@magmacomputing/tempo` under `devDependencies` (e.g. `"^4.5.0"` matching the peer dependency version). This ensures that local TypeScript compilation (`tsc`) and bundling resolve all Tempo core types and ambient declarations during monorepo builds. Do **not** declare `@magmacomputing/library` directly; access shared library helpers and types via `@magmacomputing/tempo/library` or `@magmacomputing/tempo/plugin/sdk`.
+  - `devDependencies`: **Must** include `@magmacomputing/tempo` under `devDependencies` (e.g. `"^4.5.0"` matching the peer dependency version). This ensures that local TypeScript compilation (`tsc`) and bundling resolve all Tempo core types and ambient declarations during monorepo builds. Do **not** declare or import `@magmacomputing/library` directly in either `src/` or `test/` modules; access shared library helpers and types via `@magmacomputing/tempo/library` or `@magmacomputing/tempo/plugin/sdk` (mixing `@magmacomputing/library` with `@magmacomputing/tempo/library` causes `TS2717` declaration conflicts during `tsc --noEmit`).
   - `dependencies`: Community plugins should keep production `dependencies` as lean as possible (or empty) to minimize supply-chain surface area.
 - **PublishConfig**: Configure public npm publishing:
   ```json
@@ -456,7 +456,7 @@ When authoring a custom Term plugin that partitions time into ranges or named st
 >    - *Exceptions*: A root-level member is acceptable only when it is a deliberate, first-class extension of the core API surface that users would reasonably expect beside the built-in constructors/factories (e.g., `Tempo.fromFormats()` from `@magmacomputing/tempo-plugin-dialects`). Such exceptions should be rare, kept to a minimum, justified in the plugin's documentation, and must never collide with existing or planned core member names.
 >    - *Do not overload existing option keys*: Do not re-use an established `Tempo.Options` key (such as `dialect`) for an unrelated purpose. Expose plugin-specific behavior through the plugin's own namespace instead.
 > 2. **Static Namespace Immutability**: Any static object or namespace attached to the `Tempo` base class **must be strictly immutable/frozen**:
->    - The namespace object itself (including any nested objects or child namespaces) must be recursively frozen using `deepFreeze()` (available directly from `@magmacomputing/tempo/plugin/sdk` or `#library/utility.library.js`).
+>    - The namespace object itself (including any nested objects or child namespaces) must be recursively frozen using `deepFreeze()` (available directly from `@magmacomputing/tempo/plugin/sdk` or `@magmacomputing/tempo/library`).
 >    - The property must be mounted onto `TempoClass` using `Object.defineProperty` with `writable: false`, `configurable: false`, and `enumerable: false` (or via the SDK's `attachStatics` utility).
 >    ```typescript
 >    import { deepFreeze } from '@magmacomputing/tempo/plugin/sdk';
@@ -520,6 +520,10 @@ When adding a new workspace package, you **must** update the root monorepo lockf
 npm install --package-lock-only
 ```
 
+### A2. Register in Plugin CI Workflow (`.github/workflows/ci.yml`)
+
+The `plugins` job in `.github/workflows/ci.yml` uses an explicit plugin list. Whenever adding a new plugin, you **must** add `--workspace=@magmacomputing/tempo-plugin-[name]` to `Run plugin tests` and `[name]` to the `Typecheck plugin tests` loop in `.github/workflows/ci.yml`.
+
 ### B. Release Workflow Configuration (`.github/workflows/publish.yml`)
 
 Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` provenance releases:
@@ -569,17 +573,13 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      > [!NOTE]
      > Always use `@latest` in import maps rather than semver operators like `@^1` or `@^0`, as browsers percent-encode special characters (e.g. `^` $\rightarrow$ `%5E`), causing CDN resolution errors on `esm.sh`.
 
-3. **Dedicated Playground Preset & Dropdown Option (`public/repl/index.html`)**:
-   - **Preset Dropdown Selector**: Add an `<option>` element inside `<select id="presetSelect">` in `packages/tempo/public/repl/index.html`:
-     ```html
-     <select id="presetSelect" title="Load Snippet Preset">
-       <!-- existing presets... -->
-       <option value="[name]">Preset: [Plugin Title & Features]</option>
-     </select>
-     ```
-   - **Preset Code Snippet**: Add a domain-specific, runnable demonstration snippet under `SNIPPETS` / `DEFAULT_PRESETS` in `packages/tempo/public/repl/index.html` using the plugin's key name (e.g. `holidays`, `celestial`, `geo`):
+3. **Dedicated Playground Preset & Documentation REPL (`snippets.manifest.js` & `<PluginRepl>`)**:
+   - **REPL Snippet Manifests**: Add a runnable preset entry under `SNIPPETS` in both `packages/tempo/public/repl/snippets.manifest.js` and `packages/tempo/.vitepress/theme/data/snippets.manifest.js` using the plugin's key name (e.g. `signals`, `roman`, `holidays`):
      ```javascript
-     [name]: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
+     [name]: {
+       label: 'Preset: [Plugin Title & Features]',
+       plugin: '[name]',
+       code: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
      const { [PluginExport] } = await import('@magmacomputing/tempo-plugin-[name]');
      Tempo.use([PluginExport]);
 
@@ -587,9 +587,11 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      const t = new Tempo();
      console.log(t.[name]...);
      return t.format(...);`,
+     },
      ```
+   - **Plugin Documentation Embed**: Embed `<PluginRepl plugin="[name]" />` in `packages/plugins/[name]/doc/index.md` so the VitePress plugin page renders the live interactive demo backed by `snippets.manifest.js`.
      > [!IMPORTANT]
-     > Without both the dropdown `<option>` and the snippet dictionary entry, users cannot interactively select the preset from the UI, and navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` will silently fall back to displaying the generic `quickstart` template.
+     > Without the `snippets.manifest.js` entry in both locations, `<PluginRepl plugin="[name]" />` and navigating to `https://magmacomputing.github.io/magma/repl/index.html?plugin=[name]` will fall back to displaying a generic `new Tempo()` snippet.
 
 4. **VitePress Ecosystem & Documentation Component**:
    - **`CatalogList.vue` (`packages/tempo/.vitepress/theme/components/CatalogList.vue`)**: Ensure the plugin's ID is assigned to an appropriate functional category in `DOMAIN_GROUPS` (e.g., `geo`, `celestial`, `business`, `system`, `ai`, `dialects`) so it is listed under the proper section on the `ecosystem.md` page.

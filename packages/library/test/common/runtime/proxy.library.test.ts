@@ -1,7 +1,117 @@
 import { inspect } from 'node:util';
 import { sym } from '#library/symbol.library.js';
 import { Enum } from '#library/enumerate.library.js';
-import { delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
+import { defineLazy } from '#library/primitive.library.js';
+import { delegate, delegator, proxify, revocable, secure, type Proxified } from '#library/proxy.library.js';
+
+describe('proxy immutability modes', () => {
+	it.each(['readonly', 'mutable'] as const)('does not freeze a cyclic target in %s mode', mode => {
+		const target: { value: number; self?: object } = { value: 1 };
+		target.self = target;
+		const proxy = proxify(target, mode);
+		expect(proxy.self).toBe(target);
+		expect(Object.isFrozen(target)).toBe(false);
+		target.value = 2;
+		expect(proxy.value).toBe(2);
+	});
+
+	it.each(['frozen', 'readonly', 'mutable'] as const)('ignores missing symbols and existing undefined members in %s mode', mode => {
+		const key = Symbol('virtual');
+		const target = { present: undefined };
+		const resolve = vi.fn(() => 42);
+		const proxy = delegate(target, resolve, mode);
+		expect(proxy.present).toBeUndefined();
+		expect(resolve).not.toHaveBeenCalled();
+		expect(Reflect.get(proxy, key)).toBeUndefined();
+		expect(resolve).not.toHaveBeenCalled();
+		expect(Reflect.get(proxy, 'missing')).toBe(42);
+		expect(resolve).toHaveBeenCalledWith('missing', target);
+	});
+
+	it('mutable mode preserves native failures for locked properties and non-extensible targets', () => {
+		const target = Object.preventExtensions(Object.defineProperty({}, 'locked', { value: 1 }));
+		const proxy = proxify(target, 'mutable');
+		expect(Reflect.set(proxy, 'locked', 2)).toBe(false);
+		expect(Reflect.deleteProperty(proxy, 'locked')).toBe(false);
+		expect(Reflect.defineProperty(proxy, 'newKey', { value: 3 })).toBe(false);
+		expect(Reflect.get(proxy, 'locked')).toBe(1);
+		expect(Object.hasOwn(target, 'newKey')).toBe(false);
+	});
+	it.each(['frozen', 'readonly'] as const)('blocks mutation through a %s proxy', mode => {
+		const target = { value: 1 };
+		const proxy = proxify(target, mode);
+		expect(() => Reflect.set(proxy, 'value', 2)).toThrow(TypeError);
+		expect(() => Reflect.deleteProperty(proxy, 'value')).toThrow(TypeError);
+		expect(() => Object.defineProperty(proxy, 'added', { value: 3 })).toThrow(TypeError);
+		expect(target.value).toBe(1);
+		expect(Object.hasOwn(target, 'added')).toBe(false);
+	});
+
+	it('defaults to freezing the target and its nested objects', () => {
+		const target = { nested: { value: 1 } };
+		proxify(target);
+		expect(Object.isFrozen(target)).toBe(true);
+		expect(Object.isFrozen(target.nested)).toBe(true);
+	});
+
+	it('readonly mode observes direct target changes without freezing nested values', () => {
+		const target = { value: 1, nested: { value: 2 } };
+		const proxy = proxify(target, 'readonly');
+		target.value = 3;
+		target.nested.value = 4;
+		expect(proxy.value).toBe(3);
+		expect(proxy.nested.value).toBe(4);
+		expect(Object.isFrozen(target)).toBe(false);
+		expect(Object.isFrozen(target.nested)).toBe(false);
+	});
+
+	it('mutable mode forwards assignment, definition and deletion to the target', () => {
+		const target = { value: 1 };
+		const proxy = proxify(target, 'mutable');
+		proxy.value = 2;
+		expect(target.value).toBe(2);
+		Object.defineProperty(proxy, 'added', { value: 3, configurable: true });
+		expect(Reflect.get(target, 'added')).toBe(3);
+		expect(Reflect.deleteProperty(proxy, 'added')).toBe(true);
+		expect(Object.hasOwn(target, 'added')).toBe(false);
+	});
+
+	it('honors the skip set in frozen mode while freezing other descendants', () => {
+		const skipped = { value: 1 };
+		const target = { skipped, nested: { value: 2 } };
+		proxify(target, 'frozen', new WeakSet([skipped]));
+		expect(Object.isFrozen(target)).toBe(true);
+		expect(Object.isFrozen(target.nested)).toBe(true);
+		expect(Object.isFrozen(skipped)).toBe(false);
+		skipped.value = 3;
+		expect(target.skipped.value).toBe(3);
+	});
+
+	it.each(['readonly', 'frozen', 'mutable'] as const)('delegates missing keys in %s mode', mode => {
+		const target = { present: 1, nested: { value: 2 } };
+		const resolve = vi.fn(() => 42);
+		const proxy = delegate(target, resolve, mode);
+		expect(proxy.present).toBe(1);
+		expect(resolve).not.toHaveBeenCalled();
+		expect(Reflect.get(proxy, 'missing')).toBe(42);
+		expect(resolve).toHaveBeenCalledWith('missing', target);
+		expect(Object.isFrozen(target)).toBe(mode === 'frozen');
+		expect(Object.isFrozen(target.nested)).toBe(mode === 'frozen');
+		if (mode === 'mutable') {
+			expect(Reflect.set(proxy, 'present', 9)).toBe(true);
+			expect(target.present).toBe(9);
+		} else
+			expect(() => Reflect.set(proxy, 'present', 9)).toThrow(TypeError);
+	});
+
+	it('defaults delegate to readonly without freezing its target', () => {
+		const target = { value: 1 };
+		const proxy = delegate(target, () => undefined);
+		expect(() => Reflect.set(proxy, 'value', 2)).toThrow(TypeError);
+		target.value = 3;
+		expect(proxy.value).toBe(3);
+	});
+});
 
 describe('proxy method binding', () => {
 	test('returns a stable bound wrapper for repeated method access', () => {
@@ -10,7 +120,7 @@ describe('proxy method binding', () => {
 			getValue() { return this.value; }
 		};
 
-		const proxy = proxify(target, true, false);
+		const proxy = proxify(target, 'readonly');
 		const first = proxy.getValue;
 		const second = proxy.getValue;
 
@@ -30,7 +140,7 @@ describe('proxy method binding', () => {
 			enumerable: true,
 		});
 
-		const proxy = proxify(target, true, false) as typeof target & { fixed: typeof fixed };
+		const proxy = proxify(target, 'readonly') as typeof target & { fixed: typeof fixed };
 
 		expect(proxy.fixed).toBe(fixed);
 		expect(proxy.fixed()).toBe(11);
@@ -41,8 +151,8 @@ describe('proxy method binding', () => {
 		const a = { value: 3, getValue: shared };
 		const b = { value: 9, getValue: shared };
 
-		const proxyA = proxify(a, true, false);
-		const proxyB = proxify(b, true, false);
+		const proxyA = proxify(a, 'readonly');
+		const proxyB = proxify(b, 'readonly');
 
 		expect(proxyA.getValue).not.toBe(proxyB.getValue);
 		expect(proxyA.getValue()).toBe(3);
@@ -56,13 +166,13 @@ describe('proxy method binding', () => {
 		}
 
 		const instance = new CustomTarget();
-		const proxy = proxify(instance, false, false);
+		const proxy = proxify(instance, 'mutable');
 
 		expect(proxy.constructor).toBe(CustomTarget);
 		expect(proxy.constructor === CustomTarget).toBe(true);
 
 		const plain = { a: 1 };
-		const plainProxy = proxify(plain, false, false);
+		const plainProxy = proxify(plain, 'mutable');
 		expect(plainProxy.constructor).toBe(Object);
 		expect(plainProxy.constructor === Object).toBe(true);
 	});
@@ -101,12 +211,12 @@ describe('secure serialization', () => {
 	});
 
 	test('formats proxify and enumify objects cleanly via util.inspect without Proxy wrapper', () => {
-		const obj = proxify({ a: 1 }, true);
+		const obj = proxify({ a: 1 }, 'frozen');
 		const objOut = inspect(obj);
 		expect(objOut).not.toContain('Proxy');
 		expect(objOut).toContain('a: 1');
 
-		const list = proxify(['alpha', 'beta'], true);
+		const list = proxify(['alpha', 'beta'], 'frozen');
 		const listOut = inspect(list);
 		expect(listOut).not.toContain('Proxy');
 		expect(listOut).toContain('alpha');
@@ -122,17 +232,17 @@ describe('secure serialization', () => {
 	});
 
 	test('retains native diagnostic inspection for Error and Map instances', () => {
-		const errOut = inspect(proxify(new Error('failed'), true));
+		const errOut = inspect(proxify(new Error('failed'), 'frozen'));
 		expect(errOut).toContain('Error: failed');
 
-		const mapOut = inspect(proxify(new Map([['k', 'v']]), true));
+		const mapOut = inspect(proxify(new Map([['k', 'v']]), 'frozen'));
 		expect(mapOut).toContain('Map(1)');
 		expect(mapOut).toContain("'k' => 'v'");
 	});
 
 	test('isolates virtual sym.$Inspect across multiple proxies sharing one target', () => {
 		const shared: Record<string, string> = {};
-		proxify(shared, true, false);
+		proxify(shared, 'readonly');
 		const first = revocable(shared, { frozen: true, keys: ['a'], onGet: (k) => `${String(k)}-1` });
 		const second = revocable(shared, { frozen: true, keys: ['b'], onGet: (k) => `${String(k)}-2` });
 
@@ -143,7 +253,7 @@ describe('secure serialization', () => {
 		expect(inspect(first.proxy)).toContain("a: 'a-1'");
 		expect(inspect(second.proxy)).toContain("b: 'b-2'");
 
-		const combinedParent = proxify({ x: first.proxy, y: second.proxy }, true, false);
+		const combinedParent = proxify({ x: first.proxy, y: second.proxy }, 'readonly');
 		const combinedInspect = inspect(combinedParent);
 		expect(combinedInspect).toContain("a: 'a-1'");
 		expect(combinedInspect).toContain("b: 'b-2'");
@@ -167,7 +277,7 @@ describe('secure serialization', () => {
 			get boom() {
 				throw new Error('unavailable');
 			}
-		}, true, false);
+		}, 'readonly');
 
 		const out = inspect(obj);
 		expect(out).toContain('a: 1');
@@ -182,7 +292,7 @@ describe('secure serialization', () => {
 			enumerable: true,
 			configurable: true,
 		});
-		const pArr = proxify(arr, true, false);
+		const pArr = proxify(arr, 'readonly');
 		expect(inspect(pArr)).toContain('[Getter]');
 
 		const ctorObj = {
@@ -190,20 +300,20 @@ describe('secure serialization', () => {
 				throw new Error('unexpected constructor read');
 			}
 		};
-		expect(() => inspect(proxify(ctorObj, true, false))).not.toThrow();
+		expect(() => inspect(proxify(ctorObj, 'readonly'))).not.toThrow();
 
 		const circObj: Record<string, any> = { a: 1 };
 		circObj.self = circObj;
-		const circObjOut = inspect(proxify(circObj, true, false), { depth: null });
+		const circObjOut = inspect(proxify(circObj, 'readonly'), { depth: null });
 		expect(circObjOut).toContain('[Circular');
 
 		const circArr: unknown[] = [1];
 		circArr.push(circArr);
-		const circArrOut = inspect(proxify(circArr, true, false), { depth: null });
+		const circArrOut = inspect(proxify(circArr, 'readonly'), { depth: null });
 		expect(circArrOut).toContain('[Circular');
 
 		const child = delegator(['answer'], () => 42);
-		expect(inspect(proxify({ child }, true, false))).toContain('answer: 42');
+		expect(inspect(proxify({ child }, 'readonly'))).toContain('answer: 42');
 
 		const redacted = {
 			token: 'secret-xyz',
@@ -211,7 +321,7 @@ describe('secure serialization', () => {
 				return '[redacted]';
 			}
 		};
-		const redactedOut = inspect(proxify({ nested: redacted }, true, false));
+		const redactedOut = inspect(proxify({ nested: redacted }, 'readonly'));
 		expect(redactedOut).toContain('[redacted]');
 		expect(redactedOut).not.toContain('secret-xyz');
 
@@ -219,9 +329,9 @@ describe('secure serialization', () => {
 		for (let i = 0; i < 20_000; i++) {
 			deep = { next: deep };
 		}
-		expect(() => inspect(proxify(deep, true, false), { depth: 0 })).not.toThrow();
+		expect(() => inspect(proxify(deep, 'readonly'), { depth: 0 })).not.toThrow();
 
-		const nestedArrOut = inspect(proxify({ child: proxify([1], true, false) }, true, false));
+		const nestedArrOut = inspect(proxify({ child: proxify([1], 'readonly') }, 'readonly'));
 		expect(nestedArrOut).toContain('[ 1 ]');
 
 		const keyedSecret = revocable({
@@ -230,19 +340,19 @@ describe('secure serialization', () => {
 				return '[redacted]';
 			}
 		}, { frozen: true, keys: ['token'] });
-		const nestedKeyedSecretOut = inspect(proxify({ nested: keyedSecret.proxy }, true, false));
+		const nestedKeyedSecretOut = inspect(proxify({ nested: keyedSecret.proxy }, 'readonly'));
 		expect(nestedKeyedSecretOut).toContain('[redacted]');
 		expect(nestedKeyedSecretOut).not.toContain('secret-xyz');
 		keyedSecret.revoke();
 
 		const selfTarget: Record<string, any> = {};
-		const selfProxy = proxify(selfTarget, true, false);
+		const selfProxy = proxify(selfTarget, 'readonly');
 		selfTarget.self = selfProxy;
 		expect(inspect(selfProxy, { depth: null })).toContain('[Circular');
 		expect(() => (selfProxy as any)[sym.$Inspect](null)).not.toThrow();
 
 		const nestedRev = revocable({ a: 1 }, { frozen: true });
-		const parentOfRevoked = proxify({ child: nestedRev.proxy }, true, false);
+		const parentOfRevoked = proxify({ child: nestedRev.proxy }, 'readonly');
 		nestedRev.revoke();
 		expect(() => inspect(parentOfRevoked)).not.toThrow();
 
@@ -261,7 +371,7 @@ describe('secure serialization', () => {
 			keys: ['next'],
 			onGet: (k) => (k === 'next' ? keyedLeaf.proxy : undefined),
 		});
-		const keyedParent = proxify({ child: keyedMid.proxy }, true, false);
+		const keyedParent = proxify({ child: keyedMid.proxy }, 'readonly');
 		const shallowSnap = (keyedParent as any)[sym.$Inspect](1);
 		expect(shallowSnap.child.next).toBe(keyedLeaf.proxy);
 		expect(leafInspectCalls).toBe(0);
@@ -269,21 +379,21 @@ describe('secure serialization', () => {
 		keyedMid.revoke();
 
 		// Non-enumerable own properties suppress inherited enumerable snapshot properties
-		const baseProxy = proxify({ status: 'old', keep: 1 }, true, false);
+		const baseProxy = proxify({ status: 'old', keep: 1 }, 'readonly');
 		const shadowedChild = Object.create(baseProxy);
 		Object.defineProperty(shadowedChild, 'status', {
 			value: 'new',
 			enumerable: false,
 			configurable: true,
 		});
-		const proxiedChild = proxify(shadowedChild, true, false);
+		const proxiedChild = proxify(shadowedChild, 'readonly');
 		const childSnap = (proxiedChild as any)[sym.$Inspect]();
 		expect(childSnap).toEqual({ keep: 1 });
 		expect('status' in childSnap).toBe(false);
 
 		// Live prototype mutation adding a custom [sym.$Inspect] hook is honored
 		const unlockedTarget = { token: 'secret-xyz' };
-		const unlockedProxy = proxify(unlockedTarget, true, false);
+		const unlockedProxy = proxify(unlockedTarget, 'readonly');
 		Object.setPrototypeOf(unlockedTarget, {
 			[sym.$Inspect]() {
 				return '[redacted-live]';
@@ -318,7 +428,7 @@ describe('secure serialization', () => {
 				return {};
 			},
 		};
-		inspect(proxify({ child: childWithProtoGetter }, true, false));
+		inspect(proxify({ child: childWithProtoGetter }, 'readonly'));
 		expect(protoGetterCalls).toBe(0);
 
 		// Proxying a child of a proxified base still honors the base's inherited custom hook
@@ -327,10 +437,10 @@ describe('secure serialization', () => {
 				return '[redacted-base]';
 			},
 		});
-		const proxifiedBase = proxify(baseWithHook, true, false);
+		const proxifiedBase = proxify(baseWithHook, 'readonly');
 		const derivedChild = Object.create(proxifiedBase);
 		derivedChild.token = 'secret-child';
-		const proxifiedDerived = proxify(derivedChild, true, false);
+		const proxifiedDerived = proxify(derivedChild, 'readonly');
 		expect(inspect(proxifiedDerived)).toContain('[redacted-base]');
 		expect(inspect(proxifiedDerived)).not.toContain('secret-child');
 	});
@@ -343,7 +453,7 @@ describe('secure serialization', () => {
 			}
 		}
 
-		const modelProxy = proxify(new CustomModel(), true);
+		const modelProxy = proxify(new CustomModel(), 'frozen');
 		expect(inspect(modelProxy)).toBe('CustomModel<42>');
 		expect((modelProxy as any)[sym.$Inspect]()).toBe('CustomModel<42>');
 
@@ -353,8 +463,8 @@ describe('secure serialization', () => {
 			}
 		}
 		const listTarget = new CustomList(1, 2);
-		const firstListProxy = proxify(listTarget, true);
-		const secondListProxy = proxify(listTarget, true);
+		const firstListProxy = proxify(listTarget, 'frozen');
+		const secondListProxy = proxify(listTarget, 'frozen');
 		expect(inspect(firstListProxy)).toBe('L');
 		expect(inspect(secondListProxy)).toBe('L');
 		expect((secondListProxy as any)[sym.$Inspect]()).toBe('L');
@@ -365,6 +475,45 @@ describe('secure serialization', () => {
 				throw new Error('toStringTag boom');
 			}
 		};
-		expect(() => proxify(throwingTag, false)).not.toThrow();
+		expect(() => proxify(throwingTag, 'mutable')).not.toThrow();
+	});
+
+	test('allows defineLazy reads through a readonly proxy and locks nested objects in delegate frozen mode', () => {
+		const lazyTarget: { answer?: number } = {};
+		defineLazy(lazyTarget, 'answer', () => 42);
+		const roProxy = proxify(lazyTarget, 'readonly');
+		expect(roProxy.answer).toBe(42);
+		expect(lazyTarget.answer).toBe(42);
+
+		const nestedDelegate = delegate({ nested: { value: 1 } }, () => undefined, 'frozen');
+		expect(() => { (nestedDelegate.nested as any).value = 2; }).toThrow(TypeError);
+	});
+
+	test('throws TypeError for unsupported runtime proxy modes in proxify and delegate', () => {
+		expect(() => proxify({}, false as any)).toThrow(TypeError);
+		expect(() => proxify({}, 'invalid' as any)).toThrow(TypeError);
+		expect(() => delegate({}, () => undefined, true as any)).toThrow(TypeError);
+		expect(() => delegate({}, () => undefined, 'invalid' as any)).toThrow(TypeError);
+	});
+
+	test('preserves sym.$Inspect hooks on function-valued immediate prototypes', () => {
+		const fnProto = Object.assign(function () {}, {
+			[sym.$Inspect]: () => '[redacted-fn-proto]',
+		});
+		const target = Object.assign(Object.create(fnProto), { secret: '123' });
+		const proxied = proxify(target, 'readonly');
+		expect(inspect(proxied)).toBe('[redacted-fn-proto]');
+	});
+
+	test('preserves inherited sym.$Inspect hooks for proxied callable class constructors', () => {
+		class Base {
+			static [sym.$Inspect]() {
+				return '[base-ctor-inspect]';
+			}
+		}
+		class Child extends Base {}
+		const proxiedChild = proxify(Child, 'readonly');
+		expect((proxiedChild as any)[sym.$Inspect]()).toBe('[base-ctor-inspect]');
+		expect(inspect(proxiedChild)).toBe('[base-ctor-inspect]');
 	});
 });

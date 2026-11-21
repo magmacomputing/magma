@@ -1,6 +1,6 @@
 import { asType, getType } from '#library/type.library.js';
-import { isNumeric, isBranded, isReference } from '#library/assertion.library.js';
-import { ownEntries, unwrap } from '#library/primitive.library.js';
+import { isNumeric, isBranded, isReference, isFunction } from '#library/assertion.library.js';
+import { ownEntries, unwrap, defineFrom, defineProp, walkPrototype } from '#library/primitive.library.js';
 import { secure, proxify } from '#library/proxy.library.js';
 import { Serializable, StringTag } from '#library/decorator.library.js';
 import type { Property, Index, KeyOf, ValueOf, Invert, LooseKey } from '#library/type.library.js';
@@ -43,13 +43,19 @@ export function isEnum<T extends Property<any> = any>(val: unknown): val is Enum
 	return isBranded(val, $EnumBrand);
 }
 
-function isChainFrozen(obj: unknown): boolean {
-	if (!obj || (typeof obj !== 'object' && typeof obj !== 'function')) return false;
-	let curr: any = unwrap(obj as object);
-	while (curr && curr !== Object.prototype) {
-		if (typeof curr !== 'object' && typeof curr !== 'function') return false;
-		if (!Object.isFrozen(curr)) return false;
-		curr = Object.getPrototypeOf(curr);
+function isChainFrozen(obj: unknown, checkAccessors = false): boolean {
+	if (!isReference(obj) || isFunction(obj))
+		return false;
+	for (const level of walkPrototype(obj)) {
+		if (!Object.isFrozen(level))
+			return false;
+		if (checkAccessors) {
+			for (const key of Reflect.ownKeys(level)) {
+				const desc = Object.getOwnPropertyDescriptor(level, key);
+				if (desc && ('get' in desc || 'set' in desc))
+					return false;
+			}
+		}
 	}
 	return true;
 }
@@ -95,7 +101,7 @@ const enumMethods = {
 
 	/** Safely extract all enum member values, immune to shadowing */
 	values<T extends Property<any>>(enumObj: T): readonly ValueOf<T>[] {
-		const isFrozen = isChainFrozen(enumObj);
+		const isFrozen = isChainFrozen(enumObj, true);
 		if (isFrozen) {
 			const cached = valuesCache.get(enumObj);
 			if (cached) return cached as any;
@@ -107,7 +113,7 @@ const enumMethods = {
 
 	/** Safely extract [key, value] pairs, immune to shadowing */
 	entries<T extends Property<any>>(enumObj: T): readonly (readonly [KeyOf<T>, ValueOf<T>])[] {
-		const isFrozen = isChainFrozen(enumObj);
+		const isFrozen = isChainFrozen(enumObj, true);
 		if (isFrozen) {
 			const cached = entriesCache.get(enumObj);
 			if (cached) return cached as any;
@@ -137,7 +143,7 @@ const enumMethods = {
 	 * Supports aliased enums (last-key-wins on duplicate values).
 	 */
 	invert<T extends Property<any>>(enumObj: T): Readonly<Invert<T>> {
-		const isFrozen = isChainFrozen(enumObj);
+		const isFrozen = isChainFrozen(enumObj, true);
 		if (isFrozen) {
 			const cached = invertCache.get(enumObj);
 			if (cached) return cached as any;
@@ -205,9 +211,8 @@ function mergeEnum<const T extends readonly Property<any>[]>(...sources: T): Enu
 				merged[k] = v;
 		}
 	}
-	const target = Object.create(ENUM);
-	Object.defineProperties(target, Object.getOwnPropertyDescriptors(merged));
-	return proxify(target, true, true) as any;
+	const target = Object.freeze(defineFrom(Object.create(ENUM), merged));
+	return proxify(target, 'frozen') as any;
 }
 
 export const Enum: Readonly<enumMethods> = Object.freeze(Object.assign(Object.create(null), enumMethods));
@@ -245,7 +250,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 	switch (arg.type) {
 		case 'Enumify':
 		case 'Object':
-			Object.defineProperties(target, Object.getOwnPropertyDescriptors(arg.value));
+			defineFrom(target, arg.value);
 			break;
 
 		case 'Array':
@@ -254,12 +259,7 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 					throw new TypeError(`Enumify: numeric keys are not supported ("${key}").`);
 				if (Object.hasOwn(target, key))
 					throw new TypeError(`Enumify: duplicate member key "${key}" found in array definition.`);
-				Object.defineProperty(target, key, {
-					value: index,
-					enumerable: true,
-					writable: false,
-					configurable: false
-				});
+				defineProp(target, key, index, 'readonly');
 			});
 			break;
 
@@ -267,7 +267,10 @@ export function enumify<T>(this: any, list: T, frozen = true): any {
 			throw new TypeError(`Enumify: invalid argument type: ${arg.type}`);
 	}
 
-	return proxify(target, true, frozen);											// proxy is ALWAYS frozen (read-only), but target is only 'locked' if requested
+	if (frozen)
+		Object.freeze(target);
+
+	return proxify(target, frozen ? 'frozen' : 'readonly');				// proxy is ALWAYS read-only, target is frozen if requested
 }
 
 /** create an entry in the Serialization Registry to describe how to rebuild an Enum */

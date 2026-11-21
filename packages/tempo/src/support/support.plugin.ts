@@ -191,13 +191,19 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						const hasExplicitOptions = (isObject(callSiteOptions) && !isEmpty(callSiteOptions)) ||
 							(isObject(options) && !isEmpty(options));
 
-						if (name && installed.has(name)) {
+						const isAlreadyInstalled = (!Object.isFrozen(TempoClass) && isFunction((installed as any).hasOwn))
+							? (installed as any).hasOwn(name)
+							: installed.has(name);
+
+						if (name && isAlreadyInstalled) {
 							if (pluginType === 'properties') {
 								logDebug(`Properties plugin already installed by name: ${name}`, state.config);
 								return;
 							}
 							if (hasExplicitOptions) {
-								registerPlugin(plugin, state);
+								const hadExtensionEntry = rt.extensions.includes(plugin);
+						registerPlugin(plugin, state);
+						const addedExtensionEntry = !hadExtensionEntry && rt.extensions.includes(plugin);
 								const installOpts = resolvedOptions;
 								(plugin as any).install.call(TempoClass, TempoClass, installOpts);
 							} else {
@@ -208,7 +214,9 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						if (!name && installed.has(plugin)) return; // identity-based dedup for unnamed plugins
 						if (name) installed.add(name); else installed.add(plugin);
 
+						const hadExtensionEntry = rt.extensions.includes(plugin);
 						registerPlugin(plugin, state);
+						const addedExtensionEntry = !hadExtensionEntry && rt.extensions.includes(plugin);
 						let versionKey: string | undefined;
 						let prevVersion: string | undefined;
 						let hadVersion = false;
@@ -254,8 +262,10 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 									if (nIdx >= 0) state.pluginsDb.plugins.splice(nIdx, 1);
 								}
 							}
-							const extIdx = rt.extensions.indexOf(plugin);
-							if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
+							if (addedExtensionEntry) {
+								const extIdx = rt.extensions.indexOf(plugin);
+								if (extIdx >= 0) rt.extensions.splice(extIdx, 1);
+							}
 
 							if (versionKey) {
 								const stillOwnsVersion =

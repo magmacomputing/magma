@@ -2,6 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
+const RE_DETAILS_TAG = /<\/?details\b[^>]*>/gi;
+
 let repoRoot = null;
 function getRepoRoot() {
 	if (repoRoot === null) {
@@ -84,8 +86,9 @@ const ALLOWED_ROOT_EXT_PATTERN = /\.(?:[mc]?[jt]sx?|json|ya?ml|md|toml)$/i;
 const FOLLOW_UP_SECTION_PATTERN = /(?:##\s*Follow-up\s*Comments|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?Follow-up[\s\S]*?<\/summary>)/i;
 const NITPICK_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Nitpick comments[\s\S]*?<\/summary>/i;
 const ADDITIONAL_SECTION_PATTERN = /<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Additional comments[\s\S]*?<\/summary>/i;
+const OUTSIDE_DIFF_SECTION_PATTERN = /(?:^[ \t]*\*\*[^\w]*Outside diff range comments(?:\s*\(\d+\))?\*\*[ \t]*$|<summary>(?:<picture>[\s\S]*?<\/picture>\s*)?[^\w]*Outside diff range comments[\s\S]*?<\/summary>)/im;
 
-const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-ups?\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt (?:for|to)\b|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
+const SUMMARY_EXCLUSION_PATTERN = /^[^\w]*(?:Follow-ups?\s*\(\d+\)|Minor\s*\(\d+\)|Major\s*\(\d+\)|Nitpick comments|Additional comments|Outside diff range comments|Suggested\s*(?:fix|changes|code|diff)?\b|🧪|Prompt (?:for|to)\b|Supported by|Review info|Run configuration|Files selected|Commits\b)/i;
 
 const ITEM_DETAILS_REGEX = /<details[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/gi;
 const CR_COMMENT_CLOSE_PATTERN = /<!--\s*cr-comment:[^>]+-->[\s\S]*?<\/details>/i;
@@ -121,6 +124,7 @@ export function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 		{ type: 'Follow-up', pattern: FOLLOW_UP_SECTION_PATTERN },
 		{ type: 'Nitpick', pattern: NITPICK_SECTION_PATTERN },
 		{ type: 'Additional', pattern: ADDITIONAL_SECTION_PATTERN },
+		{ type: 'OutsideDiff', pattern: OUTSIDE_DIFF_SECTION_PATTERN },
 	];
 
 	const sectionStarts = [];
@@ -373,6 +377,67 @@ export function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 }
 
 /**
+ * Strips bulky `<details>` analysis-chain blocks (including nested `<details>`)
+ * from CodeRabbit thread replies while preserving text outside them.
+ * @param {string} rawBody
+ * @returns {string}
+ */
+function cleanThreadReplyBody(rawBody) {
+	const text = String(rawBody ?? '');
+	RE_DETAILS_TAG.lastIndex = 0;
+	let depth = 0;
+	let out = '';
+	let cursor = 0;
+	let match;
+	while ((match = RE_DETAILS_TAG.exec(text)) !== null) {
+		const isClose = match[0].startsWith('</');
+		if (!isClose) {
+			if (depth === 0)
+				out += text.slice(cursor, match.index);
+			depth++;
+		} else if (depth > 0) {
+			depth--;
+			if (depth === 0)
+				cursor = match.index + match[0].length;
+		}
+	}
+	if (depth === 0)
+		out += text.slice(cursor);
+	return out.trim();
+}
+
+/**
+ * Extracts a thread finding (including any subsequent CodeRabbit follow-up replies)
+ * from a GitHub GraphQL reviewThread node.
+ *
+ * @param {any} thread
+ * @returns {any | null}
+ */
+export function extractThreadFinding(thread) {
+	const crComments = (thread?.comments?.nodes ?? []).filter(
+		c => c?.author?.login === 'coderabbitai' || c?.author?.login === 'coderabbitai[bot]',
+	);
+	if (crComments.length === 0) return null;
+	const [initial, ...rest] = crComments;
+	const followUpReplies = rest.map(c => ({
+		commentId: c.id,
+		createdAt: c.createdAt ?? null,
+		body: cleanThreadReplyBody(c.body),
+	}));
+	const latestReply = followUpReplies.at(-1) ?? null;
+	return {
+		threadId: thread.id,
+		path: thread.path,
+		line: thread.line,
+		isOutdated: Boolean(thread.isOutdated),
+		commentId: initial.id,
+		body: initial.body,
+		isFollowUp: false,
+		...(latestReply ? { latestReply, followUpReplies } : {}),
+	};
+}
+
+/**
  * Fetches and displays unresolved CodeRabbit review findings from the open PR,
  * or resolves/replies to specific review threads.
  *
@@ -484,7 +549,11 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
           isOutdated
           path
           line
-          comments(first: 10) {
+          comments(first: 50) {
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
             nodes {
               id
               author { login }
@@ -599,22 +668,50 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 
 		const unresolved = allThreads.filter(t => !t.isResolved);
 
+		const threadCommentsQuery = `
+query($threadId: ID!, $after: String) {
+  node(id: $threadId) {
+    ... on PullRequestReviewThread {
+      comments(first: 100, after: $after) {
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          id
+          author { login }
+          body
+          createdAt
+        }
+      }
+    }
+  }
+}`;
+
+		for (const t of unresolved) {
+			let hasNextComments = Boolean(t.comments?.pageInfo?.hasNextPage);
+			let afterCommentsCursor = t.comments?.pageInfo?.endCursor ?? null;
+			while (hasNextComments && afterCommentsCursor) {
+				const commentGqlRaw = runGh([
+					'api',
+					'graphql',
+					'-f', `query=${threadCommentsQuery}`,
+					'-f', `threadId=${t.id}`,
+					'-f', `after=${afterCommentsCursor}`,
+				]);
+				const commentData = JSON.parse(commentGqlRaw);
+				const conn = commentData?.data?.node?.comments;
+				if (!conn) break;
+				t.comments.nodes.push(...(conn.nodes ?? []));
+				hasNextComments = Boolean(conn.pageInfo?.hasNextPage);
+				afterCommentsCursor = conn.pageInfo?.endCursor ?? null;
+			}
+		}
+
 		const threadFindings = [];
 		for (const t of unresolved) {
-			const crComment = t.comments.nodes.find(
-				c => c.author?.login === 'coderabbitai' || c.author?.login === 'coderabbitai[bot]'
-			);
-			if (crComment) {
-				threadFindings.push({
-					threadId: t.id,
-					path: t.path,
-					line: t.line,
-					isOutdated: Boolean(t.isOutdated),
-					commentId: crComment.id,
-					body: crComment.body,
-					isFollowUp: false,
-				});
-			}
+			const finding = extractThreadFinding(t);
+			if (finding) threadFindings.push(finding);
 		}
 
 		// Parse top-level review comments (Follow-up, Nitpick, Additional) from the latest CodeRabbit review
@@ -670,6 +767,10 @@ query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
 			if (f.commentId) console.log(`Comment ID: ${f.commentId}`);
 			if (f.title) console.log(`Title: ${f.title}`);
 			console.log(`\n${f.body.trim()}\n`);
+			if (f.latestReply?.body) {
+				console.log(`Latest CodeRabbit Follow-Up Reply${f.latestReply.createdAt ? ` (${f.latestReply.createdAt})` : ''}:`);
+				console.log(`${f.latestReply.body}\n`);
+			}
 		}
 
 		if (reviewsError) {

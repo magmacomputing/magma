@@ -151,11 +151,11 @@ t.format('{yy}');
 
 ---
 
-### 7. Static Sandbox Factory Transition (`Tempo.derive`)
-To align with prototypical inheritance conventions across the monorepo (such as `Enum.derive`), the static sandbox factory method `Tempo.create(...)` has been transitioned to `Tempo.derive(...)` with a clean break:
+### 7. Static Sandbox Factory Transition (`Tempo.extend`)
+Note that the legacy v4 plugin-registration signature `Tempo.extend(...)` has been removed (see Section 2 above—use `Tempo.use(...)` instead). To align with prototypical inheritance conventions across the monorepo (such as `Enum.extend`), the static sandbox factory method `Tempo.create(...)` has been transitioned to the reused `Tempo.extend(...)` name with a clean break:
 
 * **Removed:** `Tempo.create(options?)`, `Tempo.create(fn)`, `Tempo.create(options, fn)`
-* **Replacement:** Use `Tempo.derive(options?)`, `Tempo.derive(fn)`, `Tempo.derive(options, fn)`
+* **Replacement:** Use `Tempo.extend(options?)`, `Tempo.extend(fn)`, `Tempo.extend(options, fn)`
 
 ```typescript
 // ❌ v4.x
@@ -163,8 +163,8 @@ const MyTempo = Tempo.create({ timeZone: 'UTC' });
 const val = Tempo.create((sb) => sb.now());
 
 // ✅ v5.0.0
-const MyTempo = Tempo.derive({ timeZone: 'UTC' });
-const val = Tempo.derive((sb) => sb.now());
+const MyTempo = Tempo.extend({ timeZone: 'UTC' });
+const val = Tempo.extend((sb) => sb.now());
 ```
 
 ---

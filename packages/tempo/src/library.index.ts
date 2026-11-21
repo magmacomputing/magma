@@ -4,6 +4,7 @@
  * It provides curated access to the specific utilities Magma uses under the hood.
  */
 
+export { BoundedCache } from '#library/cache.class.js';
 export { Pledge } from '#library/pledge.class.js';
 export * as cipher from '#library/cipher.library.js';
 export * as webToken from '#library/webtoken.library.js';
@@ -12,7 +13,14 @@ export { enumify, Enum } from '#library/enumerate.library.js';
 export { stringify, objectify, cloneify } from '#library/serialize.library.js';
 export { parseJSONC, stripJSONC, cleanify, isJSON, rawJSON, isRawJSON } from '#library/json.library.js';
 export { getContext, CONTEXT, deepFreeze } from '#library/utility.library.js';
-export { getCountryFromTimeZone, getLC } from '#library/international.library.js';
+export {
+	getCountryFromTimeZone,
+	getLC,
+	watchIntl,
+	type IntlSnapshot,
+	type WatchIntlOptions,
+	type IntlWatcher,
+} from '#library/international.library.js';
 export { Interval } from '#library/scheduling/interval.class.js';
 
 export * from '#library/proxy.library.js';

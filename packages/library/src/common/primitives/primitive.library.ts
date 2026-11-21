@@ -35,6 +35,48 @@ export function unwrap<T extends object>(obj: T): T {
 }
 
 /**
+ * Lazily yields each object along `target`'s prototype chain up to (excluding) `Object.prototype`,
+ * guarding against cyclic prototype chains and optionally unwrapping Proxy layers.
+ *
+ * @param target - The starting value whose prototype chain to walk
+ * @param unwrapProxies - Whether to unwrap `$Target` Proxy layers at each step (default `true`)
+ * @param maxDepth - Maximum prototype chain depth before throwing `RangeError` (default `256`)
+ * @throws RangeError if the prototype chain exceeds `maxDepth`
+ */
+export function* walkPrototype(
+	target: unknown,
+	unwrapProxies = true,
+	maxDepth = 256,
+): Generator<Obj> {
+	if (!target || typeof target !== 'object')
+		return;
+
+	const visited = new WeakSet<object>();
+	let curr: any = target;
+	let depth = 0;
+
+	while (curr && curr !== Object.prototype) {
+		if (visited.has(curr))
+			break;
+		if (depth++ >= maxDepth)
+			throw new RangeError(`walkPrototype: prototype chain exceeded maximum traversal depth (${maxDepth}).`);
+		visited.add(curr);
+
+		const level = unwrapProxies ? unwrap(curr) : curr;
+		if (level === Object.prototype)
+			break;
+		if (level !== curr) {
+			if (visited.has(level))
+				break;
+			visited.add(level);
+		}
+
+		yield level;
+		curr = Object.getPrototypeOf(level);
+	}
+}
+
+/**
  * Returns an array of all enumerable [key, value] entries for an object,
  * including properties inherited from the prototype chain if `all` is true.
  * 
@@ -61,18 +103,18 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 		return entries as EntryOf<T>[];
 	}
 
-	const levels: any[] = [];
-	const visited = new WeakSet<object>();
-	let curr: any = tgt;
-
-	while (curr && curr !== Object.prototype) {
-		if (levels.length >= 256)
-			throw new RangeError('ownEntries: prototype chain exceeded maximum traversal depth (256).');
-		const level = unwrap(curr);
-		if (visited.has(level)) break;
-		visited.add(level);
-		levels.push(level);
-		curr = Object.getPrototypeOf(level);
+	const levels = Array.from(walkPrototype(tgt));
+	const resolved = new Set<PropertyKey>();
+	const enumerableKeys = new Set<PropertyKey>();
+	for (const level of levels) {
+		for (const k of Reflect.ownKeys(level)) {
+			if (resolved.has(k)) continue;
+			const desc = Object.getOwnPropertyDescriptor(level, k);
+			if (!desc) continue;
+			resolved.add(k);
+			if (desc.enumerable)
+				enumerableKeys.add(k);
+		}
 	}
 
 	const entries: [PropertyKey, any][] = [];
@@ -82,7 +124,7 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 		const keys = Reflect.ownKeys(level);
 
 		for (const k of keys) {
-			if (seen.has(k)) continue;
+			if (seen.has(k) || !enumerableKeys.has(k)) continue;
 
 			const desc = Object.getOwnPropertyDescriptor(level, k);
 			if (!desc || !desc.enumerable) continue;
@@ -93,6 +135,16 @@ export function ownEntries<T extends Obj>(json: T, all = false): EntryOf<T>[] {
 	}
 
 	return entries as EntryOf<T>[];
+}
+
+/**
+ * Flattens own and inherited enumerable properties of `obj` into a fresh plain object.
+ *
+ * @param obj - Source object (including prototype-chained or Proxy-wrapped objects)
+ * @returns A plain object containing all enumerable entries
+ */
+export function flattenObject<T extends Obj>(obj: T): Record<PropertyKey, any> {
+	return Object.fromEntries(ownEntries(obj, true));
 }
 
 /**
@@ -444,3 +496,100 @@ export function toArray<T>(arr?: ArrayLike<T> | null): T[] {
 	return res;
 }
 
+
+/** Descriptor flag or preset name for {@link defineProp}. */
+export type PropFlag = 'mutable' | 'readonly' | 'hidden' | 'sealed' | 'writable' | 'enumerable' | 'configurable';
+
+const PROP_PRESETS: Record<PropFlag, { enumerable: boolean; writable: boolean; configurable: boolean }> = {
+	mutable:      { enumerable: true,  writable: true,  configurable: true  },
+	readonly:     { enumerable: true,  writable: false, configurable: false },
+	hidden:       { enumerable: false, writable: true,  configurable: true  },
+	sealed:       { enumerable: false, writable: false, configurable: false },
+	writable:     { enumerable: false, writable: true,  configurable: false },
+	enumerable:   { enumerable: true,  writable: false, configurable: false },
+	configurable: { enumerable: false, writable: false, configurable: true  },
+};
+
+/**
+ * Defines a data property on `target` using readable descriptor presets or combined flags.
+ *
+ * @param target - Object to attach the property to
+ * @param key - Property key or symbol
+ * @param value - Value to assign
+ * @param flags - Preset or list of flags (`'mutable'` by default)
+ * @returns The target object
+ * @example
+ * ```ts
+ * defineProp(obj, 'id', 42, 'readonly');
+ * defineProp(obj, 'meta', {}, 'hidden');
+ * defineProp(obj, 'res', [], ['readonly', 'configurable']);
+ * ```
+ */
+export function defineProp<T extends object>(
+	target: T,
+	key: PropertyKey,
+	value: unknown,
+	flags: PropFlag | readonly PropFlag[] = 'mutable',
+): T {
+	let desc: { enumerable: boolean; writable: boolean; configurable: boolean };
+	if (!Array.isArray(flags)) {
+		const preset = Object.hasOwn(PROP_PRESETS, flags as string) ? PROP_PRESETS[flags as PropFlag] : undefined;
+		if (!preset)
+			throw new TypeError(`defineProp: unknown flag '${String(flags)}'.`);
+		desc = preset;
+	} else {
+		desc = { enumerable: false, writable: false, configurable: false };
+		for (const f of flags as readonly PropFlag[]) {
+			const p = Object.hasOwn(PROP_PRESETS, f) ? PROP_PRESETS[f] : undefined;
+			if (!p)
+				throw new TypeError(`defineProp: unknown flag '${String(f)}'.`);
+			if (p.enumerable) desc.enumerable = true;
+			if (p.writable) desc.writable = true;
+			if (p.configurable) desc.configurable = true;
+		}
+	}
+	Object.defineProperty(target, key, { ...desc, value });
+	return target;
+}
+
+/**
+ * Defines a lazy getter on `target` that caches its computed value as an own read-only property on first access.
+ *
+ * @param target - Object to attach the lazy property to
+ * @param key - Property key or symbol
+ * @param factory - Computation evaluated on first access with `this` bound to the receiver
+ * @param enumerable - Whether the property is enumerable (default `true`)
+ * @returns The target object
+ */
+export function defineLazy<T extends object, V = unknown>(
+	target: T,
+	key: PropertyKey,
+	factory: (this: T) => V,
+	enumerable = true,
+): T {
+	Object.defineProperty(target, key, {
+		enumerable,
+		configurable: true,
+		get(this: T) {
+			const value = factory.call(this);
+			const dest = unwrap(this);
+			if (Object.isExtensible(dest) && Object.getOwnPropertyDescriptor(dest, key)?.configurable !== false)
+				Object.defineProperty(dest, key, { value, enumerable, writable: false, configurable: true });
+			return value;
+		},
+	});
+	return target;
+}
+
+/**
+ * Copies all own property descriptors (including symbols, getters, and non-enumerable entries)
+ * from `source` onto `target`.
+ *
+ * @param target - Destination object
+ * @param source - Source object whose own descriptors are copied
+ * @returns The target object
+ */
+export function defineFrom<T extends object>(target: T, source: object): T {
+	Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
+	return target;
+}

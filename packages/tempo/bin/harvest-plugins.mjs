@@ -230,6 +230,10 @@ const PREFERRED_DOC_ORDER = {
     'index',
     'use-cases-and-patterns',
   ],
+  signals: [
+    'index',
+    'use-cases-and-patterns',
+  ],
   roman: [
     'index',
     'calendar-mechanics',

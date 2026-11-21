@@ -8,7 +8,7 @@ import { deepMerge } from '#library/object.library.js';
 import { asType, cast } from '#library/type.library.js';
 import { isString, isObject, isPlainObject, isUndefined, isNotNullish, isRegExp, isEmpty, isFunction, isReference } from '#library/assertion.library.js';
 import { ScopedSet } from '#library/scopedset.class.js';
-import { ownEntries, hasOwn, hasNoneOf } from '#library/primitive.library.js';
+import { ownEntries, hasOwn, hasNoneOf, defineProp, flattenObject } from '#library/primitive.library.js';
 import { parseLogLevel } from '#library/logger.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { coerceGeo } from '#library/mapper.library.js';
@@ -78,14 +78,8 @@ function inspectRegistry(this: Record<string, any>) {
 }
 
 function attachRegistryInspect<T extends object>(reg: T): T {
-	if (!hasOwn(reg, sym.$Inspect) && Object.isExtensible(reg)) {
-		Object.defineProperty(reg, sym.$Inspect, {
-			value: inspectRegistry,
-			enumerable: false,
-			configurable: true,
-			writable: false,
-		});
-	}
+	if (!hasOwn(reg, sym.$Inspect) && Object.isExtensible(reg))
+		defineProp(reg, sym.$Inspect, inspectRegistry, 'configurable');
 	return reg;
 }
 
@@ -205,7 +199,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			silent: options.silent ?? false,
 			intl: {},
 		});
-		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
+		defineProp(state.config, 'get', function (this: any, key: string) { return this[key] }, 'hidden');
 	} else if (baseState) {
 		state.config = markConfig(Object.create(baseState.config));
 		if (baseState.config.registry) state.config.registry = attachRegistryInspect(Object.create(baseState.config.registry));
@@ -217,7 +211,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			silent: options.silent ?? (baseState.config as any).silent ?? false,
 			intl: Object.create((baseState.config as any).intl || {}),
 		});
-		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
+		defineProp(state.config, 'get', function (this: any, key: string) { return this[key] }, 'hidden');
 	} else {
 		markConfig(Object.assign(state.config, configDefaults));
 		// Unfreeze the registry sub-object so that extendState can write into it at runtime.
@@ -238,7 +232,7 @@ export function init(options: t.Options = {}, isGlobal = true, baseState?: t.Int
 			silent: options.silent ?? false,
 			intl: {},
 		});
-		Object.defineProperty(state.config, 'get', { value: function (key: string) { return this[key] }, enumerable: false, writable: true, configurable: true });
+		defineProp(state.config, 'get', function (this: any, key: string) { return this[key] }, 'hidden');
 		if (isNotNullish(options.catch))
 			setProperty(state.config, 'catch', options.catch);
 		if (isNotNullish(options.silent))
@@ -372,8 +366,8 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 			case 'registry':
 				if (isObject(arg.value)) {
 					state.config.registry = attachRegistryInspect(cast<t.Internal.Config['registry']>({
-						...Object.fromEntries(ownEntries(state.config.registry ?? {}, true)),
-						modifiers: Object.fromEntries(ownEntries(state.config.registry?.modifiers ?? {}, true))
+						...flattenObject(state.config.registry ?? {}),
+						modifiers: flattenObject(state.config.registry?.modifiers ?? {})
 					}));
 					if (arg.value.formats) {
 						const extended = state.config.registry.formats ? Enum.merge(state.config.registry.formats, arg.value.formats) : arg.value.formats;
@@ -406,7 +400,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 					if (arg.value.dialects)
 						setProperty(state.config.registry, 'dialects', Enum.merge(state.config.registry.dialects ?? {}, arg.value.dialects));
 					if (arg.value.numbers) {
-						const incoming = Object.fromEntries(ownEntries(arg.value.numbers, true));
+						const incoming = flattenObject(arg.value.numbers);
 						const extended = state.config.registry.numbers ? Enum.extend(state.config.registry.numbers, incoming, false) : Enum.from(incoming, false);
 						setProperty(state.config.registry, 'numbers', extended);
 						if (state.config?.scope === 'global')
@@ -414,7 +408,7 @@ export function extendState(state: t.Internal.State, options: t.Options): boolea
 						patternsDirty = true;
 					}
 					if (arg.value.ordinals) {
-						const incoming = Object.fromEntries(ownEntries(arg.value.ordinals, true));
+						const incoming = flattenObject(arg.value.ordinals);
 						const extended = state.config.registry.ordinals ? Enum.extend(state.config.registry.ordinals, incoming, false) : Enum.from(incoming, false);
 						setProperty(state.config.registry, 'ordinals', extended);
 						if (state.config?.scope === 'global')

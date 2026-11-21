@@ -1,5 +1,5 @@
 import { isFunction, isString, isUndefined, isCallable, isObject, isNotNullish, isNullish, isSymbol } from '#library/assertion.library.js';
-import { hasKey, hasOwn, ownEntries } from '#library/primitive.library.js';
+import { hasKey, hasOwn, ownEntries, defineProp } from '#library/primitive.library.js';
 import { secureRef, delegate } from '#library/proxy.library.js';
 import { cast } from '#library/type.library.js';
 
@@ -241,9 +241,8 @@ export function definePlugin<T extends Plugin<TempoType, Opts>, Opts = any>(plug
 
 	const { name, ...rest } = plugin;
 	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'plugin' });
-	if (name) {
-		Object.defineProperty(result, 'name', { value: name, configurable: true });
-	}
+	if (name)
+		defineProp(result, 'name', name, 'configurable');
 
 	registerPlugin(result);
 	return cast<PluginFactory<T, Opts>>(result);
@@ -320,18 +319,12 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 						const resolver = config.resolvers[key as keyof typeof config.resolvers];
 						if (resolver) return resolver(this);
 						return undefined;
-					}, true);
+					}, 'readonly');
 
-					if (isExtensible) {
-						Object.defineProperty(this, cacheKey, {
-							value: proxy,
-							writable: true,
-							configurable: true,
-							enumerable: false
-						});
-					} else {
+					if (isExtensible)
+						defineProp(this, cacheKey, proxy, 'hidden');
+					else
 						weakCache.set(this, proxy);
-					}
 
 					return proxy;
 				},
@@ -351,9 +344,8 @@ export function defineNamespace<Opts = any>(config: NamespaceConfig): PluginFact
 
 	const { name, ...rest } = plugin;
 	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'namespace' });
-	if (name) {
-		Object.defineProperty(result, 'name', { value: name, configurable: true });
-	}
+	if (name)
+		defineProp(result, 'name', name, 'configurable');
 
 	registerPlugin(result);
 	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
@@ -555,14 +547,8 @@ export function defineProperties<Opts = any>(
 							}
 							cache![key] = result;
 
-							if (this !== proto && Reflect.isExtensible(this)) {
-								Object.defineProperty(this, key, {
-									value: result,
-									writable: false,
-									enumerable: false,
-									configurable: true,
-								});
-							}
+							if (this !== proto && Reflect.isExtensible(this))
+								defineProp(this, key, result, 'configurable');
 
 							return result;
 						},
@@ -617,7 +603,7 @@ export function defineProperties<Opts = any>(
 
 	const { name: pName, ...rest } = plugin;
 	const result = Object.assign(factory, rest, { [sym.$PluginType]: 'properties' });
-	Object.defineProperty(result, 'name', { value: pName ?? '', configurable: true });
+	defineProp(result, 'name', pName ?? '', 'configurable');
 
 	return cast<PluginFactory<Plugin<TempoType>, Opts>>(result);
 }

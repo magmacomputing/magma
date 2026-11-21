@@ -1,4 +1,80 @@
 import { enumify, Enum, isEnum } from '#library/enumerate.library.js';
+import { unwrap } from '#library/primitive.library.js';
+
+describe('Enum descriptor preservation', () => {
+	it('refreshes every reflection helper after a mutable parent changes', () => {
+		const parent = Enum.from({ A: 1 }, false);
+		const child = Enum.extend(parent, { B: 2 });
+		expect(Enum.keys(child)).toEqual(['A', 'B']);
+		expect(Enum.values(child)).toEqual([1, 2]);
+		expect(Enum.entries(child)).toEqual([['A', 1], ['B', 2]]);
+		expect(Enum.invert(child)).toEqual({ 1: 'A', 2: 'B' });
+		Object.assign(unwrap(parent), { A: 10, C: 3 });
+		expect(Enum.keys(child)).toEqual(['A', 'C', 'B']);
+		expect(Enum.values(child)).toEqual([10, 3, 2]);
+		expect(Enum.entries(child)).toEqual([['A', 10], ['C', 3], ['B', 2]]);
+		expect(Enum.invert(child)).toEqual({ 10: 'A', 3: 'C', 2: 'B' });
+		expect(Enum.keyOf(child, 1)).toBeUndefined();
+		expect(Enum.includes(child, 10)).toBe(true);
+	});
+
+	it('merges inherited members into an independent frozen snapshot', () => {
+		const source = Enum.from({ A: 1 }, false);
+		const derived = Enum.extend(source, { B: 2 });
+		const merged = Enum.merge(derived, { A: undefined, C: 3 });
+		Reflect.set(unwrap(source), 'A', 9);
+		expect(Enum.entries(merged)).toEqual([['A', undefined], ['B', 2], ['C', 3]]);
+		expect(Enum.hasOwn(merged, 'A')).toBe(true);
+		expect(Enum.hasOwn(merged, 'B')).toBe(true);
+		expect(Object.isFrozen(unwrap(merged))).toBe(true);
+		expect(() => Reflect.set(merged, 'C', 4)).toThrow(TypeError);
+	});
+
+	it('merges no sources into an empty genuine enum', () => {
+		const result = Enum.merge();
+		expect(Enum.isEnum(result)).toBe(true);
+		expect(Enum.entries(result)).toEqual([]);
+		expect([...result]).toEqual([]);
+	});
+
+	it('merges into an independent readonly snapshot of a live enum', () => {
+		const source = Enum.from({ A: 1 }, false);
+		const result = Enum.merge(source, { B: 2 });
+		Object.assign(unwrap(source), { A: 9, C: 3 });
+		expect(Enum.entries(result)).toEqual([['A', 1], ['B', 2]]);
+		expect(() => Reflect.set(result, 'A', 5)).toThrow(TypeError);
+	});
+	it('preserves accessors and hidden symbol descriptors without evaluating getters', () => {
+		const getter = vi.fn(() => 42);
+		const key = Symbol('metadata');
+		const source = Object.defineProperties({}, {
+			answer: { get: getter, enumerable: true, configurable: true },
+			[key]: { value: 'hidden', enumerable: false, configurable: true },
+		});
+		const result = Enum.from(source, false);
+		expect(getter).not.toHaveBeenCalled();
+		expect(Object.getOwnPropertyDescriptor(unwrap(result), 'answer')?.get).toBe(getter);
+		expect(Object.getOwnPropertyDescriptor(unwrap(result), key)).toEqual(Object.getOwnPropertyDescriptor(source, key));
+		expect(Reflect.get(result, 'answer')).toBe(42);
+	});
+
+	it('keeps a non-frozen enum proxy readonly while allowing raw target updates', () => {
+		const result = Enum.from({ A: 1 }, false);
+		const target = unwrap(result);
+		expect(Object.isFrozen(target)).toBe(false);
+		expect(() => Reflect.set(result, 'A', 2)).toThrow(TypeError);
+		Reflect.set(target, 'A', 3);
+		expect(result.A).toBe(3);
+	});
+
+	it('defines array members as enumerable immutable numeric values', () => {
+		const result = Enum.from(['First', 'Second'] as const);
+		expect(Enum.entries(result)).toEqual([['First', 0], ['Second', 1]]);
+		expect(Object.getOwnPropertyDescriptor(unwrap(result), 'First')).toEqual({
+			value: 0, enumerable: true, writable: false, configurable: false,
+		});
+	});
+});
 
 describe('Enum (Static Reflection & v5 Architecture)', () => {
 	it('should enumerate keys, values, and entries across prototypal extension via Enum.*', () => {
@@ -294,5 +370,43 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		const UNDEF_TAIL = Enum.merge({ A: 42 }, ...undefDynamic);
 		const checkUndefUnion: number | string | undefined = UNDEF_TAIL.A;
 		expect(checkUndefUnion).toBeUndefined();
+	});
+
+	it('preserves fixed toJSON members on frozen enums and avoids stale value caches for accessors', () => {
+		const WITH_TO_JSON = Enum.from({ toJSON: 1, A: 2 });
+		expect(WITH_TO_JSON.toJSON).toBe(1);
+		expect(JSON.stringify(WITH_TO_JSON)).toBe('{"toJSON":1,"A":2}');
+
+		const MERGED_TO_JSON = Enum.merge({ toJSON: 1, A: 2 });
+		expect(MERGED_TO_JSON.toJSON).toBe(1);
+		expect(JSON.stringify(MERGED_TO_JSON)).toBe('{"toJSON":1,"A":2}');
+
+		let dynamicVal = 1;
+		const ACCESSOR_ENUM = Enum.from({ get A() { return dynamicVal; } });
+		expect(Enum.values(ACCESSOR_ENUM)).toEqual([1]);
+		expect(Enum.entries(ACCESSOR_ENUM)).toEqual([['A', 1]]);
+		expect(Enum.invert(ACCESSOR_ENUM)).toEqual({ 1: 'A' });
+
+		dynamicVal = 2;
+		expect(Enum.values(ACCESSOR_ENUM)).toEqual([2]);
+		expect(Enum.entries(ACCESSOR_ENUM)).toEqual([['A', 2]]);
+		expect(Enum.invert(ACCESSOR_ENUM)).toEqual({ 2: 'A' });
+
+		const symKey = Symbol('dynamic');
+		let symVal = 'one';
+		const SYM_ACCESSOR_ENUM = Enum.from({ get [symKey]() { return symVal; } });
+		expect(Enum.values(SYM_ACCESSOR_ENUM)).toEqual(['one']);
+		expect(Enum.entries(SYM_ACCESSOR_ENUM)).toEqual([[symKey, 'one']]);
+		expect(Enum.invert(SYM_ACCESSOR_ENUM)).toEqual({ one: symKey });
+
+		symVal = 'two';
+		expect(Enum.values(SYM_ACCESSOR_ENUM)).toEqual(['two']);
+		expect(Enum.entries(SYM_ACCESSOR_ENUM)).toEqual([[symKey, 'two']]);
+		expect(Enum.invert(SYM_ACCESSOR_ENUM)).toEqual({ two: symKey });
+
+		const BASE = Enum.from({ Viewer: 1 });
+		const CHILD = Enum.extend(BASE, { Admin: 2 });
+		const MERGED_CHILD = Enum.merge(CHILD, { Guest: 0 });
+		expect(Enum.entries(MERGED_CHILD)).toEqual([['Viewer', 1], ['Admin', 2], ['Guest', 0]]);
 	});
 });

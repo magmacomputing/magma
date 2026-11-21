@@ -245,6 +245,20 @@
     ]
   },
   {
+    "text": "Signals Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/signals.index"
+      },
+      {
+        "text": "Production Use Cases & Architectural Patterns",
+        "link": "/doc/9-plugins/signals.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Snap Plugin",
     "collapsed": true,
     "items": [
