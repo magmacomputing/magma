@@ -336,7 +336,11 @@ function factory<T extends object>(target: T, options: ProxyOptions = {}, isRevo
 			// Virtualization for serialization
 			if (frozen && k === 'toJSON') {
 				const own = Object.getOwnPropertyDescriptor(t, k);
-				if (own && isFunction(own.value)) return own.value;
+				if (own) {
+					if (!own.configurable && 'value' in own && !own.writable) return own.value;
+					if (!own.configurable && !('value' in own) && !own.get) return undefined;
+					if (isFunction(own.value)) return own.value;
+				}
 				return getJSON(r);
 			}
 			if (frozen && k === sym.$Inspect) {

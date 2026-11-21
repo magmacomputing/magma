@@ -131,4 +131,55 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 		expect(sb.parse.monthDay.isExplicit).toBe(true);
 		expect(sb.parse.monthDay.active).toBe(true);
 	});
+
+	it('preserves custom parser registrations while regenerating localized entries', () => {
+		const state = mockSystemIntl('fr-FR', 'Europe/Paris');
+
+		using sb = Tempo.extend({
+			locale: 'fr-FR',
+			timeZone: 'Europe/Paris',
+			registry: {
+				events: { launch: '2026-01-01' },
+				snippets: { customYear: /202\d/ },
+			},
+			plugins: [SignalsPlugin],
+		});
+		expect(sb.parse.event.launch).toBe('2026-01-01');
+		expect(sb.parse.event['aujourd’hui'] ?? sb.parse.event["aujourd'hui"] ?? sb.parse.event['demain']).toBeDefined();
+
+		using watcher = sb.signals.watchSystem();
+
+		state.locale = 'de-DE';
+		state.timeZone = 'Europe/Berlin';
+		expect(watcher.check()).toBe(true);
+
+		expect(sb.parse.event.launch).toBe('2026-01-01');
+		expect(sb.parse.snippet[Symbol.for('$Tempo.customYear')]).toBeInstanceOf(RegExp);
+		expect(sb.parse.event['aujourd’hui']).toBeUndefined();
+		expect(sb.parse.event['morgen']).toBe('tomorrow');
+	});
+
+	it('recomputes inferred sphere on timeZone change while preserving explicit sphere override', () => {
+		const state = mockSystemIntl('en-GB', 'Europe/London');
+
+		using inferredSb = Tempo.extend({ locale: 'en-GB', timeZone: 'Europe/London', plugins: [SignalsPlugin] });
+		expect(inferredSb.config.sphere).toBe('north');
+
+		using inferredWatcher = inferredSb.signals.watchSystem();
+		state.timeZone = 'Australia/Sydney';
+		expect(inferredWatcher.check()).toBe(true);
+		expect(inferredSb.config.sphere).toBe('south');
+
+		state.timeZone = 'Europe/London';
+		using explicitSb = Tempo.extend({
+			locale: 'en-GB',
+			timeZone: 'Europe/London',
+			sphere: 'north',
+			plugins: [SignalsPlugin],
+		});
+		using explicitWatcher = explicitSb.signals.watchSystem();
+		state.timeZone = 'Australia/Sydney';
+		expect(explicitWatcher.check()).toBe(true);
+		expect(explicitSb.config.sphere).toBe('north');
+	});
 });

@@ -35,7 +35,10 @@ export default withMermaid(defineConfig({
           if (env.relativePath === 'doc/4-advanced-reference/glossary.md') {
             const entries = JSON.parse(readFileSync(fileURLToPath(new URL('../doc/glossary.json', import.meta.url)), 'utf-8'));
             const glossaryMd = entries
-              .map((e: any) => `## ${e.term} {#${e.slug}}\n\n${e.summary}${e.details ? `\n\n${e.details}` : ''}`)
+              .map((e: any) => {
+                const slug = e.slug ?? e.term.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                return `## ${e.term} {#${slug}}\n\n${e.summary}${e.details ? `\n\n${e.details}` : ''}`;
+              })
               .join('\n\n');
             return `${html}\n${md.render(glossaryMd, env)}`;
           }

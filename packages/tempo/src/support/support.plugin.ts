@@ -191,7 +191,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						const hasExplicitOptions = (isObject(callSiteOptions) && !isEmpty(callSiteOptions)) ||
 							(isObject(options) && !isEmpty(options));
 
-						const isAlreadyInstalled = isFunction((installed as any).hasOwn)
+						const isAlreadyInstalled = (!Object.isFrozen(TempoClass) && isFunction((installed as any).hasOwn))
 							? (installed as any).hasOwn(name)
 							: installed.has(name);
 

@@ -12,7 +12,7 @@ describe('watchIntl()', () => {
 		let mockLocale = 'en-US';
 		let mockTimeZone = 'UTC';
 		const OrigDTF = Intl.DateTimeFormat;
-		vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((...args: any[]) => {
+		vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((...args: ConstructorParameters<typeof OrigDTF>) => {
 			const dtf = new OrigDTF(...args);
 			const origResolved = dtf.resolvedOptions.bind(dtf);
 			dtf.resolvedOptions = () => ({
@@ -65,7 +65,7 @@ describe('watchIntl()', () => {
 		let mockLocale = 'en-US';
 		let mockTimeZone = 'UTC';
 		const OrigDTF = Intl.DateTimeFormat;
-		vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((...args: any[]) => {
+		vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((...args: ConstructorParameters<typeof OrigDTF>) => {
 			const dtf = new OrigDTF(...args);
 			const origResolved = dtf.resolvedOptions.bind(dtf);
 			dtf.resolvedOptions = () => ({
@@ -95,7 +95,7 @@ describe('watchIntl()', () => {
 		let mockLocale = 'en-US';
 		let mockTimeZone = 'UTC';
 		const OrigDTF = Intl.DateTimeFormat;
-		vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((...args: any[]) => {
+		vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((...args: ConstructorParameters<typeof OrigDTF>) => {
 			const dtf = new OrigDTF(...args);
 			const origResolved = dtf.resolvedOptions.bind(dtf);
 			dtf.resolvedOptions = () => ({

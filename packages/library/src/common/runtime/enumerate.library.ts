@@ -43,12 +43,18 @@ export function isEnum<T extends Property<any> = any>(val: unknown): val is Enum
 	return isBranded(val, $EnumBrand);
 }
 
-function isChainFrozen(obj: unknown): boolean {
+function isChainFrozen(obj: unknown, checkAccessors = false): boolean {
 	if (!isReference(obj) || isFunction(obj))
 		return false;
 	for (const level of walkPrototype(obj)) {
 		if (!Object.isFrozen(level))
 			return false;
+		if (checkAccessors) {
+			for (const desc of Object.values(Object.getOwnPropertyDescriptors(level))) {
+				if ('get' in desc || 'set' in desc)
+					return false;
+			}
+		}
 	}
 	return true;
 }
@@ -94,7 +100,7 @@ const enumMethods = {
 
 	/** Safely extract all enum member values, immune to shadowing */
 	values<T extends Property<any>>(enumObj: T): readonly ValueOf<T>[] {
-		const isFrozen = isChainFrozen(enumObj);
+		const isFrozen = isChainFrozen(enumObj, true);
 		if (isFrozen) {
 			const cached = valuesCache.get(enumObj);
 			if (cached) return cached as any;
@@ -106,7 +112,7 @@ const enumMethods = {
 
 	/** Safely extract [key, value] pairs, immune to shadowing */
 	entries<T extends Property<any>>(enumObj: T): readonly (readonly [KeyOf<T>, ValueOf<T>])[] {
-		const isFrozen = isChainFrozen(enumObj);
+		const isFrozen = isChainFrozen(enumObj, true);
 		if (isFrozen) {
 			const cached = entriesCache.get(enumObj);
 			if (cached) return cached as any;
@@ -136,7 +142,7 @@ const enumMethods = {
 	 * Supports aliased enums (last-key-wins on duplicate values).
 	 */
 	invert<T extends Property<any>>(enumObj: T): Readonly<Invert<T>> {
-		const isFrozen = isChainFrozen(enumObj);
+		const isFrozen = isChainFrozen(enumObj, true);
 		if (isFrozen) {
 			const cached = invertCache.get(enumObj);
 			if (cached) return cached as any;

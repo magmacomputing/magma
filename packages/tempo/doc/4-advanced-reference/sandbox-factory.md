@@ -9,7 +9,7 @@ Historically, `Tempo.init()` modified the global library state. This meant that:
 3. Testing multiple configurations required careful cleanup between tests.
 
 ## The Solution
-`Tempo.extend()` returns a **derived sandboxed class** with its own isolated configuration, registry, and plugin state. Each sandbox inherits from the caller via prototypal derivation, but runs with independent internal state.
+`Tempo.extend()` returns a **derived sandboxed class** with its own isolated configuration, registry, and plugin state (except for registered terms, which share a global term map). Each sandbox inherits from the caller via prototypal derivation, but runs with independent internal state.
 
 ### Lifecycle Methods
 To understand when to use `Tempo.extend()`, it helps to contrast it with the other initialization methods:

@@ -371,4 +371,30 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		const checkUndefUnion: number | string | undefined = UNDEF_TAIL.A;
 		expect(checkUndefUnion).toBeUndefined();
 	});
+
+	it('preserves fixed toJSON members on frozen enums and avoids stale value caches for accessors', () => {
+		const WITH_TO_JSON = Enum.from({ toJSON: 1, A: 2 });
+		expect(WITH_TO_JSON.toJSON).toBe(1);
+		expect(JSON.stringify(WITH_TO_JSON)).toBe('{"toJSON":1,"A":2}');
+
+		const MERGED_TO_JSON = Enum.merge({ toJSON: 1, A: 2 });
+		expect(MERGED_TO_JSON.toJSON).toBe(1);
+		expect(JSON.stringify(MERGED_TO_JSON)).toBe('{"toJSON":1,"A":2}');
+
+		let dynamicVal = 1;
+		const ACCESSOR_ENUM = Enum.from({ get A() { return dynamicVal; } });
+		expect(Enum.values(ACCESSOR_ENUM)).toEqual([1]);
+		expect(Enum.entries(ACCESSOR_ENUM)).toEqual([['A', 1]]);
+		expect(Enum.invert(ACCESSOR_ENUM)).toEqual({ 1: 'A' });
+
+		dynamicVal = 2;
+		expect(Enum.values(ACCESSOR_ENUM)).toEqual([2]);
+		expect(Enum.entries(ACCESSOR_ENUM)).toEqual([['A', 2]]);
+		expect(Enum.invert(ACCESSOR_ENUM)).toEqual({ 2: 'A' });
+
+		const BASE = Enum.from({ Viewer: 1 });
+		const CHILD = Enum.extend(BASE, { Admin: 2 });
+		const MERGED_CHILD = Enum.merge(CHILD, { Guest: 0 });
+		expect(Enum.entries(MERGED_CHILD)).toEqual([['Viewer', 1], ['Admin', 2], ['Guest', 0]]);
+	});
 });
