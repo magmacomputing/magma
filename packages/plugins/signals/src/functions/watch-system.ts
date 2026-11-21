@@ -2,7 +2,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { $Internal, watchIntl, type IntlWatcher } from '@magmacomputing/tempo/plugin/sdk';
 import type { WatchSystemConfigOptions } from '../types/index.js';
 
-const LOCALIZED_SNIPPET_KEYS = new Set(['mon', 'mmm', 'wkd', 'www']);
+const LOCALIZED_SNIPPET_KEYS = new Set(['mon', 'mmm', 'wkd', 'www', 'mm']);
 
 function preserveMonthDay(monthDay: any): any {
 	if (!monthDay || monthDay.isExplicit)
@@ -27,9 +27,10 @@ function extractParseEntries(
 	}
 	for (const sym of Object.getOwnPropertySymbols(source)) {
 		const keyFor = Symbol.keyFor(sym);
-		if (!keyFor?.startsWith('$Tempo.'))
+		const key = keyFor?.startsWith('$Tempo.') ? keyFor.slice(7) : sym.description;
+		if (!key || excludeStrings?.has(key))
 			continue;
-		result[keyFor.slice(7)] = source[sym];
+		result[key] = source[sym];
 		hasEntries = true;
 	}
 	return hasEntries ? result : undefined;
@@ -38,17 +39,19 @@ function extractParseEntries(
 function preserveParseRegistry(
 	configRegistry: Record<string, any> | undefined,
 	parseState: Record<string, any> | undefined,
-	userProvidedKeys: Set<string> | undefined,
+	internalState: Record<string, any> | undefined,
 ): Record<string, any> | undefined {
 	if (!parseState)
 		return configRegistry;
+	const userProvidedKeys: Set<string> | undefined = internalState?.userProvidedKeys;
+	const optionRegistry = internalState?.options?.registry;
 	const localizedEvents = new Set<string>(parseState.localizedEvents ?? []);
 	const events = extractParseEntries(parseState.event, localizedEvents);
 	const snippets = userProvidedKeys?.has('snippet')
-		? extractParseEntries(parseState.snippet, LOCALIZED_SNIPPET_KEYS)
+		? optionRegistry?.snippets
 		: undefined;
 	const layouts = userProvidedKeys?.has('layout')
-		? extractParseEntries(parseState.layout)
+		? (optionRegistry?.layouts ?? extractParseEntries(parseState.layout))
 		: undefined;
 
 	return {
@@ -80,12 +83,13 @@ export function watchSystemConfig(options: WatchSystemConfigOptions = {}): IntlW
 		if (!userProvidedKeys?.has('sphere'))
 			delete configPatch.sphere;
 
-		const registry = preserveParseRegistry(configPatch.registry, parseState, userProvidedKeys);
+		const registry = preserveParseRegistry(configPatch.registry, parseState, internalState);
 		const patch: Record<string, any> = {
 			...configPatch,
 			...(registry ? { registry } : {}),
 			...(parseState ? {
 				pivot: parseState.pivot,
+				mode: parseState.mode,
 				monthDay: preserveMonthDay(parseState.monthDay),
 				planner: parseState.planner,
 			} : {}),

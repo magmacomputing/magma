@@ -152,7 +152,7 @@ t.format('{yy}');
 ---
 
 ### 7. Static Sandbox Factory Transition (`Tempo.extend`)
-To align with prototypical inheritance conventions across the monorepo (such as `Enum.extend`), the static sandbox factory method `Tempo.create(...)` has been transitioned to `Tempo.extend(...)` with a clean break:
+Note that the legacy v4 plugin-registration signature `Tempo.extend(...)` has been removed (see Section 2 above—use `Tempo.use(...)` instead). To align with prototypical inheritance conventions across the monorepo (such as `Enum.extend`), the static sandbox factory method `Tempo.create(...)` has been transitioned to the reused `Tempo.extend(...)` name with a clean break:
 
 * **Removed:** `Tempo.create(options?)`, `Tempo.create(fn)`, `Tempo.create(options, fn)`
 * **Replacement:** Use `Tempo.extend(options?)`, `Tempo.extend(fn)`, `Tempo.extend(options, fn)`

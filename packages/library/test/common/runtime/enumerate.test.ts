@@ -392,6 +392,18 @@ describe('Prototype Method Cleanliness (v5.0.0 Architecture)', () => {
 		expect(Enum.entries(ACCESSOR_ENUM)).toEqual([['A', 2]]);
 		expect(Enum.invert(ACCESSOR_ENUM)).toEqual({ 2: 'A' });
 
+		const symKey = Symbol('dynamic');
+		let symVal = 'one';
+		const SYM_ACCESSOR_ENUM = Enum.from({ get [symKey]() { return symVal; } });
+		expect(Enum.values(SYM_ACCESSOR_ENUM)).toEqual(['one']);
+		expect(Enum.entries(SYM_ACCESSOR_ENUM)).toEqual([[symKey, 'one']]);
+		expect(Enum.invert(SYM_ACCESSOR_ENUM)).toEqual({ one: symKey });
+
+		symVal = 'two';
+		expect(Enum.values(SYM_ACCESSOR_ENUM)).toEqual(['two']);
+		expect(Enum.entries(SYM_ACCESSOR_ENUM)).toEqual([[symKey, 'two']]);
+		expect(Enum.invert(SYM_ACCESSOR_ENUM)).toEqual({ two: symKey });
+
 		const BASE = Enum.from({ Viewer: 1 });
 		const CHILD = Enum.extend(BASE, { Admin: 2 });
 		const MERGED_CHILD = Enum.merge(CHILD, { Guest: 0 });

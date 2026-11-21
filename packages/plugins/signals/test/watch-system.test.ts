@@ -66,6 +66,7 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 			locale: 'fr-FR',
 			timeZone: 'UTC',
 			calendar: 'hebrew',
+			mode: 'strict',
 			planner: { layoutOrder: ['dmy', 'mdy'] },
 		});
 
@@ -77,6 +78,7 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 		expect(Tempo.signals.locale.get()).toBe('fr-FR');
 		expect(Tempo.signals.timeZone.get()).toBe('Australia/Sydney');
 		expect(Tempo.config.calendar).toBe('hebrew');
+		expect(Tempo.parse.mode).toBe('strict');
 		expect(Tempo.parse.planner.layoutOrder).toEqual(['dmy', 'mdy']);
 	});
 
@@ -181,5 +183,26 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 		state.timeZone = 'Australia/Sydney';
 		expect(explicitWatcher.check()).toBe(true);
 		expect(explicitSb.config.sphere).toBe('north');
+	});
+
+	it('preserves non-registered symbol snippet overrides such as registry.snippets.yy on global Tempo', () => {
+		const state = mockSystemIntl('en-US', 'UTC');
+
+		Tempo.init({
+			locale: 'en-US',
+			timeZone: 'UTC',
+			registry: {
+				snippets: { yy: /202\d/ },
+			},
+			plugins: [SignalsPlugin],
+		});
+
+		using watcher = Tempo.signals.watchSystem();
+		state.timeZone = 'Asia/Tokyo';
+		expect(watcher.check()).toBe(true);
+
+		const yySym = Object.getOwnPropertySymbols(Tempo.parse.snippet).find((s) => s.description === 'yy');
+		expect(yySym).toBeDefined();
+		expect((Tempo.parse.snippet[yySym!] as RegExp).source).toBe('202\\d');
 	});
 });

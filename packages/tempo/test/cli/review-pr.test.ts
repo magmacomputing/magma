@@ -1,4 +1,4 @@
-import { parseTopLevelReviewComments } from '../../../tempo-cli/commands/review-pr.js';
+import { extractThreadFinding, parseTopLevelReviewComments } from '../../../tempo-cli/commands/review-pr.js';
 
 const finding = `<details>
 <summary>packages/tempo/src/tempo.class.ts:10: Preserve configuration</summary>
@@ -72,5 +72,37 @@ ${finding.replace('abc123', 'def456')}
 		expect(results.map(result => result.category)).toEqual(['OutsideDiff', 'OutsideDiff']);
 		expect(results.map(result => result.path)).toEqual(['packages/tempo/src/tempo.class.ts', 'packages/tempo/src/module/module.parse.ts']);
 		expect(results.map(result => result.commentId)).toEqual(['cr_abc123', 'cr_def456']);
+	});
+
+	it('extracts subsequent CodeRabbit follow-up replies on unresolved threads and strips <details> blocks', () => {
+		const findingResult = extractThreadFinding({
+			id: 'PRRT_1',
+			path: 'packages/plugins/signals/src/functions/watch-system.ts',
+			line: 97,
+			isOutdated: false,
+			comments: {
+				nodes: [
+					{ id: 'c1', author: { login: 'coderabbitai' }, createdAt: '2026-11-20T05:00:00Z', body: 'Initial finding' },
+					{ id: 'c2', author: { login: 'magmacomputing' }, createdAt: '2026-11-20T06:00:00Z', body: '@coderabbitai fixed' },
+					{
+						id: 'c3',
+						author: { login: 'coderabbitai' },
+						createdAt: '2026-11-20T06:01:00Z',
+						body: '<details><summary>Analysis chain</summary>outer<details>inner</details>tail</details>\n\nPlease also preserve `parse.mode`.',
+					},
+				],
+			},
+		});
+
+		expect(findingResult).not.toBeNull();
+		expect(findingResult!.commentId).toBe('c1');
+		expect(findingResult!.followUpReplies).toEqual([
+			{
+				commentId: 'c3',
+				createdAt: '2026-11-20T06:01:00Z',
+				body: 'Please also preserve `parse.mode`.',
+			},
+		]);
+		expect(findingResult!.latestReply).toEqual(findingResult!.followUpReplies![0]);
 	});
 });

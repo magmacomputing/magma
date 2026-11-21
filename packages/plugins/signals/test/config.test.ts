@@ -110,4 +110,16 @@ describe('Config-Change Signals (locale & timeZone)', () => {
 		expect(locale.get()).toBe('pt-BR');
 		expect(timeZone.get()).toBe('America/Sao_Paulo');
 	});
+
+	it('uses and observes sandbox locale for sb.signals.relative()', () => {
+		Tempo.init({ locale: 'en-US', timeZone: 'UTC' });
+		using sb = Tempo.extend({ locale: 'fr-FR', timeZone: 'Europe/Paris', plugins: [SignalsPlugin] });
+
+		const targetMs = Date.now() - 2 * 60 * 60 * 1_000;
+		using rel = sb.signals.relative(targetMs, { style: 'long' });
+		expect(rel.get()).toContain('il y a');
+
+		sb.init({ locale: 'de-DE', timeZone: 'Europe/Berlin' });
+		expect(rel.get()).toContain('vor');
+	});
 });

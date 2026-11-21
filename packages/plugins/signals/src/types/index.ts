@@ -30,6 +30,8 @@ export interface RelativeSignalOptions {
 	numeric?: Intl.RelativeTimeFormatNumeric;
 	/** Custom clock function returning current epoch milliseconds (default `Date.now`). */
 	now?: () => number;
+	/** @internal Reactive locale signal source for sandbox-scoped formatting. */
+	localeSource?: ReadonlySignal<string>;
 }
 
 /**
@@ -43,6 +45,8 @@ export interface IntervalSignalOptions {
 	progressInterval?: number | false;
 	/** Custom clock function returning current epoch milliseconds (default `Date.now`). */
 	now?: () => number;
+	/** @internal Reactive locale signal source for sandbox-scoped formatting. */
+	localeSource?: ReadonlySignal<string>;
 }
 
 /**

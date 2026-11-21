@@ -50,8 +50,9 @@ function isChainFrozen(obj: unknown, checkAccessors = false): boolean {
 		if (!Object.isFrozen(level))
 			return false;
 		if (checkAccessors) {
-			for (const desc of Object.values(Object.getOwnPropertyDescriptors(level))) {
-				if ('get' in desc || 'set' in desc)
+			for (const key of Reflect.ownKeys(level)) {
+				const desc = Object.getOwnPropertyDescriptor(level, key);
+				if (desc && ('get' in desc || 'set' in desc))
 					return false;
 			}
 		}

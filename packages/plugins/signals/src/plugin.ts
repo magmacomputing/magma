@@ -94,7 +94,7 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 				signalsNamespace = {
 					locale: Signify.computed(() => sbLocaleState.get()),
 					timeZone: Signify.computed(() => sbTimeZoneState.get()),
-					relative: toRelativeSignal,
+					relative: (target, opts) => toRelativeSignal(target, { localeSource: signalsNamespace.locale, ...opts }),
 					interval: intervalSignal,
 					watchSystem: (opts?: WatchSystemConfigOptions) => watchSystemConfig({ ...opts, target: opts?.target ?? installedClass }),
 					dispose: () => {},
@@ -115,6 +115,8 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 				this: Tempo,
 				opts?: RelativeSignalOptions,
 			): DisposableSignal<string> {
+				if (!isGlobalTempo && !opts?.locale && (installedClass as any).signals?.locale)
+					return toRelativeSignal(this, { ...opts, localeSource: (installedClass as any).signals.locale });
 				return toRelativeSignal(this, opts);
 			};
 		}

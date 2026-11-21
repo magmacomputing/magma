@@ -145,7 +145,7 @@ export function toRelativeSignal(
 	const style = options.style ?? 'narrow';
 	const numeric = options.numeric ?? 'auto';
 	const explicitLocale = isText(options.locale) ? options.locale : undefined;
-	const activeLocaleSignal = explicitLocale ? undefined : localeSignal();
+	const activeLocaleSignal = explicitLocale ? undefined : (options.localeSource ?? localeSignal());
 
 	const bucketState = new Signify.State<RelativeBucket>(
 		computeRelativeBucket(targetMs - nowFn()),

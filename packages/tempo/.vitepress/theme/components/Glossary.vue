@@ -214,6 +214,11 @@ onBeforeUnmount(() => {
   font-size: 0.95rem;
 }
 
+.glossary-search:focus-visible {
+  outline: 2px solid var(--vp-c-brand-1);
+  outline-offset: 2px;
+}
+
 .glossary-chips {
   display: flex;
   flex-wrap: wrap;
@@ -278,6 +283,7 @@ onBeforeUnmount(() => {
 }
 
 .glossary-card {
+  scroll-margin-top: calc(var(--vp-nav-height, 64px) + 20px);
   padding: 14px 16px;
   border-radius: 8px;
   border: 1px solid var(--vp-c-divider);
