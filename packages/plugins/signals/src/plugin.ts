@@ -115,7 +115,7 @@ function createSignalsPlugin(): TempoPlugin<SignalsPluginOptions> {
 				this: Tempo,
 				opts?: RelativeSignalOptions,
 			): DisposableSignal<string> {
-				if (!isGlobalTempo && !opts?.locale && (installedClass as any).signals?.locale)
+				if (!isGlobalTempo && !isText(opts?.locale) && (installedClass as any).signals?.locale)
 					return toRelativeSignal(this, { ...opts, localeSource: (installedClass as any).signals.locale });
 				return toRelativeSignal(this, opts);
 			};

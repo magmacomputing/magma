@@ -164,7 +164,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
     ```
   - Prominent warning banners on all `/v4/` AI bundles directing modern developers to v5.
 - [ ] **Update Core Documentation**:
-  - Update all code snippets in `packages/tempo/doc/` to use `tempo-js` (e.g. `import { Tempo } from 'tempo-js'`, `import { Tempo } from 'tempo-js/lite'`, `import 'tempo-js/terms'`) and `@tempo-js/plugin-*`.
+  - Update all code snippets in `packages/tempo/doc/` to use the finalized primary package (`tempo-js` *only* if npm Support unlocks the unscoped `tempo-js` name; otherwise standardize on `@tempo-js/core`, e.g. `import { Tempo } from '@tempo-js/core'`, `import { Tempo } from '@tempo-js/core/lite'`, `import '@tempo-js/core/terms'`) alongside `@tempo-js/plugin-*`.
   - Provide comprehensive **v4 $\rightarrow$ v5 Migration Guide**.
   - **Interactive Documentation Glossary & Canonical Lexicon**: Implement data-driven VitePress glossary ([`documentation-glossary-architecture.md`](file:///home/michael/Project/magma/packages/tempo/plan/documentation-glossary-architecture.md)) defining core temporal concepts, library idioms, and standards, and pipe definitions directly into `llms.txt`.
 

@@ -205,4 +205,31 @@ describe('System Intl Watchers (watchSystemConfig / Tempo.signals.watchSystem)',
 		expect(yySym).toBeDefined();
 		expect((Tempo.parse.snippet[yySym!] as RegExp).source).toBe('202\\d');
 	});
+
+	it('preserves Tempo.use() plugin registrations across host locale/timezone changes', () => {
+		const state = mockSystemIntl('en-US', 'UTC');
+
+		let installCount = 0;
+		const customPlugin = {
+			name: 'watch-system-custom-plugin',
+			install(TempoClass: any) {
+				installCount++;
+				if (!TempoClass.prototype.customMarker)
+					TempoClass.prototype.customMarker = () => 'ok';
+			},
+		};
+
+		Tempo.init({ locale: 'en-US', timeZone: 'UTC' });
+		Tempo.use(SignalsPlugin);
+		Tempo.use(customPlugin as any);
+		expect(installCount).toBe(1);
+
+		using watcher = Tempo.signals.watchSystem();
+		state.timeZone = 'Europe/Berlin';
+		expect(watcher.check()).toBe(true);
+
+		expect(installCount).toBe(2);
+		expect(typeof (Tempo.prototype as any).customMarker).toBe('function');
+		expect(typeof Tempo.signals?.watchSystem).toBe('function');
+	});
 });

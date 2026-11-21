@@ -2,8 +2,6 @@ import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 
-const RE_DETAILS_TAG = /<\/?details\b[^>]*>/gi;
-
 let repoRoot = null;
 function getRepoRoot() {
 	if (repoRoot === null) {
@@ -71,7 +69,8 @@ function runGh(args) {
 const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\1[`~]*[ \\t]*(?:\\n|$))';
 const INLINE_FENCE_SOURCE = '(?:`{3,}[^\\n]*?`{3,})';
 const FENCE_SKIP_PREFIX = `${FENCE_BLOCK_SOURCE}|${INLINE_FENCE_SOURCE}`;
-const FENCE_MASK_REGEX = new RegExp(FENCE_SKIP_PREFIX, 'gm');
+const RE_FENCE_MASK = new RegExp(FENCE_SKIP_PREFIX, 'gm');
+const RE_DETAILS_OR_CODE = new RegExp(`${FENCE_SKIP_PREFIX}|(?<inline>\`+)[\\s\\S]*?\\k<inline>|<\\/?details\\b[^>]*>`, 'gim');
 
 const FILE_PATH_SOURCE = '([a-zA-Z0-9_\\-./@]+\\.[a-zA-Z0-9]+)';
 const LINE_RANGE_SOURCE = '(\\d+(?:-\\d+)?)';
@@ -118,7 +117,7 @@ export function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
 
 	// Strip markdown blockquote prefixes ("> ") from callout alert blocks so HTML tags parse cleanly
 	const normalized = rawBody.replace(BLOCKQUOTE_PREFIX_REGEX, '');
-	const masked = normalized.replace(FENCE_MASK_REGEX, m => m.replace(/[^\n]/g, ' '));
+	const masked = normalized.replace(RE_FENCE_MASK, m => m.replace(/[^\n]/g, ' '));
 
 	const sectionSpecs = [
 		{ type: 'Follow-up', pattern: FOLLOW_UP_SECTION_PATTERN },
@@ -384,13 +383,16 @@ export function parseTopLevelReviewComments(rawBody, prRef = 'HEAD') {
  */
 function cleanThreadReplyBody(rawBody) {
 	const text = String(rawBody ?? '');
-	RE_DETAILS_TAG.lastIndex = 0;
+	RE_DETAILS_OR_CODE.lastIndex = 0;
 	let depth = 0;
 	let out = '';
 	let cursor = 0;
 	let match;
-	while ((match = RE_DETAILS_TAG.exec(text)) !== null) {
-		const isClose = match[0].startsWith('</');
+	while ((match = RE_DETAILS_OR_CODE.exec(text)) !== null) {
+		const token = match[0];
+		if (token[0] !== '<')
+			continue;
+		const isClose = token.startsWith('</');
 		if (!isClose) {
 			if (depth === 0)
 				out += text.slice(cursor, match.index);
@@ -398,7 +400,7 @@ function cleanThreadReplyBody(rawBody) {
 		} else if (depth > 0) {
 			depth--;
 			if (depth === 0)
-				cursor = match.index + match[0].length;
+				cursor = match.index + token.length;
 		}
 	}
 	if (depth === 0)

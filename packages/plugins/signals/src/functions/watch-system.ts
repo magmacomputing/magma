@@ -83,9 +83,17 @@ export function watchSystemConfig(options: WatchSystemConfigOptions = {}): IntlW
 		if (!userProvidedKeys?.has('sphere'))
 			delete configPatch.sphere;
 
+		const pluginsDb = internalState?.pluginsDb;
+		const registeredPlugins = [
+			...(Array.isArray(configPatch.plugins) ? configPatch.plugins : []),
+			...(Array.isArray(pluginsDb?.plugins) ? pluginsDb.plugins : []),
+			...(Array.isArray(pluginsDb?.terms) ? pluginsDb.terms : []),
+		];
+
 		const registry = preserveParseRegistry(configPatch.registry, parseState, internalState);
 		const patch: Record<string, any> = {
 			...configPatch,
+			...(registeredPlugins.length > 0 ? { plugins: [...new Set(registeredPlugins)] } : {}),
 			...(registry ? { registry } : {}),
 			...(parseState ? {
 				pivot: parseState.pivot,

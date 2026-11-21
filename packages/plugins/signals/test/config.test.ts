@@ -121,5 +121,12 @@ describe('Config-Change Signals (locale & timeZone)', () => {
 
 		sb.init({ locale: 'de-DE', timeZone: 'Europe/Berlin' });
 		expect(rel.get()).toContain('vor');
+
+		const blankLocaleInst = sb.now();
+		using blankRel = blankLocaleInst.toRelativeSignal({ style: 'long', locale: '   ' });
+		expect(blankRel.get()).toBeDefined();
+		// Blank explicit locale falls back to sandbox locale ('de-DE'), not global ('en-US')
+		using blankPastRel = sb.from(Date.now() - 2 * 60 * 60 * 1_000).toRelativeSignal({ style: 'long', locale: '   ' });
+		expect(blankPastRel.get()).toContain('vor');
 	});
 });

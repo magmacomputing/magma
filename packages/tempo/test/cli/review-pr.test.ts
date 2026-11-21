@@ -105,4 +105,48 @@ ${finding.replace('abc123', 'def456')}
 		]);
 		expect(findingResult!.latestReply).toEqual(findingResult!.followUpReplies![0]);
 	});
+
+	it('preserves HTML <details> tag literals inside inline-code and fenced-code spans', () => {
+		const findingResult = extractThreadFinding({
+			id: 'PRRT_2',
+			path: 'packages/tempo-cli/commands/review-pr.js',
+			line: 10,
+			isOutdated: false,
+			comments: {
+				nodes: [
+					{ id: 'c1', author: { login: 'coderabbitai' }, createdAt: '2026-11-20T05:00:00Z', body: 'Initial finding' },
+					{
+						id: 'c2',
+						author: { login: 'coderabbitai' },
+						createdAt: '2026-11-20T06:00:00Z',
+						body: '<details><summary>Analysis</summary>hidden</details>\n\nUse `<details open>` and keep the closing tag.',
+					},
+				],
+			},
+		});
+
+		expect(findingResult!.latestReply?.body).toBe('Use `<details open>` and keep the closing tag.');
+	});
+
+	it('preserves longer Markdown fences containing inner fences and literal <details> tags', () => {
+		const findingResult = extractThreadFinding({
+			id: 'PRRT_3',
+			path: 'packages/tempo-cli/commands/review-pr.js',
+			line: 10,
+			isOutdated: false,
+			comments: {
+				nodes: [
+					{ id: 'c1', author: { login: 'coderabbitai' }, createdAt: '2026-11-20T05:00:00Z', body: 'Initial finding' },
+					{
+						id: 'c2',
+						author: { login: 'coderabbitai' },
+						createdAt: '2026-11-20T06:00:00Z',
+						body: '<details><summary>Analysis</summary>hidden</details>\n\n````markdown\n```html\n<details>keep me</details>\n```\n````',
+					},
+				],
+			},
+		});
+
+		expect(findingResult!.latestReply?.body).toBe('````markdown\n```html\n<details>keep me</details>\n```\n````');
+	});
 });

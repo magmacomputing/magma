@@ -9,7 +9,7 @@ Historically, `Tempo.init()` modified the global library state. This meant that:
 3. Testing multiple configurations required careful cleanup between tests.
 
 ## The Solution
-`Tempo.extend()` returns a **derived sandboxed class** with its own registry and plugin state (except for registered terms, which share a global term map). Configuration keys not explicitly set on the sandbox are inherited live from its parent (so a later `Tempo.use({ timeZone })` affects sandboxes that leave `timeZone` unset), while explicit sandbox options override the inherited values.
+`Tempo.extend()` returns a **derived sandboxed class** with its own registry and plugin state (except for registered terms, which share a global term map). Most configuration keys not explicitly set on the sandbox are inherited live from its parent (so a later `Tempo.use({ timeZone })` affects sandboxes that leave `timeZone` unset), whereas error-handling flags (`catch` and `silent`) are copied at sandbox creation; explicit sandbox options always override inherited values.
 
 ### Lifecycle Methods
 To understand when to use `Tempo.extend()`, it helps to contrast it with the other initialization methods:

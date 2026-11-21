@@ -157,7 +157,7 @@ import { Enum } from '@magmacomputing/tempo/library';
 export const BASE_ROLE = Enum.from(['Viewer', 'Editor']);
 
 // Derive new enum with additional roles
-export const ADMIN_ROLE = Enum.extend(BASE_ROLE, ['Admin', 'SuperAdmin']);
+export const ADMIN_ROLE = Enum.extend(BASE_ROLE, { Admin: 2, SuperAdmin: 3 });
 
 console.log(Enum.keys(ADMIN_ROLE));             // ['Viewer', 'Editor', 'Admin', 'SuperAdmin']
 console.log(Enum.count(ADMIN_ROLE));            // 4
