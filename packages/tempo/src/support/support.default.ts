@@ -40,7 +40,7 @@ export const Match = proxify({
 	safeAlias: (str: string) => String(str).replace(/[*+{}!^$\\]/g, '\\$&'),
 	/** numeric-only string detection */											numeric: /^\s*[-+]?\d+(\.\d+)?\s*$/,
 	/** match suspicious nested quantifiers (backtracking) */	backtrack: /(\(.*\)\+|\(.*\)\*|\(.*\)\{.*\})/,
-}, true, false);
+}, 'readonly');
 
 /**
  * user will need to know these in order to configure their own patterns  

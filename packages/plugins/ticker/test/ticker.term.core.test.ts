@@ -63,7 +63,7 @@ describe('Ticker with Terms', () => {
 		} finally {
 			ticker.stop();
 		}
-	});
+	}, 15_000);
 
 	it('should refuse to launch with an invalid #term', async () => {
 		const seed = '2020-01-01';

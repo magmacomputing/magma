@@ -80,7 +80,7 @@ When using pre-bundled scripts directly in HTML via `<script>` tags, plugins att
 ```html
 <!-- 1. Core Temporal Polyfill & Tempo -->
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@4/dist/tempo.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.min.js"></script>
 
 <!-- 2. Plugin Script -->
 <script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.global.min.js"></script>

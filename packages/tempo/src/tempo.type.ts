@@ -35,6 +35,16 @@ export type { TermFactory } from '#tempo/plugin/term/term.type.js';
 export type { TempoPlugin };
 
 /**
+ * Isolated `Tempo` subclass returned by `Tempo.extend()`, augmented with
+ * deterministic disposal (`[Symbol.dispose]`, `[Symbol.asyncDispose]`, `isDisposed`).
+ */
+export type TempoSandbox = typeof Tempo & {
+	readonly isDisposed: boolean;
+	[Symbol.dispose](): void;
+	[Symbol.asyncDispose](): Promise<void>;
+};
+
+/**
  * ## PluginEntry
  * Permissible plugin entry in Tempo configuration or use() calls.
  * Supports bare plugins, callable plugin factories, term plugins, or tuples [Plugin, Options].

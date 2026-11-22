@@ -7,7 +7,7 @@ import { WeakCache } from '#library/weakcache.class.js';
 import { evaluate } from '#library/evaluation.library.js';
 import { asArray } from '#library/coercion.library.js';
 import { instant, getTemporalIds } from '#library/temporal.library.js';
-import { ownKeys, ownEntries, hasOwn, unwrap } from '#library/primitive.library.js';
+import { ownKeys, ownEntries, hasOwn, unwrap, walkPrototype } from '#library/primitive.library.js';
 import { Enum } from '#library/enumerate.library.js';
 import type { TypeValue } from '#library/type.library.js';
 
@@ -51,8 +51,13 @@ const RE_SIGNED_LEADING_DIGITS = /^-?\d+/;
 const RE_ORDINAL_SUFFIX = /(?:st|nd|rd|th)/;
 const RE_TERM_ID = /#[\w.]+/;
 
-const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
 const RE_ROMAN_CHARS = /^[IVXLCDMivxlcdm]+$/;
+const RE_ROMAN_DIGITS = '[IVXLCDMivxlcdm]+';
+const RE_EXTENDED_YEAR = '[+-]?\\d{4,6}';
+const RE_COMPACT_LONG_YEAR = '[+-]?\\d{4,6}?';
+const RE_TWO_DIGITS = '\\d{1,2}';
+const RE_DIGIT_CHAR = /\d/;
+const RE_ALPHA_TOKEN = /^(?:mmm|mon|wkd|weekday|mer|ampm|era|skip|_|\*)(?::|$)/i;
 
 /** Parses a capture group as Roman numerals if it matches Roman characters, otherwise parses as decimal */
 function parseRomanOrDecimal(val: string): number {
@@ -105,19 +110,26 @@ function compileBracedPattern(fmt: string): RegExp {
 			const isRoman = normMods.includes('roman');
 			const romanOr = (fallback: string) => isRoman ? RE_ROMAN_DIGITS : fallback;
 
+			const isCompactBoundary = () => {
+				const nextChar = fmt[end + 1];
+				const nextClose = nextChar === '{' ? fmt.indexOf('}', end + 1) : -1;
+				const nextIsAlpha = nextClose !== -1 && RE_ALPHA_TOKEN.test(fmt.slice(end + 2, nextClose).trim());
+				return (nextChar === '{' && !nextIsAlpha) || (nextChar !== undefined && RE_DIGIT_CHAR.test(nextChar));
+			};
+
 			switch (token) {
 				case 'yyyy':
 				case 'year':
-					pattern += group('yyyy', romanOr('[+-]?\\d{4,6}|\\d{4}'));
+					pattern += group('yyyy', romanOr(isCompactBoundary() ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR));
 					break;
 				case 'yy':
 					pattern += normMods.includes('long')
-						? group('yyyy', romanOr('[+-]\\d{4,6}|\\d{4}'))
+						? group('yyyy', romanOr(isCompactBoundary() ? RE_COMPACT_LONG_YEAR : RE_EXTENDED_YEAR))
 						: group('yy', romanOr('\\d{2}'));
 					break;
 				case 'mm':
 				case 'month':
-					pattern += group('mm', romanOr('\\d{1,2}'));
+					pattern += group('mm', romanOr('1[0-2]|0?[1-9]'));
 					break;
 				case 'mmm':
 					pattern += group('mmm', '[A-Za-z]{3,}');
@@ -127,11 +139,11 @@ function compileBracedPattern(fmt: string): RegExp {
 					break;
 				case 'dd':
 				case 'day':
-					pattern += group('dd', romanOr('\\d{1,2}(?:st|nd|rd|th)?'));
+					pattern += group('dd', romanOr(`${RE_TWO_DIGITS}(?:st|nd|rd|th)?`));
 					break;
 				case 'hh':
 				case 'hour':
-					pattern += group('hh', romanOr('\\d{1,2}'));
+					pattern += group('hh', romanOr(RE_TWO_DIGITS));
 					break;
 				case 'h12':
 					pattern += group('h12', '1[0-2]|0?[1-9]');
@@ -139,12 +151,12 @@ function compileBracedPattern(fmt: string): RegExp {
 				case 'mi':
 				case 'min':
 				case 'minute':
-					pattern += group('mi', '\\d{1,2}');
+					pattern += group('mi', RE_TWO_DIGITS);
 					break;
 				case 'ss':
 				case 'sec':
 				case 'second':
-					pattern += group('ss', '\\d{1,2}');
+					pattern += group('ss', RE_TWO_DIGITS);
 					break;
 				case 'ms':
 				case 'millisecond':
@@ -561,26 +573,18 @@ const _ParseEngine = {
 				if (isFunction((termObj as any)[TermHook.ordinal])) {
 					const localOrdinals: Record<string, number> = {};
 					const collectOrdinals = (registry: any) => {
-						if (!isReference(registry) || isFunction(registry)) return;
-						const visited = new WeakSet<object>();
-						let curr: any = registry;
-						while (curr && curr !== Object.prototype) {
-							if (visited.has(curr)) break;
-							visited.add(curr);
+						for (const curr of walkPrototype(registry, false)) {
 							for (const [k, v] of Object.entries(curr)) {
 								if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
 									localOrdinals[k.toLowerCase()] = v;
 							}
 							const level = unwrap(curr);
 							if (level !== curr) {
-								if (visited.has(level)) break;
-								visited.add(level);
 								for (const [k, v] of ownEntries(level)) {
 									if (isString(k) && isNumber(v) && !hasOwn(localOrdinals, k.toLowerCase()))
 										localOrdinals[k.toLowerCase()] = v;
 								}
 							}
-							curr = Object.getPrototypeOf(level);
 						}
 					};
 					collectOrdinals((state.options as any)?.registry?.ordinals);
@@ -709,13 +713,10 @@ const _ParseEngine = {
 			if (!guard) {
 				const keys = (obj: any) => {
 					const res = new Set<string>();
-					let curr = obj;
-					while (curr && curr !== Object.prototype) {
-						ownKeys(curr).forEach(k => res.add(String(k)));
-						curr = Object.getPrototypeOf(curr);
-					}
+					for (const level of walkPrototype(obj))
+						ownKeys(level).forEach(k => res.add(String(k)));
 					return res;
-				}
+				};
 
 				const local = [...keys(state.parse.event), ...keys(state.parse.period)];
 				const lowTrim = trim.toLowerCase();

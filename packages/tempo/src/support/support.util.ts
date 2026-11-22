@@ -6,7 +6,7 @@ import { sym, Token } from './support.symbol.js';
 import { asType, getType } from '#library/type.library.js';
 import { asArray, asError } from '#library/coercion.library.js';
 import { isSymbol, isUndefined, isNotNullish, isString, isObject, isPlainObject, RE_COMBINING_MARKS, RE_HEX_8 } from '#library/assertion.library.js';
-import { ownEntries, unwrap } from '#library/primitive.library.js';
+import { ownEntries, unwrap, defineProp } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { memoizeFunction } from '#library/function.library.js';
 import { getDTF, getLC } from '#library/international.library.js';
@@ -77,7 +77,7 @@ export function normalizeLayoutOrder(value: unknown): string[] {
 /** @internal set a mutable, enumerable property on a target */
 export const setProperty = <T>(target: object, key: PropertyKey, value: T) => {
 	if (Object.isExtensible(target)) {
-		Object.defineProperty(target, key, { value, writable: true, configurable: true, enumerable: true });
+		defineProp(target, key, value);
 	} else {
 		logWarn(`[tempo] setProperty: Cannot define property '${String(key)}' on non-extensible object`, {}, target);
 	}

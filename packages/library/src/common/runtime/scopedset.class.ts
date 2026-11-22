@@ -43,6 +43,11 @@ export class ScopedSet<T> {
 		return this.#own.has(value) || (this.#parent?.has(value) ?? false);
 	}
 
+	/** `true` if value is in this scope's own-local storage (ignoring parents). */
+	hasOwn(value: T): boolean {
+		return this.#own.has(value);
+	}
+
 	/** Adds to own-local storage only — never propagates to the parent. */
 	add(value: T): this {
 		this.#own.add(value);

@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Vision
 
-Tempo **v5.0.0** represents the definitive modern milestone for the Tempo date-time engine. Unlike minor releases (`v4.x`), v5 establishes a clean break from legacy and suboptimal API conventions, establishes a dedicated, developer-friendly npm namespace (**`@tempo-js`** with defensive perimeter coverage for **`@tempojs`**), optimizes the core bundle size for greenfield and serverless/edge environments, and introduces reactive signals.
+Tempo **v5.0.0** represents the definitive modern milestone for the Tempo date-time engine. Unlike minor releases (`v4.x`), v5 establishes a clean break from legacy and suboptimal API conventions, establishes a dedicated, developer-friendly npm namespace (**`@tempo-js/*`** alongside an unscoped primary package), optimizes the core bundle size for greenfield and serverless/edge environments, and introduces reactive signals.
 
 This Master Plan consolidates all prior RFCs, breaking change analyses, and architectural proposals into a unified, phase-based execution checklist.
 
@@ -12,7 +12,7 @@ This Master Plan consolidates all prior RFCs, breaking change analyses, and arch
 
 ```mermaid
 graph TD
-  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 Merged — now() factory pending)</i>"] --> P2["Phase 2: Scope & Namespace Defense<br><i>(@tempo-js & @tempojs)</i>"]
+  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 Merged — now() factory pending)</i>"] --> P2["Phase 2: Scope & Namespace Setup<br><i>(@tempo-js & tempojs / tempo-js)</i>"]
   P2 --> P3["Phase 3: Plugin Ecosystem Modularization<br><i>(Dialects Standalone, Core Superpowers)</i>"]
   P3 --> P4["Phase 4: Library & Code Standards<br><i>(isNonNull, Strict isDefined, Semicolons)</i>"]
   P4 --> P5["Phase 5: Multi-Version Docs & AI Context<br><i>(VitePress /v4/ & llms.txt)</i>"]
@@ -46,19 +46,24 @@ graph TD
 
 ---
 
-### Phase 2: Package Scope & Namespace Defense (`tempo-js`, `@tempo-js` & `@tempojs`)
-*Status: Ready to Execute*
+### Phase 2: Package Scope & Namespace Setup (`@tempo-js` & `tempojs` / `tempo-js`)
+*Status: In Progress (Pending 2-Week `tempo-js` Follow-Up Window)*
 
-Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Discord (`discord.js` + `@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing unscoped primary package (**`tempo-js`**) paired with a scoped plugin ecosystem (**`@tempo-js/*`**):
+Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Discord (`discord.js` + `@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing primary package paired with a scoped plugin ecosystem (**`@tempo-js/*`**):
 
-- [x] **Step 1: Claim `@tempo-js` Organization and Unscoped Packages on npm**:
-  - Claim and initialize the **`@tempo-js`** (and defensive **`@tempo-fns`**) organization on npm under organization admin.
-  - Claimed unscoped companion packages **`tempo-fns`** and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
+- [x] **Step 1: Claim `@tempo-js` / `@tempo-kit` Organizations and Unscoped Packages on npm**:
+  - Claimed and initialized the **`@tempo-js`**, **`@tempo-kit`**, and defensive **`@tempo-fns`** organizations on npm under organization admin.
+  - Claimed unscoped packages **`tempo-kit`** (`0.0.1`), **`tempo-fns`**, and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
   - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
-- [x] **Step 2: File npm Name Disputes (Unscoped Primary & Defensive Anti-Squatting)**:
-  - **`tempojs` / `tempo-js` Unscoped Packages**: Brendon Ribeiro (`brendondominic@gmail.com`) granted maintainer/owner permissions for `tempojs` to `magmacomputing` on Nov 04, 2026 (`npm owner ls tempojs`). Because npm's automated moniker-similarity filter blocks initial creation of `tempo-js` (`E403`), a support ticket via [npmjs.com/support](https://www.npmjs.com/support) has been filed to manually provision `tempo-js` for `magmacomputing` (as verified owner of `tempojs`).
-  - **`@tempojs` Scope Dispute**: Formal transfer request submitted via [npmjs.com/support](https://www.npmjs.com/support) following 30-day unanswered outreach to Andrew Sampson (Oct 02 – Nov 03).
-  - Once provisioned, **`tempo-js`** serves as the primary canonical package (`import { Tempo } from 'tempo-js'`), while **`@tempo-js/core`** (and optionally **`tempojs`**, subject to Brendon Ribeiro's confirmation) serves as a thin re-export alias that depends on `tempo-js` (preserving singleton identity).
+- [ ] **Step 2: Resolve Unscoped Primary Package (`tempo-js` vs. `tempojs` vs. `@tempo-js/core`)**:
+  - **`tempojs` Permission Granted**: Brendon Ribeiro (`brendondominic@gmail.com`) granted maintainer/owner permissions for `tempojs` to `magmacomputing` on Nov 04, 2026 (`npm owner ls tempojs`), and on Nov 21, 2026 explicitly approved publishing Tempo `v5.0.0+` under `tempojs` (versions `1.0.0`–`1.0.3` remain intact).
+    - *Maintainer / Supply-Chain Hygiene*: Because any npm maintainer on `tempojs` has publish/unpublish rights (even for a 1-line re-export wrapper), if `tempojs` is published for v5, politely ask Brendon if he is comfortable stepping off as maintainer (while keeping his README credit) and enforce 2FA-required publishing.
+  - **`@tempojs` Scope Closed**: GitHub Support declined to transfer `@tempojs` based on inactivity/outreach alone; no trademark claim will be filed, so `@tempojs` defensive coverage is dropped.
+  - **`tempo-js` Follow-Up Pending**: Ticket `#4959058` was declined on automated `E403` moniker-similarity grounds. A follow-up ticket has been submitted to `support@npmjs.com` (2-week wait window) before making the final choice of primary package:
+    - *If `tempo-js` is unlocked*: Use `tempo-js` as the unscoped primary alongside `@tempo-js/*` (`@tempo-js/core` and `tempojs` as thin re-export aliases).
+    - *If `tempo-js` remains blocked (leading candidates)*:
+      - **Option A (`tempo-kit` + `@tempo-kit/*` — leading unscoped candidate)**: Shorter 3-segment subpath imports (`tempo-kit`, `tempo-kit/lite`, `tempo-kit/terms/quarter`), visual parity with `tempo-fns` and `tempo-lib`, full `@tempo-kit/*` scope symmetry, and avoids `-js` platform-suffix lock-in.
+      - **Option B (`@tempo-js/core` + `@tempo-js/*`)**: Canonical scoped package with `100%` `@tempo-js/*` naming symmetry (and `tempojs` as a thin 1-line re-export alias depending on `@tempo-js/core`).
 - [ ] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
   - **Core (`tempo-js` / `@tempo-js/core`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
   - **Lite (`tempo-js/lite` / `tempo-lite`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (migrated from v4 `./core`).
@@ -94,7 +99,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
   - **Cultural Terms Opt-In (`tempo-js/terms` / `CulturalTerms`)**: Decouple `ZodiacTerm` (Western astrology) and `EasternTerm` (Chinese zodiac / lunar signs) from Core's automatic default startup loader into a built-in, zero-bundle-cost subpath export **`tempo-js/terms`** (plus granular subpaths `tempo-js/terms/zodiac`, `tempo-js/terms/eastern`, `tempo-js/terms/timeline`, `tempo-js/terms/quarter`, `tempo-js/terms/season`, also re-exported under `@tempo-js/core/terms`, `tempojs/terms`, and `tempo-lite/terms`).
     - *Impact*: Saves astrological/lunar lookup tables from every default `tempo-js` application bundle and eliminates enterprise/business skepticism around horoscopes in a core date library, while requiring **zero extra `npm install`** when developers want to explore or use them.
     - *Consumption*: Available out-of-the-box via `import { ZodiacTerm, CulturalTerms } from 'tempo-js/terms'; Tempo.use(CulturalTerms);` (or `import { ZodiacTerm } from 'tempo-js/terms/zodiac';`). Serves in documentation as the flagship showcase of Tempo's custom terminology extensibility.
-- [ ] **Retain Slick Shorthand Syntax as Core Superpower**:
+- [x] **Retain Slick Shorthand Syntax as Core Superpower**:
   - Keep intuitive term navigation (`t.set('#qtr.>q1')`, `t.add('#season.>summer')`), directional operators (`>`, `<`, `+`, `-`), and shorthand shifters (`t.set({ mm: '>2', wkd: '>Fri' })`) natively built into Core.
   - Evaluation confirmed that saving ~3–4 KB gzipped does not justify fracturing Tempo's signature ergonomics or requiring extra plugin boilerplate for fundamental shorthand.
 - [ ] **Standalone Dialects Architecture (`@tempo-js/plugin-dialects`)**:
@@ -139,7 +144,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 ### Phase 5: Multi-Version Docs, Playground & AI Context (`llms.txt`)
 *Status: Planned*
 
-- [ ] **Archival `/v4/` Route Snapshotting in VitePress**:
+- [x] **Archival `/v4/` Route Snapshotting in VitePress**:
   - Freeze final `v4.7.0` documentation under `/v4/` route in VitePress.
   - Deploy documentation strictly from `main` to prevent branch deployment collisions on GitHub Pages.
   - Add top-level version selector in VitePress navbar:
@@ -161,7 +166,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
     ```
   - Prominent warning banners on all `/v4/` AI bundles directing modern developers to v5.
 - [ ] **Update Core Documentation**:
-  - Update all code snippets in `packages/tempo/doc/` to use `tempo-js` (e.g. `import { Tempo } from 'tempo-js'`, `import { Tempo } from 'tempo-js/lite'`, `import 'tempo-js/terms'`) and `@tempo-js/plugin-*`.
+  - Update all code snippets in `packages/tempo/doc/` to use the finalized primary package (`tempo-js` *only* if npm Support unlocks the unscoped `tempo-js` name; otherwise standardize on `@tempo-js/core`, e.g. `import { Tempo } from '@tempo-js/core'`, `import { Tempo } from '@tempo-js/core/lite'`, `import '@tempo-js/core/terms'`) alongside `@tempo-js/plugin-*`.
   - Provide comprehensive **v4 $\rightarrow$ v5 Migration Guide**.
   - **Interactive Documentation Glossary & Canonical Lexicon**: Implement data-driven VitePress glossary ([`documentation-glossary-architecture.md`](file:///home/michael/Project/magma/packages/tempo/plan/documentation-glossary-architecture.md)) defining core temporal concepts, library idioms, and standards, and pipe definitions directly into `llms.txt`.
 
@@ -198,11 +203,11 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 For features and architectural investigations targeted beyond the initial v5.0 General Availability release, refer to active exploratory RFCs:
 
 * **[Signals in Core Tempo](file:///home/michael/Project/magma/packages/tempo/plan/signals-core-discussion.md)** (`signals-core-discussion.md`):
-  Explores deep reactive integrations for future minor releases (v5.1+):
+  Explores deep reactive integrations (implemented in `@magmacomputing/tempo-plugin-signals` rather than Core Tempo for v5.0, keeping Core zero-signal-overhead):
   1. `Tempo.live()` / `Tempo.clock()` (fine-grained continuous live clocks for UI).
-  2. `tempo.relativeSignal()` (adaptive reactive relative time strings like *"3 minutes ago"* that self-adjust update frequencies).
-  3. `interval.toSignal()` (reactive temporal window and progression tracking).
-  4. `Tempo.locale` reactive signal (dynamic locale/theme propagation across UI signal graphs).
+  2. `tempo.relativeSignal()` → implemented as `toRelativeSignal` (`Tempo.signals.relative`).
+  3. `interval.toSignal()` → implemented as `intervalSignal` (`Tempo.signals.interval`).
+  4. `Tempo.locale` reactive signal → implemented as `Tempo.signals.locale`, `Tempo.signals.timeZone`, and `Tempo.signals.watchSystem`.
 
 ---
 

@@ -116,5 +116,14 @@
     "version": "1.0.0",
     "plan": "community",
     "status": "active"
+  },
+  {
+    "id": "signals",
+    "name": "Signals Plugin",
+    "description": "Tempo community plugin for reactive TC39 Signals, adaptive relative-time updates, interval state tracking, and global config reactivity.",
+    "packageName": "@magmacomputing/tempo-plugin-signals",
+    "version": "1.0.0",
+    "plan": "community",
+    "status": "active"
   }
 ]

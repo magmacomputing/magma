@@ -6,7 +6,15 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const docDir = join(__dirname, '../doc');
 const outputFile = join(__dirname, '../public/llms-full.txt');
 const llmsTxtFile = join(__dirname, '../public/llms.txt');
+const glossaryFile = join(__dirname, '../doc/glossary.json');
 const pkgFile = join(__dirname, '../package.json');
+
+async function buildGlossarySection() {
+	const raw = JSON.parse(await readFile(glossaryFile, 'utf-8'));
+	const sorted = [...raw].sort((a, b) => a.term.localeCompare(b.term));
+	const lines = sorted.map((entry) => `- **${entry.term}** (\`${entry.category}\`): ${entry.summary}`);
+	return `## Glossary\n\n${lines.join('\n')}`;
+}
 
 async function getMarkdownFiles(dir) {
 	const entries = await readdir(dir, { withFileTypes: true });
@@ -22,7 +30,7 @@ async function getMarkdownFiles(dir) {
 	return files.sort();
 }
 
-async function updateLlmsTxt(version) {
+async function updateLlmsTxt(version, glossarySection) {
 	try {
 		let llmsTxt = await readFile(llmsTxtFile, 'utf-8');
 		llmsTxt = llmsTxt.replace(
@@ -33,6 +41,14 @@ async function updateLlmsTxt(version) {
 			/^> Tempo(?:\s+\(v[^\)]+\))?\s+is an immutable/m,
 			`> Tempo (v${version}) is an immutable`
 		);
+		if (glossarySection) {
+			const block = `<!-- GLOSSARY:START -->\n${glossarySection}\n<!-- GLOSSARY:END -->`;
+			if (/<!-- GLOSSARY:START -->[\s\S]*?<!-- GLOSSARY:END -->/.test(llmsTxt)) {
+				llmsTxt = llmsTxt.replace(/<!-- GLOSSARY:START -->[\s\S]*?<!-- GLOSSARY:END -->/, () => block);
+			} else {
+				llmsTxt = `${llmsTxt.trimEnd()}\n\n${block}\n`;
+			}
+		}
 		await writeFile(llmsTxtFile, llmsTxt, 'utf-8');
 		console.log(`✅ Successfully updated llms.txt with version v${version}`);
 	} catch (err) {
@@ -45,10 +61,13 @@ async function generateLlmsFull() {
 		const pkg = JSON.parse(await readFile(pkgFile, 'utf-8'));
 		const version = pkg.version || '4.0.0';
 
-		await updateLlmsTxt(version);
+		const glossarySection = await buildGlossarySection();
+		await updateLlmsTxt(version, glossarySection);
 
 		const files = await getMarkdownFiles(docDir);
 		let content = `# Tempo Full Documentation Context (v${version})\n\n> This file contains the complete concatenated markdown documentation set for @magmacomputing/tempo (v${version}). It is intended for automated LLM context ingestion and RAG indexing.\n\n---\n\n`;
+		if (glossarySection)
+			content += `${glossarySection}\n\n---\n\n`;
 
 		for (const file of files) {
 			const relPath = relative(docDir, file);

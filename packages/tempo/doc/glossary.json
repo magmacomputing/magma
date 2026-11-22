@@ -1,0 +1,300 @@
+[
+  {
+    "term": "Cadence",
+    "slug": "cadence",
+    "category": "reactivity",
+    "summary": "The rhythmic scheduling interval or pattern governing ticker executions and reactive signal updates.",
+    "details": "Cadence can be fixed-interval (e.g. every 5 seconds via Ticker), cron/RRule-driven, or event-driven at unit-bucket boundaries via @magmacomputing/tempo-plugin-signals.",
+    "seeAlso": [
+      { "label": "Ticker Plugin", "link": "/doc/9-plugins/ticker.index" },
+      { "label": "Signals Plugin", "link": "/doc/9-plugins/signals.index" }
+    ]
+  },
+  {
+    "term": "Calendar",
+    "slug": "calendar",
+    "category": "temporal-math",
+    "summary": "A system for organizing days into months and years (such as iso8601, gregory, hebrew, or islamic-civil) tracked by every Tempo instance.",
+    "standards": [
+      { "name": "TC39 Temporal", "url": "https://tc39.es/proposal-temporal/docs/calendar.html" },
+      { "name": "CLDR", "url": "https://cldr.unicode.org/" }
+    ],
+    "seeAlso": [
+      { "label": "Internationalization & Locale", "link": "/doc/4-advanced-reference/tempo.intl" }
+    ]
+  },
+  {
+    "term": "Clock Drift",
+    "slug": "clock-drift",
+    "category": "plugins",
+    "summary": "The gradual offset between local system time and true reference network time, compensated by the NTP plugin.",
+    "seeAlso": [
+      { "label": "NTP Plugin", "link": "/doc/9-plugins/ntp.index" }
+    ]
+  },
+  {
+    "term": "Dialect",
+    "slug": "dialect",
+    "category": "plugins",
+    "summary": "An external date/time format token grammar (such as LDML, Moment, POSIX strftime, or Oracle TO_CHAR) bridged by @magmacomputing/tempo-plugin-dialects.",
+    "seeAlso": [
+      { "label": "Dialects Plugin", "link": "/doc/9-plugins/dialects.index" }
+    ]
+  },
+  {
+    "term": "Disposable",
+    "slug": "disposable",
+    "category": "reactivity",
+    "summary": "An object implementing dispose() and Symbol.dispose for deterministic timer and subscription cleanup via TypeScript using declarations.",
+    "standards": [
+      { "name": "TC39 Explicit Resource Management", "url": "https://tc39.es/proposal-explicit-resource-management/" }
+    ],
+    "seeAlso": [
+      { "label": "Signals Plugin", "link": "/doc/9-plugins/signals.index" },
+      { "label": "Ticker Plugin", "link": "/doc/9-plugins/ticker.index" }
+    ]
+  },
+  {
+    "term": "Duration",
+    "slug": "duration",
+    "category": "temporal-math",
+    "summary": "A signed span of calendar and clock units (years, months, days, hours, minutes, seconds, sub-seconds) used in Tempo arithmetic and formatting.",
+    "standards": [
+      { "name": "TC39 Temporal.Duration", "url": "https://tc39.es/proposal-temporal/docs/duration.html" },
+      { "name": "ISO 8601" }
+    ],
+    "seeAlso": [
+      { "label": "Duration & Arithmetic", "link": "/doc/2-core-concepts/tempo.duration" }
+    ]
+  },
+  {
+    "term": "Dynamic Functional Context (DFC)",
+    "slug": "dynamic-functional-context",
+    "category": "architecture",
+    "summary": "Tempo's pattern where configuration options (such as timeZone, locale, or calendar) accept lazy evaluator functions (() => T) resolved per request.",
+    "aliases": ["DFC", "Evaluable"],
+    "seeAlso": [
+      { "label": "Configuration", "link": "/doc/2-core-concepts/tempo.config" }
+    ]
+  },
+  {
+    "term": "Enum",
+    "slug": "enum",
+    "category": "architecture",
+    "summary": "A Proxy-wrapped, null-prototype lookup dictionary built with Enum.from() or Enum.extend() that supports static reflection without prototype pollution.",
+    "seeAlso": [
+      { "label": "Tempo Enumerators", "link": "/doc/6-utility-library/tempo.enumerators" }
+    ]
+  },
+  {
+    "term": "Epoch",
+    "slug": "epoch",
+    "category": "temporal-math",
+    "summary": "Elapsed time since the Unix epoch (1970-01-01T00:00:00Z), exposed by Tempo as .epoch.ms (number) and .epoch.ns (bigint).",
+    "seeAlso": [
+      { "label": "Getters & Properties", "link": "/doc/2-core-concepts/tempo.getters" }
+    ]
+  },
+  {
+    "term": "IANA Time Zone",
+    "slug": "iana-time-zone",
+    "category": "standards",
+    "summary": "A canonical geographic region identifier (such as Australia/Sydney or America/New_York) carrying historical and DST offset rules.",
+    "standards": [
+      { "name": "IANA TZDB", "url": "https://www.iana.org/time-zones" }
+    ],
+    "seeAlso": [
+      { "label": "Internationalization & Locale", "link": "/doc/4-advanced-reference/tempo.intl" }
+    ]
+  },
+  {
+    "term": "Instant",
+    "slug": "instant",
+    "category": "temporal-math",
+    "summary": "A precise, absolute point on the universal temporal timeline, independent of time zones or calendars.",
+    "standards": [
+      { "name": "TC39 Temporal.Instant", "url": "https://tc39.es/proposal-temporal/docs/instant.html" }
+    ],
+    "seeAlso": [
+      { "label": "Core Architecture", "link": "/doc/5-architecture-and-internals/architecture" }
+    ]
+  },
+  {
+    "term": "Interval",
+    "slug": "interval",
+    "category": "temporal-math",
+    "summary": "A half-open [start, end) span (inclusive start, exclusive end) between two temporal points supporting containment, overlap, union, and reactive state observation.",
+    "seeAlso": [
+      { "label": "Intervals & Scheduling", "link": "/doc/2-core-concepts/tempo.interval" }
+    ]
+  },
+  {
+    "term": "ISO 8601",
+    "slug": "iso-8601",
+    "category": "standards",
+    "summary": "The international standard for date, time, UTC offset, duration, and week-date string representations.",
+    "standards": [
+      { "name": "ISO 8601" }
+    ]
+  },
+  {
+    "term": "Lazy Evaluation",
+    "slug": "lazy-evaluation",
+    "category": "architecture",
+    "summary": "Deferring expensive derived computations (such as calendar decompositions, formatted caches, and DFC options) until first read and memoizing the result.",
+    "seeAlso": [
+      { "label": "Lazy Evaluation Pattern", "link": "/doc/5-architecture-and-internals/lazy-evaluation-pattern" }
+    ]
+  },
+  {
+    "term": "Locale",
+    "slug": "locale",
+    "category": "standards",
+    "summary": "A BCP 47 language tag (such as en-AU or fr-FR) governing month/weekday names, relative-time phrasing, numbering systems, and regional date parsing.",
+    "standards": [
+      { "name": "BCP 47" },
+      { "name": "ECMA-402 Intl" }
+    ],
+    "seeAlso": [
+      { "label": "Internationalization & Locale", "link": "/doc/4-advanced-reference/tempo.intl" }
+    ]
+  },
+  {
+    "term": "Modifier",
+    "slug": "modifier",
+    "category": "formatting",
+    "summary": "An orthogonal token extension (e.g., :compact, :hh, :ordinal, :roman, :zero) refining how a format token or term serializes or parses values.",
+    "seeAlso": [
+      { "label": "Formatting", "link": "/doc/2-core-concepts/tempo.format" }
+    ]
+  },
+  {
+    "term": "Namespace",
+    "slug": "namespace",
+    "category": "plugins",
+    "summary": "A deeply frozen static or instance extension object mounted on Tempo via defineNamespace() or definePlugin() (e.g., Tempo.signals, t.geo).",
+    "seeAlso": [
+      { "label": "Namespaces", "link": "/doc/3-extending-tempo/tempo.namespace" }
+    ]
+  },
+  {
+    "term": "Offset",
+    "slug": "offset",
+    "category": "temporal-math",
+    "summary": "A fixed numeric displacement from UTC (e.g., +10:00 or -05:00), distinct from an IANA time zone which carries historical and DST transition rules.",
+    "seeAlso": [
+      { "label": "Getters & Properties", "link": "/doc/2-core-concepts/tempo.getters" }
+    ]
+  },
+  {
+    "term": "Parse Planner",
+    "slug": "parse-planner",
+    "category": "architecture",
+    "summary": "Tempo's layout selection and scoring subsystem that matches ambiguous input strings against registered snippets, dialects, and regional date layouts.",
+    "seeAlso": [
+      { "label": "Parse Planner", "link": "/doc/4-advanced-reference/tempo.planner" }
+    ]
+  },
+  {
+    "term": "Pivot",
+    "slug": "pivot",
+    "category": "formatting",
+    "summary": "The two-digit year century cutoff (default 75) controlling whether 2-digit years resolve to 19xx or 20xx during parsing.",
+    "seeAlso": [
+      { "label": "Configuration", "link": "/doc/2-core-concepts/tempo.config" }
+    ]
+  },
+  {
+    "term": "PlainDate",
+    "slug": "plain-date",
+    "category": "temporal-math",
+    "summary": "A calendar date (year, month, day) without reference to a specific time of day, time zone, or geographical location.",
+    "standards": [
+      { "name": "TC39 Temporal.PlainDate", "url": "https://tc39.es/proposal-temporal/docs/plaindate.html" }
+    ]
+  },
+  {
+    "term": "PlainDateTime",
+    "slug": "plain-date-time",
+    "category": "temporal-math",
+    "summary": "A wall-clock date and time without an attached time zone or UTC offset.",
+    "standards": [
+      { "name": "TC39 Temporal.PlainDateTime", "url": "https://tc39.es/proposal-temporal/docs/plaindatetime.html" }
+    ]
+  },
+  {
+    "term": "ReadonlySignal",
+    "slug": "readonly-signal",
+    "category": "reactivity",
+    "summary": "A reactive accessor function adhering to the TC39 Signals proposal (Signify) that notifies subscribers of value and epoch changes.",
+    "standards": [
+      { "name": "TC39 Signals", "url": "https://github.com/tc39/proposal-signals" }
+    ],
+    "seeAlso": [
+      { "label": "Signals Plugin", "link": "/doc/9-plugins/signals.index" }
+    ]
+  },
+  {
+    "term": "RFC 9557",
+    "slug": "rfc-9557",
+    "category": "standards",
+    "summary": "The Internet Extended Date/Time Format (IXDTF) standard extending RFC 3339 with bracketed time zone and calendar annotations (e.g., [Australia/Sydney][u-ca=iso8601]).",
+    "standards": [
+      { "name": "RFC 9557", "url": "https://datatracker.ietf.org/doc/html/rfc9557" }
+    ]
+  },
+  {
+    "term": "Sandbox",
+    "slug": "sandbox",
+    "category": "architecture",
+    "summary": "An isolated Tempo subclass created via Tempo.extend() with its own configuration and plugin isolation for multi-tenant SSR or testing (term access uses the shared runtime term map, so tenants registering different terms under the same key can conflict).",
+    "seeAlso": [
+      { "label": "Sandbox Factory", "link": "/doc/4-advanced-reference/sandbox-factory" }
+    ]
+  },
+  {
+    "term": "Snippet",
+    "slug": "snippet",
+    "category": "formatting",
+    "summary": "A named regular-expression fragment registered in the parsing engine to match recurring sub-patterns (such as dates, times, or ordinals).",
+    "seeAlso": [
+      { "label": "Parsing", "link": "/doc/2-core-concepts/tempo.parse" }
+    ]
+  },
+  {
+    "term": "Soft Freeze",
+    "slug": "soft-freeze",
+    "category": "architecture",
+    "summary": "Tempo's immutability strategy that provides non-destructive mutations without incurring the heavy V8 runtime cost of deep recursive Object.freeze().",
+    "seeAlso": [
+      { "label": "Soft Freeze Strategy", "link": "/doc/5-architecture-and-internals/soft_freeze_strategy" }
+    ]
+  },
+  {
+    "term": "Term",
+    "slug": "term",
+    "category": "formatting",
+    "summary": "A modular unit of temporal formatting, parsing, or range partitioning registered in the engine registry (e.g. #quarter, #season, #timeOfDay).",
+    "seeAlso": [
+      { "label": "Terms", "link": "/doc/3-extending-tempo/tempo.term" }
+    ]
+  },
+  {
+    "term": "Token",
+    "slug": "token",
+    "category": "formatting",
+    "summary": "A bracketed lowercase format or parse placeholder inside a Tempo mask (e.g., {yyyy}, {mm}, {dd}, {hh}, {mi}, {ss}, {tz}).",
+    "seeAlso": [
+      { "label": "Formatting", "link": "/doc/2-core-concepts/tempo.format" }
+    ]
+  },
+  {
+    "term": "ZonedDateTime",
+    "slug": "zoned-date-time",
+    "category": "temporal-math",
+    "summary": "A time-zone-aware, calendar-aware date and time combining an exact Instant, an IANA time zone, and a calendar system; Tempo's underlying Temporal representation.",
+    "standards": [
+      { "name": "TC39 Temporal.ZonedDateTime", "url": "https://tc39.es/proposal-temporal/docs/zoneddatetime.html" }
+    ]
+  }
+]

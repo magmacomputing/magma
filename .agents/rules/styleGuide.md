@@ -145,6 +145,11 @@ This style guide defines common coding conventions, formatting standards, and Ty
 
 ---
 
+## 12. Module-Scoped Constants Placement
+- **Group Module-Scoped `const`s Near the Top**: Declare module-scoped `const`s (such as `RE_*` regex patterns, lookup tables, and configuration constants) near the top of the module—after `import` statements (and any `declare module` / top-level type setup) and before module-scoped functions or classes—rather than scattering them mid-file between function declarations.
+
+---
+
 ## 10. Helper Function Placement (`#library` vs. Local Module)
 - **Evaluate Reusability & Consumer Merit**: Before creating a new helper function inside a feature or package module (e.g. `tempo`, `tempo-fns`, or a plugin), consider whether it has general-purpose merit for `@magmacomputing/library` (`#library`):
   - **Promote to `#library` when general-purpose**: If the helper is domain-agnostic (e.g., object/prototype traversal, string/number formatting, Temporal/Intl utilities, runtime proxy/reflection guards) and would be useful across packages or to library consumers, place it in the appropriate `#library` module with unit tests and JSDoc.
@@ -156,3 +161,8 @@ This style guide defines common coding conventions, formatting standards, and Ty
 - **Defer Until Needed**: Avoid computing expensive or derived values eagerly during construction, setup, or before conditional branches; evaluate them lazily only when a code path actually requests them.
 - **Memoize Repeated Reads**: Cache the result on first evaluation (e.g., via `??=`, per-instance `#memo` fields, `WeakMap`/`WeakCache`, or local per-call lazy helpers) so repeated accesses within the same instance or invocation reuse the computed value without redundant work.
 - **Reuse Existing Memoized Getters**: When an instance (such as `Tempo`) already exposes memoized getters (e.g. `.yow`, `.woy`, `.doy`), read from them whenever the target state matches rather than re-running the underlying calculation.
+
+---
+
+## 12. Module-Scoped Constants Placement
+- **Group Module-Scoped `const`s Near the Top**: Declare module-scoped `const`s (such as `RE_*` regex patterns, lookup tables, and configuration constants) near the top of the module—after `import` statements (and any `declare module` / top-level type setup) and before module-scoped functions or classes—rather than scattering them mid-file between function declarations.

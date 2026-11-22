@@ -51,7 +51,7 @@ const DOMAIN_GROUPS: DomainGroup[] = [
     id: 'business',
     title: '💼 Business, Finance & UI Utilities',
     description: 'Precision block-snapping and business-aligned scheduling utilities for UI controls.',
-    pluginIds: ['snap']
+    pluginIds: ['snap', 'signals']
   },
   {
     id: 'system',
