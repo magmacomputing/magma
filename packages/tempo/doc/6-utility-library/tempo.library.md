@@ -127,7 +127,39 @@ watcher.check();
 
 <br>
 
-## 9. Exhaustive API Reference
+## 9. Function Composition (`pipe`, `flow`, `pipeAsync`) {#function-composition}
+
+For domain-agnostic data-first pipelines (including `Temporal`, `tempo-fns`, and `curry` helpers), the library exports strongly-typed composition utilities:
+
+- **`pipe(value, ...fns)`**: Evaluates `value` left-to-right through synchronous unary stages with step-by-step TypeScript inference.
+- **`flow(fn1, ...fns)`**: Composes a reusable pipeline function left-to-right (the initial stage may take multiple arguments and preserves `this`).
+- **`pipeAsync(value, ...fns)`**: Awaits an initial value or `PromiseLike` and runs mixed sync/async stages sequentially.
+
+```typescript
+import { pipe, flow, pipeAsync, curry } from '@magmacomputing/tempo/library';
+
+const add = curry((a: number, b: number) => a + b);
+
+// Value-first synchronous pipeline
+const label = pipe(
+  '  2026-11-23  ',
+  s => s.trim(),
+  s => Number(s.slice(0, 4)),
+  add(1),
+  year => `Year: ${year}`,
+); // 'Year: 2027'
+
+// Reusable composed function
+const sumAndDouble = flow((a: number, b: number) => a + b, n => n * 2);
+sumAndDouble(3, 4); // 14
+
+// Mixed sync/async pipeline
+const asyncResult = await pipeAsync(Promise.resolve(10), async n => n * 2, n => n + 5); // 25
+```
+
+<br>
+
+## 10. Exhaustive API Reference
 
 > [!NOTE]
 > These are isolated, standalone utility functions and classes developed internally to support our various applications. They are entirely free to use and are documented here as a convenience reference for our users.

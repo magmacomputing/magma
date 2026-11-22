@@ -52,7 +52,7 @@ graph TD
 Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Discord (`discord.js` + `@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing primary package paired with a scoped plugin ecosystem (**`@tempo-js/*`**):
 
 - [x] **Step 1: Claim `@tempo-js` / `@tempo-kit` Organizations and Unscoped Packages on npm**:
-  - Claimed and initialized the **`@tempo-js`**, **`@tempo-kit`**, and defensive **`@tempo-fns`** organizations on npm under organization admin.
+  - Claimed and initialized the **`@tempo-js`**, **`@tempo-kit`**, and defensive **`@tempokit`** / **`@tempo-fns`** organizations on npm under organization admin (defensive orgs held empty—no redirect packages published).
   - Claimed unscoped packages **`tempo-kit`** (`0.0.1`), **`tempo-fns`**, and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
   - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
 - [ ] **Step 2: Resolve Unscoped Primary Package (`tempo-js` vs. `tempojs` vs. `@tempo-js/core`)**:
