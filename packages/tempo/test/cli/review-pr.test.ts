@@ -149,4 +149,26 @@ ${finding.replace('abc123', 'def456')}
 
 		expect(findingResult!.latestReply?.body).toBe('````markdown\n```html\n<details>keep me</details>\n```\n````');
 	});
+
+	it('does not let an unmatched backtick swallow a closing </details> block boundary', () => {
+		const findingResult = extractThreadFinding({
+			id: 'PRRT_4',
+			path: 'packages/tempo-cli/commands/review-pr.js',
+			line: 10,
+			isOutdated: false,
+			comments: {
+				nodes: [
+					{ id: 'c1', author: { login: 'coderabbitai' }, createdAt: '2026-11-20T05:00:00Z', body: 'Initial finding' },
+					{
+						id: 'c2',
+						author: { login: 'coderabbitai' },
+						createdAt: '2026-11-20T06:00:00Z',
+						body: '<details><summary>Analysis</summary>\nA lone backtick: `\n</details>\n\nUse `value`.',
+					},
+				],
+			},
+		});
+
+		expect(findingResult!.latestReply?.body).toBe('Use `value`.');
+	});
 });

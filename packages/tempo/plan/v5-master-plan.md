@@ -51,9 +51,9 @@ graph TD
 
 Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Discord (`discord.js` + `@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing primary package paired with a scoped plugin ecosystem (**`@tempo-js/*`**):
 
-- [x] **Step 1: Claim `@tempo-js` Organization and Unscoped Packages on npm**:
-  - Claim and initialize the **`@tempo-js`** (and defensive **`@tempo-fns`**) organization on npm under organization admin.
-  - Claimed unscoped companion packages **`tempo-fns`** and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
+- [x] **Step 1: Claim `@tempo-js` / `@tempo-kit` Organizations and Unscoped Packages on npm**:
+  - Claimed and initialized the **`@tempo-js`**, **`@tempo-kit`**, and defensive **`@tempo-fns`** organizations on npm under organization admin.
+  - Claimed unscoped packages **`tempo-kit`** (`0.0.1`), **`tempo-fns`**, and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
   - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
 - [ ] **Step 2: Resolve Unscoped Primary Package (`tempo-js` vs. `tempojs` vs. `@tempo-js/core`)**:
   - **`tempojs` Permission Granted**: Brendon Ribeiro (`brendondominic@gmail.com`) granted maintainer/owner permissions for `tempojs` to `magmacomputing` on Nov 04, 2026 (`npm owner ls tempojs`), and on Nov 21, 2026 explicitly approved publishing Tempo `v5.0.0+` under `tempojs` (versions `1.0.0`–`1.0.3` remain intact).
@@ -61,7 +61,9 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
   - **`@tempojs` Scope Closed**: GitHub Support declined to transfer `@tempojs` based on inactivity/outreach alone; no trademark claim will be filed, so `@tempojs` defensive coverage is dropped.
   - **`tempo-js` Follow-Up Pending**: Ticket `#4959058` was declined on automated `E403` moniker-similarity grounds. A follow-up ticket has been submitted to `support@npmjs.com` (2-week wait window) before making the final choice of primary package:
     - *If `tempo-js` is unlocked*: Use `tempo-js` as the unscoped primary alongside `@tempo-js/*` (`@tempo-js/core` and `tempojs` as thin re-export aliases).
-    - *If `tempo-js` remains blocked (current lean)*: Prefer **`@tempo-js/core`** as the canonical primary package for strict `@tempo-js/*` naming symmetry across core, plugins, `fns`, and `lib` (avoiding the `tempojs` vs. `@tempo-js/*` hyphen mismatch), while publishing **`tempojs`** as a thin 1-line re-export alias depending on `@tempo-js/core` so `npm i tempojs` users still receive the exact same `Tempo` singleton.
+    - *If `tempo-js` remains blocked (leading candidates)*:
+      - **Option A (`tempo-kit` + `@tempo-kit/*` — leading unscoped candidate)**: Shorter 3-segment subpath imports (`tempo-kit`, `tempo-kit/lite`, `tempo-kit/terms/quarter`), visual parity with `tempo-fns` and `tempo-lib`, full `@tempo-kit/*` scope symmetry, and avoids `-js` platform-suffix lock-in.
+      - **Option B (`@tempo-js/core` + `@tempo-js/*`)**: Canonical scoped package with `100%` `@tempo-js/*` naming symmetry (and `tempojs` as a thin 1-line re-export alias depending on `@tempo-js/core`).
 - [ ] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
   - **Core (`tempo-js` / `@tempo-js/core`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
   - **Lite (`tempo-js/lite` / `tempo-lite`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (migrated from v4 `./core`).

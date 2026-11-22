@@ -70,7 +70,7 @@ const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t
 const INLINE_FENCE_SOURCE = '(?:`{3,}[^\\n]*?`{3,})';
 const FENCE_SKIP_PREFIX = `${FENCE_BLOCK_SOURCE}|${INLINE_FENCE_SOURCE}`;
 const RE_FENCE_MASK = new RegExp(FENCE_SKIP_PREFIX, 'gm');
-const RE_DETAILS_OR_CODE = new RegExp(`${FENCE_SKIP_PREFIX}|(?<inline>\`+)[\\s\\S]*?\\k<inline>|<\\/?details\\b[^>]*>`, 'gim');
+const RE_DETAILS_OR_CODE = new RegExp(`${FENCE_SKIP_PREFIX}|(?<inline>\`+)(?:[^\\n]|\\n(?![ \\t]*(?:\\n|<\\/?details\\b)))*?\\k<inline>|<\\/?details\\b[^>]*>`, 'gim');
 
 const FILE_PATH_SOURCE = '([a-zA-Z0-9_\\-./@]+\\.[a-zA-Z0-9]+)';
 const LINE_RANGE_SOURCE = '(\\d+(?:-\\d+)?)';
