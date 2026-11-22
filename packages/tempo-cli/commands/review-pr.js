@@ -66,7 +66,7 @@ function runGh(args) {
 /**
  * Reusable Markdown and token subpatterns.
  */
-const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\1[`~]*[ \\t]*(?:\\n|$))';
+const FENCE_BLOCK_SOURCE = '(?:^[ \\t]*(`{3,}|~{3,})[^\\n]*\\n[\\s\\S]*?\\n[ \\t]*\\1(?:(?<=`)`*|(?<=~)~*)[ \\t]*(?:\\n|$))';
 const INLINE_FENCE_SOURCE = '(?:`{3,}[^\\n]*?`{3,})';
 const FENCE_SKIP_PREFIX = `${FENCE_BLOCK_SOURCE}|${INLINE_FENCE_SOURCE}`;
 const RE_FENCE_MASK = new RegExp(FENCE_SKIP_PREFIX, 'gm');

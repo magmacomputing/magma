@@ -171,4 +171,26 @@ ${finding.replace('abc123', 'def456')}
 
 		expect(findingResult!.latestReply?.body).toBe('Use `value`.');
 	});
+
+	it('does not end a fenced code block early on a mixed-character closing line', () => {
+		const findingResult = extractThreadFinding({
+			id: 'PRRT_5',
+			path: 'packages/tempo-cli/commands/review-pr.js',
+			line: 10,
+			isOutdated: false,
+			comments: {
+				nodes: [
+					{ id: 'c1', author: { login: 'coderabbitai' }, createdAt: '2026-11-20T05:00:00Z', body: 'Initial finding' },
+					{
+						id: 'c2',
+						author: { login: 'coderabbitai' },
+						createdAt: '2026-11-20T06:00:00Z',
+						body: '```html\nx\n```~~~\n<details open>\n```\nKeep this instruction.',
+					},
+				],
+			},
+		});
+
+		expect(findingResult!.latestReply?.body).toBe('```html\nx\n```~~~\n<details open>\n```\nKeep this instruction.');
+	});
 });
