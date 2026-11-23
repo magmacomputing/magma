@@ -754,6 +754,19 @@ describe('Tempo.format() refinements', () => {
       expect(alphaFollower.isValid).toBe(true);
       expect(alphaFollower.yy).toBe(10000);
     });
+
+    it('supports :genitive modifier for localized contextual month formatting', () => {
+      const jan = new Tempo('2024-01-15');
+
+      expect(jan.format('{mon:locale}', { locale: 'ru-RU' }).toLowerCase()).toBe('январь');
+      expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'ru-RU' }).toLowerCase()).toBe('15 января 2024');
+      expect(jan.format('{dd} {mon:genitive} {yyyy}', { locale: 'ru-RU' }).toLowerCase()).toBe('15 января 2024');
+      expect(jan.format('{mon:locale:genitive:upper}', { locale: 'ru-RU' })).toBe('ЯНВАРЯ');
+
+      expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'pl-PL' }).toLowerCase()).toBe('15 stycznia 2024');
+      expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'cs-CZ' }).toLowerCase()).toBe('15 ledna 2024');
+      expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'el-GR' }).toLowerCase()).toBe('15 ιανουαρίου 2024');
+    });
   });
 })
 

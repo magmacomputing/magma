@@ -308,30 +308,47 @@ const _generateLocalizedSnippets = memoizeFunction((localeKey: string) => {
 		}
 	};
 
+	const extractPart = (dtf: Intl.DateTimeFormat, date: Date, partType: 'month' | 'weekday'): string | undefined =>
+		dtf.formatToParts(date).find(p => p.type === partType)?.value?.toLowerCase();
+
 	for (const locale of locales) {
 		const monthLongFormat = getDTF(locale, { ...dtOptions, month: 'long' });
 		const monthShortFormat = getDTF(locale, { ...dtOptions, month: 'short' });
+		const monthLongCtxFormat = getDTF(locale, { ...dtOptions, day: 'numeric', month: 'long' });
+		const monthShortCtxFormat = getDTF(locale, { ...dtOptions, day: 'numeric', month: 'short' });
 
 		for (let m = 0; m < 12; m++) {
 			const date = new Date(Date.UTC(2024, m, 15));
 			const longStr = monthLongFormat.format(date).toLowerCase();
 			const shortStr = monthShortFormat.format(date).toLowerCase();
+			const ctxLongStr = extractPart(monthLongCtxFormat, date, 'month');
+			const ctxShortStr = extractPart(monthShortCtxFormat, date, 'month');
 
 			addEntry(monthMap, locale, longStr, m + 1, mon, mmm);
 			if (shortStr !== longStr) addEntry(monthMap, locale, shortStr, m + 1, mmm);
+			if (ctxLongStr && ctxLongStr !== longStr) addEntry(monthMap, locale, ctxLongStr, m + 1, mon, mmm);
+			if (ctxShortStr && ctxShortStr !== shortStr && ctxShortStr !== ctxLongStr)
+				addEntry(monthMap, locale, ctxShortStr, m + 1, mmm);
 		}
 
 		const weekdayLongFormat = getDTF(locale, { ...dtOptions, weekday: 'long' });
 		const weekdayShortFormat = getDTF(locale, { ...dtOptions, weekday: 'short' });
+		const weekdayLongCtxFormat = getDTF(locale, { ...dtOptions, weekday: 'long', day: 'numeric', month: 'long' });
+		const weekdayShortCtxFormat = getDTF(locale, { ...dtOptions, weekday: 'short', day: 'numeric', month: 'long' });
 
 		// 2024-01-01 is Monday (1). 2024-01-07 is Sunday (7).
 		for (let d = 1; d <= 7; d++) {
 			const date = new Date(Date.UTC(2024, 0, d));
 			const longStr = weekdayLongFormat.format(date).toLowerCase();
 			const shortStr = weekdayShortFormat.format(date).toLowerCase();
+			const ctxLongStr = extractPart(weekdayLongCtxFormat, date, 'weekday');
+			const ctxShortStr = extractPart(weekdayShortCtxFormat, date, 'weekday');
 
 			addEntry(weekdayMap, locale, longStr, d, wkd, www);
 			if (shortStr !== longStr) addEntry(weekdayMap, locale, shortStr, d, www);
+			if (ctxLongStr && ctxLongStr !== longStr) addEntry(weekdayMap, locale, ctxLongStr, d, wkd, www);
+			if (ctxShortStr && ctxShortStr !== shortStr && ctxShortStr !== ctxLongStr)
+				addEntry(weekdayMap, locale, ctxShortStr, d, www);
 		}
 
 		try {

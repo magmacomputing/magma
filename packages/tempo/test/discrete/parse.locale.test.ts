@@ -115,4 +115,38 @@ describe('Localized Parsing', () => {
 		expect(t4.mm).toBe(8);
 		expect(t4.dd).toBe(3);
 	});
+
+	it('should parse both nominative and genitive month names across Slavic locales', () => {
+		Tempo.init({ locale: 'ru-RU' });
+		const ruGenitive = new Tempo('15 января 2024');
+		expect(ruGenitive.isValid).toBe(true);
+		expect(ruGenitive.yy).toBe(2024);
+		expect(ruGenitive.mm).toBe(1);
+		expect(ruGenitive.dd).toBe(15);
+
+		const ruNominative = new Tempo('январь 2024');
+		expect(ruNominative.isValid).toBe(true);
+		expect(ruNominative.mm).toBe(1);
+
+		Tempo.init({ locale: 'pl-PL' });
+		const plGenitive = new Tempo('15 stycznia 2024');
+		expect(plGenitive.isValid).toBe(true);
+		expect(plGenitive.yy).toBe(2024);
+		expect(plGenitive.mm).toBe(1);
+		expect(plGenitive.dd).toBe(15);
+
+		Tempo.init({ locale: 'cs-CZ' });
+		const csGenitive = new Tempo('15 ledna 2024');
+		expect(csGenitive.isValid).toBe(true);
+		expect(csGenitive.yy).toBe(2024);
+		expect(csGenitive.mm).toBe(1);
+		expect(csGenitive.dd).toBe(15);
+
+		Tempo.init({ locale: 'el-GR' });
+		const elGenitive = new Tempo('15 Ιανουαρίου 2024');
+		expect(elGenitive.isValid).toBe(true);
+		expect(elGenitive.yy).toBe(2024);
+		expect(elGenitive.mm).toBe(1);
+		expect(elGenitive.dd).toBe(15);
+	});
 });

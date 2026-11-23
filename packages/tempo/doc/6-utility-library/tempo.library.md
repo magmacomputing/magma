@@ -127,39 +127,55 @@ watcher.check();
 
 <br>
 
-## 9. Function Composition (`pipe`, `flow`, `pipeAsync`) {#function-composition}
+## 9. TC39 Signals (`Signify`) {#signify}
 
-For domain-agnostic data-first pipelines (including `Temporal`, `tempo-fns`, and `curry` helpers), the library exports strongly-typed composition utilities:
-
-- **`pipe(value, ...fns)`**: Evaluates `value` left-to-right through synchronous unary stages with step-by-step TypeScript inference.
-- **`flow(fn1, ...fns)`**: Composes a reusable pipeline function left-to-right (the initial stage may take multiple arguments and preserves `this`).
-- **`pipeAsync(value, ...fns)`**: Awaits an initial value or `PromiseLike` and runs mixed sync/async stages sequentially.
+`Signify` is a zero-dependency, frozen TC39 Signals implementation (`Signify.State`, `Signify.computed`, `Signify.effect`, `Signify.subtle.Watcher`) with `WeakRef`-backed consumer tracking—powering `Reactive.toSignal()`, `Ticker`, `NTP`, and `@magmacomputing/tempo-plugin-signals`:
 
 ```typescript
-import { pipe, flow, pipeAsync, curry } from '@magmacomputing/tempo/library';
+import { Signify } from '@magmacomputing/tempo/library';
 
-const add = curry((a: number, b: number) => a + b);
+const count = new Signify.State(1);
+const doubled = Signify.computed(() => count.get() * 2);
 
-// Value-first synchronous pipeline
-const label = pipe(
-  '  2026-11-23  ',
-  s => s.trim(),
-  s => Number(s.slice(0, 4)),
-  add(1),
-  year => `Year: ${year}`,
-); // 'Year: 2027'
+count.set(3);
+console.log(doubled.get()); // 6
 
-// Reusable composed function
-const sumAndDouble = flow((a: number, b: number) => a + b, n => n * 2);
-sumAndDouble(3, 4); // 14
-
-// Mixed sync/async pipeline
-const asyncResult = await pipeAsync(Promise.resolve(10), async n => n * 2, n => n + 5); // 25
+// Or observe changes asynchronously on microtask flush
+using _stop = Signify.effect(() => {
+  console.log('doubled:', doubled.get());
+});
 ```
 
 <br>
 
-## 10. Exhaustive API Reference
+## 10. Disposable Cancellation (`Aborter`) {#aborter}
+
+`Aborter` extends `AbortController` with `Symbol.dispose` (`using`), paired with `anySignal`, `timeoutSignal`, and `onAbort` for leak-free cancellation across `Reactive` streams and async plugins:
+
+```typescript
+import { Aborter, timeoutSignal, anySignal } from '@magmacomputing/tempo/library';
+
+using aborter = new Aborter();
+const signal = anySignal(aborter.signal, timeoutSignal(5_000));
+// Exiting the `using` scope automatically aborts `aborter.signal`
+```
+
+<br>
+
+## 11. Bounded LRU/TTL Caching (`BoundedCache`) {#bounded-cache}
+
+`BoundedCache<K, V>` extends `Map` with configurable max-size LRU eviction and per-entry TTL expiration, protecting Tempo's parser, formatter, and `Intl` hot paths from unbounded memory growth:
+
+```typescript
+import { BoundedCache } from '@magmacomputing/tempo/library';
+
+const cache = new BoundedCache<string, number>(500, 60_000); // max 500 entries, 60s TTL
+cache.set('key', 42);
+```
+
+<br>
+
+## 12. Exhaustive API Reference
 
 > [!NOTE]
 > These are isolated, standalone utility functions and classes developed internally to support our various applications. They are entirely free to use and are documented here as a convenience reference for our users.

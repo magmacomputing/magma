@@ -712,17 +712,39 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						} else {
 							// 3. Fall back to native Intl for core date tokens
 							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
-							if (token === 'mon') res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
-							else if (token === 'mmm') res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
-							else if (token === 'wkd') res = getDTF(config?.locale, { ...tzOpts, weekday: 'long' }).format(zdt.epochMilliseconds);
-							else if (token === 'www') res = getDTF(config?.locale, { ...tzOpts, weekday: 'short' }).format(zdt.epochMilliseconds);
-							else if (token === 'mer') {
+							if (normMods.includes('genitive') && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www')) {
+								// Handled once by `case 'genitive'`
+							} else if (token === 'mon') {
+								res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
+							} else if (token === 'mmm') {
+								res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
+							} else if (token === 'wkd') {
+								res = getDTF(config?.locale, { ...tzOpts, weekday: 'long' }).format(zdt.epochMilliseconds);
+							} else if (token === 'www') {
+								res = getDTF(config?.locale, { ...tzOpts, weekday: 'short' }).format(zdt.epochMilliseconds);
+							} else if (token === 'mer') {
 								const period = formatDayPeriod(zdt.epochMilliseconds, config?.locale, { ...dtOptions, hour: 'numeric', hour12: true, timeZone: tz });
 								if (period) res = period;
 							}
 						}
 					} catch (e) {
 						// Fallback to the current base token string
+					}
+					break;
+				}
+				case 'genitive': {
+					if (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www') {
+						try {
+							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
+							const partType = (token === 'mon' || token === 'mmm') ? 'month' : 'weekday';
+							const style = (token === 'mon' || token === 'wkd') ? 'long' : 'short';
+							const ctxOpts = partType === 'month'
+								? { ...tzOpts, day: 'numeric' as const, month: style as 'long' | 'short' }
+								: { ...tzOpts, weekday: style as 'long' | 'short', day: 'numeric' as const, month: 'long' as const };
+							res = getDTF(config?.locale, ctxOpts).formatToParts(zdt.epochMilliseconds).find(p => p.type === partType)?.value ?? res;
+						} catch {
+							// Fallback to the current base token string
+						}
 					}
 					break;
 				}
