@@ -737,7 +737,13 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 						try {
 							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
 							const partType = (token === 'mon' || token === 'mmm') ? 'month' : 'weekday';
-							const style = (token === 'mon' || token === 'wkd') ? 'long' : 'short';
+							const style = normMods.includes('long')
+								? 'long'
+								: normMods.includes('short')
+									? 'short'
+									: (token === 'mon' || token === 'wkd')
+										? 'long'
+										: 'short';
 							const ctxOpts = partType === 'month'
 								? { ...tzOpts, day: 'numeric' as const, month: style as 'long' | 'short' }
 								: { ...tzOpts, weekday: style as 'long' | 'short', day: 'numeric' as const, month: 'long' as const };
@@ -764,9 +770,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 						}
 					} else if (token === 'mon' || token === 'mmm') {
-						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, month: modKey }).format(zdt.epochMilliseconds);
+						if (!normMods.includes('genitive') && (modKey === 'short' || modKey === 'long')) res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, month: modKey }).format(zdt.epochMilliseconds);
 					} else if (token === 'wkd' || token === 'www') {
-						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, weekday: modKey }).format(zdt.epochMilliseconds);
+						if (!normMods.includes('genitive') && (modKey === 'short' || modKey === 'long')) res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, weekday: modKey }).format(zdt.epochMilliseconds);
 					} else if (token === 'era') {
 						if (modKey === 'short' || modKey === 'long') {
 							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, era: modKey }).formatToParts(zdt.epochMilliseconds);

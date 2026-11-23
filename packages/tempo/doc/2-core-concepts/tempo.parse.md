@@ -293,7 +293,7 @@ new Tempo('vendredi');          // parses as the closest "Friday"
 #### How it Works, Genitive Cases & Accent Normalization
 When non-English locales are provided, Tempo automatically uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
 
-For inflected languages (such as Slavic locales, Greek, Baltic, and Finnish), Tempo extracts **both** standalone (nominative) and contextual (genitive) month/weekday forms so dates parse naturally in either context:
+For inflected languages (such as Slavic locales, Greek, Baltic, and Finnish), Tempo extracts **both** standalone (nominative) and contextual (genitive) month forms from `Intl` (plus any distinct date-context weekday forms exposed by `Intl`; in locales like `ru-RU`, `Intl` uses nominative `среда` for weekdays in date contexts):
 
 ```typescript
 Tempo.init({ locale: 'ru-RU' });

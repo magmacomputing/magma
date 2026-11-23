@@ -766,6 +766,16 @@ describe('Tempo.format() refinements', () => {
       expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'pl-PL' }).toLowerCase()).toBe('15 stycznia 2024');
       expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'cs-CZ' }).toLowerCase()).toBe('15 ledna 2024');
       expect(jan.format('{dd} {mon:locale:genitive} {yyyy}', { locale: 'el-GR' }).toLowerCase()).toBe('15 ιανουαρίου 2024');
+
+      // Preserves explicit :long / :short width modifiers regardless of order
+      expect(jan.format('{mmm:long:genitive}', { locale: 'ru-RU' }).toLowerCase()).toBe('января');
+      expect(jan.format('{mmm:genitive:long}', { locale: 'ru-RU' }).toLowerCase()).toBe('января');
+      expect(jan.format('{mon:short:genitive}', { locale: 'ru-RU' }).toLowerCase()).toBe('янв.');
+      expect(jan.format('{mon:genitive:short}', { locale: 'ru-RU' }).toLowerCase()).toBe('янв.');
+
+      // Weekdays use the locale's date-context form (nominative 'среда' in ru-RU)
+      const wed = new Tempo('2024-01-17');
+      expect(wed.format('{wkd:locale:genitive}', { locale: 'ru-RU' }).toLowerCase()).toBe('среда');
     });
   });
 })

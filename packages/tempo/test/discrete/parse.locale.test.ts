@@ -128,6 +128,10 @@ describe('Localized Parsing', () => {
 		expect(ruNominative.isValid).toBe(true);
 		expect(ruNominative.mm).toBe(1);
 
+		const ruWeekday = new Tempo('среда');
+		expect(ruWeekday.isValid).toBe(true);
+		expect(ruWeekday.dow).toBe(3);
+
 		Tempo.init({ locale: 'pl-PL' });
 		const plGenitive = new Tempo('15 stycznia 2024');
 		expect(plGenitive.isValid).toBe(true);
