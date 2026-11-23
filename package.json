@@ -84,5 +84,8 @@
   "allowScripts": {
     "@swc/core@1.15.47": true,
     "esbuild@0.28.2": true
+  },
+  "dependencies": {
+    "typedoc": "^0.28.20"
   }
 }

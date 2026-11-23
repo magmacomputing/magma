@@ -250,6 +250,13 @@ jobs:
               exit 1
             fi
 
+            local tempo_fns_range
+            tempo_fns_range=$(node -e "const d=JSON.parse(require('fs').readFileSync('$pkg_json')).dependencies||{}; console.log(d['tempo-fns']||'')")
+            if [ -n "$tempo_fns_range" ] && [ -z "$(npm view "tempo-fns@$tempo_fns_range" version 2>/dev/null)" ]; then
+              echo "❌ Error: $pkg@$ver depends on tempo-fns@$tempo_fns_range, which is not yet published on npm. Publish tempo-fns first."
+              exit 1
+            fi
+
             echo "🔍 Preflight check for $pkg@$ver on npm registry..."
             
             local remote_ver=""

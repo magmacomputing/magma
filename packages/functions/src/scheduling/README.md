@@ -34,8 +34,9 @@ class Interval<T extends TemporalPoint = TemporalPoint> {
 }
 ```
 **Example:**
+*(Note: `Interval` is exported by `@magmacomputing/tempo/interval` rather than the `tempo-fns` root.)*
 ```typescript
-import { Interval } from 'tempo-fns';
+import { Interval } from '@magmacomputing/tempo/interval';
 import { Temporal } from '@js-temporal/polyfill';
 
 const start = Temporal.Instant.from('2026-01-01T08:00:00Z');

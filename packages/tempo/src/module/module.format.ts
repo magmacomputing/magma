@@ -874,7 +874,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 		}
 
-		if (normMods.includes('locale')) {
+		const isGenitiveNameToken = normMods.includes('genitive') && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www');
+		if (normMods.includes('locale') || isGenitiveNameToken) {
 			if (li.numberingSystem && li.numberingSystem !== 'latn')
 				res = localizeDigits(res, li.numberingSystem);
 
