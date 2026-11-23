@@ -14,7 +14,7 @@ import {
 } from '../src/index.js';
 import { getEasterSunday, getGoodFriday, getEasterMonday } from '../src/computus.js';
 
-vi.mock('@magmacomputing/tempo-fns', () => ({
+vi.mock('tempo-fns', () => ({
 	getPublicHolidays: vi.fn(async (year: number, country: string) => {
 		if (country === 'IT') {
 			return [

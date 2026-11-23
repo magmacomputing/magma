@@ -43,7 +43,7 @@
     "plan": "community"
   },
   "dependencies": {
-    "@magmacomputing/tempo-fns": "^1.2.0"
+    "tempo-fns": "^1.2.0"
   },
   "peerDependencies": {
     "@magmacomputing/tempo": "^4.5.0 || ^5.0.0"

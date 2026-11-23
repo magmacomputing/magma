@@ -1,6 +1,6 @@
 # Contributing to `tempo-fns`
 
-Welcome to `@magmacomputing/tempo-fns`! We are thrilled that you want to contribute to the ecosystem. 
+Welcome to `tempo-fns`! We are thrilled that you want to contribute to the ecosystem. 
 
 This library acts as a granular, tree-shakeable collection of utility functions designed to make working with dates easier for the modern web. Our goal is to provide a seamless bridge for users migrating from legacy tools (like Moment.js or `date-fns`), introducing them to the raw power of the Temporal API and the `@magmacomputing/tempo` ecosystem.
 

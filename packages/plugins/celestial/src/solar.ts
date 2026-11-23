@@ -7,7 +7,7 @@ import {
 	SOLAR_PHASE_NAMES,
 	HALF_DAY_MS,
 	DAY_MS,
-} from '@magmacomputing/tempo-fns';
+} from 'tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import { isNull, isNumber } from '@magmacomputing/tempo/library';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, createCelestialTermHandlers } from './util.js';

@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { getLunarPhase } from '@magmacomputing/tempo-fns';
+import { getLunarPhase } from 'tempo-fns';
 
 import { isNumber, isReference, isArray } from '@magmacomputing/tempo/library';
 import { WeakCache, logWarn } from '@magmacomputing/tempo/plugin/sdk';

@@ -12,7 +12,7 @@ import {
 	resolveCulturalLocale,
 } from '../../src/index.js';
 
-describe('Spatial & Navigation Algorithms (@magmacomputing/tempo-fns)', () => {
+describe('Spatial & Navigation Algorithms (tempo-fns)', () => {
 	const NYC = { lat: 40.7128, lng: -74.006 };
 	const LONDON = { lat: 51.5074, lng: -0.1278 };
 	const SF = { lat: 37.7749, lng: -122.4194 };

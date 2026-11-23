@@ -25,12 +25,14 @@ export async function versionSync(_args) {
 	console.log(`\n🔄 Syncing version ${version} to workspaces...`);
 
 	try {
-		const workspaces = ['@magmacomputing/tempo', '@magmacomputing/library'];
+		const workspaces = [
+			{ ws: '@magmacomputing/tempo', dir: 'tempo' },
+			{ ws: 'tempo-lib', dir: 'library' },
+		];
 		let syncedCount = 0;
 		let alreadySyncedCount = 0;
-		for (const ws of workspaces) {
-			const wsRelPath = ws.replace('@magmacomputing/', '');
-			const wsPkgPath = path.resolve(ROOT_DIR, 'packages', wsRelPath, 'package.json');
+		for (const { ws, dir } of workspaces) {
+			const wsPkgPath = path.resolve(ROOT_DIR, 'packages', dir, 'package.json');
 			try {
 				if (existsSync(wsPkgPath)) {
 					const wsPkg = JSON.parse(readFileSync(wsPkgPath, 'utf8'));

@@ -8,8 +8,8 @@
     "paths": {
       "@magmacomputing/tempo/plugin/sdk": ["../../tempo/src/plugin/plugin.sdk.ts"],
       "@magmacomputing/tempo": ["../../tempo/src/tempo.index.ts"],
-      "@magmacomputing/tempo-fns": ["../../functions/src/index.ts"],
-      "@magmacomputing/library": ["../../library/src/common.index.ts"],
+      "tempo-fns": ["../../functions/src/index.ts"],
+      "tempo-lib": ["../../library/src/common.index.ts"],
       "#library/*": ["../../library/src/common/*"]
     }
   },

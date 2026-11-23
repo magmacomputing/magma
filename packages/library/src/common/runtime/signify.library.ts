@@ -751,7 +751,7 @@ const effectFn = effect;
 const fromFn = from;
 
 /**
- * Primary reactive namespace in @magmacomputing/library.
+ * Primary reactive namespace in tempo-lib.
  */
 export namespace Signify {
 	export const State = StateClass;

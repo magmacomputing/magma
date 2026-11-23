@@ -17,23 +17,23 @@ import {
 	type GeoConfig,
 	type CoordinateInput,
 	type GeoProvider,
-} from '@magmacomputing/library/runtime/mapper.library.js';
+} from 'tempo-lib/runtime/mapper.library.js';
 import {
 	resolveCulturalLocale,
 	type LocaleSyncMode,
-} from '@magmacomputing/tempo-fns';
+} from 'tempo-fns';
 import {
 	serverGeoLocation,
 	serverGeoCoords,
 	serverMapHemisphere,
 	type ServerMapOpts,
 	type ServerGeolocationResult,
-} from '@magmacomputing/library/server/mapper.library.js';
+} from 'tempo-lib/server/mapper.library.js';
 import {
 	geoLocation,
-} from '@magmacomputing/library/browser/mapper.library.js';
-import { isString, isNumber, isObject, isText, isSafeKey } from '@magmacomputing/library/primitives/assertion.library.js';
-import type { MutableObject } from '@magmacomputing/library/primitives/type.library.js';
+} from 'tempo-lib/browser/mapper.library.js';
+import { isString, isNumber, isObject, isText, isSafeKey } from 'tempo-lib/primitives/assertion.library.js';
+import type { MutableObject } from 'tempo-lib/primitives/type.library.js';
 
 /**
  * Control and execution options filtered out when preserving caller-defined custom metadata.

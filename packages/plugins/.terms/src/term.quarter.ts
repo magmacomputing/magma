@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import { asArray } from '@magmacomputing/library';
+import { asArray } from 'tempo-lib';
 import type { Tempo } from '@magmacomputing/tempo';
 
 export const QUARTER_KEYS = Object.freeze(['Q1', 'Q2', 'Q3', 'Q4'] as const);

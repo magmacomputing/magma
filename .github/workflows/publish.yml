@@ -132,7 +132,7 @@ jobs:
           if [ "$EVENT_NAME" = "release" ] || [ "$INPUT_ALL" = "true" ]; then
             PKGS=(
               "@magmacomputing/tempo"
-              "@magmacomputing/tempo-fns"
+              "tempo-fns"
               "@magmacomputing/tempo-plugin-celestial"
               "@magmacomputing/tempo-plugin-ai"
               "@magmacomputing/tempo-plugin-batch"
@@ -149,7 +149,7 @@ jobs:
             )
           else
             [ "$INPUT_TEMPO" = "true" ] && PKGS+=("@magmacomputing/tempo")
-            [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("@magmacomputing/tempo-fns")
+            [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("tempo-fns")
             [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ai")
             [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
             [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-celestial")
@@ -173,7 +173,7 @@ jobs:
                 elif [ "$item" = "tempo" ]; then
                   PKGS+=("@magmacomputing/tempo")
                 elif [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
-                  PKGS+=("@magmacomputing/tempo-fns")
+                  PKGS+=("tempo-fns")
                 else
                   PKGS+=("@magmacomputing/tempo-plugin-$item")
                 fi
@@ -223,7 +223,7 @@ jobs:
             local pkg_json=""
             if [ "$pkg" = "@magmacomputing/tempo" ] || [ "$pkg" = "@tempo-js/core" ]; then
               pkg_json="packages/tempo/package.json"
-            elif [ "$pkg" = "@magmacomputing/tempo-fns" ] || [ "$pkg" = "@tempo-js/fns" ]; then
+            elif [ "$pkg" = "tempo-fns" ] || [ "$pkg" = "@magmacomputing/tempo-fns" ] || [ "$pkg" = "@tempo-js/fns" ]; then
               pkg_json="packages/functions/package.json"
             else
               local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"

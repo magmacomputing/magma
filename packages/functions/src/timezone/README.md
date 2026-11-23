@@ -11,7 +11,7 @@ function isValidTimeZone(timeZone: unknown): timeZone is string;
 ```
 **Example:**
 ```typescript
-import { isValidTimeZone } from '@magmacomputing/tempo-fns';
+import { isValidTimeZone } from 'tempo-fns';
 
 isValidTimeZone('America/New_York'); // Returns: true
 isValidTimeZone('Europe/London');    // Returns: true
@@ -30,7 +30,7 @@ function getDSTTransitions(
 ```
 **Example:**
 ```typescript
-import { getDSTTransitions } from '@magmacomputing/tempo-fns';
+import { getDSTTransitions } from 'tempo-fns';
 
 const dst = getDSTTransitions('America/New_York', 2026);
 // Returns DSTTransitionsResult:
@@ -53,7 +53,7 @@ function isDST(
 ```
 **Example:**
 ```typescript
-import { isDST } from '@magmacomputing/tempo-fns';
+import { isDST } from 'tempo-fns';
 
 isDST('2026-07-01T12:00:00', 'America/New_York'); // Returns: true
 isDST('2026-01-01T12:00:00', 'America/New_York'); // Returns: false
@@ -67,7 +67,7 @@ function getOffsets(timeZone: string, year?: number): number[];
 ```
 **Example:**
 ```typescript
-import { getOffsets } from '@magmacomputing/tempo-fns';
+import { getOffsets } from 'tempo-fns';
 
 getOffsets('Australia/Sydney'); 
 // Returns array of offset changes for the year
@@ -81,7 +81,7 @@ function getHemisphere(timeZone?: string): 'N' | 'S' | 'E' | undefined;
 ```
 **Example:**
 ```typescript
-import { getHemisphere } from '@magmacomputing/tempo-fns';
+import { getHemisphere } from 'tempo-fns';
 
 getHemisphere('America/New_York'); // Returns: 'N'
 getHemisphere('Australia/Sydney');  // Returns: 'S'
@@ -95,7 +95,7 @@ function normalizeUtcOffset(zone: string): string;
 ```
 **Example:**
 ```typescript
-import { normalizeUtcOffset } from '@magmacomputing/tempo-fns';
+import { normalizeUtcOffset } from 'tempo-fns';
 
 normalizeUtcOffset('UTC+10'); // Returns: '+10:00'
 ```

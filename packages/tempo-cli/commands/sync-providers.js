@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
-import { parseJSONC } from '@magmacomputing/library/runtime/json.library.js';
+import { parseJSONC } from 'tempo-lib/runtime/json.library.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

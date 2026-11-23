@@ -11,7 +11,7 @@ console.log('🔍 Running TypeDoc Compiler API Type Expansion Post-Processor...'
 
 const targets = [
 	{
-		name: '@magmacomputing/library',
+		name: 'tempo-lib',
 		dir: libraryDir,
 		entryPoints: [
 			path.resolve(libraryDir, 'src/common.index.ts'),

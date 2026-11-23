@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { isFunction, isObject } from '@magmacomputing/library';
+import { isFunction, isObject } from 'tempo-lib';
 import {
 	SpatialPlugin,
 	haversineDistance,

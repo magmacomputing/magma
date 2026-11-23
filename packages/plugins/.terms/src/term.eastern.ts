@@ -1,6 +1,6 @@
 import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import { isNumber } from '@magmacomputing/library';
-import { getChineseZodiac as getChineseZodiacFn } from '@magmacomputing/tempo-fns';
+import { isNumber } from 'tempo-lib';
+import { getChineseZodiac as getChineseZodiacFn } from 'tempo-fns';
 import type { Tempo } from '@magmacomputing/tempo';
 
 export interface RegionalVariant {

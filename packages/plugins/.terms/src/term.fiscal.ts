@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, $Internal, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import { isString, isDefined, isUndefined, isInteger, isNumber, asArray, getCountryFromTimeZone, getLC } from '@magmacomputing/library';
+import { isString, isDefined, isUndefined, isInteger, isNumber, asArray, getCountryFromTimeZone, getLC } from 'tempo-lib';
 import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
 import type { Tempo } from '@magmacomputing/tempo';
 
