@@ -6,6 +6,6 @@ export default defineConfig({
 	entry: ['src/index.ts', 'src/install.ts'],
 	noExternal: [
 		...(Array.isArray(sharedConfig.noExternal) ? sharedConfig.noExternal : []),
-		/^@magmacomputing\/tempo-fns/,
+		/^tempo-fns/,
 	],
 });

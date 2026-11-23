@@ -168,12 +168,12 @@ jobs:
               CLEAN_CUSTOM=$(echo "$INPUT_CUSTOM" | tr ',' ' ')
               for item in $CLEAN_CUSTOM; do
                 [ -z "$item" ] && continue
-                if [[ "$item" == @magmacomputing/* ]]; then
+                if [ "$item" = "@magmacomputing/tempo-fns" ] || [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
+                  PKGS+=("tempo-fns")
+                elif [[ "$item" == @magmacomputing/* ]]; then
                   PKGS+=("$item")
                 elif [ "$item" = "tempo" ]; then
                   PKGS+=("@magmacomputing/tempo")
-                elif [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
-                  PKGS+=("tempo-fns")
                 else
                   PKGS+=("@magmacomputing/tempo-plugin-$item")
                 fi

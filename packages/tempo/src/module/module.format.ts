@@ -711,7 +711,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							}
 						} else {
 							// 3. Fall back to native Intl for core date tokens
-							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
+							const { dateStyle: _ds, timeStyle: _ts, ...baseDtOpts } = dtOptions ?? {};
+							const tzOpts = { ...baseDtOpts, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
 							if (normMods.includes('genitive') && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www')) {
 								// Handled once by `case 'genitive'`
 							} else if (token === 'mon') {
@@ -735,7 +736,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 				case 'genitive': {
 					if (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www') {
 						try {
-							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
+							const { dateStyle: _ds, timeStyle: _ts, ...baseDtOpts } = dtOptions ?? {};
+							const tzOpts = { ...baseDtOpts, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
 							const partType = (token === 'mon' || token === 'mmm') ? 'month' : 'weekday';
 							const style = normMods.includes('long')
 								? 'long'
