@@ -2,6 +2,15 @@
 
 Tempo provides a powerful token-based formatting engine that goes beyond the standard ISO strings of native `Temporal`.
 
+> [!TIP]
+> **Everyday Essentials (90% of Use Cases)**
+> You only need a handful of readable tokens for most formatting tasks—treat the full token and modifier tables below as a reference:
+> - **Date**: `{yyyy}` (`2026`), `{mm}` (`10`), `{mon}` (`October`), `{mmm}` (`Oct`), `{dd}` (`24`), `{wkd}` (`Saturday`), `{www}` (`Sat`)
+> - **Time & Zone**: `{hh}` (`15`), `{mi}` (`30`), `{ss}` (`45`), `{tz:offset}` (`+10:00`)
+> - **Top Modifiers**: `:locale` (translate), `:short` / `:long` (width), `:ord` (`24th`), `:upper` / `:title` (casing)
+>
+> Example: `t.format('{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss}')` → `"Sat, 24 Oct 2026 15:30:00"`
+
 ## 🚀 Standalone Formatting (Zero-Overhead)
 
 If you have a native `Temporal.ZonedDateTime` and want to format it using Tempo's readable tokens, you can use the standalone `format` function. This allows you to use Tempo's formatting logic without importing the full `Tempo` class.
