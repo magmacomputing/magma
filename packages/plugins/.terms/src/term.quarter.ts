@@ -1,6 +1,6 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
 import { asArray } from 'tempo-lib';
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo } from 'tempo-kit';
 
 export const QUARTER_KEYS = Object.freeze(['Q1', 'Q2', 'Q3', 'Q4'] as const);
 export type QuarterKey = (typeof QUARTER_KEYS)[number];
@@ -84,7 +84,7 @@ export const QuarterTerm = defineTerm({
 	}
 });
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		qtr: QuarterKey;
 		quarter: {

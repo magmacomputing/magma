@@ -131,7 +131,7 @@ jobs:
 
           if [ "$EVENT_NAME" = "release" ] || [ "$INPUT_ALL" = "true" ]; then
             PKGS=(
-              "@magmacomputing/tempo"
+              "tempo-kit"
               "tempo-fns"
               "@magmacomputing/tempo-plugin-celestial"
               "@magmacomputing/tempo-plugin-ai"
@@ -148,7 +148,7 @@ jobs:
               "@magmacomputing/tempo-plugin-dialects"
             )
           else
-            [ "$INPUT_TEMPO" = "true" ] && PKGS+=("@magmacomputing/tempo")
+            [ "$INPUT_TEMPO" = "true" ] && PKGS+=("tempo-kit")
             [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("tempo-fns")
             [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ai")
             [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
@@ -170,10 +170,10 @@ jobs:
                 [ -z "$item" ] && continue
                 if [ "$item" = "@magmacomputing/tempo-fns" ] || [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
                   PKGS+=("tempo-fns")
-                elif [[ "$item" == @magmacomputing/* ]]; then
+                elif [ "$item" = "tempo" ] || [ "$item" = "tempo-kit" ] || [ "$item" = "@magmacomputing/tempo" ]; then
+                  PKGS+=("tempo-kit")
+                elif [[ "$item" == @tempo-kit/* ]] || [[ "$item" == @magmacomputing/* ]]; then
                   PKGS+=("$item")
-                elif [ "$item" = "tempo" ]; then
-                  PKGS+=("@magmacomputing/tempo")
                 else
                   PKGS+=("@magmacomputing/tempo-plugin-$item")
                 fi
@@ -231,12 +231,13 @@ jobs:
             
             # Read exact version from workspace package.json
             local pkg_json=""
-            if [ "$pkg" = "@magmacomputing/tempo" ] || [ "$pkg" = "@tempo-js/core" ]; then
+            if [ "$pkg" = "tempo-kit" ] || [ "$pkg" = "@magmacomputing/tempo" ] || [ "$pkg" = "@tempo-js/core" ]; then
               pkg_json="packages/tempo/package.json"
             elif [ "$pkg" = "tempo-fns" ] || [ "$pkg" = "@magmacomputing/tempo-fns" ] || [ "$pkg" = "@tempo-js/fns" ]; then
               pkg_json="packages/functions/package.json"
             else
-              local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"
+              local plugin_dir="${pkg#@tempo-kit/plugin-}"
+              plugin_dir="${plugin_dir#@magmacomputing/tempo-plugin-}"
               plugin_dir="${plugin_dir#@tempo-js/plugin-}"
               if [ -f "packages/plugins/$plugin_dir/package.json" ]; then
                 pkg_json="packages/plugins/$plugin_dir/package.json"

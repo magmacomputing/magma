@@ -126,7 +126,7 @@ async function main() {
 	}
 
 	const corePackages = [
-		{ name: 'tempo (core)', npmName: '@magmacomputing/tempo', relPath: 'packages/tempo' },
+		{ name: 'tempo-kit', npmName: 'tempo-kit', relPath: 'packages/tempo' },
 		{ name: 'tempo-fns', npmName: 'tempo-fns', relPath: 'packages/functions' },
 	];
 

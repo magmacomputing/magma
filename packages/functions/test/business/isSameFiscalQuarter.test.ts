@@ -1,6 +1,6 @@
 import { isSameFiscalQuarter } from '../../src/business/isSameFiscalQuarter.js';
-import { Tempo } from '@magmacomputing/tempo';
-import { FiscalTerm } from '@magmacomputing/tempo/terms';
+import { Tempo } from 'tempo-kit';
+import { FiscalTerm } from 'tempo-kit/terms';
 
 describe('isSameFiscalQuarter', () => {
 	beforeAll(() => {

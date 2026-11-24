@@ -2,13 +2,13 @@
   "name": "@magmacomputing/tempo-terms",
   "version": "1.0.0",
   "private": true,
-  "description": "Built-in Civic and Cultural Terms for @magmacomputing/tempo (bundled natively under ./terms — not published separately)",
+  "description": "Built-in Civic and Cultural Terms for tempo-kit (bundled natively under ./terms — not published separately)",
   "type": "module",
   "scripts": {
     "build": "tsc -b",
     "test": "vitest run -c ../vitest.shared.ts"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^5.0.0"
+    "tempo-kit": "^5.0.0"
   }
 }

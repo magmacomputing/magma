@@ -1,4 +1,4 @@
-import { ValueOf } from '@magmacomputing/tempo/plugin/plugin.sdk';
+import { ValueOf } from 'tempo-kit/plugin/sdk';
 import {
 	SolarOptions,
 	SolarTwilightWindow,

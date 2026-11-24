@@ -1,5 +1,5 @@
 import { isLeapYear } from '../../src/calendar/calendar.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('isLeapYear', () => {
 	it('should return true for typical leap years (divisible by 4, not 100)', () => {

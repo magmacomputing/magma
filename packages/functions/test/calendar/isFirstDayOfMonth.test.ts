@@ -1,5 +1,5 @@
 import { isFirstDayOfMonth } from '../../src/calendar/calendar.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('isFirstDayOfMonth', () => {
 	it('should return true for the first day of the month (Tempo)', () => {

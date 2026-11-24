@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { CulturalTerms, EasternTerm } from '../src/index.js';
 
 describe('Eastern Zodiac & Western Zodiac Terms', () => {

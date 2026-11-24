@@ -56,7 +56,7 @@ jobs:
         run: npm run build:plugins
 
       - name: Build Tempo Docs
-        run: npm run docs:build --workspace=@magmacomputing/tempo
+        run: npm run docs:build --workspace=tempo-kit
 
       - name: Build Tempo-Fns Docs
         run: npm run docs:build --workspace=tempo-fns

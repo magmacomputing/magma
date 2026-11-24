@@ -22,7 +22,7 @@ const targets = [
 		htmlOutputDir: path.resolve(tempoDir, 'public/api/library/types')
 	},
 	{
-		name: '@magmacomputing/tempo',
+		name: 'tempo-kit',
 		dir: tempoDir,
 		entryPoints: [
 			path.resolve(tempoDir, 'src/tempo.index.ts')

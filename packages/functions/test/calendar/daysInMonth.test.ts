@@ -1,5 +1,5 @@
 import { daysInMonth } from '../../src/calendar/calendar.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('daysInMonth', () => {
 	it('should return 31 days for January, March, May, July, August, October, December', () => {

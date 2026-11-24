@@ -2,7 +2,20 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"types": ["node"],
-		"paths": {}
+		"paths": {
+			"@magmacomputing/tempo": ["../tempo/dist/tempo.index.d.ts"],
+			"@magmacomputing/tempo/core": ["../tempo/dist/core.index.d.ts"],
+			"@magmacomputing/tempo/plugin": ["../tempo/dist/plugin/plugin.index.d.ts"],
+			"@magmacomputing/tempo/plugin/sdk": ["../tempo/dist/plugin/plugin.sdk.d.ts"],
+			"@magmacomputing/tempo/plugin/*": ["../tempo/dist/plugin/*.d.ts"],
+			"@magmacomputing/tempo/term": ["../tempo/dist/plugin/term/term.index.d.ts"],
+			"@magmacomputing/tempo/term/*": ["../tempo/dist/plugin/term/term.*.d.ts"],
+			"@magmacomputing/tempo/terms": ["../tempo/dist/term/index.d.ts"],
+			"@magmacomputing/tempo/terms/*": ["../tempo/dist/term/term.*.d.ts"],
+			"@magmacomputing/tempo/enums": ["../tempo/dist/support/support.enum.d.ts"],
+			"@magmacomputing/tempo/library": ["../tempo/dist/library.index.d.ts"],
+			"@magmacomputing/tempo/*": ["../tempo/dist/*.d.ts"]
+		}
 	},
 	"include": [
 		"tsup.shared.ts"

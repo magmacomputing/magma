@@ -57,13 +57,13 @@
   },
   "peerDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/tempo": "^3.7.0 || ^4.0.0 || ^5.0.0"
+    "tempo-kit": "^5.0.0"
   },
   "peerDependenciesMeta": {
     "@js-temporal/polyfill": {
       "optional": true
     },
-    "@magmacomputing/tempo": {
+    "tempo-kit": {
       "optional": true
     }
   },

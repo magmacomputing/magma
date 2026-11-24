@@ -1,4 +1,4 @@
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo } from 'tempo-kit';
 import type { Temporal } from '../support/index.js';
 import { isTempo, isTemporal } from '../support/index.js';
 

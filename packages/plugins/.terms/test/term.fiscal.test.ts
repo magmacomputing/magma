@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { FiscalTerm, FISCAL_KEYS, QuarterTerm } from '@magmacomputing/tempo/terms';
+import { Tempo } from 'tempo-kit';
+import { FiscalTerm, FISCAL_KEYS, QuarterTerm } from 'tempo-kit/terms';
 
 describe('FiscalTerm Plugin', () => {
 	beforeEach(() => {

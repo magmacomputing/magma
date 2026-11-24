@@ -1,5 +1,5 @@
 import { isLastDayOfMonth } from '../../src/calendar/calendar.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('isLastDayOfMonth', () => {
 	it('should return true for the last day of standard 31-day months', () => {

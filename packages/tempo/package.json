@@ -1,5 +1,5 @@
 {
-  "name": "@magmacomputing/tempo",
+  "name": "tempo-kit",
   "version": "5.0.0",
   "engines": {
     "node": ">=20.0.0"
