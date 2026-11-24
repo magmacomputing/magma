@@ -39,7 +39,7 @@ console.log(prev.format('{hh}:{mi}:{ss}')); // '17:55:00'
 Exposes the internal tokenizer, returning a strongly typed `CronSchedule` dictionary representing allowed numeric values per-field.
 
 ```typescript
-import { parseCron } from 'tempo-fns/scheduling/cron';
+import { parseCron } from 'tempo-fns';
 
 const schedule = parseCron('*/5 9-17 * * 1-5');
 console.log(schedule.minutes.allowed.has(5)); // true
