@@ -290,8 +290,16 @@ new Tempo('vendredi');          // parses as the closest "Friday"
 > [!WARNING]
 > **Cross-Locale Collisions**: In a multi-lingual lexer, if two languages share the exact same abbreviation/word for *different* dates (e.g. if "mai" meant May in French but March in another language), the parser will resolve a collision using **"Last-One-Wins"** logic based on your array order. The language that appears *last* in the `locale` array takes priority. Be deliberate in your array ordering to safely prioritize your primary language fallback!
 
-#### How it Works & Accent Normalization
+#### How it Works, Genitive Cases & Accent Normalization
 When non-English locales are provided, Tempo automatically uses the native `Intl` API to pre-generate lists of Months, Weekdays, and Relative terms ("yesterday", "today", "tomorrow").
+
+For inflected languages (such as Slavic locales, Greek, Baltic, and Finnish), Tempo extracts **both** standalone (nominative) and contextual (genitive) month forms from `Intl` (plus any distinct date-context weekday forms exposed by `Intl`; in locales like `ru-RU`, `Intl` uses nominative `среда` for weekdays in date contexts):
+
+```typescript
+Tempo.init({ locale: 'ru-RU' });
+new Tempo('январь 2024');       // nominative (standalone)
+new Tempo('15 января 2024');    // genitive (day + month)
+```
 
 It also automatically **normalizes and strips accents** from these generated rules. This means that if a user types `fevrier` (without the accent), it will still successfully fuzzy-match against the strictly translated `février`.
 

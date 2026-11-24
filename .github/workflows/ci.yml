@@ -36,7 +36,7 @@ jobs:
       - name: Install monorepo dependencies
         run: npm ci --prefer-offline
       - name: Run library tests
-        run: npm test --workspace=@magmacomputing/library
+        run: npm test --workspace=tempo-lib
 
   tempo:
     name: Standard Tests (Node ${{ matrix.node-version }})
@@ -117,7 +117,7 @@ jobs:
       - name: Build Core
         run: npm run build:tempo
       - name: Run functions tests
-        run: npm test --workspace=@magmacomputing/tempo-fns
+        run: npm test --workspace=tempo-fns
 
   standard-tests-gate:
     name: Standard Tests

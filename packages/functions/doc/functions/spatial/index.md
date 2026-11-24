@@ -15,7 +15,7 @@ function haversineDistance(
 ```
 **Example:**
 ```typescript
-import { haversineDistance } from '@magmacomputing/tempo-fns';
+import { haversineDistance } from 'tempo-fns';
 
 const nyc = { lat: 40.7128, lng: -74.006 };
 const london = { lat: 51.5074, lng: -0.1278 };
@@ -36,7 +36,7 @@ function calculateBearing(
 ```
 **Example:**
 ```typescript
-import { calculateBearing } from '@magmacomputing/tempo-fns';
+import { calculateBearing } from 'tempo-fns';
 
 const bearing = calculateBearing({ lat: 0, lng: 0 }, { lat: 0, lng: 10 });
 console.log(bearing); // 90 (due East)
@@ -55,7 +55,7 @@ function calculateDestination(
 ```
 **Example:**
 ```typescript
-import { calculateDestination } from '@magmacomputing/tempo-fns';
+import { calculateDestination } from 'tempo-fns';
 
 const start = { lat: 0, lng: 0 };
 const dest = calculateDestination(start, 111.195, 0, 'km'); // Travel 1° North
@@ -74,7 +74,7 @@ function calculateMidpoint(
 ```
 **Example:**
 ```typescript
-import { calculateMidpoint } from '@magmacomputing/tempo-fns';
+import { calculateMidpoint } from 'tempo-fns';
 
 const mid = calculateMidpoint({ lat: 0, lng: 0 }, { lat: 0, lng: 90 });
 console.log(mid.lng); // 45
@@ -92,7 +92,7 @@ function calculateVelocity(
 ```
 **Example:**
 ```typescript
-import { calculateVelocity } from '@magmacomputing/tempo-fns';
+import { calculateVelocity } from 'tempo-fns';
 
 const speed = calculateVelocity(
   { lat: 40.7128, lng: -74.006, timestamp: 1700000000000 },
@@ -114,7 +114,7 @@ function closestCoordinate(
 ```
 **Example:**
 ```typescript
-import { closestCoordinate } from '@magmacomputing/tempo-fns';
+import { closestCoordinate } from 'tempo-fns';
 
 const origin = { lat: 40.7128, lng: -74.006 }; // NYC
 const candidates = [
@@ -139,7 +139,7 @@ function isImpossibleTravel(
 ```
 **Example:**
 ```typescript
-import { isImpossibleTravel } from '@magmacomputing/tempo-fns';
+import { isImpossibleTravel } from 'tempo-fns';
 
 const loginNYC = { lat: 40.7128, lng: -74.006, time: '2026-10-01T12:00:00Z' };
 const loginTokyo = { lat: 35.6762, lng: 139.6503, time: '2026-10-01T13:00:00Z' };

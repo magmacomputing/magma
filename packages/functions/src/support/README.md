@@ -1,7 +1,7 @@
 # Support Utilities & Type Guards
 This directory contains core type assertions, duck-typing guards, universal coordinate normalization, and Temporal coercion utilities.
 
-All public support utilities and type guards are exported directly from the `@magmacomputing/tempo-fns` package root.
+All public support utilities and type guards are exported directly from the `tempo-fns` package root.
 
 ## Exported Functions & Type Guards
 

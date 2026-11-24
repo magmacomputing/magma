@@ -13,7 +13,7 @@ function isFirstDayOfMonth(date: DateInput): boolean;
 ```
 **Example:**
 ```typescript
-import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
+import { isFirstDayOfMonth } from 'tempo-fns';
 
 isFirstDayOfMonth('2026-03-01'); // Returns: true
 isFirstDayOfMonth('2026-03-15'); // Returns: false
@@ -33,7 +33,7 @@ function isLastDayOfMonth(date: DateInput): boolean;
 ```
 **Example:**
 ```typescript
-import { isLastDayOfMonth } from '@magmacomputing/tempo-fns';
+import { isLastDayOfMonth } from 'tempo-fns';
 
 isLastDayOfMonth('2024-02-29'); // Returns: true (leap year)
 isLastDayOfMonth('2024-02-28'); // Returns: false
@@ -51,7 +51,7 @@ function isLeapYear(date: DateInput): boolean;
 ```
 **Example:**
 ```typescript
-import { isLeapYear } from '@magmacomputing/tempo-fns';
+import { isLeapYear } from 'tempo-fns';
 
 isLeapYear(2024); // Returns: true
 isLeapYear(2023); // Returns: false
@@ -71,7 +71,7 @@ function daysInMonth(date: DateInput, month?: number): number;
 ```
 **Example:**
 ```typescript
-import { daysInMonth } from '@magmacomputing/tempo-fns';
+import { daysInMonth } from 'tempo-fns';
 
 daysInMonth(2024, 2); // Returns: 29
 daysInMonth(2023, 2); // Returns: 28
@@ -87,7 +87,7 @@ function isWeekday(date: DateInput, options?: WeekendOptions): boolean;
 ```
 **Example:**
 ```typescript
-import { isWeekend, isWeekday } from '@magmacomputing/tempo-fns';
+import { isWeekend, isWeekday } from 'tempo-fns';
 
 isWeekend('2026-10-03'); // Returns: true (Saturday)
 isWeekend('2026-10-05'); // Returns: false (Monday)
@@ -105,7 +105,7 @@ function getISOWeekOfYear(zdt: Temporal.ZonedDateTime | Tempo): { weekOfYear: nu
 ```
 **Example:**
 ```typescript
-import { getISOWeekOfYear } from '@magmacomputing/tempo-fns';
+import { getISOWeekOfYear } from 'tempo-fns';
 
 getISOWeekOfYear(Temporal.ZonedDateTime.from('2026-01-01T00:00:00+00:00[UTC]'));
 // Returns: { weekOfYear: 1, yearOfWeek: 2026 }
@@ -119,7 +119,7 @@ function getPublicHolidays(year?: number, region?: string): Promise<PublicHolida
 ```
 **Example:**
 ```typescript
-import { getPublicHolidays } from '@magmacomputing/tempo-fns';
+import { getPublicHolidays } from 'tempo-fns';
 
 const holidays = await getPublicHolidays(2026, 'US');
 console.log(holidays[0].name); // "New Year's Day"

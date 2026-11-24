@@ -1,8 +1,8 @@
 import { defineTerm, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
-import { getTidalState, TIDAL_PHASE_STATES } from '@magmacomputing/tempo-fns';
+import { getTidalState, TIDAL_PHASE_STATES } from 'tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 import { isNumber } from '@magmacomputing/tempo/library';
-import type { TidalOptions } from '@magmacomputing/tempo-fns';
+import type { TidalOptions } from 'tempo-fns';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, createCelestialTermHandlers } from './util.js';
 
 const TIDAL_STATE_CACHE = new WeakCache<string, ReturnType<typeof getTidalState>>();

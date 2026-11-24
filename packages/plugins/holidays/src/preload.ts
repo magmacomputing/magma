@@ -1,6 +1,6 @@
 import { isString } from '@magmacomputing/tempo/library';
 import { getStorage, setStorage } from './cache.js';
-import { getPublicHolidays, type PublicHoliday } from '@magmacomputing/tempo-fns';
+import { getPublicHolidays, type PublicHoliday } from 'tempo-fns';
 import { getCalendarHolidays, normalizeCountryCode, registerHolidayItems, hasBuiltinCalendar } from './registry.js';
 import type { HolidayItem, HolidayOptions } from './types.js';
 
@@ -43,7 +43,7 @@ export async function preloadHolidayCalendar(
 		return filterByRegion(cached, region);
 	}
 
-	// 3. Dynamic fetch via getPublicHolidays from @magmacomputing/tempo-fns
+	// 3. Dynamic fetch via getPublicHolidays from tempo-fns
 	try {
 		const rawHolidays: PublicHoliday[] = await getPublicHolidays(year, country);
 		const items: HolidayItem[] = (rawHolidays || []).flatMap((h: PublicHoliday): HolidayItem[] => {

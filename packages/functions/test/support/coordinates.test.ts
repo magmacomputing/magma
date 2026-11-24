@@ -7,7 +7,7 @@ import {
 	parseCoordNumber,
 } from '../../src/support/index.js';
 
-describe('Universal Coordinate Helpers (@magmacomputing/tempo-fns/support)', () => {
+describe('Universal Coordinate Helpers (tempo-fns/support)', () => {
 	describe('parseCoordNumber', () => {
 		it('parses numbers and numeric strings', () => {
 			expect(parseCoordNumber(42.5)).toBe(42.5);

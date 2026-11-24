@@ -711,18 +711,48 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							}
 						} else {
 							// 3. Fall back to native Intl for core date tokens
-							const tzOpts = { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
-							if (token === 'mon') res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
-							else if (token === 'mmm') res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
-							else if (token === 'wkd') res = getDTF(config?.locale, { ...tzOpts, weekday: 'long' }).format(zdt.epochMilliseconds);
-							else if (token === 'www') res = getDTF(config?.locale, { ...tzOpts, weekday: 'short' }).format(zdt.epochMilliseconds);
-							else if (token === 'mer') {
+							const { dateStyle: _ds, timeStyle: _ts, ...baseDtOpts } = dtOptions ?? {};
+							const tzOpts = { ...baseDtOpts, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
+							if (normMods.includes('genitive') && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www')) {
+								// Handled once by `case 'genitive'`
+							} else if (token === 'mon') {
+								res = getDTF(config?.locale, { ...tzOpts, month: 'long' }).format(zdt.epochMilliseconds);
+							} else if (token === 'mmm') {
+								res = getDTF(config?.locale, { ...tzOpts, month: 'short' }).format(zdt.epochMilliseconds);
+							} else if (token === 'wkd') {
+								res = getDTF(config?.locale, { ...tzOpts, weekday: 'long' }).format(zdt.epochMilliseconds);
+							} else if (token === 'www') {
+								res = getDTF(config?.locale, { ...tzOpts, weekday: 'short' }).format(zdt.epochMilliseconds);
+							} else if (token === 'mer') {
 								const period = formatDayPeriod(zdt.epochMilliseconds, config?.locale, { ...dtOptions, hour: 'numeric', hour12: true, timeZone: tz });
 								if (period) res = period;
 							}
 						}
 					} catch (e) {
 						// Fallback to the current base token string
+					}
+					break;
+				}
+				case 'genitive': {
+					if (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www') {
+						try {
+							const { dateStyle: _ds, timeStyle: _ts, ...baseDtOpts } = dtOptions ?? {};
+							const tzOpts = { ...baseDtOpts, timeZone: zdt.timeZoneId, calendar: zdt.calendarId };
+							const partType = (token === 'mon' || token === 'mmm') ? 'month' : 'weekday';
+							const style = normMods.includes('long')
+								? 'long'
+								: normMods.includes('short')
+									? 'short'
+									: (token === 'mon' || token === 'wkd')
+										? 'long'
+										: 'short';
+							const ctxOpts = partType === 'month'
+								? { ...tzOpts, day: 'numeric' as const, month: style as 'long' | 'short' }
+								: { ...tzOpts, weekday: style as 'long' | 'short', day: 'numeric' as const, month: 'long' as const };
+							res = getDTF(config?.locale, ctxOpts).formatToParts(zdt.epochMilliseconds).find(p => p.type === partType)?.value ?? res;
+						} catch {
+							// Fallback to the current base token string
+						}
 					}
 					break;
 				}
@@ -742,9 +772,9 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 							res = parts.find(p => p.type === 'timeZoneName')?.value ?? zdt.timeZoneId;
 						}
 					} else if (token === 'mon' || token === 'mmm') {
-						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, month: modKey }).format(zdt.epochMilliseconds);
+						if (!normMods.includes('genitive') && (modKey === 'short' || modKey === 'long')) res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, month: modKey }).format(zdt.epochMilliseconds);
 					} else if (token === 'wkd' || token === 'www') {
-						if (modKey === 'short' || modKey === 'long') res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, weekday: modKey }).format(zdt.epochMilliseconds);
+						if (!normMods.includes('genitive') && (modKey === 'short' || modKey === 'long')) res = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, weekday: modKey }).format(zdt.epochMilliseconds);
 					} else if (token === 'era') {
 						if (modKey === 'short' || modKey === 'long') {
 							const parts = getDTF(config?.locale, { ...dtOptions, timeZone: zdt.timeZoneId, calendar: zdt.calendarId, era: modKey }).formatToParts(zdt.epochMilliseconds);
@@ -844,7 +874,8 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			}
 		}
 
-		if (normMods.includes('locale')) {
+		const isGenitiveNameToken = normMods.includes('genitive') && (token === 'mon' || token === 'mmm' || token === 'wkd' || token === 'www');
+		if (normMods.includes('locale') || isGenitiveNameToken) {
 			if (li.numberingSystem && li.numberingSystem !== 'latn')
 				res = localizeDigits(res, li.numberingSystem);
 

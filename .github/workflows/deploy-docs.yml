@@ -59,7 +59,7 @@ jobs:
         run: npm run docs:build --workspace=@magmacomputing/tempo
 
       - name: Build Tempo-Fns Docs
-        run: npm run docs:build --workspace=@magmacomputing/tempo-fns
+        run: npm run docs:build --workspace=tempo-fns
 
       - name: Merge Documentation Sites
         run: |

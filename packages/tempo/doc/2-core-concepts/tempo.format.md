@@ -2,6 +2,15 @@
 
 Tempo provides a powerful token-based formatting engine that goes beyond the standard ISO strings of native `Temporal`.
 
+> [!TIP]
+> **Everyday Essentials (90% of Use Cases)**
+> You only need a handful of readable tokens for most formatting tasks—treat the full token and modifier tables below as a reference:
+> - **Date**: `{yyyy}` (`2026`), `{mm}` (`10`), `{mon}` (`October`), `{mmm}` (`Oct`), `{dd}` (`24`), `{wkd}` (`Saturday`), `{www}` (`Sat`)
+> - **Time & Zone**: `{hh}` (`15`), `{mi}` (`30`), `{ss}` (`45`), `{tz:offset}` (`+10:00`)
+> - **Top Modifiers**: `:locale` (translate), `:short` / `:long` (width), `:ord` (`24th`), `:upper` / `:title` (casing)
+>
+> Example: `t.format('{www}, {dd} {mmm} {yyyy} {hh}:{mi}:{ss}')` → `"Sat, 24 Oct 2026 15:30:00"`
+
 ## 🚀 Standalone Formatting (Zero-Overhead)
 
 If you have a native `Temporal.ZonedDateTime` and want to format it using Tempo's readable tokens, you can use the standalone `format` function. This allows you to use Tempo's formatting logic without importing the full `Tempo` class.
@@ -158,6 +167,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 | `:dots` | String | Injects periods (useful for abbreviations) | `{mer:lower:dots}` → `a.m.` |
 | `:space`| Universal | Injects leading space padding for numeric tokens (e.g. `{dd:space}` → ` 5`, `{doy:3:space}` → `  5`), or a leading space before string/meridiem elements | `{dd:space}` → ` 5`, `{h12}:{mi}{mer:space:dots}` → `03:30 a.m.` |
 | `:locale` | Universal | Resolves localized term/month/weekday, adapts `{dow:locale}` to week start, adapts `{woy:locale}` / `{yow:locale}` to locale week rules, adapts `{hh:locale}` to `hourCycle`, or transliterates numeric tokens into locale `numberingSystem` | `{mon:locale}` → `octobre`, `{dow:locale}` → `1`, `{dow:locale:0}` → `0`, `{woy:locale}` → `01`, `{hh:locale}` → `03` (in `en-US`), `{yyyy:locale}` → `٢٠٢٦` (in `ar-EG`) |
+| `:genitive` | `{mon}`, `{mmm}`, `{wkd}`, `{www}` | Formats contextual/genitive localized month names for inflected languages, and uses the locale's date-context form for weekdays (which can be nominative, e.g. `среда` in `ru-RU`); implies `:locale` while `:locale` alone stays standalone | `{dd} {mon:genitive} {yyyy}` → `15 января 2024`, `{wkd:genitive}` → `среда` (in `ru-RU`), `{mon:locale:genitive:upper}` → `ЯНВАРЯ` |
 | `:short` | Universal / String | Yields a short or abbreviated style (e.g. `{mon:short}` → `Oct`, `{yow:short}` → `26`, `{dmy:short}` → `241026`) | `{mon:short}` → `Oct`, `{yow:short}` → `26` |
 | `:long` | Universal / String | Yields a full-length style (e.g. `{mmm:long}` → `October`, `{yy:long}` → `2026`; negative years preserve a leading `-` zero-padded to 4+ digits like `-0003`, and 5+ digit years retain all digits) | `{mmm:long}` → `October`, `{yy:long}` → `2026` |
 | `:compact` | String | Yields a delimiter-free, compact representation | `{tz:offset:compact}` → `+1000` |

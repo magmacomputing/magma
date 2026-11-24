@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Vision
 
-Tempo **v5.0.0** represents the definitive modern milestone for the Tempo date-time engine. Unlike minor releases (`v4.x`), v5 establishes a clean break from legacy and suboptimal API conventions, establishes a dedicated, developer-friendly npm namespace (**`@tempo-js/*`** alongside an unscoped primary package), optimizes the core bundle size for greenfield and serverless/edge environments, and introduces reactive signals.
+Tempo **v5.0.0** represents the definitive modern milestone for the Tempo date-time engine. Unlike minor releases (`v4.x`), v5 establishes a clean break from legacy and suboptimal API conventions, establishes a dedicated, developer-friendly npm namespace (**`tempo-kit`** + **`@tempo-kit/*`**), optimizes the core bundle size for greenfield and serverless/edge environments, and introduces reactive signals.
 
 This Master Plan consolidates all prior RFCs, breaking change analyses, and architectural proposals into a unified, phase-based execution checklist.
 
@@ -12,7 +12,7 @@ This Master Plan consolidates all prior RFCs, breaking change analyses, and arch
 
 ```mermaid
 graph TD
-  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 Merged — now() factory pending)</i>"] --> P2["Phase 2: Scope & Namespace Setup<br><i>(@tempo-js & tempojs / tempo-js)</i>"]
+  P1["Phase 1: Core Modernization & Signals<br><i>(PR #110 Merged — now() factory pending)</i>"] --> P2["Phase 2: Scope & Namespace Setup<br><i>(tempo-kit & @tempo-kit/*)</i>"]
   P2 --> P3["Phase 3: Plugin Ecosystem Modularization<br><i>(Dialects Standalone, Core Superpowers)</i>"]
   P3 --> P4["Phase 4: Library & Code Standards<br><i>(isNonNull, Strict isDefined, Semicolons)</i>"]
   P4 --> P5["Phase 5: Multi-Version Docs & AI Context<br><i>(VitePress /v4/ & llms.txt)</i>"]
@@ -46,45 +46,42 @@ graph TD
 
 ---
 
-### Phase 2: Package Scope & Namespace Setup (`@tempo-js` & `tempojs` / `tempo-js`)
-*Status: In Progress (Pending 2-Week `tempo-js` Follow-Up Window)*
+### Phase 2: Package Scope & Namespace Setup (`tempo-kit` & `@tempo-kit/*`)
+*Status: Namespace Locked (`tempo-kit` + `@tempo-kit/*`)*
 
-Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Discord (`discord.js` + `@discordjs/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing primary package paired with a scoped plugin ecosystem (**`@tempo-js/*`**):
+Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Octokit (`octokit` + `@octokit/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing unscoped primary package (**`tempo-kit`**) paired with a scoped plugin ecosystem (**`@tempo-kit/*`**):
 
-- [x] **Step 1: Claim `@tempo-js` / `@tempo-kit` Organizations and Unscoped Packages on npm**:
-  - Claimed and initialized the **`@tempo-js`**, **`@tempo-kit`**, and defensive **`@tempo-fns`** organizations on npm under organization admin.
+- [x] **Step 1: Claim `@tempo-kit` Organization and Unscoped Packages on npm**:
+  - Claimed and initialized the **`@tempo-kit`** organization on npm (`tempo-kit` org, OIDC Trusted Publishing wired to `publish.yml`).
+  - Held **`@tempokit`**, **`@tempo-js`**, and **`@tempo-fns`** as empty defensive organizations (no packages published to avoid brand/download dilution).
   - Claimed unscoped packages **`tempo-kit`** (`0.0.1`), **`tempo-fns`**, and **`tempo-lib`** on npm registry under maintainer `magmacomputing`.
-  - Configure 2FA, team permissions, and automated GitHub Actions publishing secrets (`TEMPO_NPM_TOKEN`).
-- [ ] **Step 2: Resolve Unscoped Primary Package (`tempo-js` vs. `tempojs` vs. `@tempo-js/core`)**:
-  - **`tempojs` Permission Granted**: Brendon Ribeiro (`brendondominic@gmail.com`) granted maintainer/owner permissions for `tempojs` to `magmacomputing` on Nov 04, 2026 (`npm owner ls tempojs`), and on Nov 21, 2026 explicitly approved publishing Tempo `v5.0.0+` under `tempojs` (versions `1.0.0`–`1.0.3` remain intact).
-    - *Maintainer / Supply-Chain Hygiene*: Because any npm maintainer on `tempojs` has publish/unpublish rights (even for a 1-line re-export wrapper), if `tempojs` is published for v5, politely ask Brendon if he is comfortable stepping off as maintainer (while keeping his README credit) and enforce 2FA-required publishing.
-  - **`@tempojs` Scope Closed**: GitHub Support declined to transfer `@tempojs` based on inactivity/outreach alone; no trademark claim will be filed, so `@tempojs` defensive coverage is dropped.
-  - **`tempo-js` Follow-Up Pending**: Ticket `#4959058` was declined on automated `E403` moniker-similarity grounds. A follow-up ticket has been submitted to `support@npmjs.com` (2-week wait window) before making the final choice of primary package:
-    - *If `tempo-js` is unlocked*: Use `tempo-js` as the unscoped primary alongside `@tempo-js/*` (`@tempo-js/core` and `tempojs` as thin re-export aliases).
-    - *If `tempo-js` remains blocked (leading candidates)*:
-      - **Option A (`tempo-kit` + `@tempo-kit/*` — leading unscoped candidate)**: Shorter 3-segment subpath imports (`tempo-kit`, `tempo-kit/lite`, `tempo-kit/terms/quarter`), visual parity with `tempo-fns` and `tempo-lib`, full `@tempo-kit/*` scope symmetry, and avoids `-js` platform-suffix lock-in.
-      - **Option B (`@tempo-js/core` + `@tempo-js/*`)**: Canonical scoped package with `100%` `@tempo-js/*` naming symmetry (and `tempojs` as a thin 1-line re-export alias depending on `@tempo-js/core`).
+  - Configure 2FA, team permissions, and automated GitHub Actions publishing (OIDC / `TEMPO_NPM_TOKEN`).
+- [x] **Step 2: Finalize Primary Package Decision (`tempo-kit` + `@tempo-kit/*`)**:
+  - **`tempo-js` Permanently Blocked**: GitHub Support confirmed on Nov 23, 2026 that npm's automated `E403` moniker-similarity protection cannot be bypassed or overridden, even for `tempojs` / `@tempo-js` owners.
+  - **`@tempojs` Scope Closed**: GitHub Support declined to transfer `@tempojs` based on inactivity/outreach alone; no trademark claim will be filed.
+  - **Final Selection — `tempo-kit` + `@tempo-kit/*`**: Selected **`tempo-kit`** as the sole unscoped primary package (`import { Tempo } from 'tempo-kit'`, `'tempo-kit/core'`, `'tempo-kit/terms/quarter'`) paired with **`@tempo-kit/plugin-*`** for plugins, keeping `tempojs` untouched/unpublished and clarifying in `README.md` that `tempo-kit` is an independent `Temporal`-native engine (unrelated to `@formkit/tempo`).
 - [ ] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
-  - **Core (`tempo-js` / `@tempo-js/core`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
-  - **Lite (`tempo-js/lite` / `tempo-lite`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (migrated from v4 `./core`).
+  - **Core (`tempo-kit`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
+  - **Core (`tempo-kit/core`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (preserving v4 `./core` semantics).
 
   | Current v4 Scope (`@magmacomputing/*`) | Target v5 Primary Package | Scoped / Defensive Aliases | Role / Exports |
   | :--- | :--- | :--- | :--- |
-  | `@magmacomputing/tempo` | **`tempo-js`** | `@tempo-js/core`, `tempo-lite` (`./lite`) | Core engine with built-in modules, plus subpath exports (`./lite` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
-  | `@magmacomputing/tempo-fns` | **`tempo-fns`** | `@tempo-js/fns` | Standalone functional date math & algorithms for Temporal |
-  | `@magmacomputing/library` | **`tempo-lib`** | `@tempo-js/lib` | Modularized core primitives, assertions, type-guards, and reflection |
-  | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-js/plugin-dialects`** | — | Moment / Day.js / Luxon / SQL format compatibility |
-  | `@magmacomputing/tempo-plugin-ticker` | **`@tempo-js/plugin-ticker`** | — | High-precision reactive scheduler & pulse engine |
-  | `@magmacomputing/tempo-plugin-ntp` | **`@tempo-js/plugin-ntp`** | — | Network Time Protocol clock drift synchronization |
-  | `@magmacomputing/tempo-plugin-ai` | **`@tempo-js/plugin-ai`** | — | AI calendar reasoning & natural extraction |
-  | `@magmacomputing/tempo-plugin-geo` | **`@tempo-js/plugin-geo`** | — | Reverse geocoding & timezone resolution |
-  | `@magmacomputing/tempo-plugin-holidays` | **`@tempo-js/plugin-holidays`** | — | International public holidays & business schedules |
-  | `@magmacomputing/tempo-plugin-celestial`| **`@tempo-js/plugin-celestial`** | — | Sun/Moon ephemeris, solar events, & tides |
-  | `@magmacomputing/tempo-plugin-spatial` | **`@tempo-js/plugin-spatial`** | — | Geofencing, coordinate distance, bearing, velocity |
-  | `@magmacomputing/tempo-plugin-sync` | **`@tempo-js/plugin-sync`** | — | High-precision atomic clock & drift correction |
-  | `@magmacomputing/tempo-plugin-batch` | **`@tempo-js/plugin-batch`** | — | High-throughput batch date-time processing |
-  | `@magmacomputing/tempo-plugin-roman` | **`@tempo-js/plugin-roman`** | — | Roman calendar & consular dating |
-  | `@magmacomputing/tempo-plugin-snap` | **`@tempo-js/plugin-snap`** | — | Quantization & temporal snap grids |
+  | `@magmacomputing/tempo` | **`tempo-kit`** | — | Batteries-included engine with built-in modules, plus subpath exports (`./core` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
+  | `@magmacomputing/tempo-fns` | **`tempo-fns`** | `@tempo-kit/fns` | Standalone functional date math & algorithms for Temporal |
+  | `@magmacomputing/library` | **`tempo-lib`** | `@tempo-kit/lib` | Modularized core primitives, assertions, type-guards, and reflection |
+  | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-kit/plugin-dialects`** | — | Moment / Day.js / Luxon / SQL format compatibility |
+  | `@magmacomputing/tempo-plugin-ticker` | **`@tempo-kit/plugin-ticker`** | — | High-precision reactive scheduler & pulse engine |
+  | `@magmacomputing/tempo-plugin-ntp` | **`@tempo-kit/plugin-ntp`** | — | Network Time Protocol clock drift synchronization |
+  | `@magmacomputing/tempo-plugin-signals` | **`@tempo-kit/plugin-signals`** | — | Reactive TC39 Signals integration (`Tempo.signals`, `toRelativeSignal`, `intervalSignal`, `watchSystem`) |
+  | `@magmacomputing/tempo-plugin-ai` | **`@tempo-kit/plugin-ai`** | — | AI calendar reasoning & natural extraction |
+  | `@magmacomputing/tempo-plugin-geo` | **`@tempo-kit/plugin-geo`** | — | Reverse geocoding & timezone resolution |
+  | `@magmacomputing/tempo-plugin-holidays` | **`@tempo-kit/plugin-holidays`** | — | International public holidays & business schedules |
+  | `@magmacomputing/tempo-plugin-celestial`| **`@tempo-kit/plugin-celestial`** | — | Sun/Moon ephemeris, solar events, & tides |
+  | `@magmacomputing/tempo-plugin-spatial` | **`@tempo-kit/plugin-spatial`** | — | Geofencing, coordinate distance, bearing, velocity |
+  | `@magmacomputing/tempo-plugin-sync` | **`@tempo-kit/plugin-sync`** | — | High-precision atomic clock & drift correction |
+  | `@magmacomputing/tempo-plugin-batch` | **`@tempo-kit/plugin-batch`** | — | High-throughput batch date-time processing |
+  | `@magmacomputing/tempo-plugin-roman` | **`@tempo-kit/plugin-roman`** | — | Roman calendar & consular dating |
+  | `@magmacomputing/tempo-plugin-snap` | **`@tempo-kit/plugin-snap`** | — | Quantization & temporal snap grids |
 
 ---
 
@@ -93,22 +90,22 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
 
 To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shims or non-essential domain data, ecosystem plugins are modularized while preserving core signature superpowers:
 
-- [x] **Civic vs. Cultural Terms Split (Option B — Zero-Cost Built-In Subpath `tempo-js/terms`)**:
+- [x] **Civic vs. Cultural Terms Split (Option B — Zero-Cost Built-In Subpath `tempo-kit/terms`)**:
   - **Rename Internal Workspace (`packages/plugins/.std` $\rightarrow$ `packages/plugins/.terms`)**: Rename the dot-prefixed built-in terms workspace from `.std` to `.terms` (keeping the `.` prefix that separates built-in terms from standalone plugins) and align internal subpath mappings (`#tempo/std` $\rightarrow$ `#tempo/terms`, `std.d.ts` $\rightarrow$ `terms.d.ts`).
-  - **Civic Terms in Core (`CivicTerms`)**: Retain `QuarterTerm` (`#quarter`, `#qtr`), `SeasonTerm` (`#season`, `#szn`), and `TimelineTerm` / `TimeOfDayTerm` (`#timeOfDay`, `#tod`) directly in Core Tempo (`tempo-js`). These represent universal, uncontroversial civic, business, and daily scheduling concepts used across reporting, fiscal cycles, formatting, and `Ticker`.
-  - **Cultural Terms Opt-In (`tempo-js/terms` / `CulturalTerms`)**: Decouple `ZodiacTerm` (Western astrology) and `EasternTerm` (Chinese zodiac / lunar signs) from Core's automatic default startup loader into a built-in, zero-bundle-cost subpath export **`tempo-js/terms`** (plus granular subpaths `tempo-js/terms/zodiac`, `tempo-js/terms/eastern`, `tempo-js/terms/timeline`, `tempo-js/terms/quarter`, `tempo-js/terms/season`, also re-exported under `@tempo-js/core/terms`, `tempojs/terms`, and `tempo-lite/terms`).
-    - *Impact*: Saves astrological/lunar lookup tables from every default `tempo-js` application bundle and eliminates enterprise/business skepticism around horoscopes in a core date library, while requiring **zero extra `npm install`** when developers want to explore or use them.
-    - *Consumption*: Available out-of-the-box via `import { ZodiacTerm, CulturalTerms } from 'tempo-js/terms'; Tempo.use(CulturalTerms);` (or `import { ZodiacTerm } from 'tempo-js/terms/zodiac';`). Serves in documentation as the flagship showcase of Tempo's custom terminology extensibility.
+  - **Civic Terms in Core (`CivicTerms`)**: Retain `QuarterTerm` (`#quarter`, `#qtr`), `SeasonTerm` (`#season`, `#szn`), and `TimelineTerm` / `TimeOfDayTerm` (`#timeOfDay`, `#tod`) directly in Core Tempo (`tempo-kit`). These represent universal, uncontroversial civic, business, and daily scheduling concepts used across reporting, fiscal cycles, formatting, and `Ticker`.
+  - **Cultural Terms Opt-In (`tempo-kit/terms` / `CulturalTerms`)**: Decouple `ZodiacTerm` (Western astrology) and `EasternTerm` (Chinese zodiac / lunar signs) from Core's automatic default startup loader into a built-in, zero-bundle-cost subpath export **`tempo-kit/terms`** (plus granular subpaths `tempo-kit/terms/zodiac`, `tempo-kit/terms/eastern`, `tempo-kit/terms/timeline`, `tempo-kit/terms/quarter`, `tempo-kit/terms/season`).
+    - *Impact*: Saves astrological/lunar lookup tables from every default `tempo-kit` application bundle and eliminates enterprise/business skepticism around horoscopes in a core date library, while requiring **zero extra `npm install`** when developers want to explore or use them.
+    - *Consumption*: Available out-of-the-box via `import { ZodiacTerm, CulturalTerms } from 'tempo-kit/terms'; Tempo.use(CulturalTerms);` (or `import { ZodiacTerm } from 'tempo-kit/terms/zodiac';`). Serves in documentation as the flagship showcase of Tempo's custom terminology extensibility.
 - [x] **Retain Slick Shorthand Syntax as Core Superpower**:
   - Keep intuitive term navigation (`t.set('#qtr.>q1')`, `t.add('#season.>summer')`), directional operators (`>`, `<`, `+`, `-`), and shorthand shifters (`t.set({ mm: '>2', wkd: '>Fri' })`) natively built into Core.
   - Evaluation confirmed that saving ~3–4 KB gzipped does not justify fracturing Tempo's signature ergonomics or requiring extra plugin boilerplate for fundamental shorthand.
-- [ ] **Standalone Dialects Architecture (`@tempo-js/plugin-dialects`)**:
+- [ ] **Standalone Dialects Architecture (`@tempo-kit/plugin-dialects`)**:
   - Keep legacy format compilers (Moment, Day.js, Luxon, POSIX `strftime`, Go, PHP, Oracle SQL) out of Core Tempo.
   - Provide 4-tier consumption:
-    1. Zero-config drop-in: `import '@tempo-js/plugin-dialects';`
+    1. Zero-config drop-in: `import '@tempo-kit/plugin-dialects';`
     2. Explicit registration: `Tempo.use(DialectsPlugin);`
-    3. Granular single-dialect imports: `import '@tempo-js/plugin-dialects/luxon';`
-    4. Migration AST introspection: `import { explain, convert } from '@tempo-js/plugin-dialects/migrate';`
+    3. Granular single-dialect imports: `import '@tempo-kit/plugin-dialects/luxon';`
+    4. Migration AST introspection: `import { explain, convert } from '@tempo-kit/plugin-dialects/migrate';`
 - [x] **Reclaim `{ww}` for Calendar Week**:
   - Free `{ww}` from being an ISO week alias; reassign it to represent calendar week of year (Jan 1 basis, matching Oracle SQL `WW`).
   - Add `{wom}` (week of month, `1`–`5`).
@@ -154,7 +151,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
       • v4.7.0 (LTS)     -> /v4/
     ```
 - [ ] **Version-Segregated AI Context Files (`llms.txt`)**:
-  - Prevent RAG context contamination between v4 (primitive timestamps, `@magmacomputing`) and v5 (instance factories, `@tempo-js`).
+  - Prevent RAG context contamination between v4 (primitive timestamps, `@magmacomputing`) and v5 (instance factories, `tempo-kit` / `@tempo-kit/*`).
   - Route layout:
     ```text
     tempo.dev/
@@ -166,8 +163,8 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
     ```
   - Prominent warning banners on all `/v4/` AI bundles directing modern developers to v5.
 - [ ] **Update Core Documentation**:
-  - Update all code snippets in `packages/tempo/doc/` to use the finalized primary package (`tempo-js` *only* if npm Support unlocks the unscoped `tempo-js` name; otherwise standardize on `@tempo-js/core`, e.g. `import { Tempo } from '@tempo-js/core'`, `import { Tempo } from '@tempo-js/core/lite'`, `import '@tempo-js/core/terms'`) alongside `@tempo-js/plugin-*`.
-  - Provide comprehensive **v4 $\rightarrow$ v5 Migration Guide**.
+  - Update all code snippets in `packages/tempo/doc/` to use **`tempo-kit`** (e.g. `import { Tempo } from 'tempo-kit'`, `import { Tempo } from 'tempo-kit/core'`, `import 'tempo-kit/terms'`) alongside `@tempo-kit/plugin-*`.
+  - Provide comprehensive **v4 $\rightarrow$ v5 Migration Guide** (including `@magmacomputing/tempo` $\rightarrow$ `tempo-kit` transition and `README` distinction from `@formkit/tempo`).
   - **Interactive Documentation Glossary & Canonical Lexicon**: Implement data-driven VitePress glossary ([`documentation-glossary-architecture.md`](file:///home/michael/Project/magma/packages/tempo/plan/documentation-glossary-architecture.md)) defining core temporal concepts, library idioms, and standards, and pipe definitions directly into `llms.txt`.
 
 ---
@@ -176,16 +173,15 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 *Status: Planned*
 
 - [ ] **Automated Multi-Target Publishing Pipeline (`publish.yml`)**:
-  - Build and publish canonical core (`tempo-js`, `tempo-fns`, `tempo-lib`) and scoped ecosystem plugins (`@tempo-js/plugin-*`).
-  - Publish thin, 1-line re-export wrapper packages for `tempo-lite`, `@tempo-js/core`, `@tempo-js/fns`, `@tempo-js/lib` (and `tempojs` if approved by Brendon Ribeiro), plus backward-compatibility `@magmacomputing/*` stubs that declare the canonical package in their `dependencies` (ensuring a single shared `Tempo` class singleton in memory across all import paths).
+  - Build and publish canonical core (`tempo-kit`, `tempo-fns`, `tempo-lib`) and scoped ecosystem plugins (`@tempo-kit/plugin-*`) via OIDC Trusted Publishing.
+  - Publish backward-compatibility `@magmacomputing/*` `v5.0.0` bridge stubs that declare the canonical package in their `dependencies` (ensuring a single shared `Tempo` class singleton in memory across v4→v5 migrations), while keeping `@tempokit`, `@tempo-js`, `@tempo-fns`, and `tempojs` unpublished to avoid search/download dilution.
 - [ ] **npm Distribution Tag Architecture**:
   | Package Name | Target Version | npm dist-tag | Target Audience |
   | :--- | :--- | :--- | :--- |
-  | `tempo-js` | `v5.0.0-rc.x` | `next` | Early adopters & release candidate testing |
-  | `tempo-js` | `v5.0.0` (GA) | `latest` | Primary canonical package for all v5 installations (`import { Tempo } from 'tempo-js'`) |
-  | `tempo-lite` & `@tempo-js/core` | `v5.0.0` (GA) | `latest` | Thin re-export aliases pointing to `tempo-js@5.0.0` (`tempo-lite` $\rightarrow$ `tempo-js/lite`) |
+  | `tempo-kit` | `v5.0.0-rc.x` | `next` | Early adopters & release candidate testing |
+  | `tempo-kit` | `v5.0.0` (GA) | `latest` | Primary canonical package for all v5 installations (`import { Tempo } from 'tempo-kit'`) |
   | `@magmacomputing/tempo` | `v4.7.x` | `latest-v4` (or `legacy`) | Long-term support for existing v4 codebases |
-  | `@magmacomputing/tempo` | `v5.0.0` | `latest` | Dual-published bridge re-exporting `tempo-js` with deprecation notice |
+  | `@magmacomputing/tempo` | `v5.0.0` | `latest` | Dual-published bridge re-exporting `tempo-kit` with deprecation notice |
 - [ ] **Release Milestones**:
   - `5.0.0-alpha.x`: Internal integration.
   - `5.0.0-rc.x`: Public release candidates and ecosystem testing.

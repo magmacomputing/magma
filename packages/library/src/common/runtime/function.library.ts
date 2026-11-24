@@ -1,5 +1,5 @@
 import { secure } from '#library/proxy.library.js';
-import { isBigInt, isFunction, isReference, isMap, isSet, isLocale, isUndefined, isDefined } from '#library/assertion.library.js';
+import { isBigInt, isCallable, isFunction, isReference, isMap, isSet, isLocale, isUndefined, isDefined } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
@@ -156,4 +156,112 @@ export function memoizeMethod<Context = Property<any>, T = any>(name: PropertyKe
 			return cache.get(key) as T;
 		}
 	} as PropertyDescriptor;
+}
+
+type Unary<A, B> = (value: A) => B;
+type AsyncUnary<A, B> = (value: Awaited<A>) => B | PromiseLike<B>;
+
+function assertStages(fns: readonly unknown[], name: string): void {
+	for (const fn of fns) {
+		if (!isCallable(fn))
+			throw new TypeError(`${name}: expected every pipeline stage to be a function`);
+	}
+}
+
+/**
+ * Evaluates a value through a left-to-right sequence of unary functions.
+ *
+ * @param value - Initial input value
+ * @param fns - Transformation stages applied sequentially
+ * @returns The final transformed value
+ * @example
+ * ```ts
+ * pipe(5, n => n * 2, n => n + 1); // 11
+ * ```
+ */
+export function pipe<A>(value: A): A;
+export function pipe<A, B>(value: A, fn1: Unary<A, B>): B;
+export function pipe<A, B, C>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>): C;
+export function pipe<A, B, C, D>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>): D;
+export function pipe<A, B, C, D, E>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>): E;
+export function pipe<A, B, C, D, E, F>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>): F;
+export function pipe<A, B, C, D, E, F, G>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>): G;
+export function pipe<A, B, C, D, E, F, G, H>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>): H;
+export function pipe<A, B, C, D, E, F, G, H, I>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>, fn8: Unary<H, I>): I;
+export function pipe<A, B, C, D, E, F, G, H, I, J>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>, fn8: Unary<H, I>, fn9: Unary<I, J>): J;
+export function pipe<A, B, C, D, E, F, G, H, I, J, K>(value: A, fn1: Unary<A, B>, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>, fn8: Unary<H, I>, fn9: Unary<I, J>, fn10: Unary<J, K>): K;
+export function pipe(value: any, ...fns: readonly Unary<any, any>[]): any {
+	assertStages(fns, 'pipe');
+	let current = value;
+	for (const fn of fns)
+		current = fn(current);
+	return current;
+}
+
+/**
+ * Composes functions left-to-right into a reusable pipeline function.
+ * The first stage may accept multiple arguments and an explicit `this` receiver; subsequent stages are unary.
+ *
+ * @param fn1 - Initial function accepting the composed call arguments
+ * @param fns - Subsequent unary transformation stages
+ * @returns A composed function executing the pipeline left-to-right
+ * @example
+ * ```ts
+ * const addAndDouble = flow((a: number, b: number) => a + b, n => n * 2);
+ * addAndDouble(2, 3); // 10
+ * ```
+ */
+export function flow<This, Args extends readonly any[], B>(fn1: (this: This, ...args: Args) => B): (this: This, ...args: Args) => B;
+export function flow<This, Args extends readonly any[], B, C>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>): (this: This, ...args: Args) => C;
+export function flow<This, Args extends readonly any[], B, C, D>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>): (this: This, ...args: Args) => D;
+export function flow<This, Args extends readonly any[], B, C, D, E>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>): (this: This, ...args: Args) => E;
+export function flow<This, Args extends readonly any[], B, C, D, E, F>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>): (this: This, ...args: Args) => F;
+export function flow<This, Args extends readonly any[], B, C, D, E, F, G>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>): (this: This, ...args: Args) => G;
+export function flow<This, Args extends readonly any[], B, C, D, E, F, G, H>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>): (this: This, ...args: Args) => H;
+export function flow<This, Args extends readonly any[], B, C, D, E, F, G, H, I>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>, fn8: Unary<H, I>): (this: This, ...args: Args) => I;
+export function flow<This, Args extends readonly any[], B, C, D, E, F, G, H, I, J>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>, fn8: Unary<H, I>, fn9: Unary<I, J>): (this: This, ...args: Args) => J;
+export function flow<This, Args extends readonly any[], B, C, D, E, F, G, H, I, J, K>(fn1: (this: This, ...args: Args) => B, fn2: Unary<B, C>, fn3: Unary<C, D>, fn4: Unary<D, E>, fn5: Unary<E, F>, fn6: Unary<F, G>, fn7: Unary<G, H>, fn8: Unary<H, I>, fn9: Unary<I, J>, fn10: Unary<J, K>): (this: This, ...args: Args) => K;
+export function flow(fn1: (...args: any[]) => any, ...fns: readonly Unary<any, any>[]): (...args: any[]) => any {
+	assertStages([fn1, ...fns], 'flow');
+	return function (this: any, ...args: any[]): any {
+		let current = fn1.apply(this, args);
+		for (const fn of fns)
+			current = fn(current);
+		return current;
+	};
+}
+
+/**
+ * Evaluates a value (or promise) sequentially through sync or async unary stages.
+ *
+ * @param value - Initial input value or PromiseLike
+ * @param fns - Synchronous or asynchronous transformation stages
+ * @returns A Promise resolving to the final transformed value
+ * @example
+ * ```ts
+ * await pipeAsync(5, async n => n * 2, n => n + 1); // 11
+ * ```
+ */
+export function pipeAsync<A>(value: A | PromiseLike<A>): Promise<Awaited<A>>;
+export function pipeAsync<A, B>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>): Promise<Awaited<B>>;
+export function pipeAsync<A, B, C>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>): Promise<Awaited<C>>;
+export function pipeAsync<A, B, C, D>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>): Promise<Awaited<D>>;
+export function pipeAsync<A, B, C, D, E>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>): Promise<Awaited<E>>;
+export function pipeAsync<A, B, C, D, E, F>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>): Promise<Awaited<F>>;
+export function pipeAsync<A, B, C, D, E, F, G>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>): Promise<Awaited<G>>;
+export function pipeAsync<A, B, C, D, E, F, G, H>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>, fn7: AsyncUnary<G, H>): Promise<Awaited<H>>;
+export function pipeAsync<A, B, C, D, E, F, G, H, I>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>, fn7: AsyncUnary<G, H>, fn8: AsyncUnary<H, I>): Promise<Awaited<I>>;
+export function pipeAsync<A, B, C, D, E, F, G, H, I, J>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>, fn7: AsyncUnary<G, H>, fn8: AsyncUnary<H, I>, fn9: AsyncUnary<I, J>): Promise<Awaited<J>>;
+export function pipeAsync<A, B, C, D, E, F, G, H, I, J, K>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>, fn7: AsyncUnary<G, H>, fn8: AsyncUnary<H, I>, fn9: AsyncUnary<I, J>, fn10: AsyncUnary<J, K>): Promise<Awaited<K>>;
+export async function pipeAsync(value: any, ...fns: readonly AsyncUnary<any, any>[]): Promise<any> {
+	try {
+		assertStages(fns, 'pipeAsync');
+	} catch (err) {
+		Promise.resolve(value).catch(() => {});
+		throw err;
+	}
+	let current = await value;
+	for (const fn of fns)
+		current = await fn(current);
+	return current;
 }

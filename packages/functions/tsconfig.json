@@ -10,7 +10,7 @@
       "@magmacomputing/tempo": ["../tempo/dist/tempo.index.d.ts"],
       "@magmacomputing/tempo/core": ["../tempo/dist/core.index.d.ts"],
       "@magmacomputing/tempo/*": ["../tempo/dist/*"],
-      "@magmacomputing/library": ["../library/dist/common.index.d.ts"],
+      "tempo-lib": ["../library/dist/common.index.d.ts"],
       "#library/*": ["../library/dist/common/*"]
     }
   },

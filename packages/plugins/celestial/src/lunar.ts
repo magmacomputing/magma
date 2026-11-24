@@ -7,9 +7,9 @@ import {
 	getCrescentTilt,
 	getEclipse,
 	LUNAR_PHASE_KEYS,
-} from '@magmacomputing/tempo-fns';
+} from 'tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
-import type { LunarPhaseKey, LunarPhaseName } from '@magmacomputing/tempo-fns';
+import type { LunarPhaseKey, LunarPhaseName } from 'tempo-fns';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, getLunarDetails, createCelestialTermHandlers } from './util.js';
 
 export interface LunarPhaseOptions {

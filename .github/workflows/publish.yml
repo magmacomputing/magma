@@ -132,7 +132,7 @@ jobs:
           if [ "$EVENT_NAME" = "release" ] || [ "$INPUT_ALL" = "true" ]; then
             PKGS=(
               "@magmacomputing/tempo"
-              "@magmacomputing/tempo-fns"
+              "tempo-fns"
               "@magmacomputing/tempo-plugin-celestial"
               "@magmacomputing/tempo-plugin-ai"
               "@magmacomputing/tempo-plugin-batch"
@@ -149,7 +149,7 @@ jobs:
             )
           else
             [ "$INPUT_TEMPO" = "true" ] && PKGS+=("@magmacomputing/tempo")
-            [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("@magmacomputing/tempo-fns")
+            [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("tempo-fns")
             [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ai")
             [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
             [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-celestial")
@@ -168,12 +168,12 @@ jobs:
               CLEAN_CUSTOM=$(echo "$INPUT_CUSTOM" | tr ',' ' ')
               for item in $CLEAN_CUSTOM; do
                 [ -z "$item" ] && continue
-                if [[ "$item" == @magmacomputing/* ]]; then
+                if [ "$item" = "@magmacomputing/tempo-fns" ] || [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
+                  PKGS+=("tempo-fns")
+                elif [[ "$item" == @magmacomputing/* ]]; then
                   PKGS+=("$item")
                 elif [ "$item" = "tempo" ]; then
                   PKGS+=("@magmacomputing/tempo")
-                elif [ "$item" = "tempo-fns" ] || [ "$item" = "fns" ]; then
-                  PKGS+=("@magmacomputing/tempo-fns")
                 else
                   PKGS+=("@magmacomputing/tempo-plugin-$item")
                 fi
@@ -201,6 +201,16 @@ jobs:
             fi
           done
 
+          # Ensure tempo-fns is published before any dependent plugins regardless of custom input order
+          ORDERED_PKGS=()
+          for p in "${UNIQUE_PKGS[@]}"; do
+            [ "$p" = "tempo-fns" ] && ORDERED_PKGS+=("$p")
+          done
+          for p in "${UNIQUE_PKGS[@]}"; do
+            [ "$p" != "tempo-fns" ] && ORDERED_PKGS+=("$p")
+          done
+          UNIQUE_PKGS=("${ORDERED_PKGS[@]}")
+
           echo "📋 Packages queued for build & publish:"
           for p in "${UNIQUE_PKGS[@]}"; do
             echo "  • $p"
@@ -223,7 +233,7 @@ jobs:
             local pkg_json=""
             if [ "$pkg" = "@magmacomputing/tempo" ] || [ "$pkg" = "@tempo-js/core" ]; then
               pkg_json="packages/tempo/package.json"
-            elif [ "$pkg" = "@magmacomputing/tempo-fns" ] || [ "$pkg" = "@tempo-js/fns" ]; then
+            elif [ "$pkg" = "tempo-fns" ] || [ "$pkg" = "@magmacomputing/tempo-fns" ] || [ "$pkg" = "@tempo-js/fns" ]; then
               pkg_json="packages/functions/package.json"
             else
               local plugin_dir="${pkg#@magmacomputing/tempo-plugin-}"
@@ -247,6 +257,13 @@ jobs:
             manifest_name=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$pkg_json')).name)")
             if [ "$pkg" != "$manifest_name" ]; then
               echo "❌ Error: Requested package '$pkg' does not match manifest name '$manifest_name' in $pkg_json"
+              exit 1
+            fi
+
+            local tempo_fns_range
+            tempo_fns_range=$(node -e "const d=JSON.parse(require('fs').readFileSync('$pkg_json')).dependencies||{}; console.log(d['tempo-fns']||'')")
+            if [ -n "$tempo_fns_range" ] && [ -z "$(npm view "tempo-fns@$tempo_fns_range" version 2>/dev/null)" ]; then
+              echo "❌ Error: $pkg@$ver depends on tempo-fns@$tempo_fns_range, which is not yet published on npm. Publish tempo-fns first."
               exit 1
             fi
 

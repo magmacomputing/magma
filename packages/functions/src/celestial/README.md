@@ -11,7 +11,7 @@ function getLunarPhase(dateInput: Date | number | string, options?: LunarPhaseOp
 ```
 **Example:**
 ```typescript
-import { getLunarPhase } from '@magmacomputing/tempo-fns';
+import { getLunarPhase } from 'tempo-fns';
 
 const lunar = getLunarPhase('2000-01-06T18:14:00Z', { sphere: 'north' });
 console.log(lunar.key); // 'new-moon'
@@ -38,7 +38,7 @@ function getMoonriseMoonset(
 ```
 **Example:**
 ```typescript
-import { getMoonriseMoonset } from '@magmacomputing/tempo-fns';
+import { getMoonriseMoonset } from 'tempo-fns';
 
 const moon = getMoonriseMoonset('2026-10-02', { lat: 40.7128, lng: -74.006 });
 console.log(moon.moonriseMs);
@@ -68,7 +68,7 @@ function getSolarEvents(year: number): SolarEventResult[];
 ```
 **Example:**
 ```typescript
-import { getSolarEvents } from '@magmacomputing/tempo-fns';
+import { getSolarEvents } from 'tempo-fns';
 
 const events = getSolarEvents(2026);
 // Returns Vernal, Summer, Autumnal, and Winter solar event timestamps
@@ -86,7 +86,7 @@ function getSunriseSunset(
 ```
 **Example:**
 ```typescript
-import { getSunriseSunset } from '@magmacomputing/tempo-fns';
+import { getSunriseSunset } from 'tempo-fns';
 
 const solar = getSunriseSunset('2026-06-21T02:00:00Z', { lat: -33.8688, lng: 151.2093 });
 console.log(solar.isDaylight); // true

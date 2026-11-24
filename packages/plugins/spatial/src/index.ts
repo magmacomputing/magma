@@ -20,7 +20,7 @@ import {
 	type SolarOffsetUnit,
 	type GeoSphere,
 	type CoordinateInput,
-} from '@magmacomputing/tempo-fns';
+} from 'tempo-fns';
 
 export {
 	haversineDistance,

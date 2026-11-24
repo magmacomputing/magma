@@ -8,7 +8,7 @@ import {
 	DAY_MS,
 	getEclipse,
 	getSolarPosition,
-} from '@magmacomputing/tempo-fns';
+} from 'tempo-fns';
 import type {
 	LunarPhaseKey,
 	LunarPhaseName,
@@ -23,7 +23,7 @@ import type {
 	SolarPositionResult,
 	EclipseType,
 	EclipseResult,
-} from '@magmacomputing/tempo-fns';
+} from 'tempo-fns';
 
 import { LunarTerm, type LunarPhaseOptions, type LunarPhaseResult } from './lunar.js';
 import { SolarTerm, type SolarPhaseState } from './solar.js';

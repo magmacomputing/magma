@@ -13,7 +13,7 @@ function isBusinessDay(date: DateInput, options?: BusinessDayOptions): boolean;
 ```
 **Example:**
 ```typescript
-import { isBusinessDay } from '@magmacomputing/tempo-fns';
+import { isBusinessDay } from 'tempo-fns';
 
 isBusinessDay('2026-10-02'); // true (Friday)
 isBusinessDay('2026-10-03'); // false (Saturday)
@@ -35,7 +35,7 @@ function prevBusinessDay(date: DateInput, options?: BusinessDayOptions): Tempora
 ```
 **Example:**
 ```typescript
-import { nextBusinessDay, prevBusinessDay } from '@magmacomputing/tempo-fns';
+import { nextBusinessDay, prevBusinessDay } from 'tempo-fns';
 
 nextBusinessDay('2026-10-02'); // 2026-10-05T00:00:00 (Monday following Friday)
 prevBusinessDay('2026-10-05'); // 2026-10-02T00:00:00 (Friday preceding Monday)
@@ -49,7 +49,7 @@ function addBusinessDays(date: DateInput, amount: number, options?: BusinessDayO
 ```
 **Example:**
 ```typescript
-import { addBusinessDays } from '@magmacomputing/tempo-fns';
+import { addBusinessDays } from 'tempo-fns';
 
 // T+2 trade settlement starting Thursday:
 addBusinessDays('2026-10-01', 2); // 2026-10-05 (Monday)
@@ -66,7 +66,7 @@ function businessDaysBetween(start: DateInput, end: DateInput, options?: Busines
 ```
 **Example:**
 ```typescript
-import { businessDaysBetween } from '@magmacomputing/tempo-fns';
+import { businessDaysBetween } from 'tempo-fns';
 
 businessDaysBetween('2026-10-02', '2026-10-05'); // Returns: 1
 businessDaysBetween('2026-10-05', '2026-10-02'); // Returns: -1
@@ -85,7 +85,7 @@ function workingHoursUntil(
 ```
 **Example:**
 ```typescript
-import { workingHoursUntil } from '@magmacomputing/tempo-fns';
+import { workingHoursUntil } from 'tempo-fns';
 
 const start = Temporal.ZonedDateTime.from('2026-07-10T10:00:00+00:00[UTC]'); // Friday
 const end = Temporal.ZonedDateTime.from('2026-07-13T12:00:00+00:00[UTC]');   // Monday
@@ -102,7 +102,7 @@ function isSameFiscalQuarter(date1: Tempo, date2: Tempo): boolean;
 ```
 **Example:**
 ```typescript
-import { isSameFiscalQuarter } from '@magmacomputing/tempo-fns';
+import { isSameFiscalQuarter } from 'tempo-fns';
 import { Tempo } from '@magmacomputing/tempo';
 
 const d1 = new Tempo('2026-01-15');

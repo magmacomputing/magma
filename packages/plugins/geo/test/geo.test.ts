@@ -11,7 +11,7 @@ import {
 	reverseGeocode,
 	forwardGeocode,
 } from '../src/index.js';
-import { getSpatialReverseCache, getSpatialCacheKey } from '@magmacomputing/library/runtime/mapper.library.js';
+import { getSpatialReverseCache, getSpatialCacheKey } from 'tempo-lib/runtime/mapper.library.js';
 
 describe('Tempo Plugin: Geo', () => {
 	beforeAll(() => {

@@ -1,5 +1,5 @@
 {
-  "name": "@magmacomputing/library",
+  "name": "tempo-lib",
   "version": "5.0.0",
   "description": "Shared utility library for Tempo",
   "author": "Magma Computing Solutions",

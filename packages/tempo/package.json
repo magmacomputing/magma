@@ -53,8 +53,8 @@
   "unpkg": "dist/tempo.bundle.js",
   "jsdelivr": "dist/tempo.bundle.js",
   "imports": {
-    "#library": "@magmacomputing/library",
-    "#library/*.js": "@magmacomputing/library/*.js",
+    "#library": "tempo-lib",
+    "#library/*.js": "tempo-lib/*.js",
     "#tempo": {
       "default": "./dist/tempo.index.js"
     },
@@ -329,7 +329,6 @@
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/library": "*",
     "@magmacomputing/tempo-cli": "*",
     "@magmacomputing/tempo-plugin-ticker": "*",
     "@rollup/plugin-alias": "^6.0.1",
@@ -338,6 +337,7 @@
     "magic-string": "^1.4.5",
     "markdown-it-mathjax3": "^4.3.2",
     "mermaid": "^12.3.0",
+    "tempo-lib": "*",
     "typedoc": "^0.28.20",
     "vitepress": "^1.6.4",
     "vitepress-plugin-mermaid": "^2.0.17"

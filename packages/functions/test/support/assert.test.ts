@@ -1,6 +1,6 @@
 import { hasOwn, isObject, isReference, isPrimitive } from '../../src/support/index.js';
 
-describe('Assert & Type Helpers (@magmacomputing/tempo-fns/support)', () => {
+describe('Assert & Type Helpers (tempo-fns/support)', () => {
 	describe('hasOwn', () => {
 		it('returns true for own properties', () => {
 			const obj = { foo: 'bar', answer: 42 };

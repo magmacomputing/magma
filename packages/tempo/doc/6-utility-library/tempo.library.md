@@ -127,7 +127,55 @@ watcher.check();
 
 <br>
 
-## 9. Exhaustive API Reference
+## 9. TC39 Signals (`Signify`) {#signify}
+
+`Signify` is a zero-dependency, frozen TC39 Signals implementation (`Signify.State`, `Signify.computed`, `Signify.effect`, `Signify.subtle.Watcher`) with `WeakRef`-backed consumer tracking—powering `Reactive.toSignal()`, `Ticker`, `NTP`, and `@magmacomputing/tempo-plugin-signals`:
+
+```typescript
+import { Signify } from '@magmacomputing/tempo/library';
+
+const count = new Signify.State(1);
+const doubled = Signify.computed(() => count.get() * 2);
+
+count.set(3);
+console.log(doubled.get()); // 6
+
+// Or observe changes asynchronously on microtask flush
+using _stop = Signify.effect(() => {
+  console.log('doubled:', doubled.get());
+});
+```
+
+<br>
+
+## 10. Disposable Cancellation (`Aborter`) {#aborter}
+
+`Aborter` extends `AbortController` with `Symbol.dispose` (`using`), paired with `anySignal`, `timeoutSignal`, and `onAbort` for leak-free cancellation across `Reactive` streams and async plugins:
+
+```typescript
+import { Aborter, timeoutSignal, anySignal } from '@magmacomputing/tempo/library';
+
+using aborter = new Aborter();
+const signal = anySignal(aborter.signal, timeoutSignal(5_000));
+// Exiting the `using` scope automatically aborts `aborter.signal`
+```
+
+<br>
+
+## 11. Bounded LRU/TTL Caching (`BoundedCache`) {#bounded-cache}
+
+`BoundedCache<K, V>` extends `Map` with configurable max-size LRU eviction and per-entry TTL expiration, protecting Tempo's parser, formatter, and `Intl` hot paths from unbounded memory growth:
+
+```typescript
+import { BoundedCache } from '@magmacomputing/tempo/library';
+
+const cache = new BoundedCache<string, number>(500, 60_000); // max 500 entries, 60s TTL
+cache.set('key', 42);
+```
+
+<br>
+
+## 12. Exhaustive API Reference
 
 > [!NOTE]
 > These are isolated, standalone utility functions and classes developed internally to support our various applications. They are entirely free to use and are documented here as a convenience reference for our users.

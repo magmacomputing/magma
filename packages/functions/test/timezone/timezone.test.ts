@@ -7,7 +7,7 @@ import {
 	normalizeUtcOffset,
 } from '../../src/index.js';
 
-describe('Timezone & DST Functions (@magmacomputing/tempo-fns)', () => {
+describe('Timezone & DST Functions (tempo-fns)', () => {
 	describe('isValidTimeZone', () => {
 		it('returns true for canonical IANA timezone names and offsets', () => {
 			expect(isValidTimeZone('America/New_York')).toBe(true);

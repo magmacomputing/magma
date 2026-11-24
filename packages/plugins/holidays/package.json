@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@magmacomputing/tempo": "^5.0.0",
-    "@magmacomputing/tempo-fns": "^1.0.0"
+    "tempo-fns": "^1.0.0"
   },
   "keywords": [
     "tempo",

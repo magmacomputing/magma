@@ -27,7 +27,7 @@ export {
 } from './calendar/index.js';
 
 // --- Scheduling ---
-export { nextCron, prevCron } from './scheduling/cron.js';
+export { parseCron, nextCron, prevCron } from './scheduling/cron.js';
 
 // --- Timezone & Location ---
 export {

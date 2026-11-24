@@ -34,7 +34,7 @@
     "./dist/install.js"
   ],
   "scripts": {
-    "build": "tsup && tsc",
+    "build": "tsup && tsc --noEmit",
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "tempo-cli prepublish"
   },
@@ -43,7 +43,7 @@
     "plan": "community"
   },
   "dependencies": {
-    "@magmacomputing/tempo-fns": "^1.2.0"
+    "tempo-fns": "^1.2.0"
   },
   "peerDependencies": {
     "@magmacomputing/tempo": "^4.5.0 || ^5.0.0"
