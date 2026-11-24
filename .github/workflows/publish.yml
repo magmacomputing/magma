@@ -201,6 +201,16 @@ jobs:
             fi
           done
 
+          # Ensure tempo-fns is published before any dependent plugins regardless of custom input order
+          ORDERED_PKGS=()
+          for p in "${UNIQUE_PKGS[@]}"; do
+            [ "$p" = "tempo-fns" ] && ORDERED_PKGS+=("$p")
+          done
+          for p in "${UNIQUE_PKGS[@]}"; do
+            [ "$p" != "tempo-fns" ] && ORDERED_PKGS+=("$p")
+          done
+          UNIQUE_PKGS=("${ORDERED_PKGS[@]}")
+
           echo "📋 Packages queued for build & publish:"
           for p in "${UNIQUE_PKGS[@]}"; do
             echo "  • $p"
