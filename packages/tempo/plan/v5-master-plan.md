@@ -59,14 +59,14 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
 - [x] **Step 2: Finalize Primary Package Decision (`tempo-kit` + `@tempo-kit/*`)**:
   - **`tempo-js` Permanently Blocked**: GitHub Support confirmed on Nov 23, 2026 that npm's automated `E403` moniker-similarity protection cannot be bypassed or overridden, even for `tempojs` / `@tempo-js` owners.
   - **`@tempojs` Scope Closed**: GitHub Support declined to transfer `@tempojs` based on inactivity/outreach alone; no trademark claim will be filed.
-  - **Final Selection — `tempo-kit` + `@tempo-kit/*`**: Selected **`tempo-kit`** as the sole unscoped primary package (`import { Tempo } from 'tempo-kit'`, `'tempo-kit/lite'`, `'tempo-kit/terms/quarter'`) paired with **`@tempo-kit/plugin-*`** for plugins, keeping `tempojs` untouched/unpublished and clarifying in `README.md` that `tempo-kit` is an independent `Temporal`-native engine (unrelated to `@formkit/tempo`).
+  - **Final Selection — `tempo-kit` + `@tempo-kit/*`**: Selected **`tempo-kit`** as the sole unscoped primary package (`import { Tempo } from 'tempo-kit'`, `'tempo-kit/core'`, `'tempo-kit/terms/quarter'`) paired with **`@tempo-kit/plugin-*`** for plugins, keeping `tempojs` untouched/unpublished and clarifying in `README.md` that `tempo-kit` is an independent `Temporal`-native engine (unrelated to `@formkit/tempo`).
 - [ ] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
   - **Core (`tempo-kit`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
-  - **Lite (`tempo-kit/lite`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (migrated from v4 `./core`).
+  - **Core (`tempo-kit/core`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (preserving v4 `./core` semantics).
 
   | Current v4 Scope (`@magmacomputing/*`) | Target v5 Primary Package | Scoped / Defensive Aliases | Role / Exports |
   | :--- | :--- | :--- | :--- |
-  | `@magmacomputing/tempo` | **`tempo-kit`** | — | Core engine with built-in modules, plus subpath exports (`./lite` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
+  | `@magmacomputing/tempo` | **`tempo-kit`** | — | Batteries-included engine with built-in modules, plus subpath exports (`./core` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
   | `@magmacomputing/tempo-fns` | **`tempo-fns`** | `@tempo-kit/fns` | Standalone functional date math & algorithms for Temporal |
   | `@magmacomputing/library` | **`tempo-lib`** | `@tempo-kit/lib` | Modularized core primitives, assertions, type-guards, and reflection |
   | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-kit/plugin-dialects`** | — | Moment / Day.js / Luxon / SQL format compatibility |
@@ -163,7 +163,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
     ```
   - Prominent warning banners on all `/v4/` AI bundles directing modern developers to v5.
 - [ ] **Update Core Documentation**:
-  - Update all code snippets in `packages/tempo/doc/` to use **`tempo-kit`** (e.g. `import { Tempo } from 'tempo-kit'`, `import { Tempo } from 'tempo-kit/lite'`, `import 'tempo-kit/terms'`) alongside `@tempo-kit/plugin-*`.
+  - Update all code snippets in `packages/tempo/doc/` to use **`tempo-kit`** (e.g. `import { Tempo } from 'tempo-kit'`, `import { Tempo } from 'tempo-kit/core'`, `import 'tempo-kit/terms'`) alongside `@tempo-kit/plugin-*`.
   - Provide comprehensive **v4 $\rightarrow$ v5 Migration Guide** (including `@magmacomputing/tempo` $\rightarrow$ `tempo-kit` transition and `README` distinction from `@formkit/tempo`).
   - **Interactive Documentation Glossary & Canonical Lexicon**: Implement data-driven VitePress glossary ([`documentation-glossary-architecture.md`](file:///home/michael/Project/magma/packages/tempo/plan/documentation-glossary-architecture.md)) defining core temporal concepts, library idioms, and standards, and pipe definitions directly into `llms.txt`.
 
