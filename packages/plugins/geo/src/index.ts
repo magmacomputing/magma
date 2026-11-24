@@ -1,5 +1,5 @@
 import { Tempo } from '@magmacomputing/tempo';
-import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
 import {
 	geoLookup,
 	resolveGeoCoordinates,
@@ -149,7 +149,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 			}
 		}
 
-		if (!hasOwn(installedClass, 'geo')) {
+		if (!Object.hasOwn(installedClass, 'geo')) {
 			const geoNamespace: TempoGeoNamespace = {
 				lookup: (opts?: Record<string, any>) => geoLookup(getEffectiveOptions(opts)),
 				resolve: (target?: any, opts?: Record<string, any>) => resolveGeoCoordinates(target, getEffectiveOptions(opts, target)),

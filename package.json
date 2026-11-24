@@ -63,7 +63,7 @@
     "@types/google.maps": "^3.67.0",
     "@types/hammerjs": "^2.0.46",
     "@types/jquery": "^4.0.1",
-    "@types/node": "^26.6.6",
+    "@types/node": "^26.6.7",
     "cross-env": "^10.1.0",
     "happy-dom": "^21.0.4",
     "magic-string": "^1.4.5",
