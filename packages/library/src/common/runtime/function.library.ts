@@ -1,5 +1,5 @@
 import { secure } from '#library/proxy.library.js';
-import { isBigInt, isFunction, isReference, isMap, isSet, isLocale, isUndefined, isDefined } from '#library/assertion.library.js';
+import { isBigInt, isCallable, isFunction, isReference, isMap, isSet, isLocale, isUndefined, isDefined } from '#library/assertion.library.js';
 import type { Property } from '#library/type.library.js';
 
 // https://medium.com/codex/currying-in-typescript-ca5226c85b85
@@ -163,7 +163,7 @@ type AsyncUnary<A, B> = (value: Awaited<A>) => B | PromiseLike<B>;
 
 function assertStages(fns: readonly unknown[], name: string): void {
 	for (const fn of fns) {
-		if (!isFunction(fn))
+		if (!isCallable(fn))
 			throw new TypeError(`${name}: expected every pipeline stage to be a function`);
 	}
 }
@@ -254,7 +254,12 @@ export function pipeAsync<A, B, C, D, E, F, G, H, I>(value: A | PromiseLike<A>, 
 export function pipeAsync<A, B, C, D, E, F, G, H, I, J>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>, fn7: AsyncUnary<G, H>, fn8: AsyncUnary<H, I>, fn9: AsyncUnary<I, J>): Promise<Awaited<J>>;
 export function pipeAsync<A, B, C, D, E, F, G, H, I, J, K>(value: A | PromiseLike<A>, fn1: AsyncUnary<A, B>, fn2: AsyncUnary<B, C>, fn3: AsyncUnary<C, D>, fn4: AsyncUnary<D, E>, fn5: AsyncUnary<E, F>, fn6: AsyncUnary<F, G>, fn7: AsyncUnary<G, H>, fn8: AsyncUnary<H, I>, fn9: AsyncUnary<I, J>, fn10: AsyncUnary<J, K>): Promise<Awaited<K>>;
 export async function pipeAsync(value: any, ...fns: readonly AsyncUnary<any, any>[]): Promise<any> {
-	assertStages(fns, 'pipeAsync');
+	try {
+		assertStages(fns, 'pipeAsync');
+	} catch (err) {
+		Promise.resolve(value).catch(() => {});
+		throw err;
+	}
 	let current = await value;
 	for (const fn of fns)
 		current = await fn(current);

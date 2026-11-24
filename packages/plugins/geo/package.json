@@ -34,7 +34,7 @@
     "./dist/install.js"
   ],
   "scripts": {
-    "build": "tsup && tsc",
+    "build": "tsup && tsc --noEmit",
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "tempo-cli prepublish"
   },

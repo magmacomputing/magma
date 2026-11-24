@@ -78,4 +78,15 @@ describe('Function Composition (pipe, flow, pipeAsync)', () => {
 		await expect(pipeAsync(Promise.resolve('ok'))).resolves.toBe('ok');
 		await expect(pipeAsync(1, 123 as any)).rejects.toThrow(TypeError);
 	});
+
+	it('accepts callable built-in converters like Number across pipe, flow, and pipeAsync', async () => {
+		expect(pipe('42', Number)).toBe(42);
+		expect(flow(Number, n => n + 1)('41')).toBe(42);
+		await expect(pipeAsync('42', Number)).resolves.toBe(42);
+	});
+
+	it('observes rejected input promises when pipeAsync() stage validation fails', async () => {
+		const rejected = Promise.reject(new Error('input'));
+		await expect(pipeAsync(rejected, null as any)).rejects.toThrow(TypeError);
+	});
 });
