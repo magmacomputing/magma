@@ -20,4 +20,4 @@ Good thing you asked—checking the repo shows `@magmacomputing` appears in **~7
 4. **PR 5 & PR 6 — `packages/tempo/test/` & `packages/tempo/doc/`** *(batched <90 files each)*:
    - Update `packages/tempo/test/` imports/assertions, then `packages/tempo/doc/`, `README.md` (with the `@formkit/tempo` distinction), `llms.txt`, and `npm run docs:build`.
 
-*(Note: When `packages/tempo` renames to `tempo-kit` in PR 2, any plugin/test importing `'@magmacomputing/tempo'` needs to either switch to `'tempo-kit'` or be updated in PR 2–3—so we should run `npm run build:all && npm test` at each step.)*
+*(Note: When `packages/tempo` renames to `tempo-kit` i-n PR 2, any plugin/test importing `'@magmacomputing/tempo'` needs to either switch to `'tempo-kit'` or be updated in PR 2–3—so we should run `npm run build:all && npm test` at each step.)*
