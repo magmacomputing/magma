@@ -1,4 +1,4 @@
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo } from 'tempo-kit';
 import type { TempoBaseAiResult, TempoDateInput } from './base.type.js';
 import type { AiParseOptions } from './parse.type.js';
 

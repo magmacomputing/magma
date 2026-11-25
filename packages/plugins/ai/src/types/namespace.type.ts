@@ -43,7 +43,7 @@ export interface TempoAiNamespace {
 	readonly providerRateLimits: typeof getAiProviderRateLimits;
 }
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface Tempo {
 		/** Frozen AI resolution metadata attached when parsed via parseAI */
 		ai?: TempoParseAiMeta | undefined;

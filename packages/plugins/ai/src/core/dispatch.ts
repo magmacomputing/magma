@@ -3,7 +3,7 @@ import { AiMode } from './config.js';
 import { _state } from './init.js';
 import { logDebug, warnDebug } from './logger.js';
 import type { AiProvider } from '../types/index.js';
-import { asNumber, isUndefined } from '@magmacomputing/tempo/library';
+import { asNumber, isUndefined } from 'tempo-kit/library';
 
 /**
  * ## ModeCandidate

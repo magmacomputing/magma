@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { contextAI, initAI } from '../src/index.js';
 
 describe('AI Context Plugin (contextAI)', () => {

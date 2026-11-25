@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { secure, isNumber, asArray } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { secure, isNumber, asArray } from 'tempo-kit/library';
 import { _state } from './init.js';
 import { logDebug, warnDebug } from './logger.js';
 import type { AiCacheAdapter } from '../types/index.js';

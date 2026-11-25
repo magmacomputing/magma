@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { isRRuleString } from 'tempo-kit/library';
 import { recurrenceAI, initAI } from '../src/index.js';
 
 describe('AI Recurrence Plugin (recurrenceAI)', () => {

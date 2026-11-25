@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
@@ -40,7 +40,7 @@ flowchart TD
 To quickly explore semantic date parsing without provisioning external API keys or setting up a proxy backend, opt-in to the free Tempo trial sandbox:
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // Initialize with Tempo's free evaluation sandbox
 await initAI({ provider: 'tempo' });
@@ -65,7 +65,7 @@ console.log(dt.format());
 Never expose private LLM API tokens in client-side browser JavaScript. Instead, configure a single root proxy endpoint:
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // Configure proxy endpoint once at app startup
 initAI({
@@ -140,7 +140,7 @@ OPENAI_API_KEY="sk-..."
 ```
 
 ```typescript
-import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI } from '@tempo-kit/plugin-ai';
 
 // Automatically discovers GROQ_API_KEY and OPENAI_API_KEY:
 const result = await parseAI("Two weeks after our Q3 quarterly investor dinner");
@@ -149,7 +149,7 @@ const result = await parseAI("Two weeks after our Q3 quarterly investor dinner")
 ### Method B: Explicit `initAI`
 
 ```typescript
-import { initAI, AiMode } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, AiMode } from '@tempo-kit/plugin-ai';
 
 await initAI({
   mode: AiMode.Fallback,

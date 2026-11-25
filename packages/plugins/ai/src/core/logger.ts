@@ -1,4 +1,4 @@
-import { isUndefined, isString, isObject, isArray, isFunction, isNullish, isPrimitive } from '@magmacomputing/tempo/library';
+import { isUndefined, isString, isObject, isArray, isFunction, isNullish, isPrimitive } from 'tempo-kit/library';
 import { _state } from './init.js';
 
 export const CUSTOM_INSPECT_SYMBOL = Symbol.for('nodejs.util.inspect.custom');

@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
@@ -15,8 +15,8 @@ Relative expressions (such as *"tomorrow at 10am"*, *"next Tuesday from 1 to 3pm
 ## Basic Usage
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { initAI, extractAI } from '@magmacomputing/tempo-plugin-ai';
+import { Tempo } from 'tempo-kit';
+import { initAI, extractAI } from '@tempo-kit/plugin-ai';
 
 // 1. Initialize AI providers
 await initAI({

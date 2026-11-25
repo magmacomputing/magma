@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
@@ -31,7 +31,7 @@ if (dt.ai?.limits) {
 For quick status checks or global monitoring across the application lifecycle, `getAiRateLimits()` exposes the stats from the most recent LLM request:
 
 ```typescript
-import { getAiRateLimits } from '@magmacomputing/tempo-plugin-ai';
+import { getAiRateLimits } from '@tempo-kit/plugin-ai';
 
 // Returns global stats from the most recent LLM proxy request
 const stats = getAiRateLimits(); 
@@ -50,7 +50,7 @@ If you actually exhaust your quota and the provider rejects the request (e.g., H
 If all providers fail, the plugin will throw a `TempoAiError`. This custom error class includes a highly valuable `retryAt` property:
 
 ```typescript
-import { parseAI, TempoAiError } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI, TempoAiError } from '@tempo-kit/plugin-ai';
 
 try {
   const dt = await parseAI("The third Friday of next month");
@@ -92,7 +92,7 @@ console.log(dates[0].isValid); // true
 console.log(dates[1].isValid); // false
 
 // 2. Structured functions return TempoAiError objects into the array
-import { formatAI, TempoAiError } from '@magmacomputing/tempo-plugin-ai';
+import { formatAI, TempoAiError } from '@tempo-kit/plugin-ai';
 
 const formatted = await formatAI([validDate, invalidDate], 'casual tone', { softErrors: true });
 if (formatted[1] instanceof TempoAiError) {
@@ -130,7 +130,7 @@ const dt = await parseAI("The last Friday before Christmas", { force: true, cach
 If the LLM hallucinates or returns an incorrect absolute date, you can explicitly purge the string from the cache:
 
 ```typescript
-import { aiCache } from '@magmacomputing/tempo-plugin-ai';
+import { aiCache } from '@tempo-kit/plugin-ai';
 
 // Evict a single string
 await aiCache.clear("2nd tuesday in nov");
@@ -151,7 +151,7 @@ const dt = await parseAI("Q3_START", { force: true });
 By default, parsed AI responses are cached in memory using `Tempo.cache` (`BoundedCache`). For distributed serverless environments (e.g. Next.js, Cloudflare Workers, Express) or cluster nodes, you can pass a custom synchronous or asynchronous storage adapter (`AiCacheAdapter`):
 
 ```typescript
-import { initAI, parseAI, type AiCacheAdapter } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI, type AiCacheAdapter } from '@tempo-kit/plugin-ai';
 import { Redis } from '@upstash/redis';
 
 const redis = new Redis({ url: process.env.UPSTASH_URL!, token: process.env.UPSTASH_TOKEN! });

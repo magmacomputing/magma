@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { asText, asNumber } from 'tempo-kit/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import { normalizeCacheInput, readMultiTierCache, writeMultiTierCache } from '../core/cache.js';

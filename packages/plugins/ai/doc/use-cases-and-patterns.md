@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
@@ -11,7 +11,7 @@ Integrating Large Language Models (LLMs) with date-time logic presents severe re
 2. **Missing Reference Anchors**: Without an explicit reference anchor, relative expressions (*"in 3 days"*, *"tomorrow afternoon"*) resolve against arbitrary training cutoff dates.
 3. **PII Leakage**: Sending full user prompts to third-party LLMs exposes sensitive user identities and private calendar details.
 
-The `@magmacomputing/tempo-plugin-ai` plugin bridges LLM intelligence with Tempo's deterministic temporal engine, enforcing strict PII protection, anchor grounding, and schema validation.
+The `@tempo-kit/plugin-ai` plugin bridges LLM intelligence with Tempo's deterministic temporal engine, enforcing strict PII protection, anchor grounding, and schema validation.
 
 ---
 
@@ -24,8 +24,8 @@ In conversational scheduling bots (such as appointment booking agents or support
 `Tempo.ai.parse` grounds the prompt against an absolute server reference anchor (`anchor`) and user timezone, resolving a strongly typed `Tempo` instance:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ai/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ai/install';
+import { Tempo } from 'tempo-kit';
 
 export async function parseAppointmentPrompt(
   userInput: string,
@@ -55,8 +55,8 @@ Calendar applications (Google Calendar, Outlook, Apple Calendar) require standar
 `Tempo.ai.recurrence` converts natural language patterns directly into validated RRULE strings:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ai/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ai/install';
+import { Tempo } from 'tempo-kit';
 
 export async function generateCalendarRule(recurrencePrompt: string): Promise<string> {
   const result = await Tempo.ai.recurrence(recurrencePrompt, {
@@ -82,8 +82,8 @@ When building scheduling platforms (such as Calendly or Cal.com workflows), book
 `Tempo.ai.schedule` inspects an array of existing busy bounds and finds non-overlapping appointment slots within working hours:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ai/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ai/install';
+import { Tempo } from 'tempo-kit';
 
 interface BusyBlock {
   start: string;
@@ -117,8 +117,8 @@ Raw ISO-8601 strings (`2026-10-05T14:30:00Z`) or mechanical countdowns (*"in 48 
 `Tempo.ai.format` generates human-friendly, contextual narrative summaries with reasoning metadata:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ai/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ai/install';
+import { Tempo } from 'tempo-kit';
 
 export async function createDeliveryNotification(deliveryDateIso: string): Promise<string> {
   const delivery = new Tempo(deliveryDateIso);
@@ -143,8 +143,8 @@ In regulated enterprise environments (healthcare, finance, government), sending 
 `tempo-plugin-ai` provides built-in PII redaction and multi-provider race/fallback modes. You can configure sensitive queries to route through an on-premise local model (e.g. Ollama) while falling back to cloud providers:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ai/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ai/install';
+import { Tempo } from 'tempo-kit';
 
 // Initialize with local on-premise provider and cloud fallback
 await Tempo.ai.init({

@@ -1,6 +1,6 @@
 import type { AiDateContextOptions, TempoBaseAiMeta } from './base.type.js';
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface Tempo {
 		/** Frozen AI resolution metadata attached when parsed via parseAI */
 		ai?: TempoParseAiMeta | undefined;

@@ -1,6 +1,6 @@
 import { parseAI, initAI, resetAI, aiCache, getAiRateLimits, getAiConfig, TempoAiError, AiMode, DEFAULT_PROVIDERS } from '../src/index.js';
-import { BoundedCache } from '@magmacomputing/tempo/library';
-import { Tempo } from '@magmacomputing/tempo';
+import { BoundedCache } from 'tempo-kit/library';
+import { Tempo } from 'tempo-kit';
 
 describe('AI Parsing Plugin (parseAI)', () => {
 	const liveApiKey = process.env.GROQ_API_KEY ?? process.env.OPENAI_API_KEY;

@@ -1,4 +1,4 @@
-import { definePlugin, deepFreeze, isObject, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, deepFreeze, isObject, hasOwn, type TempoPlugin } from 'tempo-kit/plugin/sdk';
 import { initAI, resetAI, getAiRateLimits, getAiProviderRateLimits, getAiConfig } from './core/init.js';
 import { listProviderModels } from './core/models.js';
 import { parseAI } from './functions/parse.js';

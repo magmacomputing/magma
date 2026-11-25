@@ -85,7 +85,7 @@ jobs:
       - name: Build Core & Plugins
         run: npm run build:all
       - name: Run plugin tests
-        run: npm test --if-present --workspace=@tempo-kit/plugin-snap --workspace=@tempo-kit/plugin-batch --workspace=@tempo-kit/plugin-celestial --workspace=@tempo-kit/plugin-sync --workspace=@tempo-kit/plugin-ticker --workspace=@magmacomputing/tempo-plugin-ai --workspace=@tempo-kit/plugin-roman --workspace=@tempo-kit/plugin-signals
+        run: npm test --if-present --workspace=@tempo-kit/plugin-snap --workspace=@tempo-kit/plugin-batch --workspace=@tempo-kit/plugin-celestial --workspace=@tempo-kit/plugin-sync --workspace=@tempo-kit/plugin-ticker --workspace=@tempo-kit/plugin-ai --workspace=@tempo-kit/plugin-roman --workspace=@tempo-kit/plugin-signals
         working-directory: packages/plugins
       - name: Typecheck plugin tests
         run: |
