@@ -1,6 +1,6 @@
-import { Tempo } from '@magmacomputing/tempo/core';
-import { MutateModule } from '@magmacomputing/tempo/mutate';
-import { FormatModule } from '@magmacomputing/tempo/format';
+import { Tempo } from 'tempo-kit/core';
+import { MutateModule } from 'tempo-kit/mutate';
+import { FormatModule } from 'tempo-kit/format';
 import { SnapPlugin } from '../src/index.js';
 
 describe('Snap Plugin', () => {

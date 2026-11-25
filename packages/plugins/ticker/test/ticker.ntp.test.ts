@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+import { Tempo } from 'tempo-kit';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
 import { TickerPlugin } from '../src/index.js';
 
 describe('Ticker NTP Integration', () => {

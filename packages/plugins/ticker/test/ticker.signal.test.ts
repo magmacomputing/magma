@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { Signify } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { Signify } from 'tempo-kit/library';
 import { TickerPlugin } from '../src/index.js';
 
 Tempo.use(TickerPlugin);

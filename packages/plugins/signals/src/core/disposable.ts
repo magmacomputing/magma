@@ -1,4 +1,4 @@
-import { Finalizer, isFunction, type SignifyNode } from '@magmacomputing/tempo/plugin/sdk';
+import { Finalizer, isFunction, type SignifyNode } from 'tempo-kit/plugin/sdk';
 import type { DisposableSignal } from '../types/index.js';
 
 /**

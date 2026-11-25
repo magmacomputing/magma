@@ -1,14 +1,14 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-signals
+# @tempo-kit/plugin-signals
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-signals"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-signals?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-signals/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-signals"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-signals?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-signals"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-signals?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-signals/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-signals"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-signals?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 Tempo community plugin for reactive TC39 Signals (`Signify`), adaptive relative-time formatting, boundary-scheduled interval state observation, and global configuration reactivity.
 
-Core `@magmacomputing/tempo` is a static, immutable, zero-timer snapshot engine. `@magmacomputing/tempo-plugin-signals` layers fine-grained, event-driven reactivity on top of Tempo without adding background timers or reactivity overhead to core bundles.
+Core `tempo-kit` is a static, immutable, zero-timer snapshot engine. `@tempo-kit/plugin-signals` layers fine-grained, event-driven reactivity on top of Tempo without adding background timers or reactivity overhead to core bundles.
 
 ## Key Features
 
@@ -16,7 +16,7 @@ Core `@magmacomputing/tempo` is a static, immutable, zero-timer snapshot engine.
 - **Two Integration Patterns**: Use standalone tree-shakeable functions directly, or mount `Tempo.signals`, `tempo.toRelativeSignal()`, and `interval.toSignal()` via `Tempo.use(SignalsPlugin)` or `/install`.
 - **Adaptive Relative-Time Signals**: `toRelativeSignal` schedules one-shot `setTimeout` updates at exact unit-bucket boundaries (`second` → `minute` → `hour` → `day` → `month` → `year`) instead of polling every second, and automatically tracks global `Tempo.init({ locale })` updates.
 - **Boundary-Scheduled Interval Observation**: `intervalSignal` tracks `isCurrent`, `isPast`, `isFuture`, and normalized `progress` ($\in [0, 1]$) with zero polling while future or past.
-- **Reactive Global Configuration**: `localeSignal` and `timeZoneSignal` synchronize with `Tempo.init()` via `@magmacomputing/tempo/plugin/sdk`'s `onConfigChange` hook.
+- **Reactive Global Configuration**: `localeSignal` and `timeZoneSignal` synchronize with `Tempo.init()` via `tempo-kit/plugin/sdk`'s `onConfigChange` hook.
 - **Deterministic Cleanup**: Returned signals implement both `dispose()` and `Symbol.dispose` (for TypeScript `using` declarations), backed by a `Finalizer` safety net.
 
 ---
@@ -24,7 +24,7 @@ Core `@magmacomputing/tempo` is a static, immutable, zero-timer snapshot engine.
 ## Installation {#installation}
 
 ```bash
-npm install @magmacomputing/tempo-plugin-signals
+npm install @tempo-kit/plugin-signals
 ```
 
 ---
@@ -38,8 +38,8 @@ npm install @magmacomputing/tempo-plugin-signals
 Installing `SignalsPlugin` mounts the frozen `Tempo.signals` namespace, `Tempo.prototype.toRelativeSignal()`, and `Tempo.Interval.prototype.toSignal()`:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SignalsPlugin } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo } from 'tempo-kit';
+import { SignalsPlugin } from '@tempo-kit/plugin-signals';
 
 Tempo.use(SignalsPlugin);
 
@@ -52,8 +52,8 @@ console.log(relative.get()); // e.g. "in 4m" (default 'narrow' style, truncating
 Or use the side-effect `/install` entrypoint to auto-register `SignalsPlugin` on import:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-signals/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-signals/install';
+import { Tempo } from 'tempo-kit';
 
 const deadline = new Tempo().add({ hours: 2 });
 using relative = deadline.toRelativeSignal({ style: 'long' });
@@ -66,8 +66,8 @@ console.log(relative.value); // e.g. "in 1 hour"
 For bundle-sensitive applications, import only the functions you need from the root entrypoint without mutating `Tempo`:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { toRelativeSignal } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo } from 'tempo-kit';
+import { toRelativeSignal } from '@tempo-kit/plugin-signals';
 
 const target = new Tempo().add({ minutes: 10 });
 using relative = toRelativeSignal(target, { style: 'short' });
@@ -77,9 +77,9 @@ console.log(relative.get()); // e.g. "in 9 min."
 
 | Approach | Import Syntax | Side Effects | Ideal For |
 | :--- | :--- | :--- | :--- |
-| **Tree-Shakeable Functions** | `import { toRelativeSignal, intervalSignal } from '@magmacomputing/tempo-plugin-signals'` | None | Minimal client bundles and isolated components |
-| **Explicit Plugin** | `import { SignalsPlugin } from '@magmacomputing/tempo-plugin-signals'` + `Tempo.use(SignalsPlugin)` | Explicit | Controlled initialization with `SignalsPluginOptions` |
-| **Auto-Install Import** | `import '@magmacomputing/tempo-plugin-signals/install'` | Registers `SignalsPlugin` | Apps, REPLs, and convenience setup |
+| **Tree-Shakeable Functions** | `import { toRelativeSignal, intervalSignal } from '@tempo-kit/plugin-signals'` | None | Minimal client bundles and isolated components |
+| **Explicit Plugin** | `import { SignalsPlugin } from '@tempo-kit/plugin-signals'` + `Tempo.use(SignalsPlugin)` | Explicit | Controlled initialization with `SignalsPluginOptions` |
+| **Auto-Install Import** | `import '@tempo-kit/plugin-signals/install'` | Registers `SignalsPlugin` | Apps, REPLs, and convenience setup |
 
 ---
 
@@ -88,12 +88,12 @@ console.log(relative.get()); // e.g. "in 9 min."
 `localeSignal`, `timeZoneSignal`, and `createConfigSignals` expose `ReadonlySignal<string>` instances that stay synchronized with global `Tempo.init()` calls.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { Signify } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { Signify } from 'tempo-kit/library';
 import {
   createConfigSignals,
   disposeConfigSignals,
-} from '@magmacomputing/tempo-plugin-signals';
+} from '@tempo-kit/plugin-signals';
 
 Tempo.init({ locale: 'en-US', timeZone: 'UTC' });
 
@@ -126,7 +126,7 @@ When `SignalsPlugin` is installed, the same signals are exposed on `Tempo.signal
 To synchronize `Tempo.init()` automatically when the host OS or browser changes its locale or time zone (e.g., laptop travel across time zones or `languagechange` events) with **zero background polling**:
 
 ```typescript
-import { watchSystemConfig } from '@magmacomputing/tempo-plugin-signals';
+import { watchSystemConfig } from '@tempo-kit/plugin-signals';
 
 // Sync both locale and timeZone on browser focus/visibility/languagechange events
 using watcher = watchSystemConfig();
@@ -146,9 +146,9 @@ When `SignalsPlugin` is installed, the same helper is available at `Tempo.signal
 Instead of running a fixed 1-second timer, it computes the exact delay until the next unit-bucket transition and schedules a single one-shot `setTimeout` for that boundary—keeping background wakeups $O(1)$ per bucket change. If `options.locale` is omitted, the signal also reacts automatically to global `Tempo.init({ locale })` changes.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { Signify } from '@magmacomputing/tempo/library';
-import { toRelativeSignal } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo } from 'tempo-kit';
+import { Signify } from 'tempo-kit/library';
+import { toRelativeSignal } from '@tempo-kit/plugin-signals';
 
 const target = new Tempo().add({ minutes: 5 });
 using relative = toRelativeSignal(target, {
@@ -207,8 +207,8 @@ Invalid targets throw a `TypeError`.
 Boundary transitions (`start` and `end`) use exact one-shot `setTimeout` scheduling—zero polling occurs while the interval is in the future or past. The `progress` ticker runs only while `isCurrent` is `true` (unless disabled).
 
 ```typescript
-import { Tempo, Interval } from '@magmacomputing/tempo';
-import { intervalSignal } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo, Interval } from 'tempo-kit';
+import { intervalSignal } from '@tempo-kit/plugin-signals';
 
 const start = new Tempo().add({ seconds: 10 });
 const end = start.add({ minutes: 5 });
@@ -225,8 +225,8 @@ console.log(state.progress.get());  // 0
 With `SignalsPlugin` installed, you can call `.toSignal()` directly on any `Interval`:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-signals/install';
-import { Tempo, Interval } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-signals/install';
+import { Tempo, Interval } from 'tempo-kit';
 
 const now = new Tempo();
 const meeting = new Interval(now, now.add({ minutes: 30 }));
@@ -258,10 +258,10 @@ console.log(state.isCurrent.get()); // true
 
 ---
 
-## Relationship with `@magmacomputing/tempo-plugin-ticker` {#relationship-with-ticker}
+## Relationship with `@tempo-kit/plugin-ticker` {#relationship-with-ticker}
 
-- Use **`@magmacomputing/tempo-plugin-ticker`** when you need continuous fixed-cadence clock streams (`Tempo.ticker.signal({ seconds: 1 })`).
-- Use **`@magmacomputing/tempo-plugin-signals`** when you need event-driven relative-time labels, interval lifecycle state, or reactive `Tempo.init()` configuration signals.
+- Use **`@tempo-kit/plugin-ticker`** when you need continuous fixed-cadence clock streams (`Tempo.ticker.signal({ seconds: 1 })`).
+- Use **`@tempo-kit/plugin-signals`** when you need event-driven relative-time labels, interval lifecycle state, or reactive `Tempo.init()` configuration signals.
 
 ---
 

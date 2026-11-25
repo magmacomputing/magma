@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { Signify } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { Signify } from 'tempo-kit/plugin/sdk';
 import {
 	SignalsPlugin,
 	createConfigSignals,

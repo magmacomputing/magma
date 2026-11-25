@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+  <a href="./index.html">← @tempo-kit/plugin-ticker</a>
 </div>
 
 <br>
@@ -18,8 +18,8 @@ Tempo Ticker implements the standard TypeScript 5.2+ / ECMAScript Explicit Resou
 Ideal for callback-driven Tickers. The timer is automatically cleared the moment execution exits the block:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ticker/install';
 
 {
   using ticker = Tempo.ticker(1, (t) => {

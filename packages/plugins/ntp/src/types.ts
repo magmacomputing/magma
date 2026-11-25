@@ -1,5 +1,5 @@
-import type { Tempo } from '@magmacomputing/tempo';
-import type { ReadonlySignal } from '@magmacomputing/tempo/library';
+import type { Tempo } from 'tempo-kit';
+import type { ReadonlySignal } from 'tempo-kit/library';
 
 /**
  * Origin, URL prefix, regex, or predicate function used to filter passive fetch requests.

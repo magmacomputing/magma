@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { AtomicClock } from '../src/AtomicClock.js';
 import { AtomicReader } from '../src/AtomicReader.js';
 

@@ -1,7 +1,7 @@
-# @magmacomputing/tempo-plugin-ntp
+# @tempo-kit/plugin-ntp
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ntp/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/ntp.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ntp"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-ntp/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ntp"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/ntp.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 A lightweight, zero-dependency Tempo plugin that provides **client-server network time synchronization** and **monotonic clock drift compensation** using Cristian's algorithm and HTTP `Server-Timing` / `Date` headers.
@@ -22,7 +22,7 @@ Client device clocks are notoriously inaccurate—frequently skewed by seconds o
 ## 📦 Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-ntp
+npm install @tempo-kit/plugin-ntp
 ```
 
 ---
@@ -30,8 +30,8 @@ npm install @magmacomputing/tempo-plugin-ntp
 ## 🚀 Quick Start
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+import { Tempo } from 'tempo-kit';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
 
 // 1. Install the plugin with optional target server
 Tempo.use(NtpPlugin, {

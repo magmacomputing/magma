@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-sync
+# @tempo-kit/plugin-sync
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-sync"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-sync?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-sync/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-sync"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-sync?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-sync"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-sync?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-sync/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-sync"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-sync?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 This is a Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that provides lock-free, nanosecond-accurate cross-thread time synchronization using `SharedArrayBuffer` and `Atomics`.
@@ -29,7 +29,7 @@ High-frequency trading platforms, real-time multiplayer authoritative game serve
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-sync
+npm install @tempo-kit/plugin-sync
 ```
 
 ---
@@ -43,8 +43,8 @@ This plugin leverages `SharedArrayBuffer` and `Atomics` for hardware-level cross
 ### Master Process: Initializing the Atomic Clock
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SyncPlugin } from '@magmacomputing/tempo-plugin-sync';
+import { Tempo } from 'tempo-kit';
+import { SyncPlugin } from '@tempo-kit/plugin-sync';
 
 Tempo.use(SyncPlugin);
 
@@ -56,8 +56,8 @@ const buffer = clock.getBuffer(); // Pass this SharedArrayBuffer to your workers
 #### Zero-Boilerplate Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-sync/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-sync/install';
 
 const clock = Tempo.sync.startClock({ interval: 10 });
 ```
@@ -67,7 +67,7 @@ const clock = Tempo.sync.startClock({ interval: 10 });
 ```typescript
 // worker.ts
 import { workerData } from 'node:worker_threads';
-import { AtomicReader } from '@magmacomputing/tempo-plugin-sync';
+import { AtomicReader } from '@tempo-kit/plugin-sync';
 
 // Hydrate reader directly from shared memory
 const reader = new AtomicReader(workerData.buffer);

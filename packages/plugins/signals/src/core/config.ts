@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { Signify, isFunction, isText, onConfigChange, type ReadonlySignal } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { Signify, isFunction, isText, onConfigChange, type ReadonlySignal } from 'tempo-kit/plugin/sdk';
 import type { ConfigSignals, SignalsPluginOptions } from '../types/index.js';
 
 let _localeState: Signify.State<string> | null = null;

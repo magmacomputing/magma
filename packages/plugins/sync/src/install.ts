@@ -1,4 +1,4 @@
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { SyncPlugin } from './index.js';
 
 autoInstall(SyncPlugin);

@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-snap</a>
+  <a href="./index.html">← @tempo-kit/plugin-snap</a>
 </div>
 
 <br>
 
 # Production Use Cases & Architectural Patterns
 
-This guide demonstrates how `@magmacomputing/tempo-plugin-snap` provides deterministic time boundary alignment across calendar user interfaces, high-frequency telemetry downsampling, and multimedia synchronization pipelines.
+This guide demonstrates how `@tempo-kit/plugin-snap` provides deterministic time boundary alignment across calendar user interfaces, high-frequency telemetry downsampling, and multimedia synchronization pipelines.
 
 ---
 
@@ -29,8 +29,8 @@ Pointer Coordinate: 14:08:22
 ### Production Implementation
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SnapPlugin } from '@magmacomputing/tempo-plugin-snap';
+import { Tempo } from 'tempo-kit';
+import { SnapPlugin } from '@tempo-kit/plugin-snap';
 
 Tempo.use(SnapPlugin);
 
@@ -77,8 +77,8 @@ Distributed microservices, IoT sensors, and load balancers emit millions of high
 Downsample raw event timestamps to fixed second or minute boundaries using `t.snap({ ss: 10, direction: 'down' })`. This assigns every sample within the interval to the identical bucket key in constant $O(1)$ time without database grouping overhead.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SnapPlugin } from '@magmacomputing/tempo-plugin-snap';
+import { Tempo } from 'tempo-kit';
+import { SnapPlugin } from '@tempo-kit/plugin-snap';
 
 Tempo.use(SnapPlugin);
 
@@ -141,8 +141,8 @@ In video editing pipelines, subtitle synchronization engines, and WebAudio proce
 Use sub-second millisecond snapping (`t.snap({ ms: 17 })` or `t.snap({ ms: 40 })`) to snap arbitrary event times to the nearest physical render frame boundary.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SnapPlugin } from '@magmacomputing/tempo-plugin-snap';
+import { Tempo } from 'tempo-kit';
+import { SnapPlugin } from '@tempo-kit/plugin-snap';
 
 Tempo.use(SnapPlugin);
 

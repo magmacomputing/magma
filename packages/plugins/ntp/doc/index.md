@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-ntp
+# @tempo-kit/plugin-ntp
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ntp/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ntp"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ntp"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-ntp?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-ntp/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ntp"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-ntp?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 A lightweight, high-precision Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem that provides **client-server network time synchronization** and **monotonic clock drift compensation** using Cristian's algorithm, HTTP `Server-Timing` headers, jitter rejection, and Exponential Moving Average (EMA) smoothing.
@@ -24,7 +24,7 @@ A lightweight, high-precision Community plugin for the [Tempo](https://github.co
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-ntp
+npm install @tempo-kit/plugin-ntp
 ```
 
 ---
@@ -34,8 +34,8 @@ npm install @magmacomputing/tempo-plugin-ntp
 <PluginRepl plugin="ntp" />
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+import { Tempo } from 'tempo-kit';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
 
 // 1. Install the plugin with target server endpoint
 Tempo.use(NtpPlugin, {
@@ -68,8 +68,8 @@ console.log(`Uncertainty Window: ±${Tempo.ntp.drift.uncertaintyMs}ms`);
 ### Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ntp/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ntp/install';
 
 // Synchronize and query true calibrated server time
 await Tempo.ntp.sync();
@@ -114,7 +114,7 @@ Instance method that returns a new `Tempo` instance offset by the current NTP cl
 ## Topic Guides
 
 - [Cristian Algorithm & Precision Specs](./algorithms-and-precision.md) - RTT offset mathematics, `Server-Timing` precision, jitter filtering, and EMA smoothing.
-- [Ticker Integration & Atomic Clocks](./ticker-integration.md) - Drift-compensated continuous execution loops with `@magmacomputing/tempo-plugin-ticker` (`ntp: true`).
+- [Ticker Integration & Atomic Clocks](./ticker-integration.md) - Drift-compensated continuous execution loops with `@tempo-kit/plugin-ticker` (`ntp: true`).
 - [Production Use Cases & Architectural Patterns](./use-cases-and-patterns.md) - Financial countdowns, live auctions, passive calibration, distributed logging, and TOTP authentication.
 
 ---

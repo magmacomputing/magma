@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+  <a href="./index.html">← @tempo-kit/plugin-ticker</a>
 </div>
 
 <br>
 
 # Event Streams & Reactive Clocks
 
-This guide covers event-driven integrations with the `@magmacomputing/tempo-plugin-ticker` plugin, including event listeners, active timer diagnostics, and zero-drift multi-timezone dashboards using reactive signals.
+This guide covers event-driven integrations with the `@tempo-kit/plugin-ticker` plugin, including event listeners, active timer diagnostics, and zero-drift multi-timezone dashboards using reactive signals.
 
 ---
 
@@ -15,8 +15,8 @@ This guide covers event-driven integrations with the `@magmacomputing/tempo-plug
 Every Ticker instance acts as an event emitter supporting `'pulse'`, `'stop'`, and `'catch'` events.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ticker/install';
 
 const ticker = Tempo.ticker({ seconds: 1 });
 
@@ -53,7 +53,7 @@ ticker.on('catch', (t, stop) => {
 The `Ticker` class maintains a global static registry of all currently running (non-stopped) Tickers. This is invaluable for monitoring, observability, and verifying clean test teardown:
 
 ```typescript
-import { Ticker } from '@magmacomputing/tempo-plugin-ticker';
+import { Ticker } from '@tempo-kit/plugin-ticker';
 
 // Retrieve live snapshots of all active tickers
 const running = Ticker.active;
@@ -94,9 +94,9 @@ Instead, use a single **Master Ticker** to drive all derivative clocks.
 With Tempo v5 and `Signify`, tickers natively expose fine-grained TC39 `ReadonlySignal<Tempo>` without requiring third-party signal libraries:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { Signify } from '@magmacomputing/tempo/library';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import { Signify } from 'tempo-kit/library';
+import '@tempo-kit/plugin-ticker/install';
 
 // 1. Single Master Source of Truth (via native ticker.signal or Tempo.ticker.signal)
 using masterTicker = Tempo.ticker({ seconds: 1 });
@@ -114,8 +114,8 @@ const tokyoTime  = Signify.computed(() => masterClock.value.set({ timeZone: 'Asi
 ### B. Async Generator Multi-Clock Stream (Framework-Agnostic)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ticker/install';
 
 async function runTradingDashboard() {
   await using master = Tempo.ticker({ seconds: 1 });

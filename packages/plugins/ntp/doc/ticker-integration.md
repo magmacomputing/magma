@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ntp</a>
+  <a href="./index.html">← @tempo-kit/plugin-ntp</a>
 </div>
 
 <br>
 
 # Ticker Integration & Atomic Clocks
 
-When combined with [`@magmacomputing/tempo-plugin-ticker`](../../ticker/doc/index.md), `@magmacomputing/tempo-plugin-ntp` enables continuous execution loops and scheduled intervals compensated for client-server network clock drift.
+When combined with [`@tempo-kit/plugin-ticker`](../../ticker/doc/index.md), `@tempo-kit/plugin-ntp` enables continuous execution loops and scheduled intervals compensated for client-server network clock drift.
 
 ---
 
@@ -17,9 +17,9 @@ The Ticker plugin supports the `ntp: true` option.
 When `ntp: true` is configured, Ticker seeds unanchored start times from `Tempo.ntp.now()` and dynamically adjusts internal countdown delays to compensate for measured remote clock drift (`Tempo.ntp.offset`):
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import { Tempo } from 'tempo-kit';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
 
 // 1. Install both plugins
 Tempo.use(NtpPlugin, { server: '/api/time' });
@@ -48,7 +48,7 @@ In collaborative web applications, multiplayer games, and distributed IoT fleets
 By passing `ntp: true` alongside cron schedules or duration steps, all participating nodes align to true atomic epoch boundaries:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Trigger on every 5-minute atomic boundary
 const synchronizedJob = Tempo.ticker({

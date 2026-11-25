@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { TickerPlugin } from '../src/index.js';
 
 Tempo.use(TickerPlugin);

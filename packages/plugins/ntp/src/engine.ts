@@ -1,4 +1,4 @@
-import { isFunction, Finalizer, Signify } from '@magmacomputing/tempo/plugin/sdk';
+import { isFunction, Finalizer, Signify } from 'tempo-kit/plugin/sdk';
 import type { ClockDriftState, NtpSyncOptions, NtpSignalsNamespace } from './types.js';
 
 const RE_SERVER_TIMING = /(?:clock|server_time|epoch)=(\d+(?:\.\d+)?)/i;

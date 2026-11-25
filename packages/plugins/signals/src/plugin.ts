@@ -1,6 +1,6 @@
 import {
 	Tempo,
-} from '@magmacomputing/tempo';
+} from 'tempo-kit';
 import {
 	Signify,
 	deepFreeze,
@@ -12,7 +12,7 @@ import {
 	sym,
 	type Interval,
 	type TempoPlugin,
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 import {
 	disposeConfigSignals,
 	initConfigSignals,

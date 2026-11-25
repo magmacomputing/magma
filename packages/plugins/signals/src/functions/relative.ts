@@ -1,11 +1,11 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
 	Signify,
 	isBigInt,
 	isFunction,
 	isNumber,
 	isText,
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 import { localeSignal } from '../core/config.js';
 import { createDisposableSignal, unrefTimer } from '../core/disposable.js';
 import type { DisposableSignal, RelativeSignalOptions, RelativeSignalTarget } from '../types/index.js';

@@ -1,5 +1,5 @@
-import { definePlugin, type TempoPlugin, logError } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo/core';
+import { definePlugin, type TempoPlugin, logError } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit/core';
 
 type SnapKey =
 	| 'hh' | 'hours' | 'hour'
@@ -145,7 +145,7 @@ export const SnapPlugin: TempoPlugin = definePlugin({
 	}
 });
 
-declare module '@magmacomputing/tempo/core' {
+declare module 'tempo-kit/core' {
 	interface Tempo {
 		/** 
 		 * Snaps the time to the nearest given interval for the specified unit.
