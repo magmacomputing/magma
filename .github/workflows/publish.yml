@@ -133,16 +133,16 @@ jobs:
             PKGS=(
               "tempo-kit"
               "tempo-fns"
-              "@magmacomputing/tempo-plugin-celestial"
+              "@tempo-kit/plugin-celestial"
               "@magmacomputing/tempo-plugin-ai"
-              "@magmacomputing/tempo-plugin-batch"
-              "@magmacomputing/tempo-plugin-geo"
-              "@magmacomputing/tempo-plugin-holidays"
+              "@tempo-kit/plugin-batch"
+              "@tempo-kit/plugin-geo"
+              "@tempo-kit/plugin-holidays"
               "@tempo-kit/plugin-ntp"
-              "@magmacomputing/tempo-plugin-roman"
+              "@tempo-kit/plugin-roman"
               "@tempo-kit/plugin-signals"
               "@tempo-kit/plugin-snap"
-              "@magmacomputing/tempo-plugin-spatial"
+              "@tempo-kit/plugin-spatial"
               "@tempo-kit/plugin-sync"
               "@tempo-kit/plugin-ticker"
               "@magmacomputing/tempo-plugin-dialects"
@@ -151,16 +151,16 @@ jobs:
             [ "$INPUT_TEMPO" = "true" ] && PKGS+=("tempo-kit")
             [ "$INPUT_TEMPO_FNS" = "true" ] && PKGS+=("tempo-fns")
             [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ai")
-            [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-batch")
-            [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-celestial")
+            [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@tempo-kit/plugin-batch")
+            [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@tempo-kit/plugin-celestial")
             [ "$INPUT_PLUGIN_DIALECTS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-dialects")
-            [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-geo")
-            [ "$INPUT_PLUGIN_HOLIDAYS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-holidays")
+            [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@tempo-kit/plugin-geo")
+            [ "$INPUT_PLUGIN_HOLIDAYS" = "true" ] && PKGS+=("@tempo-kit/plugin-holidays")
             [ "$INPUT_PLUGIN_NTP" = "true" ] && PKGS+=("@tempo-kit/plugin-ntp")
-            [ "$INPUT_PLUGIN_ROMAN" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-roman")
+            [ "$INPUT_PLUGIN_ROMAN" = "true" ] && PKGS+=("@tempo-kit/plugin-roman")
             [ "$INPUT_PLUGIN_SIGNALS" = "true" ] && PKGS+=("@tempo-kit/plugin-signals")
             [ "$INPUT_PLUGIN_SNAP" = "true" ] && PKGS+=("@tempo-kit/plugin-snap")
-            [ "$INPUT_PLUGIN_SPATIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-spatial")
+            [ "$INPUT_PLUGIN_SPATIAL" = "true" ] && PKGS+=("@tempo-kit/plugin-spatial")
             [ "$INPUT_PLUGIN_SYNC" = "true" ] && PKGS+=("@tempo-kit/plugin-sync")
             [ "$INPUT_PLUGIN_TICKER" = "true" ] && PKGS+=("@tempo-kit/plugin-ticker")
 
@@ -175,18 +175,18 @@ jobs:
                 elif [[ "$item" == @tempo-kit/plugin-* ]]; then
                   pname="${item#@tempo-kit/plugin-}"
                   case "$pname" in
-                    ticker|ntp|signals|sync|snap) PKGS+=("$item") ;;
+                    ticker|ntp|signals|sync|snap|batch|celestial|geo|holidays|roman|spatial) PKGS+=("$item") ;;
                     *) PKGS+=("@magmacomputing/tempo-plugin-$pname") ;;
                   esac
                 elif [[ "$item" == @magmacomputing/* ]]; then
                   pname="${item#@magmacomputing/tempo-plugin-}"
                   case "$pname" in
-                    ticker|ntp|signals|sync|snap) PKGS+=("@tempo-kit/plugin-$pname") ;;
+                    ticker|ntp|signals|sync|snap|batch|celestial|geo|holidays|roman|spatial) PKGS+=("@tempo-kit/plugin-$pname") ;;
                     *) PKGS+=("$item") ;;
                   esac
                 else
                   case "$item" in
-                    ticker|ntp|signals|sync|snap) PKGS+=("@tempo-kit/plugin-$item") ;;
+                    ticker|ntp|signals|sync|snap|batch|celestial|geo|holidays|roman|spatial) PKGS+=("@tempo-kit/plugin-$item") ;;
                     *) PKGS+=("@magmacomputing/tempo-plugin-$item") ;;
                   esac
                 fi

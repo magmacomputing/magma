@@ -1,5 +1,5 @@
 import './polyfill.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { BatchPlugin } from '../src/index.js';
 
 // Extend Tempo with the batch plugin

@@ -1,5 +1,5 @@
 {
-  "name": "@magmacomputing/tempo-plugin-batch",
+  "name": "@tempo-kit/plugin-batch",
   "version": "1.2.1",
   "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
   "main": "dist/index.js",
@@ -33,11 +33,11 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^4.5.0 || ^5.0.0"
+    "tempo-kit": "^5.0.0"
   },
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "@magmacomputing/tempo": "^5.0.0"
+    "tempo-kit": "^5.0.0"
   },
   "keywords": [
     "tempo",

@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { enums, getTermRange, defineSpan, defineTerm, Enum, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere, logWarn, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { enums, getTermRange, defineSpan, defineTerm, Enum, type ValueOf, WeakCache, TermHook, isNumber, resolveTermSphere, logWarn, type TermSpan } from 'tempo-kit/plugin/sdk';
 import { getSolarEvents as getSolarEventsFn } from 'tempo-fns';
 
 const ASTRO = Enum.from({ Vernal: 'vernal', Summer: 'summer', Autumnal: 'autumnal', Winter: 'winter' });
@@ -317,7 +317,7 @@ export const AstroTerm = defineTerm<any, AstroTermOptions>({
 	},
 });
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		astro: AstroKey;
 		equinox: 'Vernal' | 'Autumnal';

@@ -1,14 +1,14 @@
 ![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-geo
+# @tempo-kit/plugin-geo
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-geo"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-geo?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-geo/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-geo"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-geo?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/geo.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-geo"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-geo?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-geo/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-geo"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-geo?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/geo.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem that provides IP geolocation lookup, browser hardware location services, forward & reverse geocoding gateway with pluggable providers, cultural locale synchronization, and 24-hour multi-tenant coordinate caching.
 
-For geometric GIS math, Great-Circle navigation, and impossible travel anomaly detection, see [`@magmacomputing/tempo-plugin-spatial`](https://www.npmjs.com/package/@magmacomputing/tempo-plugin-spatial).
+For geometric GIS math, Great-Circle navigation, and impossible travel anomaly detection, see [`@tempo-kit/plugin-spatial`](https://www.npmjs.com/package/@tempo-kit/plugin-spatial).
 
 👉 **[View the full documentation on our GitHub Pages](https://magmacomputing.github.io/magma/doc/9-plugins/geo.index.html)**
 
@@ -17,7 +17,7 @@ For geometric GIS math, Great-Circle navigation, and impossible travel anomaly d
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-geo
+npm install @tempo-kit/plugin-geo
 ```
 
 ---
@@ -29,8 +29,8 @@ npm install @magmacomputing/tempo-plugin-geo
 Installing `GeoPlugin` mounts an immutable, locked-down **`Tempo.geo`** namespace onto the `Tempo` class:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { Tempo } from 'tempo-kit';
+import { GeoPlugin } from '@tempo-kit/plugin-geo';
 
 Tempo.use(GeoPlugin);
 
@@ -63,7 +63,7 @@ console.log(localTime.locale); // 'ar-EG'
 All underlying utilities can be imported as standalone tree-shakeable functions without augmenting `Tempo`:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
   geoLookup,
   reverseGeocode,
@@ -73,7 +73,7 @@ import {
   stashGeo,
   clearStashedGeo,
   getStashedGeo,
-} from '@magmacomputing/tempo-plugin-geo';
+} from '@tempo-kit/plugin-geo';
 
 // Standalone lookup & instance creation
 const coords = await geoLookup();

@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { getStorage } from '../src/cache.js';
 import {
 	HolidaysPlugin,
@@ -36,7 +36,7 @@ vi.mock('tempo-fns', () => ({
 // Auto-install plugin for OOP tests
 Tempo.use(HolidaysPlugin);
 
-describe('@magmacomputing/tempo-plugin-holidays', () => {
+describe('@tempo-kit/plugin-holidays', () => {
 	beforeEach(() => {
 		Tempo.init();
 		Tempo.use(HolidaysPlugin);

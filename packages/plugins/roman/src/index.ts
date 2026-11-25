@@ -1,6 +1,6 @@
-import { definePlugin, deepFreeze, isFunction, isNumber, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
-import { isLeapYear } from '@magmacomputing/tempo/library';
-import type { Tempo } from '@magmacomputing/tempo';
+import { definePlugin, deepFreeze, isFunction, isNumber, type TempoPlugin } from 'tempo-kit/plugin/sdk';
+import { isLeapYear } from 'tempo-kit/library';
+import type { Tempo } from 'tempo-kit';
 import type {
 	ClassicalRomanDate,
 	RomanAnchor,
@@ -35,7 +35,7 @@ export * from './format.js';
 export * from './parser.js';
 export * from './consul-engine.js';
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	/** Registers `{roman}` (and `{roman:...}` modifiers) for compile-time format validation. */
 	interface TempoFormatTokens {
 		roman: true;

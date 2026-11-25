@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+  <a href="./index.html">← @tempo-kit/plugin-spatial</a>
 </div>
 
 <br>
@@ -12,7 +12,7 @@ Real-world applications frequently handle events anchored in both time and space
 3. **Route Planning & Aviation**: Computing Great-Circle nautical distances, initial forward azimuth bearings, and route midpoints.
 4. **Natural Solar Alignment**: Reconciling civil timezone offsets with true physical solar time.
 
-The `@magmacomputing/tempo-plugin-spatial` plugin provides GIS geometry, spherical trigonometry, and velocity analysis directly on `Tempo.spatial`.
+The `@tempo-kit/plugin-spatial` plugin provides GIS geometry, spherical trigonometry, and velocity analysis directly on `Tempo.spatial`.
 
 ---
 
@@ -23,8 +23,8 @@ In identity providers, IAM systems, and banking portals, detecting stolen sessio
 `Tempo.spatial.isImpossibleTravel` calculates Great-Circle distance over elapsed time, flagging speed anomalies exceeding commercial flight thresholds (default: 900 km/h):
 
 ```typescript
-import '@magmacomputing/tempo-plugin-spatial/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-spatial/install';
+import { Tempo } from 'tempo-kit';
 
 interface UserLoginEvent {
   userId: string;
@@ -80,8 +80,8 @@ Delivery platforms and transport dispatchers trigger real-time workflow events w
 - **Rectangular Bounding Box (`inBoundingBox`)**: Enforces regional operational boundaries.
 
 ```typescript
-import '@magmacomputing/tempo-plugin-spatial/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-spatial/install';
+import { Tempo } from 'tempo-kit';
 
 const depot = { lat: -33.8688, lng: 151.2093 }; // Sydney Central Depot
 
@@ -114,8 +114,8 @@ export function processCourierTelemetry(courierLocation: { lat: number; lng: num
 Air navigation uses Great-Circle geodesic routes to minimize fuel consumption. `Tempo.spatial.distance`, `bearing`, and `midpoint` calculate the shortest curvature path, the initial compass heading, and the midpoint coordinates:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-spatial/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-spatial/install';
+import { Tempo } from 'tempo-kit';
 
 const jfkAirport = { lat: 40.6413, lng: -73.7781 };
 const lhrAirport = { lat: 51.4700, lng: -0.4543 };
@@ -151,8 +151,8 @@ Standard civil timezones group large geographic expanses into unified offsets. I
 `Tempo.spatial.solarOffset` calculates this delta for energy modeling and circadian scheduling:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-spatial/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-spatial/install';
+import { Tempo } from 'tempo-kit';
 
 // Paris, France on the Summer Solstice
 const t = new Tempo('2026-06-21 12:00:00', {

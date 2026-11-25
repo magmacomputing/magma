@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+  <a href="./index.html">← @tempo-kit/plugin-celestial</a>
 </div>
 
 <br>
 
 # Astronomical Seasons, Solstices & Equinoxes
 
-This guide explores astronomical solar quarters, equinoxes, solstices, and hemisphere-aware season calculations in `@magmacomputing/tempo-plugin-celestial`.
+This guide explores astronomical solar quarters, equinoxes, solstices, and hemisphere-aware season calculations in `@tempo-kit/plugin-celestial`.
 
 ---
 
@@ -14,7 +14,7 @@ This guide explores astronomical solar quarters, equinoxes, solstices, and hemis
 
 `AstroTerm` (`t.term.astro`, `t.term.astronomy`, `t.term.equinox`, `t.term.solstice`) calculates the precise astronomical moments when the Sun crosses the celestial equator (Equinoxes) or reaches its northernmost / southernmost declinations (Solstices).
 
-Calculations utilize the high-precision Jean Meeus solar ephemeris polynomial algorithms implemented in `@magmacomputing/tempo-fns`, providing sub-minute accuracy across historical and future years without requiring internet access.
+Calculations utilize the high-precision Jean Meeus solar ephemeris polynomial algorithms implemented in `tempo-fns`, providing sub-minute accuracy across historical and future years without requiring internet access.
 
 ---
 
@@ -28,8 +28,8 @@ Calculations utilize the high-precision Jean Meeus solar ephemeris polynomial al
 | `'Winter'` | **Winter Solstice** (Solar Longitude = 270°) | Winter | Summer | December 21–22 |
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -94,8 +94,8 @@ console.log(june.term.solstice);   // 'Summer'
 If you only need astronomical seasons without the other celestial ephemeris terms, you can import and register `AstroTerm` directly:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { AstroTerm } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { AstroTerm } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(AstroTerm);
 

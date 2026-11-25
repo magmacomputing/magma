@@ -1,4 +1,4 @@
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { RomanPlugin } from './index.js';
 
 // Auto-register plugin onto Tempo upon side-effect import

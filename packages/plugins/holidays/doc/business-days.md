@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-holidays</a>
+  <a href="./index.html">← @tempo-kit/plugin-holidays</a>
 </div>
 
 <br>
@@ -18,8 +18,8 @@ A date is considered a **business day** if:
 3. It does not match any date in `options.customHolidays`.
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 // US Independence Day (Observed Friday July 3, 2026)
 const t1 = new Tempo('2026-07-03', { geo: { country: 'US' } });

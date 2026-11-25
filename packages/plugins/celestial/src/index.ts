@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
 	LUNAR_PHASE_KEYS,
 	SOLAR_PHASE_STATES,
@@ -69,7 +69,7 @@ export {
 	AstroTerm,
 };
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		moon: LunarPhaseKey;
 		lunar: {

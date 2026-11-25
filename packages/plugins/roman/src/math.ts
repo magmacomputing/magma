@@ -1,5 +1,5 @@
-import { toRoman } from '@magmacomputing/tempo/plugin/sdk';
-import { getDaysInMonth, isLeapYear } from '@magmacomputing/tempo/library';
+import { toRoman } from 'tempo-kit/plugin/sdk';
+import { getDaysInMonth, isLeapYear } from 'tempo-kit/library';
 import type {
 	ClassicalRomanDate,
 	RomanAnchor,

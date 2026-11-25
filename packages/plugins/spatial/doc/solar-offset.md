@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+  <a href="./index.html">← @tempo-kit/plugin-spatial</a>
 </div>
 
 <br>
 
 # Natural Solar Time Offset
 
-This guide explains natural solar time offset calculations and meridian longitudinal delta modeling in `@magmacomputing/tempo-plugin-spatial`.
+This guide explains natural solar time offset calculations and meridian longitudinal delta modeling in `@tempo-kit/plugin-spatial`.
 
 ---
 
@@ -27,8 +27,8 @@ The **Natural Solar Time Offset** measures the exact physical time difference be
 The `solarOffset` method computes this delta in minutes (default), seconds, or hours:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin, solarOffset } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin, solarOffset } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 

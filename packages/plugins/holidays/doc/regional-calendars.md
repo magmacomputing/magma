@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-holidays</a>
+  <a href="./index.html">← @tempo-kit/plugin-holidays</a>
 </div>
 
 <br>
@@ -38,8 +38,8 @@ When evaluating a holiday or business day, Tempo resolves the effective country 
 5. **Default Fallback**: `'US'`
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 // Geo-aware instance automatically evaluates Australian national and state holidays
 const melb = new Tempo('2026-11-03', {
@@ -56,15 +56,15 @@ console.log(melb.holidays.region);            // 'VIC'
 
 ## Dynamic Long-Tail Preloading & Storage Caching
 
-For global applications requiring holiday coverage beyond the 8 built-in economies, the plugin integrates with `@magmacomputing/tempo-fns` to fetch statutory public holidays for over 100+ countries.
+For global applications requiring holiday coverage beyond the 8 built-in economies, the plugin integrates with `tempo-fns` to fetch statutory public holidays for over 100+ countries.
 
 Fetched calendars are stored in runtime storage with a **24-hour TTL** under the `_magma_holidays_` namespace and registered into the in-memory engine, allowing subsequent queries to execute synchronously with zero latency.
 
 ### Using Static / Async `Tempo.holidays.preload()`
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 // Preload Italy (IT) for 2026
 await Tempo.holidays.preload(2026, 'IT');

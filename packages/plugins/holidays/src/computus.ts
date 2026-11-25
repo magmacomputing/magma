@@ -1,5 +1,5 @@
-import { WeakCache } from '@magmacomputing/tempo/library';
-import { getDaysInMonth, civilToDays, isoWeekdayFromDays, epochMsFromParts, partsFromEpochMs } from '@magmacomputing/tempo/library';
+import { WeakCache } from 'tempo-kit/library';
+import { getDaysInMonth, civilToDays, isoWeekdayFromDays, epochMsFromParts, partsFromEpochMs } from 'tempo-kit/library';
 
 /**
  * Computes calendar dates, floating Easter offsets, and weekday shifts.

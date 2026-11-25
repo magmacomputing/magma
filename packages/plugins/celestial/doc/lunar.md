@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+  <a href="./index.html">← @tempo-kit/plugin-celestial</a>
 </div>
 
 <br>
 
 # Lunar Ephemeris, Phases & Topocentric Position
 
-This guide covers synodic lunar phase cycles, illumination ratio, lunar age, hemisphere-aware emoji rendering, topocentric horizon events (`moonrise`/`moonset`), meridian transits, real-time sky position (`altitude`/`azimuth`), crescent tilt orientation, distance, and supermoon/micromoon identification in `@magmacomputing/tempo-plugin-celestial`.
+This guide covers synodic lunar phase cycles, illumination ratio, lunar age, hemisphere-aware emoji rendering, topocentric horizon events (`moonrise`/`moonset`), meridian transits, real-time sky position (`altitude`/`azimuth`), crescent tilt orientation, distance, and supermoon/micromoon identification in `@tempo-kit/plugin-celestial`.
 
 ---
 
@@ -26,8 +26,8 @@ This guide covers synodic lunar phase cycles, illumination ratio, lunar age, hem
 | `'waning-crescent'` | Waning Crescent | 49% - 1% | 25.8 - 29.53 |
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 

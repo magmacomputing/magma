@@ -1,4 +1,4 @@
-import { isString } from '@magmacomputing/tempo/library';
+import { isString } from 'tempo-kit/library';
 import { getStorage } from './cache.js';
 import { generateUsHolidays } from './calendars/us.js';
 import { generateAuHolidays } from './calendars/au.js';

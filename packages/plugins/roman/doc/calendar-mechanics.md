@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-roman</a>
+  <a href="./index.html">← @tempo-kit/plugin-roman</a>
 </div>
 
 <br>
@@ -85,7 +85,7 @@ Under the Julian calendar reform (45 BCE), an intercalary day was added every fo
 - **February 25**: *ante diem sextum Kalendas Martias* (the sixth day)
 - **February 29**: *Pridie Kalendas Martias*
 
-This practice gave rise to the term **Bissextile Year** (*annus bissextilis*). `@magmacomputing/tempo-plugin-roman` faithfully reproduces this classical intercalation by default (`{ bissextile: true }`):
+This practice gave rise to the term **Bissextile Year** (*annus bissextilis*). `@tempo-kit/plugin-roman` faithfully reproduces this classical intercalation by default (`{ bissextile: true }`):
 
 ```typescript
 const leapDay = new Tempo('2024-02-24');
@@ -131,7 +131,7 @@ The plugin includes historical consular dating. By default, the core bundle prov
 To access the complete historical catalog spanning all 1,050 years from the founding of the Roman Republic in 509 BCE (`-508`) through the final recorded consul in the West in 541 CE (`541`), import the `./consuls` subpath:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-roman/consuls';
+import '@tempo-kit/plugin-roman/consuls';
 
 const idesMarch44 = new Tempo('-000043-03-15');
 console.log(idesMarch44.consuls);

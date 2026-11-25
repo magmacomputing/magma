@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { definePlugin, deepFreeze, hasOwn, type TempoPlugin } from 'tempo-kit/plugin/sdk';
 import {
 	haversineDistance,
 	calculateBearing,
@@ -149,7 +149,7 @@ export const SpatialPlugin: TempoPlugin<SpatialPluginOptions> = definePlugin({
 export const spatialPlugin = SpatialPlugin;
 export default SpatialPlugin;
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface Tempo {
 		/**
 		 * Calculates the Great-Circle distance from this instance to target coordinates.

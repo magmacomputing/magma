@@ -8,7 +8,7 @@ import type { ConsularPair, ConsularFormatStyle } from './types.js';
  *
  * To load the complete 1,050-year Fasti consulares (509 BCE – 541 CE), import:
  * ```ts
- * import '@magmacomputing/tempo-plugin-roman/consuls';
+ * import '@tempo-kit/plugin-roman/consuls';
  * ```
  */
 export const LANDMARK_CONSULS: Readonly<Record<number, readonly string[]>> = Object.freeze({
@@ -52,7 +52,7 @@ export const LANDMARK_CONSULS: Readonly<Record<number, readonly string[]>> = Obj
 	'541': ['Anicius Faustus Albinus Basilius'],
 });
 
-const CONSULAR_REGISTRY_SYMBOL = Symbol.for('@magmacomputing/tempo-plugin-roman/consuls');
+const CONSULAR_REGISTRY_SYMBOL = Symbol.for('@tempo-kit/plugin-roman/consuls');
 
 /**
  * Accesses the global shared consular catalog dictionary across all module boundaries.
@@ -98,7 +98,7 @@ export function resetConsulCatalog(): void {
  * (e.g. 509 BCE, 63 BCE Cicero, 44 BCE Caesar, 541 CE Basilius).
  * To load the complete 1,050-year Fasti consulares (509 BCE–541 CE), import:
  * ```ts
- * import '@magmacomputing/tempo-plugin-roman/consuls';
+ * import '@tempo-kit/plugin-roman/consuls';
  * ```
  *
  * @param year - Astronomical year (e.g. 0 for 1 BCE, -62 for 63 BCE, 2026)

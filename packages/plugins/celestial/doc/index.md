@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-celestial
+# @tempo-kit/plugin-celestial
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-celestial"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-celestial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-celestial/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-celestial"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-celestial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-celestial"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-celestial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-celestial/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-celestial"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-celestial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 A Community plugin for [Tempo](https://github.com/magmacomputing/magma) providing location-aware solar twilight events (`t.term.sun`, `t.term.solar`), real-time lunar cycle phases (`t.term.moon`, `t.term.lunar`), and astronomical tidal mechanics (`t.term.tide`, `t.term.tides`).
@@ -23,7 +23,7 @@ A Community plugin for [Tempo](https://github.com/magmacomputing/magma) providin
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-celestial
+npm install @tempo-kit/plugin-celestial
 ```
 
 ---
@@ -33,8 +33,8 @@ npm install @magmacomputing/tempo-plugin-celestial
 <PluginRepl plugin="celestial" />
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -83,8 +83,8 @@ console.log(t.format('Sun: {#solar.phase} | Elev: {#solar.elevation}'));
 ### Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-celestial/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-celestial/install';
 
 const t = new Tempo('2026-06-21T12:00:00Z', { geo: { lat: 40.7128, lng: -74.006 } });
 console.log(t.term.sun);

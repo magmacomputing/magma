@@ -1,5 +1,5 @@
 
-import { isLeapYear } from '@magmacomputing/tempo/library';
+import { isLeapYear } from 'tempo-kit/library';
 import {
 	aucToYear,
 	calculateClassicalRomanDate,

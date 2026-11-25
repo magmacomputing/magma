@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { RomanPlugin } from '../src/index.js';
 
 describe('Tempo Roman Plugin Integration', () => {

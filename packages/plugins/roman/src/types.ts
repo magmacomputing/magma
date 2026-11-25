@@ -1,4 +1,4 @@
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo } from 'tempo-kit';
 
 /**
  * The three traditional lunar anchor points of the Roman month.

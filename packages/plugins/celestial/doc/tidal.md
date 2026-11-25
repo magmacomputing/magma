@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+  <a href="./index.html">← @tempo-kit/plugin-celestial</a>
 </div>
 
 <br>
 
 # Astronomical Tidal Mechanics & Coastal Predictions
 
-This guide explores astronomical tidal state classification, syzygy and quadrature alignment, perigee factors, King Tide indicators, local coastal tide predictions, and lunitidal port calibration in `@magmacomputing/tempo-plugin-celestial`.
+This guide explores astronomical tidal state classification, syzygy and quadrature alignment, perigee factors, King Tide indicators, local coastal tide predictions, and lunitidal port calibration in `@tempo-kit/plugin-celestial`.
 
 ---
 
@@ -28,8 +28,8 @@ Tidal state resolution in `TidalTerm` (`t.term.tide`, `t.term.tides`) relies pur
 | `'normal'` | Intermediate orbital positions between syzygy and quadrature. | Standard daily tidal fluctuations. |
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 

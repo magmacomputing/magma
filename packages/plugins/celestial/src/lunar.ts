@@ -1,4 +1,4 @@
-import { defineTerm, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, WeakCache, TermHook } from 'tempo-kit/plugin/sdk';
 import {
 	getLunarPhaseRange,
 	getMoonriseMoonset,
@@ -8,7 +8,7 @@ import {
 	getEclipse,
 	LUNAR_PHASE_KEYS,
 } from 'tempo-fns';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import type { LunarPhaseKey, LunarPhaseName } from 'tempo-fns';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, getLunarDetails, createCelestialTermHandlers } from './util.js';
 

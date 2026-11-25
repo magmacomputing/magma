@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { CelestialPlugin } from '../src/index.js';
 
 describe('CelestialPlugin Lifecycle TermHooks Showcase', () => {

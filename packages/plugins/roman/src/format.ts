@@ -1,4 +1,4 @@
-import { toRoman } from '@magmacomputing/tempo/plugin/sdk';
+import { toRoman } from 'tempo-kit/plugin/sdk';
 import type {
 	ClassicalRomanDate,
 	RomanFormatOptions,

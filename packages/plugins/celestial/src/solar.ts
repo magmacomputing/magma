@@ -1,4 +1,4 @@
-import { defineTerm, WeakCache, TermHook } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, WeakCache, TermHook } from 'tempo-kit/plugin/sdk';
 import {
 	getSunriseSunset,
 	getSolarPosition,
@@ -8,8 +8,8 @@ import {
 	HALF_DAY_MS,
 	DAY_MS,
 } from 'tempo-fns';
-import { Tempo } from '@magmacomputing/tempo';
-import { isNull, isNumber } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { isNull, isNumber } from 'tempo-kit/library';
 import { getCelestialCoordinates, toDateTimeFields, toTempoOrNull, createCelestialTermHandlers } from './util.js';
 
 export type SolarPhaseState = 'daylight' | 'night' | 'civil-twilight' | 'nautical-twilight' | 'astronomical-twilight';

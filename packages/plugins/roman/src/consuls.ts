@@ -7,13 +7,13 @@
  *
  * @example
  * ```ts
- * import '@magmacomputing/tempo-plugin-roman/consuls';
- * import { Tempo } from '@magmacomputing/tempo';
+ * import '@tempo-kit/plugin-roman/consuls';
+ * import { Tempo } from 'tempo-kit';
  *
  * console.log(new Tempo('-000043-03-15').consuls); // "C. Julio Caesare V, M. Antonio coss."
  * ```
  */
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { RomanPlugin } from './index.js';
 import { CONSULS, CONSULS_SOURCE_REVISION } from './consuls.data.js';
 import { registerConsuls } from './consul-engine.js';
