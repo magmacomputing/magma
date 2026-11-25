@@ -94,6 +94,8 @@ These metrics are injected into the system prompt as immutable constraints.
 ```typescript
 // Note: If native Temporal is unavailable, assign `globalThis.Temporal` from
 // `@js-temporal/polyfill` in a preload module before importing `@tempo-kit/plugin-ai`.
+// For TypeScript, include `"ESNext.Temporal"` in `tsconfig.json` `compilerOptions.lib`
+// (or declare a matching global `Temporal` type).
 import { formatAI } from '@tempo-kit/plugin-ai';
 
 const zdt = Temporal.ZonedDateTime.from('2026-08-05T15:00:00+10:00[Australia/Sydney]');

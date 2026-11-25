@@ -53,8 +53,8 @@ export const TermHook = {
 	step: Symbol.for('magmacomputing/tempo/term/step'),
 	diff: Symbol.for('magmacomputing/tempo/term/diff'),
 	bound: Symbol.for('magmacomputing/tempo/term/bound'),
-	format: Symbol.for('magmacomputing/tempo/term/format')
-} as const;
+	format: Symbol.for('magmacomputing/tempo/term/format'),
+} as const satisfies Record<string, symbol>;
 
 export type TermHook = typeof TermHook;
 
@@ -84,8 +84,8 @@ const local = {
 	$Tempo, $Register, $Interpreter, $guard, $errored,
 	$Internal, $Bridge, $RuntimeBrand, $Descriptor, $setConfig, $setDiscovery,
 	$setEvents, $setPeriods, $setAliases, $buildGuard, $IsBase, $PluginType,
-	$Sandbox
-} as const;
+	$Sandbox,
+} as const satisfies Record<string, symbol>;
 
 
 /** @internal Unified Symbol Registry (Inherits from #library via Prototype Chain) */

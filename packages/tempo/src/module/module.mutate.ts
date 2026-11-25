@@ -18,6 +18,17 @@ declare module '#library/type.library.js' {
 	}
 }
 
+const SLICK_VALID_MAP = {
+	year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss',
+	millisecond: 'ms', microsecond: 'us', nanosecond: 'ns',
+} as const satisfies Record<string, string>;
+
+const SLICK_UNIT_MAP = {
+	yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
+	hh: 'hours', mi: 'minutes', ss: 'seconds',
+	ms: 'milliseconds', us: 'microseconds', ns: 'nanoseconds',
+} as const satisfies Record<string, string>;
+
 /**
  * Adjusts a ZonedDateTime to the specified target ISO week-numbering year
  * while preserving the ISO week-of-year (clamped to maxWeeks) and day-of-week.
@@ -107,11 +118,7 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 							}
 
 							if (type === 'set' && isString(adjust) && adjust !== 'start' && adjust !== 'mid' && adjust !== 'end') {
-								const validMap: Record<string, string> = {
-									year: 'yy', month: 'mm', week: 'ww', day: 'dd', hour: 'hh', minute: 'mi', second: 'ss',
-									millisecond: 'ms', microsecond: 'us', nanosecond: 'ns'
-								};
-								const mapped = validMap[singular(key)];
+								const mapped = (SLICK_VALID_MAP as Record<string, string>)[singular(key)];
 								if (mapped) {
 									logError(`For relative Slick math, use the '${mapped}' snippet key instead of '${key}'.`, this.config);
 									state.errored = true;
@@ -180,12 +187,8 @@ function mutate(this: Tempo, type: 'add' | 'subtract' | 'set' | 'plus' | 'minus'
 									let nbr = sh_nbr ? Number(sh_nbr) : 1;
 									if (sh_mod === '<' || sh_mod === '-' || sh_mod === 'prev' || sh_mod === 'last' || backwardWords.has(sh_mod)) nbr = -nbr;
 
-									const unitMap: Record<string, string> = {
-										yy: 'years', mm: 'months', ww: 'weeks', dd: 'days',
-										hh: 'hours', mi: 'minutes', ss: 'seconds',
-										ms: 'milliseconds', us: 'microseconds', ns: 'nanoseconds'
-									};
-									return currZdt.add({ [unitMap[key]]: nbr });
+									const unit = (SLICK_UNIT_MAP as Record<string, string>)[key];
+									return currZdt.add({ [unit]: nbr });
 								}
 							}
 
