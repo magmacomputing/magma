@@ -92,7 +92,9 @@ These metrics are injected into the system prompt as immutable constraints.
 `formatAI` seamlessly accepts `Tempo` instances, native JavaScript `Date` objects, ISO strings, timestamps, and TC39 `Temporal` objects (`Temporal.ZonedDateTime`, `Temporal.Instant`, `Temporal.PlainDateTime`, `Temporal.PlainDate`):
 
 ```typescript
-import { Temporal } from 'tempo-kit/library';
+// Note: If native Temporal is unavailable, assign `globalThis.Temporal` from
+// `@js-temporal/polyfill` in a preload module before importing `@tempo-kit/plugin-ai`.
+import { formatAI } from '@tempo-kit/plugin-ai';
 
 const zdt = Temporal.ZonedDateTime.from('2026-08-05T15:00:00+10:00[Australia/Sydney]');
 const result = await formatAI(zdt, 'compact relative format');
