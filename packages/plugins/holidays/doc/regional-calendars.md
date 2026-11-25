@@ -56,7 +56,7 @@ console.log(melb.holidays.region);            // 'VIC'
 
 ## Dynamic Long-Tail Preloading & Storage Caching
 
-For global applications requiring holiday coverage beyond the 8 built-in economies, the plugin integrates with `tempo-kit-fns` to fetch statutory public holidays for over 100+ countries.
+For global applications requiring holiday coverage beyond the 8 built-in economies, the plugin integrates with `tempo-fns` to fetch statutory public holidays for over 100+ countries.
 
 Fetched calendars are stored in runtime storage with a **24-hour TTL** under the `_magma_holidays_` namespace and registered into the in-memory engine, allowing subsequent queries to execute synchronously with zero latency.
 

@@ -14,7 +14,7 @@ This guide explores astronomical solar quarters, equinoxes, solstices, and hemis
 
 `AstroTerm` (`t.term.astro`, `t.term.astronomy`, `t.term.equinox`, `t.term.solstice`) calculates the precise astronomical moments when the Sun crosses the celestial equator (Equinoxes) or reaches its northernmost / southernmost declinations (Solstices).
 
-Calculations utilize the high-precision Jean Meeus solar ephemeris polynomial algorithms implemented in `tempo-kit-fns`, providing sub-minute accuracy across historical and future years without requiring internet access.
+Calculations utilize the high-precision Jean Meeus solar ephemeris polynomial algorithms implemented in `tempo-fns`, providing sub-minute accuracy across historical and future years without requiring internet access.
 
 ---
 
