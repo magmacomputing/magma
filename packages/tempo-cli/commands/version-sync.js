@@ -26,7 +26,7 @@ export async function versionSync(_args) {
 
 	try {
 		const workspaces = [
-			{ ws: '@magmacomputing/tempo', dir: 'tempo' },
+			{ ws: 'tempo-kit', dir: 'tempo' },
 			{ ws: 'tempo-lib', dir: 'library' },
 		];
 		let syncedCount = 0;

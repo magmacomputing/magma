@@ -103,7 +103,7 @@ function isSameFiscalQuarter(date1: Tempo, date2: Tempo): boolean;
 **Example:**
 ```typescript
 import { isSameFiscalQuarter } from 'tempo-fns';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const d1 = new Tempo('2026-01-15');
 const d2 = new Tempo('2026-03-31');

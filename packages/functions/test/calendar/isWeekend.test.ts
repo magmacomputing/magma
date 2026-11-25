@@ -1,5 +1,5 @@
 import { isWeekend, isWeekday } from '../../src/calendar/calendar.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('isWeekend and isWeekday', () => {
 	// 2026-10-01 is Thursday (ISO 4)

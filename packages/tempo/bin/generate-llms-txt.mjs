@@ -65,7 +65,7 @@ async function generateLlmsFull() {
 		await updateLlmsTxt(version, glossarySection);
 
 		const files = await getMarkdownFiles(docDir);
-		let content = `# Tempo Full Documentation Context (v${version})\n\n> This file contains the complete concatenated markdown documentation set for @magmacomputing/tempo (v${version}). It is intended for automated LLM context ingestion and RAG indexing.\n\n---\n\n`;
+		let content = `# Tempo Full Documentation Context (v${version})\n\n> This file contains the complete concatenated markdown documentation set for tempo-kit (v${version}). It is intended for automated LLM context ingestion and RAG indexing.\n\n---\n\n`;
 		if (glossarySection)
 			content += `${glossarySection}\n\n---\n\n`;
 

@@ -1,7 +1,7 @@
-import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
 import { isNumber } from 'tempo-lib';
 import { getChineseZodiac as getChineseZodiacFn } from 'tempo-fns';
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo } from 'tempo-kit';
 
 export interface RegionalVariant {
 	animal: string;
@@ -217,7 +217,7 @@ export const EasternTerm = /*#__PURE__*/ defineTerm({
 export const LunarSignTerm = EasternTerm;
 export const EasternZodiacTerm = EasternTerm;
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		sign: string;
 		lunarSign: string;

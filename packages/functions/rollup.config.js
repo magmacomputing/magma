@@ -7,9 +7,9 @@ export default {
 		format: 'iife',
 		name: 'Functions',
 		globals: {
-			'@magmacomputing/tempo': 'Tempo'
+			'tempo-kit': 'Tempo'
 		}
 	},
-	external: ['@magmacomputing/tempo'],
+	external: ['tempo-kit'],
 	plugins: [resolve()]
 }

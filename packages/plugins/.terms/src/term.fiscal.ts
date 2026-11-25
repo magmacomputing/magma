@@ -1,7 +1,7 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, $Internal, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, findTermPlugin, TermHook, $Internal, type TermSpan } from 'tempo-kit/plugin/sdk';
 import { isString, isDefined, isUndefined, isInteger, isNumber, asArray, getCountryFromTimeZone, getLC } from 'tempo-lib';
-import { logWarn } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo';
+import { logWarn } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
 
 /**
  * Valid fiscal quarter identifiers.
@@ -336,7 +336,7 @@ export const FiscalTerm = defineTerm<any, FiscalTermOptions>({
 	}
 });
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		fqtr: FiscalKey | undefined;
 		fiscal: {

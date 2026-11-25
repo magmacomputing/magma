@@ -1,5 +1,5 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
 
 /** definition of Western (Tropical) astrological zodiac ranges */
 const groups = /*#__PURE__*/ defineRange([
@@ -95,7 +95,7 @@ export const ZodiacTerm = /*#__PURE__*/ defineTerm({
 export const SunSignTerm = ZodiacTerm;
 export const StarSignTerm = ZodiacTerm;
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		zdc: WesternZodiacKey;
 		sunSign: WesternZodiacKey;

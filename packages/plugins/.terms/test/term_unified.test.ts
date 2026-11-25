@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { defineSpan, cast } from '@magmacomputing/tempo/plugin/sdk';
+import { defineSpan, cast } from 'tempo-kit/plugin/sdk';
 import {
 	QuarterTerm,
 	QUARTER_KEYS,

@@ -7,9 +7,9 @@
     "noEmit": false,
     "declarationMap": true,
     "paths": {
-      "@magmacomputing/tempo": ["../tempo/dist/tempo.index.d.ts"],
-      "@magmacomputing/tempo/core": ["../tempo/dist/core.index.d.ts"],
-      "@magmacomputing/tempo/*": ["../tempo/dist/*"],
+      "tempo-kit": ["../tempo/dist/tempo.index.d.ts"],
+      "tempo-kit/core": ["../tempo/dist/core.index.d.ts"],
+      "tempo-kit/*": ["../tempo/dist/*"],
       "tempo-lib": ["../library/dist/common.index.d.ts"],
       "#library/*": ["../library/dist/common/*"]
     }

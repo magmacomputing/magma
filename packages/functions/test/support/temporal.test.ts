@@ -6,7 +6,7 @@ import {
 	extractEpochMs,
 	toEpochMs,
 } from '../../src/support/index.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('unwrapTemporal', () => {
 	it('should unwrap Tempo instance to its underlying Temporal.ZonedDateTime', () => {

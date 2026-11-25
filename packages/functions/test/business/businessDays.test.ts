@@ -6,7 +6,7 @@ import {
 	businessDaysBetween,
 } from '../../src/business/businessDays.js';
 import { getTemporal } from '../../src/support/temporal.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('Phase 2: Business Day & Working Day Math', () => {
 	const Temporal = getTemporal();

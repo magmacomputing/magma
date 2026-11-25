@@ -9,7 +9,7 @@ The `functions` cron utilities provide zero-dependency, lightweight, and timezon
 Finds the next occurrence of a cron pattern starting from (and excluding) the current minute.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { nextCron } from 'tempo-fns';
 
 const start = new Tempo('2026-07-01T08:00:00Z');
@@ -24,7 +24,7 @@ console.log(next.format('{hh}:{mi}:{ss}')); // '09:00:00'
 Finds the previous occurrence of a cron pattern starting from (and excluding) the current minute.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { prevCron } from 'tempo-fns';
 
 const start = new Tempo('2026-07-01T18:00:00Z');

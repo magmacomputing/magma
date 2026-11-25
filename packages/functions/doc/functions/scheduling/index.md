@@ -13,7 +13,7 @@ function prevCron(tempo: Tempo, pattern: string): Tempo;
 **Example:**
 ```typescript
 import { nextCron } from 'tempo-fns';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const now = new Tempo('2026-01-01T08:00:00');
 const next = nextCron(now, '30 9 * * 1-5'); // 9:30 AM, Mon-Fri
@@ -34,9 +34,9 @@ class Interval<T extends TemporalPoint = TemporalPoint> {
 }
 ```
 **Example:**
-*(Note: `Interval` is exported by `@magmacomputing/tempo` rather than `tempo-fns`.)*
+*(Note: `Interval` is exported by `tempo-kit` rather than `tempo-fns`.)*
 ```typescript
-import { Interval } from '@magmacomputing/tempo';
+import { Interval } from 'tempo-kit';
 import { Temporal } from '@js-temporal/polyfill';
 
 const start = Temporal.Instant.from('2026-01-01T08:00:00Z');

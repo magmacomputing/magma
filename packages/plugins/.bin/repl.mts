@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import repl from 'node:repl';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Tempo, enums } from '@magmacomputing/tempo';
+import { Tempo, enums } from 'tempo-kit';
 
 repl.writer.options.showProxy = false;
 

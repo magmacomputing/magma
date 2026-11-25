@@ -1,5 +1,5 @@
-import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo';
+import { getTermRange, defineTerm, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, resolveTermSphere, COMPASS, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
 
 export const SEASON_KEYS = Object.freeze(['Spring', 'Summer', 'Autumn', 'Winter', 'Dry', 'Wet'] as const);
 export type SeasonKey = (typeof SEASON_KEYS)[number];
@@ -75,7 +75,7 @@ export const SeasonTerm = defineTerm({
 	}
 });
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		szn: SeasonKey;
 		season: {

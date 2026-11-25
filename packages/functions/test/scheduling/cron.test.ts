@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { nextCron, prevCron, parseCron } from '../../src/scheduling/cron.js';
 
 describe('cron parser', () => {

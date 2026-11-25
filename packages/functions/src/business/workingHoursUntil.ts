@@ -1,7 +1,7 @@
 import { getPublicHolidays } from '../calendar/getPublicHolidays.js';
 import { getLocale, isTempo, getTemporal } from '../support/index.js';
 import type { Temporal } from '../support/index.js';
-import type { Tempo } from '@magmacomputing/tempo/core';
+import type { Tempo } from 'tempo-kit/core';
 
 /** Configuration options for the workingHoursUntil SLA calculation. */
 export type SLAOptions = {

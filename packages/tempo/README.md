@@ -17,7 +17,6 @@
 
 > **Our Mission: Humanizing Temporal.** Bringing developer intuition, cultural awareness, and expressive natural-language ergonomics to JavaScript dates—anchored in a rock-solid [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) baseline. [Read our vision & architecture →](https://magmacomputing.github.io/magma/doc/7-ecosystem/vision.html)
 
-> **Looking for `@formkit/tempo`?** `tempo-kit` is an independent library built on the ECMAScript `Temporal` API and is not affiliated with [`@formkit/tempo`](https://www.npmjs.com/package/@formkit/tempo) ([GitHub](https://github.com/formkit/tempo)), FormKit's ECMAScript `Date` utility library.
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://socket.dev/npm/package/@magmacomputing/tempo"><img src="https://img.shields.io/badge/Socket-Security-brightgreen?logo=socketdotdev&logoColor=white" alt="Socket Security" style="display: inline-block; margin: 0 4px;"></a> <a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/1-getting-started/tempo.repl.html"><img src="https://img.shields.io/badge/Live-Interactive%20REPL-38bdf8?logo=javascript" alt="Live Interactive REPL" style="display: inline-block; margin: 0 4px;"></a>
@@ -32,7 +31,7 @@ import { Tempo } from '@magmacomputing/tempo';
 import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
 
 // 🔌 Instantly Extensible (with deterministic defaults)
-Tempo.init({ 
+Tempo.init({
   plugins: [CelestialPlugin],
   timeZone: 'America/New_York'
 });
@@ -86,7 +85,7 @@ For standard usage natively in the browser, use the pre-optimized **Global ESM B
 <script type="module">
   import '@js-temporal/polyfill';
   import { Tempo } from '@magmacomputing/tempo';
-  
+
   const t = new Tempo('next Friday');
 </script>
 ```
@@ -150,9 +149,9 @@ Tempo is the core library, but the ecosystem extends further:
 
 ## 🗳️ Feedback & Reactions
 
-[🚀 Premium!](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20🚀%20Premium!) &nbsp; | &nbsp; 
-[⭐ Loving it!](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20⭐%20Loving%20it!) &nbsp; | &nbsp; 
-[💡 Needs work](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20💡%20Needs%20work) &nbsp; | &nbsp; 
+[🚀 Premium!](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20🚀%20Premium!) &nbsp; | &nbsp;
+[⭐ Loving it!](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20⭐%20Loving%20it!) &nbsp; | &nbsp;
+[💡 Needs work](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20💡%20Needs%20work) &nbsp; | &nbsp;
 [🐞 Found a bug](https://github.com/magmacomputing/magma/issues/new?title=Feedback:%20🐞%20Found%20a%20bug)
 
 ---

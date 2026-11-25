@@ -1,5 +1,5 @@
-import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook, type TermSpan } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo';
+import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeFormat, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
 
 export const TIMEOFDAY_KEYS = Object.freeze([
 	'Midnight',
@@ -60,7 +60,7 @@ export const TimelineTerm = defineTerm({
 
 export const TimeOfDayTerm = TimelineTerm;
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface TempoTermRegistry {
 		tod: TimeOfDayKey;
 		timeOfDay: {

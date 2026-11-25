@@ -32,7 +32,7 @@ writeFileSync(versionFile, content, 'utf-8');
 const esmHtmlFile = resolve(__dirname, '../public/esm_sh.index.html');
 if (existsSync(esmHtmlFile)) {
 	let html = readFileSync(esmHtmlFile, 'utf-8');
-	html = html.replace(/https:\/\/esm\.sh\/@magmacomputing\/tempo@[^\"]+/, `https://esm.sh/@magmacomputing/tempo@${version}`);
+	html = html.replace(/https:\/\/esm\.sh\/(?:@magmacomputing\/tempo|tempo-kit)@[^\"]+/, `https://esm.sh/tempo-kit@${version}`);
 	writeFileSync(esmHtmlFile, html, 'utf-8');
 }
 

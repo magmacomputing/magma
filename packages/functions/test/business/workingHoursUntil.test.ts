@@ -1,5 +1,5 @@
 import { expect, test, describe } from 'vitest';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { workingHoursUntil } from '../../src/business/workingHoursUntil.js';
 
 describe('workingHoursUntil', () => {
