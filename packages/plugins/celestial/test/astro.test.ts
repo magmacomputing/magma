@@ -1,4 +1,4 @@
-import { Tempo, TermHook } from '@magmacomputing/tempo';
+import { Tempo, TermHook } from 'tempo-kit';
 import { CelestialPlugin, AstroTerm } from '../src/index.js';
 
 describe('Celestial Plugin - Astro Term (Astronomical Seasons & Events)', () => {

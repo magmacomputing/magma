@@ -1,5 +1,5 @@
-import { fromRoman } from '@magmacomputing/tempo/plugin/sdk';
-import { getDaysInMonth } from '@magmacomputing/tempo/library';
+import { fromRoman } from 'tempo-kit/plugin/sdk';
+import { getDaysInMonth } from 'tempo-kit/library';
 import type {
 	ParsedRomanDate,
 	RomanAnchor,

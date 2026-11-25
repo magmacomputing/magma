@@ -1,18 +1,18 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+  <a href="./index.html">← @tempo-kit/plugin-geo</a>
 </div>
 
 <br>
 
 # Pluggable Geocoding Provider Gateway
 
-This guide explains how to connect custom geocoding and geolocation providers (such as OpenStreetMap Nominatim, Mapbox, Google Maps, or internal corporate IP proxies) to `@magmacomputing/tempo-plugin-geo`.
+This guide explains how to connect custom geocoding and geolocation providers (such as OpenStreetMap Nominatim, Mapbox, Google Maps, or internal corporate IP proxies) to `@tempo-kit/plugin-geo`.
 
 ---
 
 ## 1. Overview & `GeoProvider` Interface
 
-By default, `@magmacomputing/tempo-plugin-geo` uses browser hardware geolocation in browser environments and public IP geolocation on servers. 
+By default, `@tempo-kit/plugin-geo` uses browser hardware geolocation in browser environments and public IP geolocation on servers. 
 
 The **Pluggable Geocoding Provider Gateway** allows developers to register custom providers to customize coordinate resolution, forward geocoding (place query → coordinates), and reverse geocoding (coordinates → address/city/country metadata):
 
@@ -38,8 +38,8 @@ export interface GeoProvider {
 You can register an active provider globally on the `Tempo.geo` namespace:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin, type GeoProvider } from '@magmacomputing/tempo-plugin-geo';
+import { Tempo } from 'tempo-kit';
+import { GeoPlugin, type GeoProvider } from '@tempo-kit/plugin-geo';
 
 Tempo.use(GeoPlugin);
 

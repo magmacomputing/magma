@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { CelestialPlugin } from '../src/index.js';
 
 describe('Location-Aware Lunar Topocentric Ephemeris (Multi-Hemisphere)', () => {

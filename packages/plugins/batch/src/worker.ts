@@ -1,6 +1,6 @@
 import { workerData, parentPort } from 'node:worker_threads';
-import { Tempo } from '@magmacomputing/tempo';
-import { isString } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { isString } from 'tempo-kit/plugin/sdk';
 
 const RE_SHORTHAND_OP = /^([+-]?\d+)\s*([a-zA-Z]+)$/;
 

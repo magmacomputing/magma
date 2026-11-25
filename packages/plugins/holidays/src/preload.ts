@@ -1,4 +1,4 @@
-import { isString } from '@magmacomputing/tempo/library';
+import { isString } from 'tempo-kit/library';
 import { getStorage, setStorage } from './cache.js';
 import { getPublicHolidays, type PublicHoliday } from 'tempo-fns';
 import { getCalendarHolidays, normalizeCountryCode, registerHolidayItems, hasBuiltinCalendar } from './registry.js';

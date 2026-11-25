@@ -1,4 +1,4 @@
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { SpatialPlugin } from './index.js';
 
 autoInstall(SpatialPlugin);

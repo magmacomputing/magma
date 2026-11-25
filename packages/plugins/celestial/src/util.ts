@@ -1,8 +1,8 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { getLunarPhase } from 'tempo-fns';
 
-import { isNumber, isReference, isArray } from '@magmacomputing/tempo/library';
-import { WeakCache, logWarn } from '@magmacomputing/tempo/plugin/sdk';
+import { isNumber, isReference, isArray } from 'tempo-kit/library';
+import { WeakCache, logWarn } from 'tempo-kit/plugin/sdk';
 import type { LunarPhaseResult } from './index.js';
 
 const LUNAR_PHASE_CACHE = new WeakCache<string, ReturnType<typeof getLunarPhase>>();

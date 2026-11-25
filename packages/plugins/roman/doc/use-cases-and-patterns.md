@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-roman</a>
+  <a href="./index.html">← @tempo-kit/plugin-roman</a>
 </div>
 
 <br>
 
 # Use Cases & Production Patterns
 
-`@magmacomputing/tempo-plugin-roman` provides deterministic, high-performance classical calendar calculations for applications in classical archaeology, numismatics, epigraphy, academic digital humanities, and legal manuscript processing.
+`@tempo-kit/plugin-roman` provides deterministic, high-performance classical calendar calculations for applications in classical archaeology, numismatics, epigraphy, academic digital humanities, and legal manuscript processing.
 
 ---
 
@@ -18,8 +18,8 @@ Museum catalogs, archaeological excavation databases, and epigraphic registries 
 ### Implementation Pattern
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { RomanPlugin } from '@magmacomputing/tempo-plugin-roman';
+import { Tempo } from 'tempo-kit';
+import { RomanPlugin } from '@tempo-kit/plugin-roman';
 
 Tempo.use(RomanPlugin);
 
@@ -85,8 +85,8 @@ Numismatic databases record Roman imperial coinage dated by AUC foundation years
 ### Implementation Pattern
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-roman/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-roman/install';
 
 interface RomanCoin {
   mintId: string;
@@ -133,8 +133,8 @@ Medieval papal bulls, monastic annals, and European royal charters frequently da
 ### Implementation Pattern
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-roman/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-roman/install';
 
 function verifyCharterDating(year: number, month: number, day: number) {
   const tempo = new Tempo({ year, month, day });
@@ -170,10 +170,10 @@ Historical sources and decrees from the Roman Republic and early Empire were rar
 ### Implementation Pattern
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 // Full 1,050-year Fasti consulares (also auto-installs RomanPlugin):
-import '@magmacomputing/tempo-plugin-roman/consuls';
-// (For lean core without full Fasti, use: import '@magmacomputing/tempo-plugin-roman/install')
+import '@tempo-kit/plugin-roman/consuls';
+// (For lean core without full Fasti, use: import '@tempo-kit/plugin-roman/install')
 
 // 1. Resolve an astronomical date and format its presiding consuls
 const ides44BCE = new Tempo('-000043-03-15');

@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-celestial</a>
+  <a href="./index.html">← @tempo-kit/plugin-celestial</a>
 </div>
 
 <br>
@@ -11,7 +11,7 @@ Civil clock time is an artificial human construct based on standardized 15° mer
 2. **Lunar Mechanics**: Illumination fractions, moonrise/moonset events, topocentric distance, and supermoons.
 3. **Gravitational Tides**: Semi-diurnal high/low water, spring/neap tide cycles, and perigean king tides.
 
-The `@magmacomputing/tempo-plugin-celestial` plugin provides 100% offline, zero-network mathematical ephemeris calculations directly integrated with Tempo instances.
+The `@tempo-kit/plugin-celestial` plugin provides 100% offline, zero-network mathematical ephemeris calculations directly integrated with Tempo instances.
 
 ---
 
@@ -22,8 +22,8 @@ In industrial microgrids and commercial battery energy storage systems (BESS), f
 Rather than relying on static clock intervals (e.g. 12:00 PM), control systems query true solar elevation and apparent solar noon to dynamically switch inverter modes between grid-export, self-consumption, and battery absorption:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -59,8 +59,8 @@ Commercial greenhouse automation systems target a precise **Daily Light Integral
 Using `t.term.solar`, environmental control engines automatically schedule lighting around exact civil twilight and golden hour boundaries:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -94,8 +94,8 @@ Deep-draft container ships and bulk cargo vessels entering shallow ports, river 
 `t.term.tides` resolves tidal states, spring/neap alignment, and predicted high-tide windows from observer coordinates and port lunitidal intervals:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -136,8 +136,8 @@ Aerial drone photogrammetry and architectural cinematography require planning fl
 Rather than querying external weather websites, video production applications can calculate these windows for any GPS coordinate across the globe:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -166,8 +166,8 @@ Marine biologists and ecological field teams studying nocturnal wildlife behavio
 Using `t.term.lunar`, research software calculates illumination fractions, lunar phases, and moonrise/moonset without needing an internet connection:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 

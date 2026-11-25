@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
 	RomanPlugin,
 	formatConsuls,
@@ -113,7 +113,7 @@ describe('Classical Roman Consular Catalog (Phase 4)', () => {
 		});
 	});
 
-	describe('Subpath import and dynamic registration (@magmacomputing/tempo-plugin-roman/consuls)', () => {
+	describe('Subpath import and dynamic registration (@tempo-kit/plugin-roman/consuls)', () => {
 		test('defaults to landmark seed catalog before subpath import', () => {
 			// Year 100 CE is not in the landmark seed catalog
 			expect(getConsulsByYear(100)).toBeUndefined();

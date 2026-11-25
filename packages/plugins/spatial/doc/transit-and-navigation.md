@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+  <a href="./index.html">← @tempo-kit/plugin-spatial</a>
 </div>
 
 <br>
 
 # Transit Velocity, Impossible Travel & Navigation
 
-This guide covers Great-Circle spatial calculations, forward compass bearings, geographic midpoints, transit velocity modeling, and impossible travel anomaly detection in `@magmacomputing/tempo-plugin-spatial`.
+This guide covers Great-Circle spatial calculations, forward compass bearings, geographic midpoints, transit velocity modeling, and impossible travel anomaly detection in `@tempo-kit/plugin-spatial`.
 
 ---
 
@@ -22,8 +22,8 @@ Calculates the shortest surface distance approximation on a spherical Earth betw
 ### Code Examples
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin, haversineDistance } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin, haversineDistance } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 
@@ -51,8 +51,8 @@ Computes the initial forward azimuth bearing along the Great-Circle path from an
 - **Range**: Normalized to 0° <= heading < 360° (0° = North, 90° = East, 180° = South, 270° = West).
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 
@@ -74,8 +74,8 @@ console.log(tLondon.spatialBearing(paris)); // ~148.5°
 Calculates the exact spherical midpoint along the Great-Circle path connecting two coordinate points:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 
@@ -98,8 +98,8 @@ Velocity = Haversine Distance(A, B) / Δ Time
 ```
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 
@@ -128,8 +128,8 @@ console.log(dep.spatialVelocity(arr)); // ~152.8 km/h
 A vital security primitive for detecting anomalous authentication events (e.g. impossible concurrent logins from geographically distant locations):
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 

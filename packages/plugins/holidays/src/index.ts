@@ -1,5 +1,5 @@
-import { definePlugin, hasOwn, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo';
+import { definePlugin, hasOwn, type TempoPlugin } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
 import {
 	isPublicHoliday,
 	isBusinessDay,
@@ -16,7 +16,7 @@ import { normalizeCountryCode } from './registry.js';
 import { preloadHolidayCalendar } from './preload.js';
 import type { HolidayItem, HolidayOptions, WorkingHoursOptions, HolidayCalendarGenerator } from './types.js';
 
-import { isString } from '@magmacomputing/tempo/library';
+import { isString } from 'tempo-kit/library';
 
 export {
 	isPublicHoliday,
@@ -232,7 +232,7 @@ export const HolidaysPlugin: TempoPlugin = definePlugin({
 
 export default HolidaysPlugin;
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface Tempo {
 		/**
 		 * Accesses the Regional Holidays namespace for the current Tempo instance.

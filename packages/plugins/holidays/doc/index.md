@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-holidays
+# @tempo-kit/plugin-holidays
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-holidays"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-holidays?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-holidays/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-holidays"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-holidays?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-holidays"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-holidays?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-holidays/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-holidays"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-holidays?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 The **Regional Holidays Plugin** provides bank holiday resolution, weekend observation shifts, SLA working hours calculations, and business day arithmetic for [Tempo](https://github.com/magmacomputing/magma/tree/main/packages/tempo).
@@ -14,7 +14,7 @@ The **Regional Holidays Plugin** provides bank holiday resolution, weekend obser
 
 - **Zero-Latency Built-in Calendars**: Instant synchronous holiday calculation for US, Australia, United Kingdom, Canada, Germany, France, Japan, and New Zealand.
 - **`t.geo.country` Resolution Cascade**: Automatically resolves national calendars via explicit option, `tempo.geo.country`, `tempo.intl.info.region`, or BCP-47 `tempo.locale`.
-- **Global Long-Tail Coverage (100+ Countries)**: Dynamic async preloading via `@magmacomputing/tempo-fns` with automatic 24-hour TTL caching in runtime storage.
+- **Global Long-Tail Coverage (100+ Countries)**: Dynamic async preloading via `tempo-kit-fns` with automatic 24-hour TTL caching in runtime storage.
 - **SLA Working Hours Calculation**: `t.holidays.workingHoursUntil(deadline)` calculates business hours between dates, taking into account working hour windows, weekends, and regional holidays.
 - **Cultural Weekend Awareness**: Automatically respects cultural workweeks (e.g. Friday/Saturday weekend in Middle Eastern locales like `ar-SA`).
 
@@ -23,7 +23,7 @@ The **Regional Holidays Plugin** provides bank holiday resolution, weekend obser
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-holidays
+npm install @tempo-kit/plugin-holidays
 ```
 
 ---
@@ -33,8 +33,8 @@ npm install @magmacomputing/tempo-plugin-holidays
 <PluginRepl plugin="holidays" />
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 // Australia Day (Jan 26)
 const t = new Tempo('2026-01-26', { geo: { country: 'AU' } });

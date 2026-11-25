@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-batch</a>
+  <a href="./index.html">← @tempo-kit/plugin-batch</a>
 </div>
 
 <br>
 
 # Production Use Cases & Architectural Patterns
 
-This guide explores real-world systems patterns where `@magmacomputing/tempo-plugin-batch` accelerates high-volume temporal processing across multi-core server environments.
+This guide explores real-world systems patterns where `@tempo-kit/plugin-batch` accelerates high-volume temporal processing across multi-core server environments.
 
 ---
 
@@ -36,8 +36,8 @@ Incoming Telemetry Batch (500k Epochs)
 ### Production Implementation
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';
+import { Tempo } from 'tempo-kit';
+import { BatchPlugin } from '@tempo-kit/plugin-batch';
 
 Tempo.use(BatchPlugin);
 
@@ -82,8 +82,8 @@ Quantitative trading algorithms simulate portfolio strategies over millions of h
 By specifying a dedicated thread pool size (`{ threads: 8 }`), `Tempo.batch` divides the 10M record array evenly across 8 workers, utilizing SIMD-like concurrent chunking to complete the transformation in a fraction of the time.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';
+import { Tempo } from 'tempo-kit';
+import { BatchPlugin } from '@tempo-kit/plugin-batch';
 
 Tempo.use(BatchPlugin);
 
@@ -116,8 +116,8 @@ A payroll processing SaaS application receives monthly employee attendance CSV f
 Use `{ rehydrate: true }` to receive fully initialized, immutable `Tempo` instances directly from the worker pool once parallel arithmetic finishes:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';
+import { Tempo } from 'tempo-kit';
+import { BatchPlugin } from '@tempo-kit/plugin-batch';
 
 Tempo.use(BatchPlugin);
 

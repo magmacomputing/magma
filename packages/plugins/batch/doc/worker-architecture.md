@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-batch</a>
+  <a href="./index.html">← @tempo-kit/plugin-batch</a>
 </div>
 
 <br>
 
 # Parallel Worker Pool & SharedArrayBuffer Architecture
 
-The `@magmacomputing/tempo-plugin-batch` plugin accelerates bulk date mutations across multi-core systems by partitioning massive epoch arrays and executing calculations concurrently across a pool of background worker threads.
+The `@tempo-kit/plugin-batch` plugin accelerates bulk date mutations across multi-core systems by partitioning massive epoch arrays and executing calculations concurrently across a pool of background worker threads.
 
 ---
 

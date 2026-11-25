@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+  <a href="./index.html">← @tempo-kit/plugin-geo</a>
 </div>
 
 <br>
 
 # Cultural Locale Synchronization
 
-This guide explores the cultural synchronization engine in `@magmacomputing/tempo-plugin-geo`, linking physical geography with localized language, date formatting, and regional calendar conventions.
+This guide explores the cultural synchronization engine in `@tempo-kit/plugin-geo`, linking physical geography with localized language, date formatting, and regional calendar conventions.
 
 ---
 
@@ -28,8 +28,8 @@ When calling `t.geoLocate()`, the `setLocale` option controls how the BCP 47 loc
 - **`false` / `'none'`**: Opts out of locale synchronization.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { Tempo } from 'tempo-kit';
+import { GeoPlugin } from '@tempo-kit/plugin-geo';
 
 Tempo.use(GeoPlugin);
 
@@ -67,7 +67,7 @@ console.log(custom.locale); // 'fr-EG'
 `resolveCulturalLocale` maps geographic coordinates, ISO country codes, or bounding territories to a standard BCP 47 locale tag:
 
 ```typescript
-import { resolveCulturalLocale } from '@magmacomputing/tempo-plugin-geo';
+import { resolveCulturalLocale } from '@tempo-kit/plugin-geo';
 
 // From geographic coordinate objects
 console.log(resolveCulturalLocale({ lat: 35.6762, lng: 139.6503 })); // 'ja-JP' (Tokyo)

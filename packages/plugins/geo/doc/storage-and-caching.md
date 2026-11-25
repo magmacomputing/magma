@@ -1,22 +1,22 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+  <a href="./index.html">← @tempo-kit/plugin-geo</a>
 </div>
 
 <br>
 
 # Storage & Multi-Tenant Caching
 
-This guide covers coordinate persistence, 24-hour TTL caching, multi-tenant partitioning, and critical operational warnings when using `@magmacomputing/tempo-plugin-geo`.
+This guide covers coordinate persistence, 24-hour TTL caching, multi-tenant partitioning, and critical operational warnings when using `@tempo-kit/plugin-geo`.
 
 ---
 
 ## 1. Ambient Storage & 24-Hour Bounded Cache
 
-To prevent redundant network requests, `Tempo.geo.lookup()` automatically caches coordinates for 24 hours using `BoundedCache` from `@magmacomputing/tempo/library`.
+To prevent redundant network requests, `Tempo.geo.lookup()` automatically caches coordinates for 24 hours using `BoundedCache` from `tempo-kit/library`.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { Tempo } from 'tempo-kit';
+import { GeoPlugin } from '@tempo-kit/plugin-geo';
 
 Tempo.use(GeoPlugin);
 

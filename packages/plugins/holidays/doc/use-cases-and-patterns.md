@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-holidays</a>
+  <a href="./index.html">← @tempo-kit/plugin-holidays</a>
 </div>
 
 <br>
@@ -10,7 +10,7 @@ Real-world business systems do not run on simple 24/7 timelines. Banking network
 
 Naive date math—such as adding 48 hours or multiplying days by 86,400,000 milliseconds—causes immediate production bugs: premature SLA breach alerts, miscalculated trade settlement dates, and payroll disputes.
 
-The `@magmacomputing/tempo-plugin-holidays` plugin gives Tempo instances native awareness of public holidays, weekend observation shifts, and business-day arithmetic.
+The `@tempo-kit/plugin-holidays` plugin gives Tempo instances native awareness of public holidays, weekend observation shifts, and business-day arithmetic.
 
 ---
 
@@ -25,8 +25,8 @@ If a customer in the UK logs a ticket at 4:30 PM on the Friday before a Bank Hol
 ### Architecture Pattern
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 interface CustomerOrganization {
   id: string;
@@ -87,8 +87,8 @@ In securities trading, currency exchange (FX), and treasury management, trades s
 Settlement cannot occur until the second valid banking day following the trade.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { addBusinessDays, isBusinessDay } from '@magmacomputing/tempo-plugin-holidays';
+import { Tempo } from 'tempo-kit';
+import { addBusinessDays, isBusinessDay } from '@tempo-kit/plugin-holidays';
 
 export function calculateTradeSettlement(tradeDateIso: string, marketCountry: string): {
   tradeDate: string;
@@ -131,8 +131,8 @@ When automated billing or employee salary disbursement is scheduled for a fixed 
 - **Following Business Day (Invoicing & Direct Debits)**: Payments are drawn on the next banking day after the holiday.
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 type RollConvention = 'PRECEDING' | 'FOLLOWING';
 
@@ -173,8 +173,8 @@ When employees submit annual leave requests, naive calendar day subtraction calc
 Using `businessDaysUntil` or `isBusinessDay()` ensures fair, legally compliant leave deductions.
 
 ```typescript
-import '@magmacomputing/tempo-plugin-holidays/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-holidays/install';
+import { Tempo } from 'tempo-kit';
 
 export function calculateLeaveDeduction(
   startDateIso: string,
@@ -229,8 +229,8 @@ Enterprises frequently observe non-statutory company closures in addition to nat
 `tempo-plugin-holidays` supports **`customHolidays`**, seamlessly blending proprietary enterprise closure dates into the national holiday calendar without modifying runtime source files:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { isBusinessDay, addBusinessDays } from '@magmacomputing/tempo-plugin-holidays';
+import { Tempo } from 'tempo-kit';
+import { isBusinessDay, addBusinessDays } from '@tempo-kit/plugin-holidays';
 
 const corporateCalendar = {
   country: 'US',

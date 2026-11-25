@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-spatial</a>
+  <a href="./index.html">← @tempo-kit/plugin-spatial</a>
 </div>
 
 <br>
 
 # Spatial Geofencing & Bounding Boxes
 
-This guide details spatial boundary containment, circular radius proximity checks, and rectangular bounding box geofencing in `@magmacomputing/tempo-plugin-spatial`.
+This guide details spatial boundary containment, circular radius proximity checks, and rectangular bounding box geofencing in `@tempo-kit/plugin-spatial`.
 
 ---
 
@@ -21,8 +21,8 @@ haversineDistance(from, to) <= maxDistance
 ### Code Examples
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin, isWithin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin, isWithin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 
@@ -64,8 +64,8 @@ interface BoundingBox {
 ### Standard Geographic Bounding Box
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 

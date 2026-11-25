@@ -1,6 +1,6 @@
-import type { Tempo } from '@magmacomputing/tempo';
-import { isString, getCountryFromTimeZone, getLC } from '@magmacomputing/tempo/library';
-import { $Internal } from '@magmacomputing/tempo/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
+import { isString, getCountryFromTimeZone, getLC } from 'tempo-kit/library';
+import { $Internal } from 'tempo-kit/plugin/sdk';
 import { getCalendarHolidays, normalizeCountryCode } from './registry.js';
 import type { HolidayItem, HolidayOptions, WorkingHoursOptions } from './types.js';
 

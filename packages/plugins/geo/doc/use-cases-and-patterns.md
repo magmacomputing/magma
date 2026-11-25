@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-geo</a>
+  <a href="./index.html">← @tempo-kit/plugin-geo</a>
 </div>
 
 <br>
@@ -11,7 +11,7 @@ Modern cloud applications serve global users across varying jurisdictions, langu
 2. **Multi-Tenant Context Partitioning**: Caching geographic metadata without leaking coordinates across enterprise tenants or making expensive repeated HTTP lookups.
 3. **Cultural Localization**: Automatically adapting dates, time formats, first day of the week, and number formats based on visitor location.
 
-The `@magmacomputing/tempo-plugin-geo` plugin provides an extensible provider gateway, multi-tenant partitioned caching, and cultural locale synchronization.
+The `@tempo-kit/plugin-geo` plugin provides an extensible provider gateway, multi-tenant partitioned caching, and cultural locale synchronization.
 
 ---
 
@@ -24,8 +24,8 @@ Using `resolveCulturalLocale`, apps dynamically align formatting conventions:
 - **`'native'` mode**: Fully translates to the country's primary official language (e.g. `en-US` in `JP` $\rightarrow$ `ja-JP`, or `EG` $\rightarrow$ `ar-EG`).
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { resolveCulturalLocale } from '@magmacomputing/tempo-plugin-geo';
+import { Tempo } from 'tempo-kit';
+import { resolveCulturalLocale } from '@tempo-kit/plugin-geo';
 
 export function formatInvoiceDateForVisitor(
   dateIso: string,
@@ -60,9 +60,9 @@ console.log(tokyoNative); // 'ja-JP'
 Hard-coding proprietary geocoding SDKs creates vendor lock-in and high recurring API bills. `Tempo.geo.setProvider` lets you plug in any custom provider (Mapbox, OpenStreetMap Nominatim, or an internal microservice) through a uniform interface:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-geo/install';
-import { Tempo } from '@magmacomputing/tempo';
-import type { GeoProvider } from '@magmacomputing/tempo-plugin-geo';
+import '@tempo-kit/plugin-geo/install';
+import { Tempo } from 'tempo-kit';
+import type { GeoProvider } from '@tempo-kit/plugin-geo';
 
 // Implement enterprise proxy with fallback
 const enterpriseGeoGateway: GeoProvider = {
@@ -102,8 +102,8 @@ console.log(location.country, location.lat, location.lng);
 Calling external geocoding APIs on every incoming HTTP request degrades latency and exhausts rate limits. `Tempo.geo.set` and `Tempo.geo.get` provide built-in partitioned storage with TTL support:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-geo/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-geo/install';
+import { Tempo } from 'tempo-kit';
 
 export async function resolveTenantLocation(
   tenantId: string,
@@ -136,8 +136,8 @@ export async function resolveTenantLocation(
 In Next.js, Remix, Fastify, or Cloudflare Workers, incoming requests include CDN geographic headers (e.g. `cf-ipcountry` or `x-vercel-ip-country`). Edge middleware can extract these headers, hydrate a `Tempo` instance, and pass it downstream via request context:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-geo/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-geo/install';
+import { Tempo } from 'tempo-kit';
 
 export function createRequestContext(req: Request) {
   // Extract edge CDN geolocation headers

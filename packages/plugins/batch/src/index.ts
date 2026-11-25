@@ -1,10 +1,10 @@
 import { BatchOrchestrator, type BatchOptions } from './BatchOrchestrator.js';
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, type TempoPlugin } from 'tempo-kit/plugin/sdk';
 
 export { BatchOrchestrator };
 export type { BatchOptions };
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	namespace Tempo {
 		/**
 		 * Orchestrates the parallel execution of a mutation or formatting operation across an array of epochs.

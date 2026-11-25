@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-batch
+# @tempo-kit/plugin-batch
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-batch"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-batch?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-batch/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-batch"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-batch?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-batch"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-batch?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-batch/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-batch"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-batch?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 This is a Community plugin for the [Tempo](https://github.com/magmacomputing/magma) library that parallelizes massive epoch mutation tasks across worker threads utilizing lock-free `SharedArrayBuffer` shared memory architecture for extreme throughput.
@@ -27,7 +27,7 @@ Heavy data ETL pipelines, massive IoT telemetry ingestion, financial ledger back
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-batch
+npm install @tempo-kit/plugin-batch
 ```
 
 ---
@@ -37,8 +37,8 @@ npm install @magmacomputing/tempo-plugin-batch
 <PluginRepl plugin="batch" />
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { BatchPlugin } from '@magmacomputing/tempo-plugin-batch';
+import { Tempo } from 'tempo-kit';
+import { BatchPlugin } from '@tempo-kit/plugin-batch';
 
 Tempo.use(BatchPlugin);
 
@@ -55,8 +55,8 @@ console.log(batchResult); // Returns an array of mutated timestamp integers
 ### Zero-Boilerplate Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-batch/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-batch/install';
 
 const epochs = [1700000000000, 1700000001000];
 const batchResult = await Tempo.batch(epochs, '+1w');

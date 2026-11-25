@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { CelestialPlugin, SolarTerm, LunarTerm, TidalTerm, HALF_DAY_MS } from '../src/index.js';
 
 describe('CelestialPlugin (Solar & Lunar Terms)', () => {

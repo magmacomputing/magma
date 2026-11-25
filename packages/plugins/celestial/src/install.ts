@@ -1,4 +1,4 @@
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { CelestialPlugin } from './index.js';
 
 // Auto-register CelestialPlugin onto Tempo upon side-effect import

@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { definePlugin, deepFreeze, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { definePlugin, deepFreeze, type TempoPlugin } from 'tempo-kit/plugin/sdk';
 import {
 	geoLookup,
 	resolveGeoCoordinates,
@@ -264,7 +264,7 @@ export const GeoPlugin: TempoPlugin<GeoPluginOptions> = definePlugin({
 export const geoPlugin = GeoPlugin;
 export default GeoPlugin;
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	interface Tempo {
 		/**
 		 * Asynchronously resolves coordinates for this instance and returns a new Tempo instance with geo set.

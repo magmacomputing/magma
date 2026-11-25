@@ -1,9 +1,9 @@
 ![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-spatial
+# @tempo-kit/plugin-spatial
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-spatial"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-spatial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-spatial/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-spatial"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-spatial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/spatial.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-spatial"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-spatial?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-spatial/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-spatial"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-spatial?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/spatial.index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem providing GIS spatial geometry, Great-Circle navigation, transit velocity, impossible travel anomaly detection, spatial geofencing, and natural solar time offset calculations.
@@ -15,7 +15,7 @@ A Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecos
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-spatial
+npm install @tempo-kit/plugin-spatial
 ```
 
 ---
@@ -25,8 +25,8 @@ npm install @magmacomputing/tempo-plugin-spatial
 ### 1. Register Plugin
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SpatialPlugin } from '@magmacomputing/tempo-plugin-spatial';
+import { Tempo } from 'tempo-kit';
+import { SpatialPlugin } from '@tempo-kit/plugin-spatial';
 
 Tempo.use(SpatialPlugin);
 ```
@@ -34,7 +34,7 @@ Tempo.use(SpatialPlugin);
 Or with zero-boilerplate side-effect auto-installation:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-spatial/install';
+import '@tempo-kit/plugin-spatial/install';
 ```
 
 ---
@@ -42,7 +42,7 @@ import '@magmacomputing/tempo-plugin-spatial/install';
 ### 2. Static Namespace (`Tempo.spatial.*`)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const sydney = { lat: -33.8688, lng: 151.2093 };
 const melbourne = { lat: -37.8136, lng: 144.9631 };
