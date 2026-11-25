@@ -23,8 +23,18 @@ This package provides a bridge for developers transitioning from legacy date wra
 
 ## Usage (NPM / Modern Bundlers)
 
+```bash
+npm install tempo-fns tempo-kit @js-temporal/polyfill
+```
+
+*(Note: `tempo-kit` and `@js-temporal/polyfill` are optional peer dependencies — include `tempo-kit` if you pass `Tempo` instances or type-check against `tempo-kit` declarations, and include `@js-temporal/polyfill` for TypeScript `getTemporal` declarations or runtimes without native `Temporal`. On runtimes without native `Temporal`, load a bootstrap module before importing `tempo-kit` or `tempo-fns` that assigns `Temporal` from `@js-temporal/polyfill` to `globalThis.Temporal` when absent.)*
+
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+// polyfill.ts (import first on runtimes without native Temporal):
+// import { Temporal } from '@js-temporal/polyfill';
+// (globalThis as { Temporal?: typeof Temporal }).Temporal ??= Temporal;
+
+import { Tempo } from 'tempo-kit';
 import { isFirstDayOfMonth, isSameFiscalQuarter } from 'tempo-fns';
 
 const today = new Tempo();

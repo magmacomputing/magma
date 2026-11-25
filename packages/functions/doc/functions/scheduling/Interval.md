@@ -8,10 +8,10 @@ The `Interval` class provides high-performance interval mathematics and represen
 
 ## Usage
 
-*(Note: `Interval` is exported by `@magmacomputing/tempo` rather than `tempo-fns`.)*
+*(Note: `Interval` is exported by `tempo-kit` rather than `tempo-fns`.)*
 
 ```typescript
-import { Tempo, Interval } from '@magmacomputing/tempo';
+import { Tempo, Interval } from 'tempo-kit';
 
 const start = new Tempo('2026-07-01');
 const end = new Tempo('2026-07-31');

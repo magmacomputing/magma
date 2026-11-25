@@ -23,6 +23,12 @@ This package provides a bridge for developers transitioning from legacy date wra
 
 ## Usage (NPM / Modern Bundlers)
 
+```bash
+npm install tempo-fns tempo-kit @js-temporal/polyfill
+```
+
+*(Note: `tempo-kit` and `@js-temporal/polyfill` are optional peer dependencies — include `tempo-kit` if you pass `Tempo` instances or type-check against `tempo-kit` declarations, and include `@js-temporal/polyfill` for TypeScript `getTemporal` declarations or runtimes without native `Temporal`. On runtimes without native `Temporal`, load a bootstrap module before importing `tempo-fns` or `tempo-kit` that sets `globalThis.Temporal ??= Temporal` from `@js-temporal/polyfill`.)*
+
 Every function is a standalone, pure export:
 
 ```typescript
