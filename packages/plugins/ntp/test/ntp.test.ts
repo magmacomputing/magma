@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { NtpPlugin, ClockDriftEngine } from '../src/index.js';
 
 describe('NtpPlugin & ClockDriftEngine', () => {

@@ -330,7 +330,7 @@
   "devDependencies": {
     "@js-temporal/polyfill": "^0.5.1",
     "@magmacomputing/tempo-cli": "*",
-    "@magmacomputing/tempo-plugin-ticker": "*",
+    "@tempo-kit/plugin-ticker": "*",
     "@rollup/plugin-alias": "^6.0.1",
     "@rollup/plugin-terser": "^1.0.2",
     "@rollup/plugin-typescript": "^12.3.1",

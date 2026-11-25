@@ -1,5 +1,5 @@
 {
-  "name": "@magmacomputing/tempo-plugin-signals",
+  "name": "@tempo-kit/plugin-signals",
   "version": "1.0.0",
   "description": "Tempo community plugin for reactive TC39 Signals, adaptive relative-time updates, interval state tracking, and global config reactivity.",
   "main": "dist/index.js",
@@ -43,10 +43,10 @@
     "plan": "community"
   },
   "peerDependencies": {
-    "@magmacomputing/tempo": "^5.0.0"
+    "tempo-kit": "^5.0.0"
   },
   "devDependencies": {
-    "@magmacomputing/tempo": "^5.0.0"
+    "tempo-kit": "^5.0.0"
   },
   "keywords": [
     "tempo",

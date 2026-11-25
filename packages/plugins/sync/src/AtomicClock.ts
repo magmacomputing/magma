@@ -1,6 +1,6 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { Singleton } from '@magmacomputing/tempo/library';
-import { Finalizer } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { Singleton } from 'tempo-kit/library';
+import { Finalizer } from 'tempo-kit/plugin/sdk';
 
 export interface ClockOptions {
 	/**

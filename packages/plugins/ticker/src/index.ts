@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
 	enums, Enum, definePlugin, attachStatics,
 	isObject, isFunction, isNotNullish, isEmpty, isNumeric, isString, isNumber,
@@ -6,11 +6,11 @@ import {
 	isRRuleString, getNextRRuleEpoch, isCronString, getNextCronEpoch,
 	isUndefined, isNullish, Finalizer, Reactive, cast, logError, hasKey,
 	type ReadonlySignal,
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 
 export { isCronString };
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	namespace Tempo {
 		/** An array of snapshots for all currently active tickers. */
 		const tickers: Ticker.Snapshot[];

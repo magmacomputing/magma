@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { $Internal, watchIntl, type IntlWatcher } from '@magmacomputing/tempo/plugin/sdk';
+import { Tempo } from 'tempo-kit';
+import { $Internal, watchIntl, type IntlWatcher } from 'tempo-kit/plugin/sdk';
 import type { WatchSystemConfigOptions } from '../types/index.js';
 
 const LOCALIZED_SNIPPET_KEYS = new Set(['mon', 'mmm', 'wkd', 'www', 'mm']);

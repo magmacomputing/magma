@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-sync</a>
+  <a href="./index.html">← @tempo-kit/plugin-sync</a>
 </div>
 
 <br>
 
 # Production Use Cases & Architectural Patterns
 
-This guide explores architectural patterns where `@magmacomputing/tempo-plugin-sync` provides lock-free, zero-latency time synchronization across multi-threaded systems.
+This guide explores architectural patterns where `@tempo-kit/plugin-sync` provides lock-free, zero-latency time synchronization across multi-threaded systems.
 
 ---
 
@@ -38,8 +38,8 @@ The main thread runs a master `AtomicClock` updating every 1ms. The shared buffe
 ```typescript
 // master.ts (Main Process)
 import { Worker } from 'node:worker_threads';
-import { Tempo } from '@magmacomputing/tempo';
-import { SyncPlugin } from '@magmacomputing/tempo-plugin-sync';
+import { Tempo } from 'tempo-kit';
+import { SyncPlugin } from '@tempo-kit/plugin-sync';
 
 Tempo.use(SyncPlugin);
 
@@ -68,7 +68,7 @@ export class TradingEngineCluster {
 ```typescript
 // worker.ts (Executed inside worker thread)
 import { workerData } from 'node:worker_threads';
-import { AtomicReader } from '@magmacomputing/tempo-plugin-sync';
+import { AtomicReader } from '@tempo-kit/plugin-sync';
 
 // Hydrate atomic reader directly from shared memory
 const reader = new AtomicReader(workerData.buffer);
@@ -99,8 +99,8 @@ In real-time multiplayer dedicated game servers (spatial combat, FPS, sports), p
 The master server loop drives simulation time using `AtomicClock`. Physics worker threads query `reader.now()` at the beginning of each simulation step to access drift-free master time. When workers require a strictly common simulation timestamp across all isolates, the master captures one tick value and passes it to all workers.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SyncPlugin, AtomicReader } from '@magmacomputing/tempo-plugin-sync';
+import { Tempo } from 'tempo-kit';
+import { SyncPlugin, AtomicReader } from '@tempo-kit/plugin-sync';
 
 Tempo.use(SyncPlugin);
 
@@ -138,7 +138,7 @@ In WebAudio and professional audio workstations, digital signal processing (DSP)
 By sharing an `AtomicClock` buffer between the main thread and audio workers, the audio processor can stamp incoming MIDI notes and parameter automations synchronously without touching the event loop:
 
 ```typescript
-import { AtomicReader } from '@magmacomputing/tempo-plugin-sync';
+import { AtomicReader } from '@tempo-kit/plugin-sync';
 
 export class AudioWorkletTimeSync {
   private reader: AtomicReader;

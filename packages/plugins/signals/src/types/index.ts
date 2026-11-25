@@ -4,7 +4,7 @@ import type {
 	Tempo,
 	WatchIntlOptions,
 	IntlWatcher,
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 
 /**
  * A readonly reactive signal that supports explicit and `using`-based disposal.
@@ -134,7 +134,7 @@ export interface TempoSignalsNamespace {
 	[Symbol.dispose](): void;
 }
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	namespace Tempo {
 		/**
 		 * Reactive TC39 Signals namespace (`locale`, `timeZone`, `relative`, `interval`).

@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { disposeConfigSignals, toRelativeSignal } from '../src/index.js';
 
 describe('toRelativeSignal()', () => {

@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+  <a href="./index.html">← @tempo-kit/plugin-ticker</a>
 </div>
 
 <br>
@@ -11,7 +11,7 @@ Standard JavaScript scheduling primitives (`setInterval` and `setTimeout`) are n
 2. **Zombie Timers & Memory Leaks**: Orphaned intervals remain running after UI components unmount or HTTP request handlers finish, slowly leaking memory.
 3. **Desktop & Mobile Sleep Distortion**: When an operating system enters low-power sleep mode, standard intervals freeze, skipping scheduled database jobs or failing to drain background work queues.
 
-The `@magmacomputing/tempo-plugin-ticker` plugin solves these challenges with calendar-aware scheduling, Explicit Resource Management (`using` / `await using`), async generators, and self-healing sleep recovery.
+The `@tempo-kit/plugin-ticker` plugin solves these challenges with calendar-aware scheduling, Explicit Resource Management (`using` / `await using`), async generators, and self-healing sleep recovery.
 
 ---
 
@@ -22,8 +22,8 @@ In backend services and IoT edge gateways, healthcheck heartbeats and metric agg
 With `setInterval`, network latency or slow database queries delay subsequent ticks. With `Tempo.ticker`, each pulse is pinned to an absolute epoch target, completely eliminating cumulative drift:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
 
 export function startTelemetryEmitter(endpointUrl: string) {
   // Pulses every 15 seconds with automatic catch-up on system wake
@@ -64,8 +64,8 @@ One of the most common memory leaks in modern TypeScript applications is forgott
 `Tempo.ticker` implements JavaScript's **Explicit Resource Management** (`Disposable` and `AsyncDisposable`). When defined with `using` or `await using`, the ticker automatically cleans up its internal timers, event listeners, and weak references the exact moment code leaves scope:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
 
 async function monitorJobQueue(jobId: string): Promise<void> {
   // Automatically disposed when monitorJobQueue exits (even if an error throws)
@@ -88,8 +88,8 @@ Instead of managing imperative callbacks and event listener state, `Tempo.ticker
 This pattern provides natural backpressure handling in data pipelines: if downstream processing slows down, the consumer controls the flow without dropped events:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
 
 interface MarketSummary {
   symbol: string;
@@ -123,8 +123,8 @@ Scheduling financial batch jobs across global exchanges (e.g. NYSE at 9:30 AM ES
 `Tempo.ticker` supports standard 5-field Cron syntax with explicit `timeZone` anchoring:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
 
 // 9:30 AM Monday-Friday in New York time (respects US DST transitions automatically)
 const nyseBell = Tempo.ticker({
@@ -148,8 +148,8 @@ When a mobile app or laptop enters sleep mode, background execution freezes. Whe
 With `{ catch: true }`, `Tempo.ticker` detects the elapsed time gap and fires the `catch` event with the missed pulse sequence, allowing applications to drain queues or synchronize state:
 
 ```typescript
-import '@magmacomputing/tempo-plugin-ticker/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
 
 const syncLoop = Tempo.ticker({
   minutes: 5,

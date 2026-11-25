@@ -1,4 +1,4 @@
-import { Interval, Tempo } from '@magmacomputing/tempo';
+import { Interval, Tempo } from 'tempo-kit';
 import { intervalSignal } from '../src/index.js';
 
 describe('intervalSignal()', () => {

@@ -5,7 +5,7 @@ import {
 	isBigInt,
 	isFunction,
 	isNumber,
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 import { unrefTimer } from '../core/disposable.js';
 import type { IntervalSignalOptions, IntervalSignalState } from '../types/index.js';
 

@@ -138,13 +138,13 @@ jobs:
               "@magmacomputing/tempo-plugin-batch"
               "@magmacomputing/tempo-plugin-geo"
               "@magmacomputing/tempo-plugin-holidays"
-              "@magmacomputing/tempo-plugin-ntp"
+              "@tempo-kit/plugin-ntp"
               "@magmacomputing/tempo-plugin-roman"
-              "@magmacomputing/tempo-plugin-signals"
-              "@magmacomputing/tempo-plugin-snap"
+              "@tempo-kit/plugin-signals"
+              "@tempo-kit/plugin-snap"
               "@magmacomputing/tempo-plugin-spatial"
-              "@magmacomputing/tempo-plugin-sync"
-              "@magmacomputing/tempo-plugin-ticker"
+              "@tempo-kit/plugin-sync"
+              "@tempo-kit/plugin-ticker"
               "@magmacomputing/tempo-plugin-dialects"
             )
           else
@@ -156,13 +156,13 @@ jobs:
             [ "$INPUT_PLUGIN_DIALECTS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-dialects")
             [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-geo")
             [ "$INPUT_PLUGIN_HOLIDAYS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-holidays")
-            [ "$INPUT_PLUGIN_NTP" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ntp")
+            [ "$INPUT_PLUGIN_NTP" = "true" ] && PKGS+=("@tempo-kit/plugin-ntp")
             [ "$INPUT_PLUGIN_ROMAN" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-roman")
-            [ "$INPUT_PLUGIN_SIGNALS" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-signals")
-            [ "$INPUT_PLUGIN_SNAP" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-snap")
+            [ "$INPUT_PLUGIN_SIGNALS" = "true" ] && PKGS+=("@tempo-kit/plugin-signals")
+            [ "$INPUT_PLUGIN_SNAP" = "true" ] && PKGS+=("@tempo-kit/plugin-snap")
             [ "$INPUT_PLUGIN_SPATIAL" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-spatial")
-            [ "$INPUT_PLUGIN_SYNC" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-sync")
-            [ "$INPUT_PLUGIN_TICKER" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-ticker")
+            [ "$INPUT_PLUGIN_SYNC" = "true" ] && PKGS+=("@tempo-kit/plugin-sync")
+            [ "$INPUT_PLUGIN_TICKER" = "true" ] && PKGS+=("@tempo-kit/plugin-ticker")
 
             if [ -n "$INPUT_CUSTOM" ]; then
               CLEAN_CUSTOM=$(echo "$INPUT_CUSTOM" | tr ',' ' ')
@@ -173,11 +173,22 @@ jobs:
                 elif [ "$item" = "tempo" ] || [ "$item" = "tempo-kit" ] || [ "$item" = "@magmacomputing/tempo" ]; then
                   PKGS+=("tempo-kit")
                 elif [[ "$item" == @tempo-kit/plugin-* ]]; then
-                  PKGS+=("@magmacomputing/tempo-plugin-${item#@tempo-kit/plugin-}")
-                elif [[ "$item" == @tempo-kit/* ]] || [[ "$item" == @magmacomputing/* ]]; then
-                  PKGS+=("$item")
+                  pname="${item#@tempo-kit/plugin-}"
+                  case "$pname" in
+                    ticker|ntp|signals|sync|snap) PKGS+=("$item") ;;
+                    *) PKGS+=("@magmacomputing/tempo-plugin-$pname") ;;
+                  esac
+                elif [[ "$item" == @magmacomputing/* ]]; then
+                  pname="${item#@magmacomputing/tempo-plugin-}"
+                  case "$pname" in
+                    ticker|ntp|signals|sync|snap) PKGS+=("@tempo-kit/plugin-$pname") ;;
+                    *) PKGS+=("$item") ;;
+                  esac
                 else
-                  PKGS+=("@magmacomputing/tempo-plugin-$item")
+                  case "$item" in
+                    ticker|ntp|signals|sync|snap) PKGS+=("@tempo-kit/plugin-$item") ;;
+                    *) PKGS+=("@magmacomputing/tempo-plugin-$item") ;;
+                  esac
                 fi
               done
             fi

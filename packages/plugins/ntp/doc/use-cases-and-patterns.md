@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ntp</a>
+  <a href="./index.html">← @tempo-kit/plugin-ntp</a>
 </div>
 
 <br>
@@ -8,7 +8,7 @@
 
 Client devices in modern web and mobile environments suffer from unpredictable clock skew. Users frequently travel across time zones, adjust system clocks manually, run outdated CMOS batteries, or experience clock throttling during laptop sleep cycles.
 
-The `@magmacomputing/tempo-plugin-ntp` plugin provides industrial-grade time consistency by locking Tempo instances to true atomic server time.
+The `@tempo-kit/plugin-ntp` plugin provides industrial-grade time consistency by locking Tempo instances to true atomic server time.
 
 ---
 
@@ -29,8 +29,8 @@ const timeLeftMs = saleEnd.getTime() - Date.now();
 `Tempo.ntp.now()` evaluates the true atomic timeline with zero asynchronous overhead:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+import { Tempo } from 'tempo-kit';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
 
 Tempo.use(NtpPlugin, { server: '/api/v1/time' });
 
@@ -67,8 +67,8 @@ If your application makes network calls to external third parties (e.g., payment
 To enforce strict boundary security, `interceptFetch` supports origin filtering via URL prefixes, origin whitelists, regex patterns, or custom predicates:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+import { Tempo } from 'tempo-kit';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
 
 // Option A: Pass trusted origins/prefixes directly to interceptFetch
 Tempo.use(NtpPlugin, {
@@ -109,7 +109,7 @@ When debugging production issues across thousands of distributed clients, correl
 Using NTP-anchored logging guarantees that client log records share the backend's exact UTC epoch timeline:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 export function sendTelemetryLog(eventType: string, payload: Record<string, unknown>) {
   const payloadWithTrueTimestamp = {
@@ -133,7 +133,7 @@ export function sendTelemetryLog(eventType: string, payload: Record<string, unkn
 TOTP algorithms (RFC 6238) compute authentication codes using 30-second epoch time slices ($T_0 = \lfloor \text{epochMs} / 30000 \rfloor$). If a client device's clock drifts by more than 30–60 seconds, generated 2FA tokens will be rejected by the server as invalid.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 function getTotpTimeStep(): number {
   // Always derive 30s bucket from calibrated atomic time

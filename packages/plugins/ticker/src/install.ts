@@ -1,4 +1,4 @@
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { TickerPlugin } from './index.js';
 
 // Auto-register TickerPlugin onto Tempo upon side-effect import

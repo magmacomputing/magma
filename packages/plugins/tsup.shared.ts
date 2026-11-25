@@ -13,8 +13,8 @@ if (fs.existsSync(pkgPath)) {
 	const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 	if (pkg.name) {
 		const shortName = pkg.name.split('/').at(-1) || 'unknown';
-		// Convert 'tempo-plugin-celestial' to 'celestial' to avoid invalid JavaScript identifiers (hyphens)
-		pkgName = shortName.replace('tempo-plugin-', '');
+		// Convert 'tempo-plugin-celestial' or 'plugin-celestial' to 'celestial' to avoid invalid JavaScript identifiers (hyphens)
+		pkgName = shortName.replace(/^(?:tempo-)?plugin-/, '');
 	}
 }
 
@@ -25,7 +25,7 @@ export const sharedConfig: Options = {
 	// @magmacomputing/tempo/plugin* is inlined only for IIFE (self-contained browser bundle).
 	// For ESM the 'esm-external' plugin below re-marks them as external so all plugins
 	// share a single runtime copy and avoid registerSerializable singleton collisions.
-	noExternal: [/^@magmacomputing\/tempo\/plugin(\/sdk)?$/],
+	noExternal: [/^(?:@magmacomputing\/tempo|tempo-kit)\/plugin(\/sdk)?$/],
 	outExtension({ format }) {
 		return {
 			js: format === 'iife' ? '.global.min.js' : '.js'
@@ -41,7 +41,7 @@ export const sharedConfig: Options = {
 		{
 			name: 'auto-inject-version',
 			setup(build) {
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/plugin(\/sdk)?$/ }, (args) => {
+				build.onResolve({ filter: /^(?:@magmacomputing\/tempo|tempo-kit)\/plugin(\/sdk)?$/ }, (args) => {
 					// Prevent infinite loop: if the importer is our virtual module, let standard resolution (or license-alias) handle it
 					if (args.namespace === 'auto-inject-version') return;
 					return { path: args.path, namespace: 'auto-inject-version', pluginData: { originalPath: args.path } };
@@ -55,7 +55,7 @@ export const sharedConfig: Options = {
 						version = pkg.version || 'unknown';
 					}
 
-					const isSdk = args.pluginData.originalPath === '@magmacomputing/tempo/plugin/sdk';
+					const isSdk = args.pluginData.originalPath.endsWith('/plugin/sdk');
 
 					let contents = `export * from '${args.pluginData.originalPath}';\n`;
 
@@ -84,12 +84,16 @@ export const sharedConfig: Options = {
 
 				const globals: Record<string, string> = {
 					'@js-temporal/polyfill': 'Temporal',
+					'tempo-kit': 'Magma.Tempo',
+					'tempo-kit/plugin/sdk': 'Magma.pluginSdk',
+					'tempo-kit/plugin': 'Magma.plugin',
 					'@magmacomputing/tempo': 'Magma.Tempo',
 					'@magmacomputing/tempo/plugin/sdk': 'Magma.pluginSdk',
 					'@magmacomputing/tempo/plugin': 'Magma.plugin'
 				};
 
-				build.onResolve({ filter: /^(?:@js-temporal\/polyfill|@magmacomputing\/tempo.*)$/ }, args => {
+				build.onResolve({ filter: /^(?:@js-temporal\/polyfill|@magmacomputing\/tempo.*|tempo-kit.*)$/ }, args => {
+					if (!globals[args.path]) return;
 					return { path: args.path, namespace: 'iife-globals' };
 				});
 
@@ -112,7 +116,7 @@ export const sharedConfig: Options = {
 			setup(build) {
 				if (build.initialOptions?.format === 'iife') return;
 
-				build.onResolve({ filter: /^@magmacomputing\/tempo\/plugin(\/sdk)?$/ }, () => {
+				build.onResolve({ filter: /^(?:@magmacomputing\/tempo|tempo-kit)\/plugin(\/sdk)?$/ }, () => {
 					return { external: true };
 				});
 			}

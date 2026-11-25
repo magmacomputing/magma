@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-signals</a>
+  <a href="./index.html">← @tempo-kit/plugin-signals</a>
 </div>
 
 <br>
 
 # Production Use Cases & Architectural Patterns
 
-`@magmacomputing/tempo-plugin-signals` brings event-driven TC39 Signals (`Signify`) to UI components, dashboards, and scheduling workflows without adding background polling overhead to Core `@magmacomputing/tempo`.
+`@tempo-kit/plugin-signals` brings event-driven TC39 Signals (`Signify`) to UI components, dashboards, and scheduling workflows without adding background polling overhead to Core `tempo-kit`.
 
 ---
 
@@ -17,7 +17,7 @@ Chat messages, deployment logs, and audit trails often render hundreds of relati
 `toRelativeSignal` schedules a single one-shot `setTimeout` at the exact next unit-bucket boundary (`second` → `minute` → `hour` → `day` → `month` → `year`), so a 3-hour-old item sleeps for up to an hour between updates:
 
 ```typescript
-import { toRelativeSignal } from '@magmacomputing/tempo-plugin-signals';
+import { toRelativeSignal } from '@tempo-kit/plugin-signals';
 
 function mountTimestampBadge(createdAtIso: string) {
   const label = toRelativeSignal(createdAtIso, { style: 'narrow' });
@@ -37,8 +37,8 @@ function mountTimestampBadge(createdAtIso: string) {
 Calendar cards, maintenance windows, and SLA timers need to transition cleanly through **upcoming** (`isFuture`), **active** (`isCurrent`), and **completed** (`isPast`) states while tracking normalized completion `progress` ($\in [0, 1]$).
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { intervalSignal } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo } from 'tempo-kit';
+import { intervalSignal } from '@tempo-kit/plugin-signals';
 
 const start = new Tempo().add({ minutes: 10 });
 const end = start.add({ minutes: 50 });
@@ -62,11 +62,11 @@ console.log({
 
 ## 3. App-Wide Locale & Time Zone Switching (`localeSignal` / `timeZoneSignal`) {#global-config-reactivity}
 
-When a user switches language or time zone in application settings via `Tempo.init()`, `localeSignal` and `timeZoneSignal` propagate the change to reactive views automatically via `@magmacomputing/tempo/plugin/sdk`'s `onConfigChange` hook:
+When a user switches language or time zone in application settings via `Tempo.init()`, `localeSignal` and `timeZoneSignal` propagate the change to reactive views automatically via `tempo-kit/plugin/sdk`'s `onConfigChange` hook:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { localeSignal, timeZoneSignal, disposeConfigSignals } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo } from 'tempo-kit';
+import { localeSignal, timeZoneSignal, disposeConfigSignals } from '@tempo-kit/plugin-signals';
 
 const locale = localeSignal();
 const timeZone = timeZoneSignal();
@@ -88,8 +88,8 @@ disposeConfigSignals();
 For web apps, PWAs, or desktop apps where a user's device may cross time zones or change OS region settings while the app stays open, `watchSystemConfig()` (or `Tempo.signals.watchSystem()`) bridges host `Intl` changes into `Tempo.init()` without background polling:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { SignalsPlugin, watchSystemConfig } from '@magmacomputing/tempo-plugin-signals';
+import { Tempo } from 'tempo-kit';
+import { SignalsPlugin, watchSystemConfig } from '@tempo-kit/plugin-signals';
 
 Tempo.use(SignalsPlugin);
 Tempo.init({ locale: 'en-AU', calendar: 'iso8601' });

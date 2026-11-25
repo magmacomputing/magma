@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-ticker
+# @tempo-kit/plugin-ticker
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ticker"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ticker?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ticker/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ticker"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ticker?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ticker"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-ticker?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-ticker/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ticker"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-ticker?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 A high-performance Community plugin for the [Tempo](https://github.com/magmacomputing/magma) ecosystem providing temporal continuous execution loops, best-effort scheduling with millisecond resolution, explicit resource management disposers (`using` / `await using`), async generator streams, and multi-clock synchronization.
@@ -19,14 +19,14 @@ Unlike raw `setInterval`, Tempo Ticker handles calendar arithmetic, month-length
 - **Async Generator Streams**: `for await (const t of ticker)` streaming loop support for reactive pipelines and telemetry.
 - **Rich Event Listeners**: `.on('pulse')`, `.on('stop')`, `.on('catch')` hooks for fine-grained control and error isolation.
 - **Registry Diagnostics**: `Ticker.active` snapshot of all running tickers for health monitoring.
-- **Multi-Clock Synchronization**: Synchronize multiple tickers to shared NTP-corrected clocks via `@magmacomputing/tempo-plugin-ntp`.
+- **Multi-Clock Synchronization**: Synchronize multiple tickers to shared NTP-corrected clocks via `@tempo-kit/plugin-ntp`.
 
 ---
 
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-ticker
+npm install @tempo-kit/plugin-ticker
 ```
 
 ---
@@ -36,8 +36,8 @@ npm install @magmacomputing/tempo-plugin-ticker
 <PluginRepl plugin="ticker" />
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ticker/install';
 
 {
   await using ticker = Tempo.ticker({ seconds: 1 }, (t) => {
@@ -52,8 +52,8 @@ import '@magmacomputing/tempo-plugin-ticker/install';
 ### Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ticker/install';
 
 const ticker = Tempo.ticker({ seconds: 1 });
 ```
@@ -61,8 +61,8 @@ const ticker = Tempo.ticker({ seconds: 1 });
 ### Plugin Registration
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import { Tempo } from 'tempo-kit';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
 
 Tempo.use(TickerPlugin);
 ```

@@ -1,12 +1,12 @@
-import { definePlugin, type TempoPlugin, deepFreeze, isString, isNumber, isObject, isFunction, Finalizer, Signify, type ReadonlySignal } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo';
+import { definePlugin, type TempoPlugin, deepFreeze, isString, isNumber, isObject, isFunction, Finalizer, Signify, type ReadonlySignal } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit';
 import { ClockDriftEngine } from './engine.js';
 import type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter, NtpSignalsNamespace } from './types.js';
 
 export { ClockDriftEngine };
 export type { ClockDriftState, NtpNamespace, NtpSyncOptions, NtpOriginMatcher, NtpFetchFilter, NtpSignalsNamespace };
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	namespace Tempo {
 		/**
 		 * NTP and Clock Drift Synchronization namespace.

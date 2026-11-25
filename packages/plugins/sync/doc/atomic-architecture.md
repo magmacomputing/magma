@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-sync</a>
+  <a href="./index.html">← @tempo-kit/plugin-sync</a>
 </div>
 
 <br>
 
 # Lock-Free Atomics & Memory Architecture
 
-The `@magmacomputing/tempo-plugin-sync` plugin provides hardware-level, nanosecond-accurate cross-thread time synchronization using standard JavaScript `SharedArrayBuffer` and `Atomics`.
+The `@tempo-kit/plugin-sync` plugin provides hardware-level, nanosecond-accurate cross-thread time synchronization using standard JavaScript `SharedArrayBuffer` and `Atomics`.
 
 It is specifically engineered for multi-threaded architectures—such as high-frequency trading (HFT) risk checkers, real-time physics engines, and audio digital signal processing (DSP)—where inter-process communication (IPC) latency or event-loop microtasks cannot be tolerated.
 

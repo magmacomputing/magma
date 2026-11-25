@@ -1,5 +1,5 @@
 import { getTemporalIds } from '#library/temporal.library.js';
-import { isString, isObject, isDefined, isNotNullish, isNullish, isUndefined, isFunction } from '#library/assertion.library.js';
+import { isString, isObject, isDefined, isNotNullish, isNullish, isFunction } from '#library/assertion.library.js';
 import { hasKey, defineProp } from '#library/primitive.library.js';
 import { singular } from '#library/string.library.js';
 import { getAccessors } from '#library/reflection.library.js';
@@ -37,7 +37,7 @@ declare module '#library/type.library.js' {
 	}
 }
 
-/** 
+/**
  * Maps shorthand units (via enums.ELEMENT) to standard plural unit names.
  */
 function resolveElementUnit(unit: string): string | undefined {
@@ -137,7 +137,7 @@ function toDuration(dur: Temporal.Duration, ctx: { relativeTo?: any, locale?: st
 }
 
 /**
- * Internal implementation of Tempo.until and Tempo.since  
+ * Internal implementation of Tempo.until and Tempo.since
  */
 function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) {
 	const since = type === 'since';
@@ -264,7 +264,7 @@ function duration(this: Tempo, type: 'until' | 'since', arg?: any, until?: any) 
 	return dur.total({ relativeTo: selfZdt, unit });
 }
 
-/** 
+/**
  * Bi-directional conversion utility for ISO Durations.
  * string -> EDO
  * DurationLikeObject -> EDO (with iso string)

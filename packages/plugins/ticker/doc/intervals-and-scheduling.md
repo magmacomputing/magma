@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ticker</a>
+  <a href="./index.html">← @tempo-kit/plugin-ticker</a>
 </div>
 
 <br>
 
 # Intervals & Scheduling Engines
 
-The `@magmacomputing/tempo-plugin-ticker` plugin supports a unified scheduling interface capable of driving continuous loops via semantic durations, calendar terms, standard 5-field cron syntax, RFC 5545 recurrence rules, and virtual clock countdowns.
+The `@tempo-kit/plugin-ticker` plugin supports a unified scheduling interface capable of driving continuous loops via semantic durations, calendar terms, standard 5-field cron syntax, RFC 5545 recurrence rules, and virtual clock countdowns.
 
 ---
 
@@ -15,8 +15,8 @@ The `@magmacomputing/tempo-plugin-ticker` plugin supports a unified scheduling i
 Instead of raw milliseconds or seconds, you can configure intervals using semantic `DurationLike` objects or shorthand units. This is critical for variable-length units like **months** and **years**, where fixed millisecond counts drift across leap years and differing month lengths:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ticker/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ticker/install';
 
 // Pulse exactly once every calendar month
 await using monthly = Tempo.ticker({ months: 1 }, (t) => {
@@ -75,7 +75,7 @@ using quarterlyTicker = Tempo.ticker({ '#quarter': '>' }, (t) => {
 
 ## 3. Cron Expressions (Standard 5-Field Syntax)
 
-Ticker natively accepts standard 5-part cron expressions (`minute hour day-of-month month day-of-week`) powered by `@magmacomputing/tempo-fns`.
+Ticker natively accepts standard 5-part cron expressions (`minute hour day-of-month month day-of-week`) powered by `tempo-kit-fns`.
 
 ### Passing Cron Strings
 
@@ -180,12 +180,12 @@ Tempo.ticker({
 
 ## 8. Network Time & Clock Drift Compensation (`ntp: true`)
 
-When orchestrating mission-critical workflows across distributed nodes, virtual machines, or IoT edge devices whose local hardware clocks may drift, you can pair Ticker with `@magmacomputing/tempo-plugin-ntp`:
+When orchestrating mission-critical workflows across distributed nodes, virtual machines, or IoT edge devices whose local hardware clocks may drift, you can pair Ticker with `@tempo-kit/plugin-ntp`:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-import { NtpPlugin } from '@magmacomputing/tempo-plugin-ntp';
+import { Tempo } from 'tempo-kit';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
+import { NtpPlugin } from '@tempo-kit/plugin-ntp';
 
 Tempo.use(TickerPlugin);
 Tempo.use(NtpPlugin);
@@ -206,5 +206,5 @@ await using driftCompensated = Tempo.ticker({
 When `ntp: true` is enabled:
 - **Baseline Initialization**: Defaults to `Tempo.ntp.now()` instead of system clock when unseeded.
 - **Delay Compensation**: Automatically shifts loop countdown delays against measured remote offset (`Tempo.ntp.offset`).
-- **Graceful Fallback**: If `@magmacomputing/tempo-plugin-ntp` is not loaded or uncalibrated, Ticker safely falls back to standard local system time without throwing errors.
+- **Graceful Fallback**: If `@tempo-kit/plugin-ntp` is not loaded or uncalibrated, Ticker safely falls back to standard local system time without throwing errors.
 

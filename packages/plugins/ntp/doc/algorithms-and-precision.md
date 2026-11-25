@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ntp</a>
+  <a href="./index.html">← @tempo-kit/plugin-ntp</a>
 </div>
 
 <br>
 
 # Cristian's Algorithm & Precision Engineering
 
-`@magmacomputing/tempo-plugin-ntp` implements Flaviu Cristian's probabilistic clock synchronization algorithm over HTTP(S) with modern performance enhancements: high-resolution monotonic baselines, sub-millisecond `Server-Timing` headers, statistical jitter rejection, and Exponential Moving Average (EMA) smoothing.
+`@tempo-kit/plugin-ntp` implements Flaviu Cristian's probabilistic clock synchronization algorithm over HTTP(S) with modern performance enhancements: high-resolution monotonic baselines, sub-millisecond `Server-Timing` headers, statistical jitter rejection, and Exponential Moving Average (EMA) smoothing.
 
 ---
 

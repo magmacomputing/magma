@@ -1,10 +1,10 @@
 import { AtomicClock, ClockOptions } from './AtomicClock.js';
 import { AtomicReader } from './AtomicReader.js';
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, type TempoPlugin } from 'tempo-kit/plugin/sdk';
 
 export { AtomicClock, AtomicReader, ClockOptions };
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	namespace Tempo {
 		const sync: {
 			/** Starts the master atomic clock on the current thread. */

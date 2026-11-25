@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 /**
  * The client reader that reads the synchronized time from a SharedArrayBuffer.
