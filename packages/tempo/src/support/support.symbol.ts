@@ -4,7 +4,7 @@ import { sym as lib, $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Reg
 export { $Target, $Discover, $Extensible, $Inspect, $LogConfig, $Registry, $LibRegister, $SerializerRegistry, $Identity };
 
 /** key for Tempo Sandbox branding */
-export const $Sandbox: unique symbol = Symbol.for('magmacomputing/tempo/sandbox') as any;
+export const $Sandbox: unique symbol = Symbol.for('tempo-kit/sandbox') as any;
 
 /**
  * Checks if the given value is an authentic Tempo instance.
@@ -41,43 +41,43 @@ export const isSandbox = <T = any>(sandbox?: any): sandbox is T => isBranded(san
  * These symbols utilize Symbol.for() to ensure consistency across module boundaries.
  */
 
-export const TermError: unique symbol = Symbol.for('magmacomputing/tempo/termError') as any;
+export const TermError: unique symbol = Symbol.for('tempo-kit/termError') as any;
 
 /**
  * Well-Known Symbols for Term Lifecycle Protocol.
  * Utilizing Symbol.for() to guarantee consistency across module boundaries and dual package instances.
  */
 export const TermHook = {
-	parse: Symbol.for('magmacomputing/tempo/term/parse'),
-	ordinal: Symbol.for('magmacomputing/tempo/term/ordinal'),
-	step: Symbol.for('magmacomputing/tempo/term/step'),
-	diff: Symbol.for('magmacomputing/tempo/term/diff'),
-	bound: Symbol.for('magmacomputing/tempo/term/bound'),
-	format: Symbol.for('magmacomputing/tempo/term/format'),
+	parse: Symbol.for('tempo-kit/term/parse'),
+	ordinal: Symbol.for('tempo-kit/term/ordinal'),
+	step: Symbol.for('tempo-kit/term/step'),
+	diff: Symbol.for('tempo-kit/term/diff'),
+	bound: Symbol.for('tempo-kit/term/bound'),
+	format: Symbol.for('tempo-kit/term/format'),
 } as const satisfies Record<string, symbol>;
 
 export type TermHook = typeof TermHook;
 
 /** @internal unique symbols for critical internal accessors */
 /** key for Global Discovery of Tempo configuration */			export const $Tempo: unique symbol = Symbol.for('$Tempo') as any;
-/** key for Reactive Plugin Registration */									export const $Register: unique symbol = Symbol.for('magmacomputing/tempo/register') as any;
-/** key for Internal Interpreter Service */									export const $Interpreter: unique symbol = Symbol.for('magmacomputing/tempo/interpreter') as any;
+/** key for Reactive Plugin Registration */									export const $Register: unique symbol = Symbol.for('tempo-kit/register') as any;
+/** key for Internal Interpreter Service */									export const $Interpreter: unique symbol = Symbol.for('tempo-kit/interpreter') as any;
 
-/** key for Master Guard */																	export const $guard: unique symbol = Symbol.for('magmacomputing/tempo/guard') as any;
-/** internal key for signaling pre-errored state */					export const $errored: unique symbol = Symbol.for('magmacomputing/tempo/errored') as any;
-/** internal key for accessing private instance state */		export const $Internal: unique symbol = Symbol.for('magmacomputing/tempo/internal') as any;
-/** hardened globalThis bridge key for the TempoRuntime */	export const $Bridge: unique symbol = Symbol.for('magmacomputing/tempo/runtime') as any;
-/** cross-bundle brand check for TempoRuntime */						export const $RuntimeBrand: unique symbol = Symbol.for('magmacomputing/tempo/runtime/brand') as any;
-/** branding for explicit PropertyDescriptors */						export const $Descriptor: unique symbol = Symbol.for('magmacomputing/tempo/descriptor') as any;
-/** key for Plugin Discrimination */												export const $PluginType: unique symbol = Symbol.for('magmacomputing/tempo/pluginType') as any;
+/** key for Master Guard */																	export const $guard: unique symbol = Symbol.for('tempo-kit/guard') as any;
+/** internal key for signaling pre-errored state */					export const $errored: unique symbol = Symbol.for('tempo-kit/errored') as any;
+/** internal key for accessing private instance state */		export const $Internal: unique symbol = Symbol.for('tempo-kit/internal') as any;
+/** hardened globalThis bridge key for the TempoRuntime */	export const $Bridge: unique symbol = Symbol.for('tempo-kit/runtime') as any;
+/** cross-bundle brand check for TempoRuntime */						export const $RuntimeBrand: unique symbol = Symbol.for('tempo-kit/runtime/brand') as any;
+/** branding for explicit PropertyDescriptors */						export const $Descriptor: unique symbol = Symbol.for('tempo-kit/descriptor') as any;
+/** key for Plugin Discrimination */												export const $PluginType: unique symbol = Symbol.for('tempo-kit/pluginType') as any;
 
-/** @internal static config helper */												export const $setConfig: unique symbol = Symbol.for('magmacomputing/tempo/setConfig') as any;
-/** @internal static discovery helper */										export const $setDiscovery: unique symbol = Symbol.for('magmacomputing/tempo/setDiscovery') as any;
-/** @internal static event builder */												export const $setEvents: unique symbol = Symbol.for('magmacomputing/tempo/setEvents') as any;
-/** @internal static period builder */											export const $setPeriods: unique symbol = Symbol.for('magmacomputing/tempo/setPeriods') as any;
-/** @internal static alias builder */												export const $setAliases: unique symbol = Symbol.for('magmacomputing/tempo/setAliases') as any;
-/** @internal static guard builder */												export const $buildGuard: unique symbol = Symbol.for('magmacomputing/tempo/buildGuard') as any;
-/** @internal static base class marker */										export const $IsBase: unique symbol = Symbol.for('magmacomputing/tempo/isBase') as any;
+/** @internal static config helper */												export const $setConfig: unique symbol = Symbol.for('tempo-kit/setConfig') as any;
+/** @internal static discovery helper */										export const $setDiscovery: unique symbol = Symbol.for('tempo-kit/setDiscovery') as any;
+/** @internal static event builder */												export const $setEvents: unique symbol = Symbol.for('tempo-kit/setEvents') as any;
+/** @internal static period builder */											export const $setPeriods: unique symbol = Symbol.for('tempo-kit/setPeriods') as any;
+/** @internal static alias builder */												export const $setAliases: unique symbol = Symbol.for('tempo-kit/setAliases') as any;
+/** @internal static guard builder */												export const $buildGuard: unique symbol = Symbol.for('tempo-kit/buildGuard') as any;
+/** @internal static base class marker */										export const $IsBase: unique symbol = Symbol.for('tempo-kit/isBase') as any;
 
 /** @internal Tempo Symbol Registry (Local Keys) */
 const local = {

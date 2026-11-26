@@ -18,7 +18,7 @@ All date resolution caching—whether triggered by core `Tempo` parsing or the T
 You can configure global cache parameters using `Tempo.init()`:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 Tempo.init({
   cache: {
@@ -72,13 +72,13 @@ Tempo provides multiple mechanisms for augmenting parsing intelligence. Choosing
 
 ---
 
-## 🤖 AI Plugin Cache Integration (`@magmacomputing/tempo-plugin-ai`)
+## 🤖 AI Plugin Cache Integration (`@tempo-kit/plugin-ai`)
 
-The `@magmacomputing/tempo-plugin-ai` plugin works hand-in-hand with `Tempo.cache` to reduce LLM API calls and costs across AI functions:
+The `@tempo-kit/plugin-ai` plugin works hand-in-hand with `Tempo.cache` to reduce LLM API calls and costs across AI functions:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+import { Tempo } from 'tempo-kit';
+import { parseAI, initAI } from '@tempo-kit/plugin-ai';
 
 initAI({ providers: [...] });
 

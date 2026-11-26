@@ -55,8 +55,8 @@ When calling `Enum.*` reflection helpers (`Enum.has()`, `Enum.hasOwn()`, `Enum.g
 For consumers of the library, these enumerations are exposed via **public package exports**:
 
 - As static properties on `Tempo` (convenient in app code already using `Tempo`)
-- As the default export from `@magmacomputing/tempo/enums`
-- As individual named exports from `@magmacomputing/tempo/enums`
+- As the default export from `tempo-kit/enums`
+- As individual named exports from `tempo-kit/enums`
 
 Avoid referencing internal source files (such as `tempo.index.ts`) in application code.
 
@@ -64,7 +64,7 @@ Avoid referencing internal source files (such as `tempo.index.ts`) in applicatio
 You can access all enums via the unified `Tempo.enums` getter, or use top-level getters for core calendar and direction enums (`WEEKDAY`, `WEEKDAYS`, `MONTH`, `MONTHS`, `DURATION`, `DURATIONS`, `SEASON`, `COMPASS`):
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Core domain enums directly on Tempo:
 const direction = Tempo.COMPASS.North; // 'north'
@@ -79,7 +79,7 @@ const dateFormat = Tempo.enums.FORMAT.date;
 Import the full `enums` object via the default export:
 
 ```typescript
-import enums from '@magmacomputing/tempo/enums';
+import enums from 'tempo-kit/enums';
 
 const { COMPASS, MONTH } = enums;
 const direction = COMPASS.North;
@@ -90,7 +90,7 @@ const monthIndex = MONTH.Feb;
 Import individual enumerators directly:
 
 ```typescript
-import { COMPASS, MONTH, WEEKDAY, ORDINAL, Enum } from '@magmacomputing/tempo/enums';
+import { COMPASS, MONTH, WEEKDAY, ORDINAL, Enum } from 'tempo-kit/enums';
 
 console.log('compass keys: ', Enum.keys(COMPASS));
 ```
@@ -100,8 +100,8 @@ console.log('compass keys: ', Enum.keys(COMPASS));
 In modern Tempo, enum reflection is performed using the **`Enum.*` static helper suite**, mirroring ECMAScript's standard `Object.hasOwn` and `Object.keys`:
 
 ```typescript
-import { Enum } from '@magmacomputing/tempo/enums';
-// or: import { Enum } from '@magmacomputing/tempo/library';
+import { Enum } from 'tempo-kit/enums';
+// or: import { Enum } from 'tempo-kit/library';
 
 // Iterating over properties (Type-safe & collision-proof)
 const days = Enum.keys(Tempo.WEEKDAY);                  // readonly ('Mon' | 'Tue' | 'Wed' | ...)[]
@@ -133,7 +133,7 @@ You can utilize the same `Enum.from` engine for your own application logic by im
 ### Basic Custom Enum
 
 ```typescript
-import { Enum } from '@magmacomputing/tempo/library';
+import { Enum } from 'tempo-kit/library';
 
 // 1. Define your Enum
 export const STATUS = Enum.from(['Pending', 'Active', 'Resolved', 'Archived']);
@@ -151,7 +151,7 @@ A standout capability of Tempo's `Enum` is that instances are **immutable yet ex
 Developers typically assume that freezing an object (`Object.freeze`) prevents adding fields. However, `Enum.extend()` achieves non-destructive extensibility through JavaScript prototype delegation:
 
 ```typescript
-import { Enum } from '@magmacomputing/tempo/library';
+import { Enum } from 'tempo-kit/library';
 
 // Base enum (frozen and immutable)
 export const BASE_ROLE = Enum.from(['Viewer', 'Editor']);
@@ -178,7 +178,7 @@ console.log(Enum.hasOwn(ADMIN_ROLE, 'Admin'));  // true (direct own property on 
 When you want to combine multiple enums, plain objects, or string arrays into a single flat `Enum` without a prototype chain, use `Enum.merge(...sources)`:
 
 ```typescript
-import { Enum } from '@magmacomputing/tempo/library';
+import { Enum } from 'tempo-kit/library';
 
 const BASE_TAGS = Enum.from(['core', 'date']);
 const PLUGIN_TAGS = Enum.from({ date: 10, astro: 20 });

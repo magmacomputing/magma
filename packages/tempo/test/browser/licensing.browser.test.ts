@@ -9,7 +9,7 @@ test('Commercial Licensing engine runs natively in browser', async () => {
 
 	// 3. Initialize Tempo with the token
 	m.Tempo.init({ license: mockToken });
-	const state = (m.Tempo as any)[Symbol.for('magmacomputing/tempo/internal')]();
+	const state = (m.Tempo as any)[Symbol.for('tempo-kit/internal')]();
 
 	expect(state.license.key).toBe(mockToken);
 

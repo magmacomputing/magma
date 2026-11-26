@@ -1,12 +1,12 @@
-# @magmacomputing/tempo-terms
+# tempo-kit-terms
 
 > [!WARNING]
-> **Not published separately.** This directory contains the standard built-in Terms that are natively bundled into the `@magmacomputing/tempo` package. 
+> **Not published separately.** This directory contains the standard built-in Terms that are natively bundled into the `tempo-kit` package. 
 
 ## Why does this exist?
 This package acts as a canonical "showcase" implementation of the Tempo Terms engine. By co-locating the standard Terms alongside other standalone plugins (like Astro or Finance), contributors and plugin authors have a clear reference for how to build their own Terms.
 
-At build time, the Rollup pipeline inlines these terms directly into the Tempo bundle, and build tasks route them to `@magmacomputing/tempo/dist/term/` to power the `@magmacomputing/tempo/terms` subpath exports, meaning end-users get them automatically without needing to install a separate NPM package.
+At build time, the Rollup pipeline inlines these terms directly into the Tempo bundle, and build tasks route them to `tempo-kit/dist/term/` to power the `tempo-kit/terms` subpath exports, meaning end-users get them automatically without needing to install a separate NPM package.
 
 ## Standard Built-in Terms
 
@@ -22,19 +22,19 @@ At build time, the Rollup pipeline inlines these terms directly into the Tempo b
 ## Usage for End-Users
 Civic terms are bundled natively and auto-loaded when importing Tempo:
 ```ts
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 // The CivicTerms are auto-loaded and available natively on the Tempo instance.
 ```
 Or to import cultural or standard terms manually via the explicit `./terms` sub-path:
 ```ts
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Import cultural terms collectively
-import { CulturalTerms } from '@magmacomputing/tempo/terms';
+import { CulturalTerms } from 'tempo-kit/terms';
 Tempo.use(CulturalTerms);
 
 // Or import a specific term individually
-import { ZodiacTerm } from '@magmacomputing/tempo/terms/zodiac';
+import { ZodiacTerm } from 'tempo-kit/terms/zodiac';
 Tempo.use(ZodiacTerm);
 ```
 

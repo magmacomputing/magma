@@ -5,7 +5,7 @@ description: Tempo package ground-truth documentation and Temporal-first guardra
 
 # Tempo Package Rules & Reference Integration
 
-Whenever writing, reviewing, refactoring, testing, or discussing code involving `@magmacomputing/tempo` or its plugins:
+Whenever writing, reviewing, refactoring, testing, or discussing code involving `tempo-kit` or its plugins:
 
 ## 1. Ground Truth Documentation
 - **Primary Reference**: Always consult `packages/tempo/public/llms.txt` before proposing, writing, or refactoring Tempo APIs.

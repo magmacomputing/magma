@@ -29,15 +29,15 @@ Note: The examples below include a polyfill for demonstration purposes only, so 
 For most modern projects using a package manager, install Tempo via the npm registry.
 
 ```bash
-npm install @magmacomputing/tempo   # npm
-yarn add @magmacomputing/tempo      # yarn
-pnpm add @magmacomputing/tempo      # pnpm
-bun add @magmacomputing/tempo       # bun
+npm install tempo-kit   # npm
+yarn add tempo-kit      # yarn
+pnpm add tempo-kit      # pnpm
+bun add tempo-kit       # bun
 ```
 
 ### Usage
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 const t = new Tempo('next Friday');
 ```
 
@@ -59,7 +59,7 @@ npm install @js-temporal/polyfill
 
 ```javascript
 import '@js-temporal/polyfill';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const t = new Tempo('next Friday');
 ```
@@ -73,12 +73,12 @@ Tempo is a native ESM package and works perfectly with Deno. You can add it via 
 As of Deno 2.7, the Temporal API is fully stabilized and enabled by default. You no longer need to pass the --unstable-temporal flag to use it.
 
 ```bash
-deno add npm:@magmacomputing/tempo
+deno add npm:tempo-kit
 ```
 
 ### Usage
 ```javascript
-import { Tempo } from "@magmacomputing/tempo";
+import { Tempo } from "tempo-kit";
 const t = new Tempo();
 ```
 
@@ -101,7 +101,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.esm.js"
+    "tempo-kit": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/tempo.bundle.esm.js"
   }
 }
 </script>
@@ -110,7 +110,7 @@ The easiest way to use Tempo natively in the browser is via the pre-optimized ES
 ```html
 <script type="module">
   import '@js-temporal/polyfill';
-  import { Tempo } from '@magmacomputing/tempo';
+  import { Tempo } from 'tempo-kit';
   
   const t = new Tempo('tomorrow');
   console.log(t.format('{mon} {dd:ord}'));
@@ -129,8 +129,8 @@ While you *could* import directly from the URL everywhere, the best practice is 
 {
   "imports": {
     "@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-    "@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo@5",
-    "@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker@2"
+    "tempo-kit": "https://esm.sh/tempo-kit@5",
+    "@tempo-kit/plugin-ticker": "https://esm.sh/@tempo-kit/plugin-ticker@2"
   }
 }
 </script>
@@ -140,8 +140,8 @@ While you *could* import directly from the URL everywhere, the best practice is 
   // You can use standard bare specifiers thanks to the tiny import map above.
   // esm.sh handles all the complex internal plugin routing behind the scenes!
   import '@js-temporal/polyfill';
-  import { Tempo } from '@magmacomputing/tempo';
-  import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+  import { Tempo } from 'tempo-kit';
+  import { TickerPlugin } from '@tempo-kit/plugin-ticker';
 
   Tempo.init({ 
     plugins: [TickerPlugin] 
@@ -173,11 +173,11 @@ To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.index.js",
-    "@magmacomputing/tempo/plugin/sdk": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/plugin/plugin.sdk.js",
+    "tempo-kit": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/tempo.index.js",
+    "tempo-kit/plugin/sdk": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/plugin/plugin.sdk.js",
 
-    "@magmacomputing/tempo-plugin-celestial": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.js",
-    "@magmacomputing/tempo-plugin-ticker": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-ticker@2/dist/index.js"
+    "@tempo-kit/plugin-celestial": "https://cdn.jsdelivr.net/npm/@tempo-kit/plugin-celestial@1/dist/index.js",
+    "@tempo-kit/plugin-ticker": "https://cdn.jsdelivr.net/npm/@tempo-kit/plugin-ticker@2/dist/index.js"
   }
 }
 </script>
@@ -197,10 +197,10 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
 
 <!-- 2. Load the Tempo Global Bundle (Creates window.Magma) -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/tempo.bundle.min.js"></script>
 
 <!-- 3. Load any Community Plugins (Attaches to window.Magma.plugins) -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tempo-kit/plugin-celestial@1/dist/index.global.min.js"></script>
 
 <script>
   // 1. Extract what you need from the Magma namespace
@@ -222,8 +222,8 @@ If you aren't using ESM or just want a simple `<script>` tag for rapid prototypi
 If you are extremely concerned about bundle size, you can bypass the "Batteries Included" entry point and import only the core engine. You then manually opt-in to the modules you need.
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { MutateModule } from '@magmacomputing/tempo/mutate';
+import { Tempo } from 'tempo-kit/core';
+import { MutateModule } from 'tempo-kit/mutate';
 
 // Opt-in to specific functionality
 Tempo.use(MutateModule);
@@ -241,8 +241,8 @@ When using the Lite build, the `Tempo` class will have almost no methods (like `
 
 We recommend pinning your versions in production environments to ensure stability. 
 
-*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/...` (Locks to major version 5)
-*   **Latest**: `https://cdn.jsdelivr.net/npm/@magmacomputing/tempo/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).
+*   **JSDelivr**: `https://cdn.jsdelivr.net/npm/tempo-kit@5/...` (Locks to major version 5)
+*   **Latest**: `https://cdn.jsdelivr.net/npm/tempo-kit/...` (Omit the version string to always receive the latest release. Note that JSDelivr will resolve a missing version tag to the latest published release).
 
 ---
 

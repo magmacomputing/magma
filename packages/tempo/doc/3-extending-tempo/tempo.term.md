@@ -58,7 +58,7 @@ t.term.quarter.span.progress // → 0.5055 (normalized 0.0 .. 1.0)
 Divides corporate or governmental financial cycles into four fiscal quarters (`FQ1`, `FQ2`, `FQ3`, `FQ4`). Supports configurable start months (and optional `startDay`, e.g. `6` for the UK April 6 personal tax year) or automated jurisdictional defaults (e.g., Australia starting July 1, UK/India starting April 1; `'US'`, `geo.country: 'US'`, and `en-US` select January 1, whereas US federal reporting uses `country: 'US_FED'` or `startMonth: 10` for an October 1 start). Provides numeric `year: number` for direct financial arithmetic.
 
 ```ts
-import { FiscalTerm } from '@magmacomputing/tempo/terms';
+import { FiscalTerm } from 'tempo-kit/terms';
 Tempo.use(FiscalTerm);
 
 // Jurisdictional lookup via pluginOptions or geo.country
@@ -101,7 +101,7 @@ tTropics.term.season.label // → 'Long Wet' ('Long Wet', 'Long Dry', 'Short Wet
 Determines the Western astrological sign for the date when `ZodiacTerm` is registered (`EasternTerm` provides the Chinese/lunar zodiac).
 
 ```ts
-import { ZodiacTerm, EasternTerm } from '@magmacomputing/tempo/terms';
+import { ZodiacTerm, EasternTerm } from 'tempo-kit/terms';
 Tempo.use([ZodiacTerm, EasternTerm]);
 
 const t = new Tempo('14-Mar-2025');
@@ -159,14 +159,14 @@ In **Tempo Full**, all standard Terms are enabled by default. In **Tempo Core**,
 ### 1. Standard Activation (Recommended)
 The fastest way to enable all built-in Terms (`qtr`, `szn`, `zdc`, `tod`).
 ```typescript
-import '@magmacomputing/tempo/term'; // One-line side-effect activation
+import 'tempo-kit/term'; // One-line side-effect activation
 ```
 
 ### 2. Explicit Module (Uniform Sync)
 Best for projects that prefer explicit dependencies and a uniform API across all features.
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { TermsModule } from '@magmacomputing/tempo/term';
+import { Tempo } from 'tempo-kit/core';
+import { TermsModule } from 'tempo-kit/term';
 
 Tempo.use(TermsModule);
 ```
@@ -174,21 +174,21 @@ Tempo.use(TermsModule);
 ### 3. Surgical Opt-in (Maximum Lite)
 Best for maximum bundle-size optimization—you only load the specific Terms you use. Note that specific standard terms have their own dedicated sub-paths natively bundled within the main package.
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
+import { Tempo } from 'tempo-kit/core';
+import { QuarterTerm } from 'tempo-kit/term/quarter';
 
 Tempo.use(QuarterTerm);
 ```
 
 ## How to Define a Term Plugin
 
-A Term plugin is created using the **`defineTerm`** factory function provided by the library (`@magmacomputing/tempo/plugin/sdk`). This ensures correct type-inference and automatically handles registration during the discovery phase.
+A Term plugin is created using the **`defineTerm`** factory function provided by the library (`tempo-kit/plugin/sdk`). This ensures correct type-inference and automatically handles registration during the discovery phase.
 
 ### Plugin Definition
 
 ```ts
-import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from '@magmacomputing/tempo/plugin/sdk';
-import { enums, type Tempo } from '@magmacomputing/tempo/core';
+import { defineTerm, defineRange, getTermRange, resolveCycleWindow } from 'tempo-kit/plugin/sdk';
+import { enums, type Tempo } from 'tempo-kit/core';
 
 /** 1. The range boundaries (grouped by sphere) */
 const ranges = defineRange([
@@ -268,7 +268,7 @@ type Range = {
 Use the static **`Tempo.use()`** method. This allows you to add Terms dynamically without modifying the library source.
 
 ```ts
-import { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from 'tempo-kit/core';
 import { MyRetailSeasonTerm } from './term.myretailseason.js';
 
 // Register the term plugin
@@ -315,7 +315,7 @@ To unlock Tempo's advanced **Term Traversal** (e.g., `t.add({ '#quarter': 1 })`)
 The library provides a specialized helper that calculates these boundaries and progress metrics automatically based on your `ranges` array.
 
 ```ts
-import { getTermRange } from '@magmacomputing/tempo/plugin/sdk';
+import { getTermRange } from 'tempo-kit/plugin/sdk';
 
 export function define(this: Tempo, keyOnly?: boolean) {
   // Finds the current range, then encapsulates temporal boundaries and progress into 'span'
@@ -325,10 +325,10 @@ export function define(this: Tempo, keyOnly?: boolean) {
 ```
 
 ### Manual Boundaries and Progress Spans
-For procedural terms that compute custom start/end dates instead of calling `getTermRange`, use the `defineSpan(this, start, end)` helper from `@magmacomputing/tempo/plugin/sdk`:
+For procedural terms that compute custom start/end dates instead of calling `getTermRange`, use the `defineSpan(this, start, end)` helper from `tempo-kit/plugin/sdk`:
 
 ```ts
-import { defineSpan } from '@magmacomputing/tempo/plugin/sdk';
+import { defineSpan } from 'tempo-kit/plugin/sdk';
 
 export function define(this: Tempo, keyOnly?: boolean) {
   const start = this.set({ hour: 0, minute: 0, second: 0, millisecond: 0 });
@@ -354,7 +354,7 @@ Starting in **v4.6.0**, Term plugins can participate directly in Tempo's core pa
 Instead of overriding core methods or monkey-patching regex tables, term plugins implement protocol hooks using well-known symbols (`Symbol.for`), exported under `TermHook`:
 
 ```typescript
-import { defineTerm, TermHook, type TermParseContext, type Tempo } from '@magmacomputing/tempo';
+import { defineTerm, TermHook, type TermParseContext, type Tempo } from 'tempo-kit';
 ```
 
 ### The 6 Lifecycle Hooks
@@ -371,7 +371,7 @@ import { defineTerm, TermHook, type TermParseContext, type Tempo } from '@magmac
 ### Complete Hook Example
 
 ```typescript
-import { Tempo, defineTerm, TermHook } from '@magmacomputing/tempo';
+import { Tempo, defineTerm, TermHook } from 'tempo-kit';
 
 export const SprintTerm = defineTerm({
   key: 'sprint',
@@ -455,7 +455,7 @@ To ensure a custom `Term` plugin integrates fully with Tempo, follow these guide
 8.  **IDE Autocomplete (Interface Augmentation)**: To provide a world-class developer experience, always augment the global `TempoTermRegistry` interface with your custom keys and payload types. This ensures IDEs can provide strict type-checking and autocomplete when users access `t.term.myKey`.
     ```ts
     // IDE Autocomplete (Interface Augmentation)
-    declare module '@magmacomputing/tempo' {
+    declare module 'tempo-kit' {
       interface TempoTermRegistry {
         rsn: 'Spring' | 'Summer' | 'Autumn' | 'Winter';
         retailSeason: {

@@ -12,7 +12,7 @@ You can access the `Interval` class either statically through the `Tempo` namesp
 The easiest way to use `Interval` is directly from the `Tempo` class. When instantiated this way, `Tempo.Interval` automatically intercepts its arguments and parses them through the `Tempo` constructor. This means you can pass standard strings, Temporal objects, or `Date` objects directly without wrapping them yourself!
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const meeting = new Tempo.Interval(
   '2026-07-15T14:00:00Z',
@@ -24,7 +24,7 @@ const meeting = new Tempo.Interval(
 If you are strictly using native `Temporal` polyfill objects and want to avoid bundling the entire `Tempo` class, you can import `Interval` directly. The pure `Interval` class has stricter requirements: it relies on simple duck-typing and requires the arguments to be pre-instantiated objects that expose an `epochNanoseconds` or `epoch.ns` property.
 
 ```typescript
-import { Interval } from '@magmacomputing/tempo';
+import { Interval } from 'tempo-kit';
 import { Temporal } from '@js-temporal/polyfill';
 
 const meeting = new Interval(

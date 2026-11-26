@@ -43,7 +43,7 @@
 
 ### 1. Basic Instantiation & Formatting
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Create from current instant or ISO 8601 string
 const t = new Tempo('2026-08-04T15:30:00Z');
@@ -57,7 +57,7 @@ const nextWeek = t.add({ days: 7 });
 
 ### 2. Relative Shorthand & Arithmetic
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Instantiation with relative expressions or durations
 const t1 = new Tempo('next Friday');
@@ -71,7 +71,7 @@ const inTwoHours = new Tempo().add({ hours: 2 });
 
 ### 3. Instance Options (Timezone & Locale)
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // ISO 8601 strings parse directly via constructor
 const tIso = new Tempo('2026-08-04T15:30:00+10:00');
@@ -82,7 +82,7 @@ const tSydney = new Tempo('2026-08-04T15:30:00', { timeZone: 'Australia/Sydney' 
 
 ### 4. System Initialization & Month-Day / Custom Layout Configuration
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // 1. Configure US Month-First Parsing for ambiguous slash dates ('08/04/2026' -> August 4th)
 Tempo.init({
@@ -108,7 +108,7 @@ const customDate = new Tempo('08*04*2026'); // Automatically matched against sta
 - **Cadence** (`reactivity`): The rhythmic scheduling interval or pattern governing ticker executions and reactive signal updates.
 - **Calendar** (`temporal-math`): A system for organizing days into months and years (such as iso8601, gregory, hebrew, or islamic-civil) tracked by every Tempo instance.
 - **Clock Drift** (`plugins`): The gradual offset between local system time and true reference network time, compensated by the NTP plugin.
-- **Dialect** (`plugins`): An external date/time format token grammar (such as LDML, Moment, POSIX strftime, or Oracle TO_CHAR) bridged by @magmacomputing/tempo-plugin-dialects.
+- **Dialect** (`plugins`): An external date/time format token grammar (such as LDML, Moment, POSIX strftime, or Oracle TO_CHAR) bridged by @tempo-kit/plugin-dialects.
 - **Disposable** (`reactivity`): An object implementing dispose() and Symbol.dispose for deterministic timer and subscription cleanup via TypeScript using declarations.
 - **Duration** (`temporal-math`): A signed span of calendar and clock units (years, months, days, hours, minutes, seconds, sub-seconds) used in Tempo arithmetic and formatting.
 - **Dynamic Functional Context (DFC)** (`architecture`): Tempo's pattern where configuration options (such as timeZone, locale, or calendar) accept lazy evaluator functions (() => T) resolved per request.

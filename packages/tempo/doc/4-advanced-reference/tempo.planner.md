@@ -11,7 +11,7 @@ By default, Tempo searches through a variety of date layouts (like ISO 8601, Eur
 This leads to performance gains and gives you deterministic control when overriding [Ambiguity Resolution](../2-core-concepts/tempo.parse.md) heuristics (e.g. forcing `mdy` over `dmy`).
 
 ```ts
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 Tempo.init({
   planner: {

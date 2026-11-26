@@ -6,23 +6,23 @@ Tempo is designed as a modular library, allowing you to include only the feature
 
 If you are using module entry points, use this rule of thumb:
 
-1. `import '@magmacomputing/tempo/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.use(...)` for the same module.
-2. `import { SomeModule } from '@magmacomputing/tempo/<module>'` (named import): requires explicit activation via `Tempo.use(SomeModule)`.
+1. `import 'tempo-kit/<module>'` (side-effect import): auto-registers that module. You usually do **not** need `Tempo.use(...)` for the same module.
+2. `import { SomeModule } from 'tempo-kit/<module>'` (named import): requires explicit activation via `Tempo.use(SomeModule)`.
 3. `Tempo.init()` is primarily for baseline configuration and initial discovery. Call it at startup for config; if you load modules later at runtime, use `Tempo.use(...)` for deterministic activation.
 4. Import order is usually only relevant when modules are loaded dynamically/lazily. For deterministic activation in those cases, prefer explicit `Tempo.use(...)` immediately after import.
 
 ## Core vs. Full
 
-* **@magmacomputing/tempo/core**: The bare-bones Tempo engine. Includes parsing (standard ISO string or a native `Temporal` object), basic getters, and internal state management.
-* **@magmacomputing/tempo**: The "batteries included" version. Includes all standard modules (Duration, Format, Term Registry, Mutate, etc.).
+* **tempo-kit/core**: The bare-bones Tempo engine. Includes parsing (standard ISO string or a native `Temporal` object), basic getters, and internal state management.
+* **tempo-kit**: The "batteries included" version. Includes all standard modules (Duration, Format, Term Registry, Mutate, etc.).
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { DurationModule } from '@magmacomputing/tempo/duration';
-import { FormatModule } from '@magmacomputing/tempo/format';
-import { MutateModule } from '@magmacomputing/tempo/mutate';
-import { ParseModule } from '@magmacomputing/tempo/parse';
-import { TermsModule } from '@magmacomputing/tempo/term';
+import { Tempo } from 'tempo-kit/core';
+import { DurationModule } from 'tempo-kit/duration';
+import { FormatModule } from 'tempo-kit/format';
+import { MutateModule } from 'tempo-kit/mutate';
+import { ParseModule } from 'tempo-kit/parse';
+import { TermsModule } from 'tempo-kit/term';
 
 
 // Individual extension...
@@ -34,34 +34,34 @@ Tempo.use(DurationModule, FormatModule, TermsModule, MutateModule, ...);
 
 ## Available Modules
 
-### Duration Module (@magmacomputing/tempo/duration)
+### Duration Module (tempo-kit/duration)
 Adds support for `.until()` and `.since()` instance methods, as well as the static `Tempo.duration()` factory.
 
-### Format Module (@magmacomputing/tempo/format)
+### Format Module (tempo-kit/format)
 Adds support for the `.format()` method and custom layout resolution.
 
-### Mutate Module (@magmacomputing/tempo/mutate)
+### Mutate Module (tempo-kit/mutate)
 Adds support for the `.add()`, `.subtract()`, and `.set()` instance methods, enabling time manipulation.
 
-### Parse Module (@magmacomputing/tempo/parse)
+### Parse Module (tempo-kit/parse)
 Handles string parsing and token extraction. This is included automatically in the `full` package, but must be explicitly opted-in when using `core`.
 
 
 
-### Terms Module (@magmacomputing/tempo/term)
+### Terms Module (tempo-kit/term)
 Adds support for semantic Terms like `quarter`, `season`, `zodiac`, and `period`. There are three ways to enable Terms:
 
 #### 1. The Side-Effect (Standard Activation)
 Fastest way to enable all standard Terms in a Core environment.
 ```typescript
-import '@magmacomputing/tempo/term'; // One-line activation
+import 'tempo-kit/term'; // One-line activation
 ```
 
 #### 2. The Explicit Module (Uniform Sync)
 Recommended for consistency with other modules.
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { TermsModule } from '@magmacomputing/tempo/term';
+import { Tempo } from 'tempo-kit/core';
+import { TermsModule } from 'tempo-kit/term';
 
 Tempo.use(TermsModule);
 ```
@@ -69,8 +69,8 @@ Tempo.use(TermsModule);
 #### 3. The Surgical Strike (Data-Only)
 Best for maximum bundle-size optimization by picking only what you need. Note that specific standard terms have their own dedicated sub-paths natively bundled within the main package.
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { QuarterTerm } from '@magmacomputing/tempo/term/quarter';
+import { Tempo } from 'tempo-kit/core';
+import { QuarterTerm } from 'tempo-kit/term/quarter';
 
 Tempo.use(QuarterTerm);
 ```
@@ -80,7 +80,7 @@ Tempo.use(QuarterTerm);
 You can create your own modules to extend Tempo's internal engine or its public API.
 
 ```typescript
-import { defineModule } from '@magmacomputing/tempo/plugin';
+import { defineModule } from 'tempo-kit/plugin';
 
 export const MyModule = defineModule((TempoClass, options) => {
     // Add instance methods
@@ -95,9 +95,9 @@ To ensure TypeScript recognizes your new methods without throwing augmentation e
 
 ```typescript
 // my-module.d.ts
-import '@magmacomputing/tempo';
+import 'tempo-kit';
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
     interface Tempo {
         sayHello(): string;
     }
@@ -108,7 +108,7 @@ declare module '@magmacomputing/tempo' {
 ```
 
 ::: warning
-**Dual Module Hazard**: If you are using `@magmacomputing/tempo/core` and `@magmacomputing/tempo` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
+**Dual Module Hazard**: If you are using `tempo-kit/core` and `tempo-kit` in the same project, ensure you use the `development` condition or consistent import paths to avoid registering the same classes twice.
 :::
 
 ## ⚠️ The Registration "Gotcha"
@@ -119,6 +119,6 @@ There is a subtle but important distinction between how features are activated i
 *   **`Tempo.init()`**: Establishes global baseline configuration at application startup and registers plugins specified in the `plugins` array during initial startup discovery.
 
 ::: note
-**Startup Initialization Lifecycle**: `Tempo.init()` establishes baseline configuration during application startup. Built-in plugins are registered automatically via static imports in full Tempo (`@magmacomputing/tempo`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. Note that subsequent calls to `Tempo.init()` re-evaluate and merge configuration options rather than executing as an idempotent no-op. To register additional plugins dynamically after startup, use `Tempo.use(...)`.
+**Startup Initialization Lifecycle**: `Tempo.init()` establishes baseline configuration during application startup. Built-in plugins are registered automatically via static imports in full Tempo (`tempo-kit`), while explicit plugin lists are registered during `Tempo.init({ plugins: [...] })`. Note that subsequent calls to `Tempo.init()` re-evaluate and merge configuration options rather than executing as an idempotent no-op. To register additional plugins dynamically after startup, use `Tempo.use(...)`.
 :::
 

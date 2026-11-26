@@ -206,8 +206,8 @@
 			<div class="subtitle">ESM Lite Build</div>
 			
 			<div class="code-block">
-				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo/core'</span>;
-<span class="keyword">import</span> { <span class="type">MutateModule</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo/mutate'</span>;
+				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'tempo-kit/core'</span>;
+<span class="keyword">import</span> { <span class="type">MutateModule</span> } <span class="keyword">from</span> <span class="string">'tempo-kit/mutate'</span>;
 
 <span class="type">Tempo</span>.<span class="method">extend</span>(MutateModule);
 <span class="keyword">const</span> t = <span class="keyword">new</span> <span class="type">Tempo</span>().<span class="method">add</span>({ days: <span class="type">1</span> });</code>
@@ -234,14 +234,14 @@
 		"imports": {
 			"jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
 			"@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js",
-			"@magmacomputing/tempo/core": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/core.index.js",
-			"@magmacomputing/tempo/mutate": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/module/module.mutate.js"
+			"tempo-kit/core": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/core.index.js",
+			"tempo-kit/mutate": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/module/module.mutate.js"
 		}
 	}
 	</script>
 	<script type="module">
-		import { Tempo } from '@magmacomputing/tempo/core';
-		import { MutateModule } from '@magmacomputing/tempo/mutate';
+		import { Tempo } from 'tempo-kit/core';
+		import { MutateModule } from 'tempo-kit/mutate';
 
 		// Opt-in to mutation logic
 		Tempo.use(MutateModule);

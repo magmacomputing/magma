@@ -305,11 +305,11 @@ for await (const t of quarterly) {
 ---
 
 ### Format & Parse Dialects Plugin (Moment, Luxon, SQL, POSIX, PHP)
-If you are migrating existing code or layouts from Moment.js, Luxon, date-fns, POSIX `strftime`, PHP, or SQL, use the [`@magmacomputing/tempo-plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin.
+If you are migrating existing code or layouts from Moment.js, Luxon, date-fns, POSIX `strftime`, PHP, or SQL, use the [`@tempo-kit/plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin.
 
 ```typescript
 // Zero-config drop-in import automatically mounts dialect shims:
-import '@magmacomputing/tempo-plugin-dialects/install';
+import '@tempo-kit/plugin-dialects/install';
 
 const t = new Tempo('2026-10-24T15:30:00');
 

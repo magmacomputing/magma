@@ -17,9 +17,11 @@
 
 > **Our Mission: Humanizing Temporal.** Bringing developer intuition, cultural awareness, and expressive natural-language ergonomics to JavaScript dates—anchored in a rock-solid [ISO 8601](https://www.iso.org/iso-8601-date-and-time-format.html) baseline. [Read our vision & architecture →](https://magmacomputing.github.io/magma/doc/7-ecosystem/vision.html)
 
+> **Package Note:** `tempo-kit` (formerly `@magmacomputing/tempo` in v4) is an independent, `Temporal`-native date-time engine and is unrelated to `@formkit/tempo`.
+
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://socket.dev/npm/package/@magmacomputing/tempo"><img src="https://img.shields.io/badge/Socket-Security-brightgreen?logo=socketdotdev&logoColor=white" alt="Socket Security" style="display: inline-block; margin: 0 4px;"></a> <a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/1-getting-started/tempo.repl.html"><img src="https://img.shields.io/badge/Live-Interactive%20REPL-38bdf8?logo=javascript" alt="Live Interactive REPL" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/v/tempo-kit" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://socket.dev/npm/package/tempo-kit"><img src="https://img.shields.io/badge/Socket-Security-brightgreen?logo=socketdotdev&logoColor=white" alt="Socket Security" style="display: inline-block; margin: 0 4px;"></a> <a href="https://tc39.es/proposal-temporal/"><img src="https://img.shields.io/badge/Temporal-Stage%204-green" alt="Temporal" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/1-getting-started/tempo.repl.html"><img src="https://img.shields.io/badge/Live-Interactive%20REPL-38bdf8?logo=javascript" alt="Live Interactive REPL" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 
@@ -27,8 +29,8 @@
 
 ## ⚡ Quick Start
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 // 🔌 Instantly Extensible (with deterministic defaults)
 Tempo.init({
@@ -58,11 +60,11 @@ console.log(event.term.astronomy.season); // 'Autumn'
 ## 📦 Installation
 
 ```bash
-npm install @magmacomputing/tempo       # npm
-yarn add @magmacomputing/tempo          # yarn
-pnpm add @magmacomputing/tempo          # pnpm
-bun add @magmacomputing/tempo           # bun
-deno add npm:@magmacomputing/tempo      # deno
+npm install tempo-kit       # npm
+yarn add tempo-kit          # yarn
+pnpm add tempo-kit          # pnpm
+bun add tempo-kit           # bun
+deno add npm:tempo-kit      # deno
 ```
 
 > **Runtime Support**: Requires Node.js `>= 20.0.0` (Recommended: **Node 24 LTS** or **Node >= 26.10.0** with full native `Temporal` support).
@@ -77,14 +79,14 @@ For standard usage natively in the browser, use the pre-optimized **Global ESM B
 {
   "imports": {
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
-    "@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.esm.js"
+    "tempo-kit": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/tempo.bundle.esm.js"
   }
 }
 </script>
 
 <script type="module">
   import '@js-temporal/polyfill';
-  import { Tempo } from '@magmacomputing/tempo';
+  import { Tempo } from 'tempo-kit';
 
   const t = new Tempo('next Friday');
 </script>
@@ -132,9 +134,9 @@ Tempo is the core library, but the ecosystem extends further:
 
 | Package | Description | Docs |
 | :--- | :--- | :---: |
-| **[`@magmacomputing/tempo`](https://www.npmjs.com/package/@magmacomputing/tempo)** | Core library — parsing, formatting, natural-language engine | <a href="https://magmacomputing.github.io/magma/" title="Documentation"><img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/book-icon.svg" width="18" height="18" style="vertical-align: middle;" alt="Documentation" /></a> |
+| **[`tempo-kit`](https://www.npmjs.com/package/tempo-kit)** | Core library — parsing, formatting, natural-language engine | <a href="https://magmacomputing.github.io/magma/" title="Documentation"><img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/book-icon.svg" width="18" height="18" style="vertical-align: middle;" alt="Documentation" /></a> |
 | **[`tempo-fns`](https://www.npmjs.com/package/tempo-fns)** | Pure functional utilities built on native Temporal & Tempo — tree-shakeable helpers | <a href="https://magmacomputing.github.io/magma/functions/" title="Documentation"><img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/book-icon.svg" width="18" height="18" style="vertical-align: middle;" alt="Documentation" /></a> |
-| **[`@magmacomputing/tempo-plugin-*`](https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem)** | Official & community plugins — AI, Ticker, Astro, Finance, Sync, Snap, and more | <a href="https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem" title="Plugin Ecosystem Catalog"><img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/book-icon.svg" width="18" height="18" style="vertical-align: middle;" alt="Plugin Ecosystem Catalog" /></a> |
+| **[`@tempo-kit/plugin-*`](https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem)** | Official & community plugins — AI, Ticker, Astro, Finance, Sync, Snap, and more | <a href="https://magmacomputing.github.io/magma/doc/3-extending-tempo/ecosystem" title="Plugin Ecosystem Catalog"><img src="https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/book-icon.svg" width="18" height="18" style="vertical-align: middle;" alt="Plugin Ecosystem Catalog" /></a> |
 
 
 ---

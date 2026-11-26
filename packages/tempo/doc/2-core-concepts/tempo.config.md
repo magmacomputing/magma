@@ -28,9 +28,9 @@ In bundled frontend environments (like Vite or Webpack), you can still maintain 
 
 ```typescript
 // tempo.config.ts
-import { defineConfig } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import { defineConfig } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
 
 export default defineConfig({
   timeZone: 'Australia/Sydney',        // Set your baseline timezone
@@ -64,7 +64,7 @@ You can then bootstrap this environment at the very top of your application's en
 ### Server / Node.js Entry Point (Zero-Config Discovery)
 ```typescript
 // main.ts (Server / Node.js)
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Automatically discovers and loads local 'tempo.config.ts' (or .js / .json / .jsonc)
 await Tempo.bootstrap(); 
@@ -80,7 +80,7 @@ const { App } = await import('./app.js');
 ### Bundled Frontend Entry Point (Vite / Webpack)
 ```typescript
 // main.ts (Bundled Frontend / Browser)
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import tempoConfig from './tempo.config';
 
 // Explicitly pass central configuration into Tempo.init()
@@ -172,7 +172,7 @@ globalThis[Symbol.for('$Tempo')] = Object.freeze({
 });
 
 // Load Tempo after the discovery object is in place
-const { Tempo } = await import('@magmacomputing/tempo');
+const { Tempo } = await import('tempo-kit');
 ```
 
 ::: info
@@ -183,7 +183,7 @@ With static ESM imports, import evaluation happens before module body execution.
 Using `Tempo.use(...)` is explicit registration after `Tempo` is loaded. It is ergonomic and strongly recommended for normal application code, but it is a different mechanism from pre-bootstrap global discovery.
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 Tempo.use({
   options: { timeZone: 'Europe/Paris' },
@@ -219,7 +219,7 @@ Tempo looks for the following structure:
 This is the **Standard Developer Tier**. Most applications should call `Tempo.init()` during startup to establish a predictable baseline for all instances.
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 Tempo.init({
   timeZone: 'Australia/Sydney',
@@ -284,7 +284,7 @@ In modern multi-tenant, serverless, or micro-service architectures (such as Next
 To eliminate repetitive instance options and prevent global configuration mutation churn (`Tempo.init()`), Tempo supports **`Evaluable<T>`** (`T | (() => T)`) suppliers across all core context properties (`timeZone`, `locale`, `calendar`, `sphere`):
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 interface UserSession {

@@ -47,7 +47,7 @@ graph TD
 ---
 
 ### Phase 2: Package Scope & Namespace Setup (`tempo-kit` & `@tempo-kit/*`)
-*Status: Namespace Locked (`tempo-kit` + `@tempo-kit/*`)*
+*Status: Completed (`tempo-kit` + `@tempo-kit/*`)*
 
 Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Svelte (`svelte` + `@sveltejs/*`), and Octokit (`octokit` + `@octokit/*`), Tempo v5 will migrate from the corporate `@magmacomputing` prefix to a dedicated, community-facing unscoped primary package (**`tempo-kit`**) paired with a scoped plugin ecosystem (**`@tempo-kit/*`**):
 
@@ -60,7 +60,7 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
   - **`tempo-js` Permanently Blocked**: GitHub Support confirmed on Nov 23, 2026 that npm's automated `E403` moniker-similarity protection cannot be bypassed or overridden, even for `tempojs` / `@tempo-js` owners.
   - **`@tempojs` Scope Closed**: GitHub Support declined to transfer `@tempojs` based on inactivity/outreach alone; no trademark claim will be filed.
   - **Final Selection — `tempo-kit` + `@tempo-kit/*`**: Selected **`tempo-kit`** as the sole unscoped primary package (`import { Tempo } from 'tempo-kit'`, `'tempo-kit/core'`, `'tempo-kit/terms/quarter'`) paired with **`@tempo-kit/plugin-*`** for plugins, keeping `tempojs` untouched/unpublished and clarifying in `README.md` that `tempo-kit` is an independent `Temporal`-native engine (unrelated to `@formkit/tempo`).
-- [ ] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
+- [x] **Step 3: Establish Canonical Package Mapping & Taxonomy**:
   - **Core (`tempo-kit`)**: Base Tempo library with built-in Modules (`Parse`, `Format`, `Mutate`, `Duration`, and Civic Terms), without external plugins.
   - **Core (`tempo-kit/core`)**: Bare-bones, tree-shakeable Tempo kernel with no modules or plugins registered by default (preserving v4 `./core` semantics).
 
@@ -68,7 +68,7 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
   | :--- | :--- | :--- | :--- |
   | `@magmacomputing/tempo` | **`tempo-kit`** | — | Batteries-included engine with built-in modules, plus subpath exports (`./core` for the bare-bones kernel with no modules/plugins, `./terms` for extended built-in terms, `./parse`, `./format`, `./mutate`, `./duration`, `./plugin/sdk`) |
   | `@magmacomputing/tempo-fns` | **`tempo-fns`** | `@tempo-kit/fns` | Standalone functional date math & algorithms for Temporal |
-  | `@magmacomputing/library` | **`tempo-lib`** | `@tempo-kit/lib` | Modularized core primitives, assertions, type-guards, and reflection |
+  | `@magmacomputing/library` | **`tempo-lib`** *(kept `"private": true` & bundled into `tempo-kit` for now)* | `@tempo-kit/lib` | Modularized core primitives, assertions, type-guards, and reflection |
   | `@magmacomputing/tempo-plugin-dialects` | **`@tempo-kit/plugin-dialects`** | — | Moment / Day.js / Luxon / SQL format compatibility |
   | `@magmacomputing/tempo-plugin-ticker` | **`@tempo-kit/plugin-ticker`** | — | High-precision reactive scheduler & pulse engine |
   | `@magmacomputing/tempo-plugin-ntp` | **`@tempo-kit/plugin-ntp`** | — | Network Time Protocol clock drift synchronization |
@@ -86,7 +86,7 @@ Following the industry precedent established by Vite (`vite` + `@vitejs/*`), Sve
 ---
 
 ### Phase 3: Plugin Ecosystem Modularization & Greenfield Optimization
-*Status: Planned*
+*Status: Completed*
 
 To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shims or non-essential domain data, ecosystem plugins are modularized while preserving core signature superpowers:
 
@@ -99,7 +99,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 - [x] **Retain Slick Shorthand Syntax as Core Superpower**:
   - Keep intuitive term navigation (`t.set('#qtr.>q1')`, `t.add('#season.>summer')`), directional operators (`>`, `<`, `+`, `-`), and shorthand shifters (`t.set({ mm: '>2', wkd: '>Fri' })`) natively built into Core.
   - Evaluation confirmed that saving ~3–4 KB gzipped does not justify fracturing Tempo's signature ergonomics or requiring extra plugin boilerplate for fundamental shorthand.
-- [ ] **Standalone Dialects Architecture (`@tempo-kit/plugin-dialects`)**:
+- [x] **Standalone Dialects Architecture (`@tempo-kit/plugin-dialects`)**:
   - Keep legacy format compilers (Moment, Day.js, Luxon, POSIX `strftime`, Go, PHP, Oracle SQL) out of Core Tempo.
   - Provide 4-tier consumption:
     1. Zero-config drop-in: `import '@tempo-kit/plugin-dialects';`
@@ -113,7 +113,7 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 ---
 
 ### Phase 4: Library & Code Standards Harmonization
-*Status: In Progress*
+*Status: Completed*
 
 - [x] **Enumify Static Reflection Architecture & Prototype Removal (`@magmacomputing/library`)**:
   - Migrate `enumify` instances from prototype methods (`.has()`, `.get()`, `.keys()`, `.values()`, `.entries()`, `.invert()`, `.keyOf()`, `.includes()`, `.count()`, `.extend()`, `.forEach()`, `.filter()`, `.map()`) to static `Enum.*` reflection suite.
@@ -131,10 +131,6 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
   - *Step 1*: Introduce canonical `isBigInt(obj): obj is bigint => typeof obj === 'bigint'` in `@magmacomputing/library`.
   - *Step 2*: Migrate existing call sites checking for `bigint` (e.g. In `coercion.library`, `interval.class`, `serialize.library`) from `isInteger` to `isBigInt`.
   - *Step 3*: Re-align `isInteger` with standard ECMAScript semantics: `isInteger(obj): obj is number => Number.isInteger(obj)`.
-- [ ] **ECMAScript Standards Compliance: Repository-Wide Semicolon Policy**:
-  - Adopt explicit statement termination across all monorepo TypeScript files (`semi: true`) per ECMA-262 § 16.2.2.
-  - Add standard semicolons to VitePress theme files to eliminate one-off style anomalies.
-  - Configure automated linter/formatter rule (`biome.json` / `.prettierrc`).
 
 ---
 
@@ -172,6 +168,13 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 ### Phase 6: Release Engineering & Dual-Publishing Pipeline
 *Status: Planned*
 
+- [ ] **Plugin v5 Release Prep (Major Bumps, `keywords`, `CHANGELOG.md`)**:
+  - Refresh `package.json` `keywords` across all 13 `@tempo-kit/plugin-*` packages (`"tempo-kit"`, `"tempo-kit-plugin"`, `"tempo"`, `"temporal"`, removing stale `"magmacomputing"` keywords).
+  - Major-bump the 12 previously published plugins from their last `@magmacomputing/tempo-plugin-*` npm version (`ai` `→ 3.0.0`, `batch` `→ 2.0.0`, `celestial` `→ 2.0.0`, `dialects` `→ 2.0.0`, `geo` `→ 3.0.0`, `holidays` `→ 2.0.0`, `ntp` `→ 2.0.0`, `roman` `→ 2.0.0`, `snap` `→ 2.0.0`, `spatial` `→ 2.0.0`, `sync` `→ 2.0.0`, `ticker` `→ 3.0.0`); retain `signals` at `1.0.0` for its initial release.
+  - Add terse `CHANGELOG.md` entries documenting the `@tempo-kit/plugin-*` rename and `tempo-kit@^5.0.0` peer dependency (plus `1.0.0` release notes for `signals`), then run `npm run lock:sync`.
+- [ ] **Post-Migration Tooling & REPL Sync (PR 7 / Post-Publish)**:
+  - Update `.agents/skills/bump/SKILL.md` (lines 28 & 37) to reference `tempo-kit`, `@tempo-kit/plugin-ai`, and `tempo-fns` instead of `@magmacomputing/*` (PR 7).
+  - Keep `packages/tempo/public/repl/plugins.manifest.js` `esm.sh` URLs on `@magmacomputing/tempo-plugin-*` until `@tempo-kit/plugin-*` packages are published to npm, then migrate REPL manifests/import-maps in a post-publish PR.
 - [ ] **Automated Multi-Target Publishing Pipeline (`publish.yml`)**:
   - Build and publish canonical core (`tempo-kit`, `tempo-fns`, `tempo-lib`) and scoped ecosystem plugins (`@tempo-kit/plugin-*`) via OIDC Trusted Publishing.
   - Publish backward-compatibility `@magmacomputing/*` `v5.0.0` bridge stubs that declare the canonical package in their `dependencies` (ensuring a single shared `Tempo` class singleton in memory across v4→v5 migrations), while keeping `@tempokit`, `@tempo-js`, `@tempo-fns`, and `tempojs` unpublished to avoid search/download dilution.
@@ -191,6 +194,12 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
     ```bash
     npm deprecate @magmacomputing/tempo-plugin-finance "Deprecated: fiscal quarters and tax-year calculations are now built into @magmacomputing/tempo v5.0.0+ via FiscalTerm (@magmacomputing/tempo/terms). Migrate t.finance.* to Tempo.use(FiscalTerm) + t.term.fiscal (see Tempo v5 Migration Guide)."
     ```
+- [ ] **Cutover & Go-Live Sequence (Strict Order)**:
+  - [ ] **1. Merge PR 7** *(keep GitHub Pages deploy workflow paused)*: Complete `packages/tempo/doc/`, `llms.txt` / `/v4/` split, `Symbol.for('tempo-kit/...')`, `.agents/skills/bump/SKILL.md`, and the `template/` / `public/` / `demo/` / `bench/` sweep.
+  - [ ] **2. Execute Release Prep**: Major-bump the 12 previously published plugins (keep `signals` at `1.0.0`), refresh `keywords`, write terse `CHANGELOG.md` entries, and run `npm run lock:sync`.
+  - [ ] **3. Publish to npm (`publish.yml`)**: Publish `tempo-kit` and `tempo-fns` first, then all 13 `@tempo-kit/plugin-*` packages (plus `@magmacomputing/*` `v5.0.0` bridge stubs if launching dual-publish together).
+  - [ ] **4. Merge Post-Publish REPL PR (4 files)**: Update `packages/tempo/public/repl/{index.html,showcase.html,plugins.manifest.js,snippets.manifest.js}` to `tempo-kit`, `tempo-fns`, and `@tempo-kit/plugin-*` with the published npm versions (verifying `esm.sh` loads cleanly).
+  - [ ] **5. Re-enable & Deploy GitHub Pages**: Re-enable the Pages deploy GitHub Action, run `npm run docs:build` (harvesting `9-plugins/`), and verify live docs, `llms.txt`, badges, and REPL.
 
 ---
 
@@ -198,33 +207,5 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
 
 For features and architectural investigations targeted beyond the initial v5.0 General Availability release, refer to active exploratory RFCs:
 
-* **[Signals in Core Tempo](file:///home/michael/Project/magma/packages/tempo/plan/signals-core-discussion.md)** (`signals-core-discussion.md`):
-  Explores deep reactive integrations (implemented in `@magmacomputing/tempo-plugin-signals` rather than Core Tempo for v5.0, keeping Core zero-signal-overhead):
-  1. `Tempo.live()` / `Tempo.clock()` (fine-grained continuous live clocks for UI).
-  2. `tempo.relativeSignal()` → implemented as `toRelativeSignal` (`Tempo.signals.relative`).
-  3. `interval.toSignal()` → implemented as `intervalSignal` (`Tempo.signals.interval`).
-  4. `Tempo.locale` reactive signal → implemented as `Tempo.signals.locale`, `Tempo.signals.timeZone`, and `Tempo.signals.watchSystem`.
-
----
-
-## 4. Operational Appendix: Git Squash-Merge Realignment Procedure
-
-When long-running feature branches diverge after squash-merges onto `main`, follow this standard procedure to synchronize without false conflict churn:
-
-1. **Ensure local `main` is up to date**:
-   ```bash
-   git checkout main
-   git pull origin main
-   ```
-2. **Rebase feature branch using `--onto`**:
-   Identify the base commit where the feature branch originally split from the previous feature branch, and rebase onto current `main`:
-   ```bash
-   git checkout feature/my-branch
-   git rebase --onto main <base-commit-hash> feature/my-branch
-   ```
-3. **Verify and Force-Push**:
-   Run local test suites to confirm clean alignment:
-   ```bash
-   npm test
-   git push origin feature/my-branch --force-with-lease
-   ```
+* **Optional Formatter & Semicolon Policy (`biome.json` / `.prettierrc`)** *(deferred; decide post-v5)*:
+  - Evaluate whether to add a repository-wide formatter config (`semi: true`) and clean up remaining un-semicoloned files (e.g. VitePress theme files) without blocking the v5.0.0 release.

@@ -20,7 +20,7 @@ Count-based relative expressions work across seconds, minutes, hours, days, week
 | `<count> <unit> from now` | `1 month from now` | `2026-12-20 10:00:00` |
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const anchor = new Tempo('2026-11-20T10:00:00[Australia/Sydney]');
 

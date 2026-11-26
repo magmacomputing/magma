@@ -4,7 +4,7 @@
     "slug": "cadence",
     "category": "reactivity",
     "summary": "The rhythmic scheduling interval or pattern governing ticker executions and reactive signal updates.",
-    "details": "Cadence can be fixed-interval (e.g. every 5 seconds via Ticker), cron/RRule-driven, or event-driven at unit-bucket boundaries via @magmacomputing/tempo-plugin-signals.",
+    "details": "Cadence can be fixed-interval (e.g. every 5 seconds via Ticker), cron/RRule-driven, or event-driven at unit-bucket boundaries via @tempo-kit/plugin-signals.",
     "seeAlso": [
       { "label": "Ticker Plugin", "link": "/doc/9-plugins/ticker.index" },
       { "label": "Signals Plugin", "link": "/doc/9-plugins/signals.index" }
@@ -36,7 +36,7 @@
     "term": "Dialect",
     "slug": "dialect",
     "category": "plugins",
-    "summary": "An external date/time format token grammar (such as LDML, Moment, POSIX strftime, or Oracle TO_CHAR) bridged by @magmacomputing/tempo-plugin-dialects.",
+    "summary": "An external date/time format token grammar (such as LDML, Moment, POSIX strftime, or Oracle TO_CHAR) bridged by @tempo-kit/plugin-dialects.",
     "seeAlso": [
       { "label": "Dialects Plugin", "link": "/doc/9-plugins/dialects.index" }
     ]

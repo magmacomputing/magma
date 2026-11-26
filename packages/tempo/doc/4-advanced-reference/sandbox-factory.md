@@ -40,8 +40,8 @@ static extend<R>(options: Options, fn: (sandbox: typeof Tempo) => R): R;
 Use this mode when building long-lived domain services, multi-tenant app routers, or dedicated modules requiring custom configurations:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { FiscalTerm } from '@magmacomputing/tempo/terms';
+import { Tempo } from 'tempo-kit';
+import { FiscalTerm } from 'tempo-kit/terms';
 
 // Create a specialized Sandbox for a Financial app
 const FinTempo = Tempo.extend({
@@ -66,8 +66,8 @@ const t2 = new FinTempo('market-open'); // Success: 09:30
 For unit tests, request-scoped operations, or short-lived calculations, pass an execution callback. `Tempo.extend` invokes your callback with a freshly isolated sandbox and **automatically disposes of it** when the function completes (note that automatic disposal does not remove terms registered by the callback from the shared runtime term map, so later tests or requests may still see those terms or encounter a key collision):
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 // Synchronous callback: automatically disposed on return
 const season = Tempo.extend((sb) => {
@@ -86,7 +86,7 @@ const result = await Tempo.extend({ timeZone: 'Pacific/Auckland' }, async (sb) =
 Sandboxed classes created via `Tempo.extend()` implement the TC39 `Disposable` protocol (`Symbol.dispose`). In TypeScript 5.2+ and modern JavaScript runtimes supporting the `using` keyword, sandboxes can be scoped deterministically to code blocks:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { CustomPlugin } from './custom-plugin.js';
 
 {

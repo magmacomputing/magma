@@ -15,7 +15,7 @@ Unlike standard `EventEmitter` (push-only) or `AsyncGenerator` (pull-only), `Rea
 * **Consumer Iteration (`for await (const item of stream)`)**: Native ES2018 iteration with backpressure buffering and zero lost items.
 
 ```typescript
-import { Reactive } from '@magmacomputing/tempo/library';
+import { Reactive } from 'tempo-kit/library';
 
 // Create a typed reactive stream
 const stream = new Reactive<string>({ tag: 'TaskStream' });

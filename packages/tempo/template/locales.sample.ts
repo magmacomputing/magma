@@ -65,8 +65,8 @@ export const es_ES = {
 // Usage Example
 // ==========================================
 /*
-import { defineConfig } from '@magmacomputing/tempo';
-import { deepMerge } from '@magmacomputing/tempo/library';
+import { defineConfig } from 'tempo-kit';
+import { deepMerge } from 'tempo-kit/library';
 import { fr_FR, es_ES } from './locales.sample.js';
 
 // To merge multiple locales:

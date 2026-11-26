@@ -42,7 +42,7 @@ Bumps the root package version and triggers automatic synchronization across chi
 - **Example:** `tempo-cli version-bump minor`
 
 ### `version-sync`
-Synchronizes the root package version down to workspace packages (`@magmacomputing/tempo`, `@magmacomputing/library`, `@magmacomputing/tempo-pro`).
+Synchronizes the root package version down to workspace packages (`tempo-kit`, `tempo-lib`).
 - **Example:** `tempo-cli version-sync`
 
 ### `catalog-sync`
@@ -50,7 +50,7 @@ Synchronizes metadata for local and installed community plugins into `packages/p
 - **Example:** `tempo-cli catalog-sync`
 
 ### `sync-providers [--dry-run] [--deploy]`
-Queries active AI provider endpoints for available LLM models, updates `providers.v1.jsonc` and `DEFAULT_PROVIDERS` in `@magmacomputing/tempo-plugin-ai`.
+Queries active AI provider endpoints for available LLM models, updates `providers.v1.jsonc` and `DEFAULT_PROVIDERS` in `@tempo-kit/plugin-ai`.
 - **Example:** `tempo-cli sync-providers --dry-run`
 
 ---

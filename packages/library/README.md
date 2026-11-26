@@ -37,6 +37,7 @@ The `getType` utility provides human-readable, proper-cased type names, even for
 
 ```typescript
 import { getType, isType } from '@magmacomputing/tempo/library';
+import { getType, isType } from 'tempo-kit/library';
 
 getType([]);            // "Array"
 getType(new Map());     // "Map"
@@ -52,6 +53,7 @@ Sort complex collections of objects by multiple fields with ease.
 
 ```typescript
 import { sortKey } from '@magmacomputing/tempo/library';
+import { sortKey } from 'tempo-kit/library';
 
 const users = [
   { name: 'Alice', age: 30 },
@@ -68,6 +70,7 @@ Unlike standard `JSON.stringify`, Magma's serialization handles complex types li
 
 ```typescript
 import { stringify, objectify } from '@magmacomputing/tempo/library';
+import { stringify, objectify } from 'tempo-kit/library';
 
 const data = {
   at: Temporal.Now.instant(),

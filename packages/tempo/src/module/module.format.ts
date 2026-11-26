@@ -128,7 +128,7 @@ function resolveLocaleFromDictionary(
  * Returns a formatted string from a Temporal.ZonedDateTime or Tempo instance.
  *
  * @example
- * import { format } from '@magmacomputing/tempo/format';
+ * import { format } from 'tempo-kit/format';
  * const str = format(Temporal.Now.zonedDateTimeISO(), '{yyyy}-{mm}-{dd}');
  *
  * // Proxy usage (zero or one argument)

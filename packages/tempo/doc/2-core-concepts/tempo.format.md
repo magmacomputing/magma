@@ -16,7 +16,7 @@ Tempo provides a powerful token-based formatting engine that goes beyond the sta
 If you have a native `Temporal.ZonedDateTime` and want to format it using Tempo's readable tokens, you can use the standalone `format` function. This allows you to use Tempo's formatting logic without importing the full `Tempo` class.
 
 ```typescript
-import { format } from '@magmacomputing/tempo/format';
+import { format } from 'tempo-kit/format';
 
 const zdt = Temporal.Now.zonedDateTimeISO();
 const str = format(zdt, '{mon} {dd:ord}, {yyyy}');
@@ -42,7 +42,7 @@ The engine can interpret:
 When using the `Tempo` class, the `.format()` method is available on every instance.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const t = new Tempo('2026-10-24T15:30:00');
 console.log(t.format('display')); // Sat, 24 Oct 2026 (using a named format alias)
@@ -76,11 +76,11 @@ Like the parsing engine, the formatting engine is modular:
 | **Tempo Core** | **Opt-in**. You must call `Tempo.use(FormatModule)` to enable `.format()`. |
 
 ### Enabling Formatting in Core
-If you are using `@magmacomputing/tempo/core`, you must explicitly register the formatting engine:
+If you are using `tempo-kit/core`, you must explicitly register the formatting engine:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { FormatModule } from '@magmacomputing/tempo/format';
+import { Tempo } from 'tempo-kit/core';
+import { FormatModule } from 'tempo-kit/format';
 
 Tempo.use(FormatModule);
 ```
@@ -96,11 +96,11 @@ Tempo.use(FormatModule);
 > **Format Dialects & Migration**
 > Tempo's formatting engine uses explicit curly braces and consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common cross-ecosystem pitfalls—such as token confusion between calendar year and ISO week-year (in Unicode LDML `yyyy` is calendar year while `YYYY` is ISO week-year, whereas in Moment and Day.js `YYYY` is calendar year while `GGGG` is ISO week-year).
 >
-> If you are migrating an existing codebase from Moment, Day.js, or Luxon, the [`@magmacomputing/tempo-plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin provides drop-in support for familiar external masks:
+> If you are migrating an existing codebase from Moment, Day.js, or Luxon, the [`@tempo-kit/plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin provides drop-in support for familiar external masks:
 >
 > ```typescript
-> import { Tempo } from '@magmacomputing/tempo';
-> import { DialectsPlugin } from '@magmacomputing/tempo-plugin-dialects';
+> import { Tempo } from 'tempo-kit';
+> import { DialectsPlugin } from '@tempo-kit/plugin-dialects';
 >
 > Tempo.use(DialectsPlugin);
 > Tempo.init({ dialect: 'moment' });
@@ -189,7 +189,7 @@ You can append modifiers to any token using a colon (`:`) to transform its outpu
 >   * `{tz:offset:ss}` (and alias `:sec`) → Offset including seconds (e.g. `+10:00:00`, compact `{tz:offset:compact:ss}` → `+100000`).
 >   * `{tz:offset:utc}` / `{tz:offset:compact:utc}` → UTC `Z` indicator: emits `Z` for UTC (`+00:00`), else ISO offset `+10:00` (or compact `+1000`).
 > * **Canonical Naming**: Sub-modifiers `:hh`, `:mi`, `:ss`, and `:utc` match Tempo's core time tokens. Modifiers `:hour`, `:min`, and `:sec` are supported synonyms.
-> * **Dialect Compatibility**: For LDML and Moment-style timezone masks (`z`, `zz`, `zzz`), use `@magmacomputing/tempo-plugin-dialects`.
+> * **Dialect Compatibility**: For LDML and Moment-style timezone masks (`z`, `zz`, `zzz`), use `@tempo-kit/plugin-dialects`.
 
 > [!TIP]
 > **Numeric Zero-Fill Padding, Tail-Slicing & Fractional Precision**

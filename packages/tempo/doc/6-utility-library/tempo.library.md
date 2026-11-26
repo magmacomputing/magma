@@ -83,7 +83,7 @@ Tempo exports functional evaluation utilities for resolving static values, lazy 
 *   **`Evaluable<T>` / `AsyncEvaluable<T>`:** TypeScript utility types representing values that can be provided directly or supplied lazily via functions.
 
 ```typescript
-import { evaluate, evaluateAsync, dynamicProxy } from '@magmacomputing/tempo/library';
+import { evaluate, evaluateAsync, dynamicProxy } from 'tempo-kit/library';
 
 // Synchronous supplier evaluation with lazy cascading fallback (short-circuited)
 const tz = evaluate(options.timeZone, () => process.env.TZ, 'UTC');
@@ -115,7 +115,7 @@ Tempo uses lightweight TypeScript class decorators internally to enforce immutab
 - **Deterministic cleanup**: Returns a frozen `IntlWatcher` implementing `dispose()` and `Symbol.dispose` (`using`).
 
 ```typescript
-import { watchIntl } from '@magmacomputing/tempo/library';
+import { watchIntl } from 'tempo-kit/library';
 
 using watcher = watchIntl((next, prev) => {
   console.log(`Intl changed: ${prev.timeZone} → ${next.timeZone} (${next.locale})`);
@@ -129,10 +129,10 @@ watcher.check();
 
 ## 9. TC39 Signals (`Signify`) {#signify}
 
-`Signify` is a zero-dependency, frozen TC39 Signals implementation (`Signify.State`, `Signify.computed`, `Signify.effect`, `Signify.subtle.Watcher`) with `WeakRef`-backed consumer tracking—powering `Reactive.toSignal()`, `Ticker`, `NTP`, and `@magmacomputing/tempo-plugin-signals`:
+`Signify` is a zero-dependency, frozen TC39 Signals implementation (`Signify.State`, `Signify.computed`, `Signify.effect`, `Signify.subtle.Watcher`) with `WeakRef`-backed consumer tracking—powering `Reactive.toSignal()`, `Ticker`, `NTP`, and `@tempo-kit/plugin-signals`:
 
 ```typescript
-import { Signify } from '@magmacomputing/tempo/library';
+import { Signify } from 'tempo-kit/library';
 
 const count = new Signify.State(1);
 const doubled = Signify.computed(() => count.get() * 2);
@@ -153,7 +153,7 @@ using _stop = Signify.effect(() => {
 `Aborter` extends `AbortController` with `Symbol.dispose` (`using`), paired with `anySignal`, `timeoutSignal`, and `onAbort` for leak-free cancellation across `Reactive` streams and async plugins:
 
 ```typescript
-import { Aborter, timeoutSignal, anySignal } from '@magmacomputing/tempo/library';
+import { Aborter, timeoutSignal, anySignal } from 'tempo-kit/library';
 
 using aborter = new Aborter();
 const signal = anySignal(aborter.signal, timeoutSignal(5_000));
@@ -167,7 +167,7 @@ const signal = anySignal(aborter.signal, timeoutSignal(5_000));
 `BoundedCache<K, V>` extends `Map` with configurable max-size LRU eviction and per-entry TTL expiration, protecting Tempo's parser, formatter, and `Intl` hot paths from unbounded memory growth:
 
 ```typescript
-import { BoundedCache } from '@magmacomputing/tempo/library';
+import { BoundedCache } from 'tempo-kit/library';
 
 const cache = new BoundedCache<string, number>(500, 60_000); // max 500 entries, 60s TTL
 cache.set('key', 42);

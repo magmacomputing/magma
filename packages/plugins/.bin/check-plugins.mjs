@@ -157,7 +157,7 @@ async function main() {
 					if (!pkgJson.private) {
 						packageDirs.push({
 							name: `plugin-${name}`,
-							npmName: pkgJson.name || `@magmacomputing/tempo-plugin-${name}`,
+							npmName: pkgJson.name || `@tempo-kit/plugin-${name}`,
 							pkgJson,
 							fullPath,
 							relPath: `packages/plugins/${name}`
