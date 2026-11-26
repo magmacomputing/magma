@@ -22,7 +22,7 @@ import { DurationModule } from 'tempo-kit/duration';
 import { FormatModule } from 'tempo-kit/format';
 import { MutateModule } from 'tempo-kit/mutate';
 import { ParseModule } from 'tempo-kit/parse';
-import { TermsModule } from 'tempo-kit/term';
+import { TermsModule } from 'tempo-kit';
 
 
 // Individual extension...
@@ -48,22 +48,25 @@ Handles string parsing and token extraction. This is included automatically in t
 
 
 
-### Terms Module (tempo-kit/term)
-Adds support for semantic Terms like `quarter`, `season`, `zodiac`, and `period`. There are three ways to enable Terms:
+### Terms Module (`tempo-kit` / `tempo-kit/terms`)
+Adds support for semantic Terms like `quarter`, `season`, `zodiac`, and `period`. There are two ways to enable Terms in a Core environment:
 
-#### 1. The Side-Effect (Standard Activation)
-Fastest way to enable all standard Terms in a Core environment.
-```typescript
-import 'tempo-kit/term'; // One-line activation
-```
-
-#### 2. The Explicit Module (Uniform Sync)
-Recommended for consistency with other modules.
+#### 1. The Explicit Module (Civic Terms)
+Enables standard Civic Terms (`#quarter`, `#season`, `#timeOfDay`) via `TermsModule` from `tempo-kit`.
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { TermsModule } from 'tempo-kit/term';
+import { TermsModule } from 'tempo-kit';
 
 Tempo.use(TermsModule);
+```
+
+#### 2. Opt-In Term Bundles (`tempo-kit/terms`)
+Import only the specific term bundles or individual terms you need:
+```typescript
+import { Tempo } from 'tempo-kit/core';
+import { CulturalTerms } from 'tempo-kit/terms';
+
+Tempo.use(CulturalTerms);
 ```
 
 #### 3. The Surgical Strike (Data-Only)

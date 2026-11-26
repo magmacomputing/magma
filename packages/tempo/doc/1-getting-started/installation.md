@@ -175,6 +175,7 @@ To use **Tempo Plugins** via a static CDN, you simply need to explicitly map the
     "@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.esm.js",
     "tempo-kit": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/tempo.index.js",
     "tempo-kit/plugin/sdk": "https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/plugin/plugin.sdk.js",
+    "tempo-fns": "https://cdn.jsdelivr.net/npm/tempo-fns@1/dist/index.js",
 
     "@tempo-kit/plugin-celestial": "https://cdn.jsdelivr.net/npm/@tempo-kit/plugin-celestial@1/dist/index.js",
     "@tempo-kit/plugin-ticker": "https://cdn.jsdelivr.net/npm/@tempo-kit/plugin-ticker@2/dist/index.js"

@@ -354,7 +354,8 @@ Starting in **v4.6.0**, Term plugins can participate directly in Tempo's core pa
 Instead of overriding core methods or monkey-patching regex tables, term plugins implement protocol hooks using well-known symbols (`Symbol.for`), exported under `TermHook`:
 
 ```typescript
-import { defineTerm, TermHook, type TermParseContext, type Tempo } from 'tempo-kit';
+import { TermHook, type TermParseContext, type Tempo } from 'tempo-kit';
+import { defineTerm } from 'tempo-kit/plugin/sdk';
 ```
 
 ### The 6 Lifecycle Hooks
@@ -371,7 +372,8 @@ import { defineTerm, TermHook, type TermParseContext, type Tempo } from 'tempo-k
 ### Complete Hook Example
 
 ```typescript
-import { Tempo, defineTerm, TermHook } from 'tempo-kit';
+import { Tempo, TermHook } from 'tempo-kit';
+import { defineTerm } from 'tempo-kit/plugin/sdk';
 
 export const SprintTerm = defineTerm({
   key: 'sprint',
