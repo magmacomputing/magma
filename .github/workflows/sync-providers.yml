@@ -41,7 +41,7 @@ jobs:
       - name: Verify Plugin Test Suite
         env:
           TEMPO_LICENSE_KEY: ""
-        run: npm test --workspace=@magmacomputing/tempo-plugin-ai
+        run: npm test --workspace=@tempo-kit/plugin-ai
 
       - name: Check for Manifest or Config Changes
         id: git_status

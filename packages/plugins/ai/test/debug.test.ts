@@ -1,5 +1,5 @@
 import util from 'node:util';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
 	initAI,
 	resetAI,

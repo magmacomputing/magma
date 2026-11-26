@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
 
 # Security & Privacy Architecture
 
-The `@magmacomputing/tempo-plugin-ai` plugin is engineered with a **"Privacy and Security by Default"** philosophy. Because date parsing and calendar scheduling frequently interact with Personally Identifiable Information (PII)—such as meeting attendees, emails, phone numbers, and sensitive notes—the plugin incorporates multi-layered security controls to protect user data across transit, runtime memory, log output, and caching tiers.
+The `@tempo-kit/plugin-ai` plugin is engineered with a **"Privacy and Security by Default"** philosophy. Because date parsing and calendar scheduling frequently interact with Personally Identifiable Information (PII)—such as meeting attendees, emails, phone numbers, and sensitive notes—the plugin incorporates multi-layered security controls to protect user data across transit, runtime memory, log output, and caching tiers.
 
 ```mermaid
 flowchart TD
@@ -33,7 +33,7 @@ flowchart TD
 
 Debugging LLM integrations traditionally presents a major security dilemma: enabling debug logs often inadvertently dumps raw prompts containing sensitive user emails, phone numbers, and auth tokens into centralized log aggregators (e.g. Datadog, CloudWatch, Sentry).
 
-`@magmacomputing/tempo-plugin-ai` significantly mitigates this risk through **Smart Debug Infrastructure**:
+`@tempo-kit/plugin-ai` significantly mitigates this risk through **Smart Debug Infrastructure**:
 
 ### Universal Environment Detection & Zero-Config Safety
 * **Unified Flag**: Telemetry is enabled directly using `{ debug: true }` on individual requests or globally via `initAI({ debug: true })`.
@@ -48,7 +48,7 @@ In production mode, all debug telemetry is scrubbed through automated regex sani
 * **Length Bounds**: Exceptionally long strings (> 256 characters) are safely truncated with character count annotations to prevent log bloat and denial-of-service attacks.
 
 ```typescript
-import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI, initAI } from '@tempo-kit/plugin-ai';
 
 await initAI({
   providers: [{ id: 'groq', key: process.env.GROQ_API_KEY }],
@@ -161,7 +161,7 @@ const rawReasoning = result.reasoning;
 ## 5. Ephemeral Processing, Partitioned Caching & Trial Gateway Data Handling
 
 ### Local Libraries Zero Telemetry Architecture
-* The `@magmacomputing/tempo` core library and `@magmacomputing/tempo-plugin-ai` package **collect zero telemetry, analytics, or prompt logs**.
+* The `tempo-kit` core library and `@tempo-kit/plugin-ai` package **collect zero telemetry, analytics, or prompt logs**.
 * When using **Tier 2 (Private Backend Proxy)** or **Tier 3 (Direct Provider Keys / BYOK)**, prompt processing and temporal computations occur ephemerally during request execution directly between your infrastructure and your configured LLM provider. Zero data touches Magma Computing servers.
 
 ### Trial Sandbox Gateway (`provider: 'tempo'`) Data Handling & Diagnostics
@@ -187,7 +187,7 @@ const rawReasoning = result.reasoning;
 
 ## 6. Schema Enforcement & Hallucination Defense
 
-Large Language Models can occasionally hallucinate dates or output non-deterministic formats. `@magmacomputing/tempo-plugin-ai` prevents invalid data propagation through strict input/output boundaries:
+Large Language Models can occasionally hallucinate dates or output non-deterministic formats. `@tempo-kit/plugin-ai` prevents invalid data propagation through strict input/output boundaries:
 
 1. **Rigid Schema Validation**: All provider completions are validated against deterministic schemas and regex patterns prior to object construction.
 2. **Confidence Threshold Gating**: The plugin enforces configurable `minConfidence` thresholds (e.g. `minConfidence: 0.85`). Results falling below the threshold throw a typed `TempoAiError` or trigger automatic fallback.

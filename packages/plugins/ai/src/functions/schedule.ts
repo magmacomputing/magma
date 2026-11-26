@@ -1,5 +1,5 @@
-import { Tempo, Interval } from '@magmacomputing/tempo';
-import { asText, isText, isString, isNumber, isReference, isFunction, hasOwn, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from '@magmacomputing/tempo/library';
+import { Tempo, Interval } from 'tempo-kit';
+import { asText, isText, isString, isNumber, isReference, isFunction, hasOwn, DAY_MAP, ISO_WEEKDAY_NAMES, type DayKey } from 'tempo-kit/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {

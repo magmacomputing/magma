@@ -1,7 +1,7 @@
 import { fetchFromProvider, resolveAnchorTempo, resolveFullContext } from '../src/core/support.js';
 import { TempoAiError } from '../src/core/error.js';
 import { resetAI, initAI } from '../src/core/init.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('AI Dynamic Evaluation Infrastructure', () => {
 	const originalFetch = globalThis.fetch;

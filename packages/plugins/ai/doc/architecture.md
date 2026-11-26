@@ -1,21 +1,21 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
 
 # Provider Architecture & Security
 
-The `@magmacomputing/tempo-plugin-ai` plugin is designed to be highly flexible, supporting both direct Bring Your Own Key (BYOK) integrations for backend systems, and Proxied integrations for frontend clients.
+The `@tempo-kit/plugin-ai` plugin is designed to be highly flexible, supporting both direct Bring Your Own Key (BYOK) integrations for backend systems, and Proxied integrations for frontend clients.
 
 ## Bring Your Own Key (BYOK) & Zero-Config Discovery
 
-For Node.js, Deno, and Bun backends, `@magmacomputing/tempo-plugin-ai` supports **Zero-Config Auto-Discovery**. If standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) are present, calling `initAI()` is optional—the plugin will automatically discover credentials and wire up provider defaults lazily on first function call.
+For Node.js, Deno, and Bun backends, `@tempo-kit/plugin-ai` supports **Zero-Config Auto-Discovery**. If standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) are present, calling `initAI()` is optional—the plugin will automatically discover credentials and wire up provider defaults lazily on first function call.
 
 Alternatively, you can supply your API keys and execution options explicitly via `initAI`:
 
 ```typescript
-import { initAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI } from '@tempo-kit/plugin-ai';
 
 initAI({
   providers: [
@@ -65,7 +65,7 @@ When dispatching requests via `transport.ts`, all provider fields (`key`, `url`,
 
 ### Dynamic Provider Manifests & Remote Endpoint Trust
 
-By default, `@magmacomputing/tempo-plugin-ai` lazily fetches provider defaults (model IDs, endpoints, token parameter keys) from `https://tempo.magmacomputing.com.au/providers.v1.json` once per application lifecycle.
+By default, `@tempo-kit/plugin-ai` lazily fetches provider defaults (model IDs, endpoints, token parameter keys) from `https://tempo.magmacomputing.com.au/providers.v1.json` once per application lifecycle.
 
 - **Remote Manifest Trust & Endpoint Enforcement**:
   - `remoteConfigUrl` is restricted to fixed trusted hosts (`tempo.magmacomputing.com.au` or trusted internal HTTPS endpoints).
@@ -121,7 +121,7 @@ flowchart LR
 Configure `initAI` in your browser code to target your backend proxy or AI Gateway URL:
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // Safe for browser deployment: No private LLM API keys are bundled
 await initAI({
@@ -216,7 +216,7 @@ export async function POST(req: Request, env?: { GROQ_API_KEY?: string }) {
 > [!TIP]
 > For an in-depth breakdown of our automated PII redaction, Smart Debug infrastructure, and tamper-resistant Proxy introspection, see the dedicated **[Security & Privacy Architecture Guide (`security.md`)](./security.md)**.
 
-Whether running directly on backend servers (Node.js, Deno, Bun, Edge Workers) or through a client-side browser proxy, `@magmacomputing/tempo-plugin-ai` enforces strict security and privacy standards:
+Whether running directly on backend servers (Node.js, Deno, Bun, Edge Workers) or through a client-side browser proxy, `@tempo-kit/plugin-ai` enforces strict security and privacy standards:
 
 ### 1. Transport Security (HTTPS / TLS)
 All network communication—both from client to proxy and from proxy/server to upstream LLM endpoints—is required over HTTPS. Negotiated TLS versions (such as TLS 1.2 or TLS 1.3) depend on deployment environment and server configuration unless strictly enforced by your reverse proxy. Plaintext HTTP endpoints are disallowed in production environments (permitted only on `localhost` during local development).
@@ -237,7 +237,7 @@ All LLM prompts are paired with rigid, machine-verifiable JSON schemas. Response
 
 ## Multi-Provider Execution Strategies (`AiMode`)
 
-Because third-party APIs can experience downtime, latency spikes, or quota exhaustion, `@magmacomputing/tempo-plugin-ai` provides six dedicated dispatch strategies configured via `AiMode` (or string literals):
+Because third-party APIs can experience downtime, latency spikes, or quota exhaustion, `@tempo-kit/plugin-ai` provides six dedicated dispatch strategies configured via `AiMode` (or string literals):
 
 | Strategy | Enum (`AiMode`) | Primary Advantage | Typical Use Case |
 | :--- | :--- | :--- | :--- |

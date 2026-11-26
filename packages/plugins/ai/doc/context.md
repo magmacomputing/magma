@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
@@ -18,10 +18,10 @@ This is highly useful for user onboarding settings, automatic context mapping fo
 ## Basic Usage
 
 > [!NOTE]
-> `@magmacomputing/tempo-plugin-ai` features zero-config auto-discovery. If provider keys exist in your environment (`GROQ_API_KEY`, `OPENAI_API_KEY`, etc.) or `tempo.config.json`, calling `initAI()` is **completely optional**.
+> `@tempo-kit/plugin-ai` features zero-config auto-discovery. If provider keys exist in your environment (`GROQ_API_KEY`, `OPENAI_API_KEY`, etc.) or `tempo.config.json`, calling `initAI()` is **completely optional**.
 
 ```typescript
-import { contextAI } from '@magmacomputing/tempo-plugin-ai';
+import { contextAI } from '@tempo-kit/plugin-ai';
 
 // 1. Infer contextual settings directly from unstructured text (auto-discovers provider keys)
 const context = await contextAI("I'm a photographer based in Sydney, Australia.");
@@ -112,7 +112,7 @@ const [context1, context2] = await contextAI([
 Often, a user will mention their location in one sentence and a relative time in another. You can chain these APIs together to form a seamless date-resolution pipeline:
 
 ```typescript
-import { contextAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { contextAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // 1. Deduces the context
 const ticketContext = await contextAI("customer issue from our London office");

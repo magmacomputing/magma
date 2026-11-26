@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { asNumber, isNumber, isString, isUndefined, isEmpty } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { asNumber, isNumber, isString, isUndefined, isEmpty } from 'tempo-kit/library';
 
 import { DEFAULT_PROVIDERS } from './config.js';
 import { getResolvedProviderDefaults, loadRemoteManifest, resetManifestCache } from './manifest.js';

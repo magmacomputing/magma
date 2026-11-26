@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
@@ -11,7 +11,7 @@
 ## Basic Usage
 
 ```typescript
-import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI, initAI } from '@tempo-kit/plugin-ai';
 
 // Initialize AI providers
 await initAI({

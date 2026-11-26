@@ -1,5 +1,5 @@
 import { parseAI, initAI, aiCache, type AiCacheAdapter } from '../src/index.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 describe('Advanced Cache TTL & Async Storage Adapters', () => {
 	beforeEach(async () => {

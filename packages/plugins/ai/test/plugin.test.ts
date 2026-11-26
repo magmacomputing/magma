@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { AiPlugin, resetAI } from '../src/index.js';
 
 describe('AiPlugin & Tempo.ai Namespace', () => {

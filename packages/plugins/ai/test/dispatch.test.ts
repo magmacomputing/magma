@@ -2,7 +2,7 @@ import { executeWithMode } from '../src/core/dispatch.js';
 import { AiMode } from '../src/core/config.js';
 import { TempoAiError } from '../src/core/error.js';
 import { _state, resetAI } from '../src/core/init.js';
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import type { AiProvider } from '../src/types/index.js';
 
 describe('AI Dispatch Helper (executeWithMode)', () => {

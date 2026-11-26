@@ -1,5 +1,5 @@
-import type { Tempo } from '@magmacomputing/tempo';
-import type { Evaluable, AsyncEvaluable } from '@magmacomputing/tempo/library';
+import type { Tempo } from 'tempo-kit';
+import type { Evaluable, AsyncEvaluable } from 'tempo-kit/library';
 import type { AiMode } from '../core/config.js';
 
 /**

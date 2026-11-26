@@ -1,5 +1,5 @@
-import type { Tempo, Interval } from '@magmacomputing/tempo';
-import type { DayKey } from '@magmacomputing/tempo/library';
+import type { Tempo, Interval } from 'tempo-kit';
+import type { DayKey } from 'tempo-kit/library';
 import type { TempoBaseAiMeta, TempoDateInput } from './base.type.js';
 import type { AiParseOptions } from './parse.type.js';
 

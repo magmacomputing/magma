@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-ai
+# @tempo-kit/plugin-ai
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-ai/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-ai"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-ai?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ai"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-ai?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-ai/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-ai"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-ai?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 Tempo community plugin for LLM-powered natural language date parsing, schedule compilation, and temporal processing.
@@ -29,7 +29,7 @@ Raw LLM API keys must **never** be exposed in client-side browser bundles or sto
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-ai
+npm install @tempo-kit/plugin-ai
 ```
 
 ---
@@ -41,8 +41,8 @@ npm install @magmacomputing/tempo-plugin-ai
 Installing `AiPlugin` mounts the frozen **`Tempo.ai`** static action namespace onto `Tempo`:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { AiPlugin } from '@magmacomputing/tempo-plugin-ai';
+import { Tempo } from 'tempo-kit';
+import { AiPlugin } from '@tempo-kit/plugin-ai';
 
 Tempo.use(AiPlugin);
 
@@ -54,8 +54,8 @@ const event = await Tempo.ai.parse("next Tuesday around 2:30pm");
 ### Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-ai/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-ai/install';
 
 const event = await Tempo.ai.parse("next Tuesday around 2:30pm");
 ```
@@ -68,14 +68,14 @@ The AI plugin provides two distinct integration approaches:
 
 | Approach | Import Syntax | Ideal For |
 | :--- | :--- | :--- |
-| **Cohesive Namespace** | `import { AiPlugin } from '@magmacomputing/tempo-plugin-ai'` | Full-featured apps, Node.js backends, REPLs, and IDE auto-complete via `Tempo.ai.*` |
-| **Tree-Shakeable Functions** | `import { parseAI, initAI } from '@magmacomputing/tempo-plugin-ai'` | Minimal client-side bundles and microservices importing only specific functions |
+| **Cohesive Namespace** | `import { AiPlugin } from '@tempo-kit/plugin-ai'` | Full-featured apps, Node.js backends, REPLs, and IDE auto-complete via `Tempo.ai.*` |
+| **Tree-Shakeable Functions** | `import { parseAI, initAI } from '@tempo-kit/plugin-ai'` | Minimal client-side bundles and microservices importing only specific functions |
 
 ### Tree-Shakeable Standalone Functions
 For bundle-sensitive projects, import individual functions directly without attaching anything to `Tempo`:
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // 1. Initialize trial sandbox or explicit providers
 await initAI({ provider: 'tempo' });
@@ -128,9 +128,9 @@ To streamline error handling and data consumption, return shapes across the AI p
 ---
 
 > [!NOTE]
-> **Community Feedback & Prompt Engineering**: While `@magmacomputing/tempo-plugin-ai` utilizes deterministic grounding, schema enforcement, and confidence validation, LLM outputs can vary across models and prompt styles. We actively welcome community feedback and prompt optimizations—please report any edge cases or suggestions on the [Magma GitHub Issue Tracker](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml).
+> **Community Feedback & Prompt Engineering**: While `@tempo-kit/plugin-ai` utilizes deterministic grounding, schema enforcement, and confidence validation, LLM outputs can vary across models and prompt styles. We actively welcome community feedback and prompt optimizations—please report any edge cases or suggestions on the [Magma GitHub Issue Tracker](https://github.com/magmacomputing/magma/issues/new?template=bug_report_ai.yml).
 >
-> **Production Notice & "As-Is" Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@magmacomputing/tempo-plugin-ai` "as-is" without warranty of any kind. Large Language Models operate probabilistically; developers and system architects are responsible for validating AI-generated temporal outputs before committing them to financial, legal, medical, or life-critical applications.
+> **Production Notice & "As-Is" Disclaimer**: Magma Computing Solutions and the Tempo core maintainers provide `@tempo-kit/plugin-ai` "as-is" without warranty of any kind. Large Language Models operate probabilistically; developers and system architects are responsible for validating AI-generated temporal outputs before committing them to financial, legal, medical, or life-critical applications.
 
 ---
 

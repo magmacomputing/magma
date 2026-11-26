@@ -1,5 +1,5 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { isRRuleString, isFiniteRRule, parseRRule, expandRRuleEpochs, asText } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { isRRuleString, isFiniteRRule, parseRRule, expandRRuleEpochs, asText } from 'tempo-kit/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {

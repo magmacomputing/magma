@@ -1,4 +1,4 @@
-import { asText, isNumber, isString, isNullish, secure, when } from '@magmacomputing/tempo/library';
+import { asText, isNumber, isString, isNullish, secure, when } from 'tempo-kit/library';
 import { TempoAiError } from '../core/error.js';
 import { executeWithMode } from '../core/dispatch.js';
 import {

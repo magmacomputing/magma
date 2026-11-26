@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { diffAI, initAI, TempoAiError, type TempoAiDiffResult } from '../src/index.js';
 
 describe('AI Diff Plugin (diffAI)', () => {

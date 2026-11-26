@@ -1,6 +1,6 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isNullish, isFunction, asText, isUndefined } from '@magmacomputing/tempo/library';
-import type { AsyncEvaluable } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { getContext, CONTEXT, isObject, isPlainObject, isString, isArray, isMap, isNullish, isFunction, asText, isUndefined } from 'tempo-kit/library';
+import type { AsyncEvaluable } from 'tempo-kit/library';
 
 import { DEFAULT_PROVIDERS } from './config.js';
 import type { AiConfig, AiProvider } from '../types/index.js';
@@ -209,7 +209,7 @@ export async function resolveTempoConfigFileAi(): Promise<AiConfig | undefined> 
 	if (!isServerRuntime())
 		return undefined;
 	try {
-		const { resolveConfig } = await import('@magmacomputing/tempo/config');
+		const { resolveConfig } = await import('tempo-kit/config');
 		const resolved = await resolveConfig();
 		if (resolved?.pluginOptions && isObject(resolved.pluginOptions) && (resolved.pluginOptions as any).ai)
 			return (resolved.pluginOptions as any).ai as AiConfig;

@@ -1,4 +1,4 @@
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { AiPlugin } from './plugin.js';
 
 autoInstall(AiPlugin);

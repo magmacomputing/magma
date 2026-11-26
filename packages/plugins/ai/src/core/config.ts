@@ -1,4 +1,4 @@
-import { secure, type ValueOf } from '@magmacomputing/tempo/library';
+import { secure, type ValueOf } from 'tempo-kit/library';
 import type { AiProvider } from '../types/index.js';
 
 /**

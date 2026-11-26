@@ -1,19 +1,19 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-ai</a>
+  <a href="./index.html">← @tempo-kit/plugin-ai</a>
 </div>
 
 <br>
 
 # `initAI` — Provider Initialization & Farm Configuration
 
-`initAI()` sets up the global configuration for `@magmacomputing/tempo-plugin-ai`, managing provider authentication, multi-provider execution modes, global SLAs/timeouts, and caching strategies.
+`initAI()` sets up the global configuration for `@tempo-kit/plugin-ai`, managing provider authentication, multi-provider execution modes, global SLAs/timeouts, and caching strategies.
 
 ## Zero-Config Auto-Discovery
 
-`@magmacomputing/tempo-plugin-ai` features a zero-boilerplate auto-discovery architecture. In server environments (Node.js, Deno, Bun), calling `initAI()` is **completely optional** when standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) or a `tempo.config.json` file are present.
+`@tempo-kit/plugin-ai` features a zero-boilerplate auto-discovery architecture. In server environments (Node.js, Deno, Bun), calling `initAI()` is **completely optional** when standard environment variables (`GROQ_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`, `MISTRAL_API_KEY`) or a `tempo.config.json` file are present.
 
 ```typescript
-import { parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { parseAI } from '@tempo-kit/plugin-ai';
 
 // When GROQ_API_KEY is present in the environment:
 // Zero setup required — providers and SLAs are auto-discovered lazily on first call!
@@ -57,7 +57,7 @@ You can declare AI provider configurations directly within your project's `tempo
 For single-provider workflows, use the concise `provider` and `apiKey` properties:
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // 1. Free evaluation trial sandbox (zero external keys needed):
 await initAI({ provider: 'tempo' });
@@ -69,7 +69,7 @@ await initAI({ provider: 'groq', apiKey: process.env.GROQ_API_KEY });
 ### Multi-Provider Configuration
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // Initialize with custom provider credentials and execution options
 await initAI({
@@ -87,7 +87,7 @@ await initAI({
 For browser applications and client-side frontends where API keys must remain hidden, you can supply a single global `endpoint`:
 
 ```typescript
-import { initAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI } from '@tempo-kit/plugin-ai';
 
 // Connect client-side Tempo AI to your backend proxy
 await initAI({
@@ -125,7 +125,7 @@ The provider `key` configuration supports asynchronous or synchronous supplier f
 This enables automated secret vault rotation, dynamic AI gateways, and multi-tenant context resolution evaluated just-in-time on every HTTP dispatch:
 
 ```typescript
-import { initAI, parseAI } from '@magmacomputing/tempo-plugin-ai';
+import { initAI, parseAI } from '@tempo-kit/plugin-ai';
 
 // Initialize with dynamic async key resolver and per-request context
 initAI({

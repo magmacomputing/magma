@@ -1,5 +1,5 @@
-import { Tempo, Interval } from '@magmacomputing/tempo';
-import { ParseModule } from '@magmacomputing/tempo/parse';
+import { Tempo, Interval } from 'tempo-kit';
+import { ParseModule } from 'tempo-kit/parse';
 import { scheduleAI, initAI } from '../src/index.js';
 
 Tempo.use(ParseModule);

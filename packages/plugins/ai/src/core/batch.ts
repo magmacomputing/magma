@@ -1,4 +1,4 @@
-import { asNumber } from '@magmacomputing/tempo/library';
+import { asNumber } from 'tempo-kit/library';
 import { TempoAiError } from './error.js';
 
 /**

@@ -9,7 +9,7 @@ import {
 	MAX_MANIFEST_BYTES,
 	getResolvedProviderDefaults,
 } from '../src/index.js';
-import { parseJSONC } from '@magmacomputing/tempo/library';
+import { parseJSONC } from 'tempo-kit/library';
 
 describe('Remote Provider Manifest & Dynamic Defaults', () => {
 	beforeEach(() => {

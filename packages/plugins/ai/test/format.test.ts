@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { formatAI, initAI, resetAI, TempoAiError, type TempoAiFormatResult, type AiCacheAdapter } from '../src/index.js';
 
 describe('AI Format Plugin (formatAI)', () => {

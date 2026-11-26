@@ -2,7 +2,7 @@ import { TempoAiError } from './error.js';
 import { isValidManifestUrl } from './manifest.js';
 import { RE_SAFE_PROVIDER_ID } from './patterns.js';
 import { fetchRequest, HttpError } from './fetch.js';
-import { asText, asNumber, isString, parseJSONC } from '@magmacomputing/tempo/library';
+import { asText, asNumber, isString, parseJSONC } from 'tempo-kit/library';
 
 export interface ProviderModelInfo {
 	id: string;

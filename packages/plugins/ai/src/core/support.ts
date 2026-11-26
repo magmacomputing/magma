@@ -1,6 +1,6 @@
-import { Tempo } from '@magmacomputing/tempo';
-import { asText, asNumber, isDefined, isNullish, isFunction, isNumber, evaluate, isSafeKey } from '@magmacomputing/tempo/library';
-import type { Evaluable } from '@magmacomputing/tempo/library';
+import { Tempo } from 'tempo-kit';
+import { asText, asNumber, isDefined, isNullish, isFunction, isNumber, evaluate, isSafeKey } from 'tempo-kit/library';
+import type { Evaluable } from 'tempo-kit/library';
 import { TempoAiError } from './error.js';
 import { AiMode } from './config.js';
 import { _state } from './init.js';

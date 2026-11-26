@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import {
 	initAI,
 	resetAI,
@@ -14,7 +14,7 @@ import {
 	resolveProviderApiKey,
 } from '../src/index.js';
 
-vi.mock('@magmacomputing/tempo/config', () => ({
+vi.mock('tempo-kit/config', () => ({
 	resolveConfig: vi.fn().mockResolvedValue({}),
 }));
 
