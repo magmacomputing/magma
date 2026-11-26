@@ -154,28 +154,31 @@ Tempo.terms
 
 ## Activating Terms
 
-In **Tempo Full**, all standard Terms are enabled by default. In **Tempo Core**, you have three ways to opt-in:
+In **Tempo Full** (`tempo-kit`), Civic Terms (`#quarter`, `#season`, `#timeOfDay`) are enabled by default. In **Tempo Core** (`tempo-kit/core`), you can opt-in explicitly:
 
-### 1. Standard Activation (Recommended)
-The fastest way to enable all built-in Terms (`qtr`, `szn`, `zdc`, `tod`).
-```typescript
-import 'tempo-kit/term'; // One-line side-effect activation
-```
-
-### 2. Explicit Module (Uniform Sync)
-Best for projects that prefer explicit dependencies and a uniform API across all features.
+### 1. Explicit Module (Civic Terms)
+Enables standard Civic Terms via `TermsModule` from `tempo-kit`.
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { TermsModule } from 'tempo-kit/term';
+import { TermsModule } from 'tempo-kit';
 
 Tempo.use(TermsModule);
 ```
 
-### 3. Surgical Opt-in (Maximum Lite)
-Best for maximum bundle-size optimization—you only load the specific Terms you use. Note that specific standard terms have their own dedicated sub-paths natively bundled within the main package.
+### 2. Cultural Term Bundle (`tempo-kit/terms`)
+Loads cultural terms (`ZodiacTerm`, `EasternTerm`, etc.) without affecting default core bundle size:
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { QuarterTerm } from 'tempo-kit/term/quarter';
+import { CulturalTerms } from 'tempo-kit/terms';
+
+Tempo.use(CulturalTerms);
+```
+
+### 3. Surgical Opt-in (Individual Terms)
+Best for maximum bundle-size optimization—import only the specific term you use from `tempo-kit/terms/*`:
+```typescript
+import { Tempo } from 'tempo-kit/core';
+import { QuarterTerm } from 'tempo-kit/terms/quarter';
 
 Tempo.use(QuarterTerm);
 ```
