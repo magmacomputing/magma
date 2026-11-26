@@ -246,4 +246,9 @@ describe('Term Dispatch Refactor', () => {
 		expect(parsed.toPlainDate().toString({ calendarName: 'never' })).toBe('2026-01-02');
 		expect(parsed.hour).toBe(0);
 	});
+
+	it('should allow t.term access in Core when terms are registered without TermsModule', () => {
+		const t = new Tempo('2024-05-15T12:00:00Z');
+		expect((t as any).term.quarter.key).toBe('Q2');
+	});
 });

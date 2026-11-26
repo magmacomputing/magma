@@ -46,10 +46,8 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 	const hostLogic = (rt.modules as any)[mod];
 	const state = host[sym.$Internal]?.() || rt.state;
 
-	// terms fallback only applies when the canonical module entry actually exists in the discovery database
-	const isTermsLoaded = (mod === 'TermsModule') && state &&
-		(isNotNullish(hostLogic) || rt.installed.has('TermsModule') || state.pluginsDb.plugins.some((p: any) => p.name === 'TermsModule')) &&
-		state.pluginsDb.terms.length > 0;
+	// terms fallback applies when at least one term plugin has been registered (e.g. via CivicTerms / QuarterTerm in Core)
+	const isTermsLoaded = (mod === 'TermsModule') && state && state.pluginsDb.terms.length > 0;
 
 	if (isNullish(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
