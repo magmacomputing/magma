@@ -92,8 +92,8 @@ return \`Current Lunar Phase: \${now.term.lunar.phase}\`;`,
 	spatial: {
 		label: 'Preset: Spatial & Navigation (GIS, Haversine, Transit)',
 		plugin: 'spatial',
-		code: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@magmacomputing/tempo-plugin-spatial)
-const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
+		code: `// 🧭 Great-Circle Navigation & Spatial Geofencing (@tempo-kit/plugin-spatial)
+const { SpatialPlugin } = await import('@tempo-kit/plugin-spatial');
 Tempo.use(SpatialPlugin);
 
 const sydney = { lat: -33.8688, lng: 151.2093 };
@@ -124,7 +124,7 @@ return \`Sydney -> London: \${distKm.toFixed(0)} km (Midpoint: \${mid.latitude.t
 	geo: {
 		label: 'Preset: Live Geolocation & Providers (Geo)',
 		plugin: 'geo',
-		code: `// 🌍 Live Geolocation & Pluggable Providers (@magmacomputing/tempo-plugin-geo)
+		code: `// 🌍 Live Geolocation & Pluggable Providers (@tempo-kit/plugin-geo)
 // Note: In browser sandbox, resolves browser GPS or IP-based coordinates
 
 const lookup = await Tempo.geo.lookup({ reverse: true });
@@ -146,8 +146,8 @@ return \`Located at \${lookup.city ?? 'Local City'} (\${lookup.lat?.toFixed(2)}�
 	holidays: {
 		label: 'Preset: Regional Public Holidays & SLA Business Days',
 		plugin: 'holidays',
-		code: `// 🏖️ Regional Public Holidays & SLA Business Days (@magmacomputing/tempo-plugin-holidays)
-const { HolidaysPlugin } = await import('@magmacomputing/tempo-plugin-holidays');
+		code: `// 🏖️ Regional Public Holidays & SLA Business Days (@tempo-kit/plugin-holidays)
+const { HolidaysPlugin } = await import('@tempo-kit/plugin-holidays');
 Tempo.use(HolidaysPlugin);
 
 // 1. Evaluate holiday by country or instance geo metadata
@@ -177,8 +177,8 @@ return \`Christmas: \${christmas.holidays.name} (Next work day: \${nextWorkDay.f
 		label: 'Preset: Dialects (LDML, strftime, Oracle, .NET, MySQL, Sheet)',
 		plugin: 'dialects',
 		code: `// 🌐 External Dialect Formatting, Parsing & Transpilation
-// Dynamic import of @magmacomputing/tempo-plugin-dialects
-const { DialectsPlugin, DIALECT } = await import('@magmacomputing/tempo-plugin-dialects');
+// Dynamic import of @tempo-kit/plugin-dialects
+const { DialectsPlugin, DIALECT } = await import('@tempo-kit/plugin-dialects');
 Tempo.use(DialectsPlugin);
 
 const t = new Tempo('2026-10-24T15:30:45.123');
@@ -218,7 +218,7 @@ return \`Transpiled POSIX to Oracle: \${posixToOracle.pattern}\`;`,
 	celestial: {
 		label: 'Preset: Celestial Solar & Lunar Ephemeris',
 		plugin: 'celestial',
-		code: `// 🌙 Celestial Solar & Lunar Ephemeris Demo (@magmacomputing/tempo-plugin-celestial)
+		code: `// 🌙 Celestial Solar & Lunar Ephemeris Demo (@tempo-kit/plugin-celestial)
 const now = new Tempo();
 console.log('Moon Phase:', now.term.lunar.phase);
 console.log('Illumination:', (now.term.lunar.illumination * 100).toFixed(1) + '%');
@@ -230,7 +230,7 @@ return \`Phase: \${now.term.lunar.phase} (\${(now.term.lunar.illumination * 100)
 	astro: {
 		label: 'Preset: Astronomical Seasons & Solstices',
 		plugin: 'celestial',
-		code: `// ☀️ Astronomical Seasons & Solstices Demo (@magmacomputing/tempo-plugin-celestial)
+		code: `// ☀️ Astronomical Seasons & Solstices Demo (@tempo-kit/plugin-celestial)
 const sydney = new Tempo('2026-07-01', { sphere: 'south' });
 const london = new Tempo('2026-07-01', { sphere: 'north' });
 
@@ -246,8 +246,8 @@ return \`Sydney: \${sydney.term.szn} | London: \${london.term.szn}\`;`,
 	fiscal: {
 		label: 'Preset: Fiscal Quarters & Tax Years (Terms)',
 		plugin: '_terms',
-		code: `// 💼 Fiscal Quarters and Tax Years (@magmacomputing/tempo/terms)
-const { FiscalTerm } = await import('@magmacomputing/tempo/terms');
+		code: `// 💼 Fiscal Quarters and Tax Years (tempo-kit/terms)
+const { FiscalTerm } = await import('tempo-kit/terms');
 Tempo.use(FiscalTerm);
 
 const t = new Tempo('2025-08-15', { pluginOptions: { fiscal: { country: 'AU' } } });
@@ -263,8 +263,8 @@ return \`Fiscal \${t.term.fqtr} (FY\${fiscal?.year})\`;`,
 	snap: {
 		label: 'Preset: Time Snapping & Quantization',
 		plugin: 'snap',
-		code: `// ⏱️ Time Snapping & Quantization Demo (@magmacomputing/tempo-plugin-snap)
-const { SnapPlugin } = await import('@magmacomputing/tempo-plugin-snap');
+		code: `// ⏱️ Time Snapping & Quantization Demo (@tempo-kit/plugin-snap)
+const { SnapPlugin } = await import('@tempo-kit/plugin-snap');
 Tempo.use(SnapPlugin);
 
 const t = new Tempo('2026-06-01T14:08:23Z');
@@ -284,8 +284,8 @@ return \`Snapped to \${snapped15m.format('{hh}:{mi}')}\`;`,
 	batch: {
 		label: 'Preset: Parallel Bulk Mutation',
 		plugin: 'batch',
-		code: `// ⚡ Parallel Bulk Mutation Demo (@magmacomputing/tempo-plugin-batch)
-// Note: @magmacomputing/tempo-plugin-batch uses Node.js worker_threads for multi-threaded processing.
+		code: `// ⚡ Parallel Bulk Mutation Demo (@tempo-kit/plugin-batch)
+// Note: @tempo-kit/plugin-batch uses Node.js worker_threads for multi-threaded processing.
 const timestamps = [1700000000000, 1700086400000, 1700172800000];
 console.log('Original timestamps count:', timestamps.length);
 
@@ -293,7 +293,7 @@ let mutated;
 const isNode = typeof process !== 'undefined' && Boolean(process.versions?.node);
 
 if (isNode) {
-  const { BatchPlugin } = await import('@magmacomputing/tempo-plugin-batch');
+  const { BatchPlugin } = await import('@tempo-kit/plugin-batch');
   Tempo.use(BatchPlugin);
   mutated = await Tempo.batch(timestamps, '+1w');
 } else {
@@ -308,8 +308,8 @@ return \`Batch processed \${mutated.length} timestamps successfully!\`;`,
 	sync: {
 		label: 'Preset: Cross-Thread Time Sync',
 		plugin: 'sync',
-		code: `// 🔄 Cross-Thread Time Sync Demo (@magmacomputing/tempo-plugin-sync)
-const { SyncPlugin } = await import('@magmacomputing/tempo-plugin-sync');
+		code: `// 🔄 Cross-Thread Time Sync Demo (@tempo-kit/plugin-sync)
+const { SyncPlugin } = await import('@tempo-kit/plugin-sync');
 Tempo.use(SyncPlugin);
 
 // SharedArrayBuffer requires Cross-Origin Isolation (COOP/COEP) in browsers:
@@ -338,8 +338,8 @@ try {
 	ntp: {
 		label: 'Preset: Network Time Sync & Drift (NTP)',
 		plugin: 'ntp',
-		code: `// 🌐 Network Time Sync & Drift Calibration (@magmacomputing/tempo-plugin-ntp)
-const { NtpPlugin } = await import('@magmacomputing/tempo-plugin-ntp');
+		code: `// 🌐 Network Time Sync & Drift Calibration (@tempo-kit/plugin-ntp)
+const { NtpPlugin } = await import('@tempo-kit/plugin-ntp');
 Tempo.use(NtpPlugin);
 
 console.log('Calibrating clock with remote time source...');
@@ -354,8 +354,8 @@ return \`Calibrated! Offset: \${Tempo.ntp.offset}ms | Local: \${new Tempo().form
 	ticker: {
 		label: 'Preset: Continuous Temporal Ticker',
 		plugin: 'ticker',
-		code: `// ⏰ Continuous Temporal Ticker Demo (@magmacomputing/tempo-plugin-ticker)
-const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
+		code: `// ⏰ Continuous Temporal Ticker Demo (@tempo-kit/plugin-ticker)
+const { TickerPlugin } = await import('@tempo-kit/plugin-ticker');
 Tempo.use(TickerPlugin);
 
 console.log('Starting 1-second cadence ticker...');
@@ -376,8 +376,8 @@ return 'Ticker started (executes in console stream)';`,
 		label: 'Preset: Dynamic Plugin (ESM import)',
 		plugin: 'ticker',
 		code: `// 📦 Dynamic Plugin Loading via native ESM
-console.log('Dynamically importing @magmacomputing/tempo-plugin-ticker...');
-const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker');
+console.log('Dynamically importing @tempo-kit/plugin-ticker...');
+const { TickerPlugin } = await import('@tempo-kit/plugin-ticker');
 
 // Register the dynamically imported plugin
 Tempo.use(TickerPlugin);
@@ -390,8 +390,8 @@ return 'Dynamic import successful!';`,
 		label: 'Preset: AI Semantic Parsing & Scheduling',
 		plugin: 'ai',
 		autoRun: false,
-		code: `// 🤖 AI Semantic Parsing & Scheduling (@magmacomputing/tempo-plugin-ai)
-const { AiPlugin } = await import('@magmacomputing/tempo-plugin-ai');
+		code: `// 🤖 AI Semantic Parsing & Scheduling (@tempo-kit/plugin-ai)
+const { AiPlugin } = await import('@tempo-kit/plugin-ai');
 Tempo.use(AiPlugin);
 
 // 1. Configure provider (Trial 'tempo' sandbox or BYOK: 'gemini', 'openai', 'groq')
@@ -416,8 +416,8 @@ return t.iso;`,
 	roman: {
 		label: 'Preset: Classical Roman Calendar & Fasti',
 		plugin: 'roman',
-		code: `// 🏛️ Classical Roman Calendar, Parsing & Consuls (@magmacomputing/tempo-plugin-roman)
-const { RomanPlugin } = await import('@magmacomputing/tempo-plugin-roman/consuls');
+		code: `// 🏛️ Classical Roman Calendar, Parsing & Consuls (@tempo-kit/plugin-roman)
+const { RomanPlugin } = await import('@tempo-kit/plugin-roman/consuls');
 Tempo.use(RomanPlugin);
 
 // 1. Classical Date Formatting & Declensions
@@ -449,13 +449,13 @@ return \`Today: \${today.format('{roman:classical}')} (\${today.auc} AUC)\`;`,
 	signals: {
 		label: 'Preset: Reactive Signals (Relative Time & Intervals)',
 		plugin: 'signals',
-		code: `// ⚡ Reactive TC39 Signals (@magmacomputing/tempo-plugin-signals)
+		code: `// ⚡ Reactive TC39 Signals (@tempo-kit/plugin-signals)
 const {
   SignalsPlugin,
   localeSignal,
   toRelativeSignal,
   intervalSignal,
-} = await import('@magmacomputing/tempo-plugin-signals');
+} = await import('@tempo-kit/plugin-signals');
 Tempo.use(SignalsPlugin);
 
 // 1. Reactive Global Locale Signal (tracks Tempo.init updates)
