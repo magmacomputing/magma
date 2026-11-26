@@ -115,7 +115,7 @@ Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`temp
 | Input Type & Scenario | Recommended Approach | Key Advantage |
 | :--- | :--- | :--- |
 | **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic $O(1)$ Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
-| **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`tempo-plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
+| **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`@tempo-kit/plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
 
 > [!TIP]
 > Always prefer native Tempo parsing for form inputs, search inputs, and predictable UI date controls. Reserve `@tempo-kit/plugin-ai` for conversational chat interfaces or unstructured email/document text processing.

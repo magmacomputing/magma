@@ -16,7 +16,7 @@ Serializes variables, primitives, and rich objects into string-safe representati
 ```typescript
 import { stringify } from 'tempo-kit/library';
 
-const richData = new Map([
+const richData = new Map<string, Date | symbol | bigint>([
   ['time', new Date()],
   ['id', Symbol.for('session')],
   ['count', 100n]

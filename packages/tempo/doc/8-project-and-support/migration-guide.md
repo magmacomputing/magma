@@ -290,7 +290,6 @@ Tempo v4.0.0 Community Core is 100% open-source without commercial license valid
 
 - License keys (`licenseKey`, `TEMPO_LICENSE_KEY`) are no longer required or checked in the Community Edition.
 - `Tempo.ready()` returns `'none'` for community core compatibility.
-- Commercial plugin management and domain-locking hooks have been relocated into the `tempo-kit-pro` enterprise package.
 
 ---
 

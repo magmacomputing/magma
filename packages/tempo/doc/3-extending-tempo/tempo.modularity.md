@@ -22,14 +22,14 @@ import { DurationModule } from 'tempo-kit/duration';
 import { FormatModule } from 'tempo-kit/format';
 import { MutateModule } from 'tempo-kit/mutate';
 import { ParseModule } from 'tempo-kit/parse';
-import { TermsModule } from 'tempo-kit';
+import { CivicTerms } from 'tempo-kit/terms';
 
 
 // Individual extension...
 Tempo.use(DurationModule);
 
 // ...or bulk extension!
-Tempo.use(DurationModule, FormatModule, TermsModule, MutateModule, ...);
+Tempo.use(DurationModule, FormatModule, CivicTerms, MutateModule, ...);
 ```
 
 ## Available Modules
@@ -51,13 +51,13 @@ Handles string parsing and token extraction. This is included automatically in t
 ### Terms Module (`tempo-kit` / `tempo-kit/terms`)
 Adds support for semantic Terms like `quarter`, `season`, `zodiac`, and `period`. There are two ways to enable Terms in a Core environment:
 
-#### 1. The Explicit Module (Civic Terms)
-Enables standard Civic Terms (`#quarter`, `#season`, `#timeOfDay`) via `TermsModule` from `tempo-kit`.
+#### 1. Civic Terms (`tempo-kit/terms`)
+Enables standard Civic Terms (`#quarter`, `#season`, `#timeOfDay`) without loading the full `tempo-kit` bundle.
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { TermsModule } from 'tempo-kit';
+import { CivicTerms } from 'tempo-kit/terms';
 
-Tempo.use(TermsModule);
+Tempo.use(CivicTerms);
 ```
 
 #### 2. Opt-In Term Bundles (`tempo-kit/terms`)
