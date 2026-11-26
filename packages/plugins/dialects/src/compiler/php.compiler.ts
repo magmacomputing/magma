@@ -1,4 +1,4 @@
-import { WeakCache, suffix, Enum, enums, getISOWeekOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveTwoDigitYear, resolveDayOfYear, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
+import { WeakCache, suffix, Enum, enums, getISOWeekOfYear, getIsoWeek, fromIsoWeek, resolveIsoCalendarYear, resolveTwoDigitYear, resolveDayOfYear, ValueOf } from 'tempo-kit/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,

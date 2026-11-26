@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-dialects</a>
+  <a href="./index.html">← @tempo-kit/plugin-dialects</a>
 </div>
 
 <br>
@@ -8,7 +8,7 @@
 
 Why Tempo Chose `{token:modifier}` Over Historical Dialects
 
-The `@magmacomputing/tempo-plugin-dialects` plugin exists to provide complete interoperability and zero-downtime migration paths for codebases written in **Moment.js**, **Day.js**, **Luxon**, **date-fns**, **POSIX `strftime`**, **PHP**, and **SQL `TO_CHAR`**.
+The `@tempo-kit/plugin-dialects` plugin exists to provide complete interoperability and zero-downtime migration paths for codebases written in **Moment.js**, **Day.js**, **Luxon**, **date-fns**, **POSIX `strftime`**, **PHP**, and **SQL `TO_CHAR`**.
 
 However, when engineering Tempo's native formatting engine, we deliberately chose **not** to adopt any single historical token system. Decades of formatting history have accumulated conflicting token semantics, capitalization traps, and combinatorial token explosions that frequently cause catastrophic production bugs.
 
@@ -118,7 +118,7 @@ To print literal braces, simply double them: <span v-pre><code>&#123;&#123;</cod
 
 ## 🚫 Part B: Deliberate Omissions & Architectural Boundaries
 
-When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, we identified several legacy dialect behaviors that we deliberately chose **not** to adopt into native Tempo or promote as best practices:
+When building the `@tempo-kit/plugin-dialects` compatibility engine, we identified several legacy dialect behaviors that we deliberately chose **not** to adopt into native Tempo or promote as best practices:
 
 ### 1. Non-ISO Locale Week-Numbering Years (Moment `gggg` / `gg`)
 * **The Legacy Behavior**: Moment's `gggg` and `gg` compute week-numbering years based on the locale's first day of the week (e.g. Sunday in the US, Monday in ISO, Saturday in the Middle East). In contrast, PHP `o` and POSIX `%G` strictly compute the ISO 8601 week-numbering year, which Tempo directly supports via `{yow}`.
@@ -158,4 +158,4 @@ When building the `@magmacomputing/tempo-plugin-dialects` compatibility engine, 
 
 > [!TIP]
 > **Use Dialects for Migration, Native Tempo for Greenfield**  
-> While `@magmacomputing/tempo-plugin-dialects` provides extensive, high-fidelity compatibility for standard legacy masks, we recommend standardizing on native Tempo `{token}` syntax for new development to maximize clarity, performance, and maintainability.
+> While `@tempo-kit/plugin-dialects` provides extensive, high-fidelity compatibility for standard legacy masks, we recommend standardizing on native Tempo `{token}` syntax for new development to maximize clarity, performance, and maintainability.

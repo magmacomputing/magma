@@ -1,4 +1,4 @@
-import { deepFreeze, isUndefined } from '@magmacomputing/tempo/library';
+import { deepFreeze, isUndefined } from 'tempo-kit/library';
 import { DIALECT } from '../constants.js';
 import { detectDialect } from './dialect.registry.js';
 import { LDML_TOKENS } from '../compiler/ldml.compiler.js';

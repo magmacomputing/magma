@@ -3,7 +3,7 @@ import {
 	enums,
 	isNumber,
 	getIsoWeek,
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 
 export type FormatterFn = (zdt: Temporal.ZonedDateTime) => string;
 

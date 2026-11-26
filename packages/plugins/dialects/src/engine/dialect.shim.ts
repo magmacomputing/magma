@@ -1,7 +1,7 @@
-import type { Tempo } from '@magmacomputing/tempo';
+import type { Tempo } from 'tempo-kit';
 import { formatWithDialect, detectDialect } from './dialect.registry.js';
 import { DIALECT } from '../constants.js';
-import { isFunction, hasKey } from '@magmacomputing/tempo/library';
+import { isFunction, hasKey } from 'tempo-kit/library';
 
 /**
  * Attaches convenience shims for developers migrating from Luxon or Moment.

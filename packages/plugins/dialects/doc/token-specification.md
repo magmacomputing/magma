@@ -1,5 +1,5 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-dialects</a>
+  <a href="./index.html">← @tempo-kit/plugin-dialects</a>
 </div>
 
 <br>

@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-dialects</a>
+  <a href="./index.html">← @tempo-kit/plugin-dialects</a>
 </div>
 
 <br>
 
 # Production Use Cases & Architectural Patterns
 
-This guide showcases concrete, real-world architectural patterns where `@magmacomputing/tempo-plugin-dialects` solves non-trivial integration and migration challenges in production environments.
+This guide showcases concrete, real-world architectural patterns where `@tempo-kit/plugin-dialects` solves non-trivial integration and migration challenges in production environments.
 
 ---
 
@@ -38,8 +38,8 @@ Validated Immutable Tempo Instance (Normalized to UTC)
 ### Production Implementation
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+import { Tempo } from 'tempo-kit';
+import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 Tempo.use(DialectsPlugin);
 
@@ -92,8 +92,8 @@ Enterprise security architectures and cloud logging daemons (Fluentd, Logstash, 
 Use `t.format(mask, { dialect: DIALECT.Strftime })` to emit exact POSIX-compliant specifiers (`%b`, `%e`, `%H`, `%M`, `%S`, `%f`). The pre-compiled format cache evaluates these specs directly against the underlying high-resolution timestamp.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+import { Tempo } from 'tempo-kit';
+import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 Tempo.use(DialectsPlugin);
 
@@ -139,8 +139,8 @@ Deploy a three-stage migration pipeline:
 3. **Stage 3 (Native Runtime)**: Once all masks are converted to native syntax, remove the dialect layer for zero-dependency peak throughput.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+import { Tempo } from 'tempo-kit';
+import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 Tempo.use(DialectsPlugin);
 
@@ -180,8 +180,8 @@ In distributed architectures, different subsystems require different date token 
 Use Tempo as a format Intermediate Representation (IR). You can either convert legacy masks directly between ecosystems via `.convert()`, or define application templates in canonical Tempo syntax and export target masks dynamically with `.export()`.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+import { Tempo } from 'tempo-kit';
+import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 Tempo.use(DialectsPlugin);
 

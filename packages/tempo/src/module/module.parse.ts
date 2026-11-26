@@ -309,7 +309,7 @@ function parseDialectFormat(input: string, fmt: string, state: any, today: Tempo
 			today,
 		});
 	}
-	throw new Error(`[Tempo] Parsing unbraced format mask '${fmt}' requires '@magmacomputing/tempo-plugin-dialects'.`);
+	throw new Error(`[Tempo] Parsing unbraced format mask '${fmt}' requires '@tempo-kit/plugin-dialects'.`);
 }
 
 /**

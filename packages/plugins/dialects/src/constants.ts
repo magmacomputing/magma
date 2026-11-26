@@ -1,5 +1,5 @@
-import { Enum } from '@magmacomputing/tempo/library';
-import type { ValueOf, KeyOf } from '@magmacomputing/tempo/library';
+import { Enum } from 'tempo-kit/library';
+import type { ValueOf, KeyOf } from 'tempo-kit/library';
 
 /**
  * ## DIALECT

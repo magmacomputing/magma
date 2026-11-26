@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { parseJSONC } from '@magmacomputing/tempo/library';
+import { parseJSONC } from 'tempo-kit/library';
 
 describe('#setConfig refactor verification', () => {
 
@@ -188,7 +188,7 @@ describe('#setConfig refactor verification', () => {
   })
 
   test('should export defineConfig and resolveConfig from config module', async () => {
-    const { defineConfig, resolveConfig } = await import('@magmacomputing/tempo/config');
+    const { defineConfig, resolveConfig } = await import('tempo-kit/config');
     expect(typeof defineConfig).toBe('function');
     expect(typeof resolveConfig).toBe('function');
     const dummy = { timeZone: 'UTC' };

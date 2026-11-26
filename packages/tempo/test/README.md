@@ -1,6 +1,6 @@
 # Tempo Test Suite
 
-This directory contains the automated test suite for the `@magmacomputing/tempo` package, organized by functional domain.
+This directory contains the automated test suite for the `tempo-kit` package, organized by functional domain.
 
 ## Directory Structure
 

@@ -252,7 +252,7 @@ export function format(obj?: any, fmt?: any, options?: any): any {
 			return formatter(zdt, String(fmt), { ...config, dialect });
 
 		const dialectDetail = dialect ? `with dialect '${dialect}' ` : '';
-		raise(`[Tempo] Formatting ${dialectDetail}unbraced format mask '${fmt}' requires '@magmacomputing/tempo-plugin-dialects'.`, config);
+		raise(`[Tempo] Formatting ${dialectDetail}unbraced format mask '${fmt}' requires '@tempo-kit/plugin-dialects'.`, config);
 		return '';
 	}
 

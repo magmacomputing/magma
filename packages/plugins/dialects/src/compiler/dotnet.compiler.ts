@@ -1,4 +1,4 @@
-import { pad, WeakCache, Enum, enums, resolveTwoDigitYear, resolveFractionalSeconds, resolveDayOfYear, ValueOf } from '@magmacomputing/tempo/plugin/sdk';
+import { pad, WeakCache, Enum, enums, resolveTwoDigitYear, resolveFractionalSeconds, type ValueOf } from 'tempo-kit/plugin/sdk';
 import type { FormatterFn, DialectOptions } from './shared.compiler.js';
 import {
 	escapeRegex,
