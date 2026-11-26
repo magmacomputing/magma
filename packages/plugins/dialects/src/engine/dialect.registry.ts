@@ -1,4 +1,4 @@
-import { evaluate, hasKey, isObject, isUndefined, ValueOf } from '@magmacomputing/tempo/library';
+import { evaluate, hasKey, isObject, isUndefined, ValueOf } from 'tempo-kit/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import { formatLdml, parseLdml } from '../compiler/ldml.compiler.js';
 import { formatStrftime, parseStrftime } from '../compiler/strftime.compiler.js';

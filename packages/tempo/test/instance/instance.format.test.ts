@@ -277,10 +277,10 @@ describe(`${label} format method`, () => {
   test('guides developer to install tempo-plugin-dialects when unbraced format mask is passed', () => {
     const t = new Tempo('2026-10-24T15:30:00');
     expect(() => t.format('YYYY-MM-DD')).toThrowError(
-      "[Tempo] Formatting unbraced format mask 'YYYY-MM-DD' requires '@magmacomputing/tempo-plugin-dialects'."
+      "[Tempo] Formatting unbraced format mask 'YYYY-MM-DD' requires '@tempo-kit/plugin-dialects'."
     );
     expect(() => t.format('%Y-%m-%d')).toThrowError(
-      "[Tempo] Formatting unbraced format mask '%Y-%m-%d' requires '@magmacomputing/tempo-plugin-dialects'."
+      "[Tempo] Formatting unbraced format mask '%Y-%m-%d' requires '@tempo-kit/plugin-dialects'."
     );
 
     // Respects config.catch

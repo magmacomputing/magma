@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { DialectsPlugin, DIALECT } from '../src/index.js';
 
 describe('Oracle / SQL TO_CHAR Formatting & Parsing', () => {

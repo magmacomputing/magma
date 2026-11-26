@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { DialectsPlugin, DIALECT, type Dialect } from '../src/index.js';
 
 describe('Dialects Property-Based Roundtrip & Fuzzing Harness', () => {

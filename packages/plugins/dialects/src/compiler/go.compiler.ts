@@ -1,4 +1,4 @@
-import { WeakCache, Enum, enums, resolveDayOfYear, resolveFractionalSeconds } from '@magmacomputing/tempo/plugin/sdk';
+import { WeakCache, Enum, enums, resolveDayOfYear, resolveFractionalSeconds } from 'tempo-kit/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,

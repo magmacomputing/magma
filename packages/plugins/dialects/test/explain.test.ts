@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { DialectsPlugin, DIALECT, explain } from '../src/index.js';
 
 describe('Dialect Explain & Migration Helper', () => {

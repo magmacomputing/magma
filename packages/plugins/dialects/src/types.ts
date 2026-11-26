@@ -1,5 +1,5 @@
-import type { Tempo } from '@magmacomputing/tempo';
-import type { Evaluable } from '@magmacomputing/tempo/library';
+import type { Tempo } from 'tempo-kit';
+import type { Evaluable } from 'tempo-kit/library';
 import type { Dialect } from './constants.js';
 import type { MysqlSpecifier } from './compiler/mysql.compiler.js';
 import type { DotNetSpecifier } from './compiler/dotnet.compiler.js';
@@ -149,7 +149,7 @@ export interface DialectsStaticNamespace {
 	convert(mask: string, fromDialect: DialectInput, toDialect: DialectInput): ConvertResult;
 }
 
-declare module '@magmacomputing/tempo' {
+declare module 'tempo-kit' {
 	namespace Tempo {
 		let dialects: DialectsStaticNamespace;
 		function fromFormat(input: string, mask: string, options?: Tempo.Options): Tempo;

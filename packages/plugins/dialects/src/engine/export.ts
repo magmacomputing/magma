@@ -1,4 +1,4 @@
-import { evaluate, deepFreeze, hasKey, isNullish } from '@magmacomputing/tempo/library';
+import { evaluate, deepFreeze, hasKey, isNullish } from 'tempo-kit/library';
 import { DIALECT, normalizeDialect, type Dialect } from '../constants.js';
 import type { ExportedToken, ExportResult } from '../types.js';
 

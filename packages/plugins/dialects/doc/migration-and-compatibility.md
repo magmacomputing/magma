@@ -1,12 +1,12 @@
 <div class="plugin-eyebrow">
-  <a href="./index.html">← @magmacomputing/tempo-plugin-dialects</a>
+  <a href="./index.html">← @tempo-kit/plugin-dialects</a>
 </div>
 
 <br>
 
 # Migration & Legacy Compatibility
 
-The `@magmacomputing/tempo-plugin-dialects` plugin is engineered to provide frictionless, zero-downtime migration paths for codebases transitioning to Tempo from **Moment.js**, **Day.js**, **Luxon**, or **date-fns**, as well as legacy backend systems that emit standard **POSIX `strftime`** specifiers.
+The `@tempo-kit/plugin-dialects` plugin is engineered to provide frictionless, zero-downtime migration paths for codebases transitioning to Tempo from **Moment.js**, **Day.js**, **Luxon**, or **date-fns**, as well as legacy backend systems that emit standard **POSIX `strftime`** specifiers.
 
 ---
 
@@ -53,8 +53,8 @@ To eliminate guesswork and avoid manual regex translation, the Dialects plugin i
 It inspects any legacy format mask, auto-detects or confirms the originating dialect, and translates it into the equivalent native Tempo `{token}` pattern alongside a token-by-token metadata breakdown:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+import { Tempo } from 'tempo-kit';
+import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 Tempo.use(DialectsPlugin);
 
@@ -180,11 +180,11 @@ console.log(t2.mm); // 10
 
 ## Performance Comparison: Native Tempo vs Dialects
 
-While `@magmacomputing/tempo-plugin-dialects` is highly optimized with an internal compiled closure cache, **native Tempo `{token}` syntax remains significantly faster**:
+While `@tempo-kit/plugin-dialects` is highly optimized with an internal compiled closure cache, **native Tempo `{token}` syntax remains significantly faster**:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│ Formatting Performance Comparison (100,000 Iterations)                │
+│ Formatting Performance Comparison (100,000 Iterations)                 │
 ├────────────────────────────────────────────────────────────────────────┤
 │ Native Tempo Core ({yyyy}-{mm}-{dd})   ████████████████████ 1.8x - 2.5x│
 │ Dialects LDML (yyyy-MM-dd)             ██████████           Cached     │
@@ -199,6 +199,6 @@ While `@magmacomputing/tempo-plugin-dialects` is highly optimized with an intern
 3. **No Plugin Overhead**: Native formatting requires zero plugins loaded into memory, keeping bundle size minimal.
 
 ### Recommended Migration Strategy
-1. **Phase 1 (Immediate)**: Install `@magmacomputing/tempo-plugin-dialects`. Keep existing format strings untouched using `t.format(mask, { dialect })`, `t.toFormat()`, and `Tempo.fromFormat()`.
+1. **Phase 1 (Immediate)**: Install `@tempo-kit/plugin-dialects`. Keep existing format strings untouched using `t.format(mask, { dialect })`, `t.toFormat()`, and `Tempo.fromFormat()`.
 2. **Phase 2 (Automated Audit)**: Run `Tempo.dialects.explain()` across your format strings to generate native `{token}` equivalents.
 3. **Phase 3 (Optimization)**: Transition critical hot-paths and high-throughput logging routines to native Tempo format patterns for peak throughput.

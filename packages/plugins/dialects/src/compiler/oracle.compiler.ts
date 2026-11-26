@@ -1,7 +1,7 @@
 import {
 	pad, suffix, WeakCache, resolveDayOfYear, getIsoWeek, fromIsoWeek,
 	resolveIsoCalendarYear, resolveFractionalSeconds, Enum, enums, type ValueOf
-} from '@magmacomputing/tempo/plugin/sdk';
+} from 'tempo-kit/plugin/sdk';
 import {
 	type FormatterFn,
 	type DialectOptions,

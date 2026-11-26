@@ -94,6 +94,6 @@ describe('Braced Format Mask Parsing & {*} Wildcards', () => {
 	it('throws actionable error when unbraced mask is passed without dialect plugin', () => {
 		expect(() => {
 			new Tempo('non-iso-mask-sample', { format: 'yyyy-MM-dd', error: 'throw' });
-		}).toThrow(/requires '@magmacomputing\/tempo-plugin-dialects'/);
+		}).toThrow(/requires '@tempo-kit\/plugin-dialects'/);
 	});
 });

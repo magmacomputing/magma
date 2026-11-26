@@ -1,9 +1,9 @@
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-dialects
+# @tempo-kit/plugin-dialects
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-dialects/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-dialects"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+  <a href="https://www.npmjs.com/package/@tempo-kit/plugin-dialects"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-dialects?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-dialects/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-dialects"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-dialects?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
 </p>
 
 The **Dialects Plugin** enables Tempo to seamlessly format and parse dates using established external formatting standards, including **Unicode LDML / UTS #35 (Luxon, date-fns)**, **POSIX `strftime` (C, Python, Linux)**, **Moment.js / Day.js**, and **Oracle / SQL `TO_CHAR` (PostgreSQL, Snowflake, Redshift)**.
@@ -26,7 +26,7 @@ It provides transparent drop-in compatibility shims, multi-candidate fallback pa
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-dialects
+npm install @tempo-kit/plugin-dialects
 ```
 
 ---
@@ -36,8 +36,8 @@ npm install @magmacomputing/tempo-plugin-dialects
 <PluginRepl plugin="dialects" />
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+import { Tempo } from 'tempo-kit';
+import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 Tempo.use(DialectsPlugin);
 
@@ -52,8 +52,8 @@ console.log(t.format('[Recorded on] MMMM Do YYYY', { dialect: DIALECT.Moment }))
 ### Auto-Installation (Side-Effect Import)
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import '@magmacomputing/tempo-plugin-dialects/install';
+import { Tempo } from 'tempo-kit';
+import '@tempo-kit/plugin-dialects/install';
 
 const t = new Tempo('2026-10-24T15:30:45');
 console.log(t.toFormat('dd LLL yyyy')); // "24 Oct 2026"

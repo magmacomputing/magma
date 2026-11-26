@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { DialectsPlugin, DIALECT } from '../src/index.js';
 import { compileStrftimeFormatter } from '../src/compiler/strftime.compiler.js';
 

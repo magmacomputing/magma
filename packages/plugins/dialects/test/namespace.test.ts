@@ -1,4 +1,4 @@
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { DialectsPlugin } from '../src/index.js';
 
 describe('Dialects Namespace & Shims', () => {

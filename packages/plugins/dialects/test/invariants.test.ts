@@ -1,6 +1,6 @@
-import { Tempo } from '@magmacomputing/tempo/core';
-import { FormatModule } from '@magmacomputing/tempo/format';
-import { ParseModule } from '@magmacomputing/tempo/parse';
+import { Tempo } from 'tempo-kit/core';
+import { FormatModule } from 'tempo-kit/format';
+import { ParseModule } from 'tempo-kit/parse';
 import {
 	DialectsPlugin,
 	DIALECT,
