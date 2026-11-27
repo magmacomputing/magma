@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-roman",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Tempo community plugin for classical Roman calendar arithmetic (Kalends, Nones, Ides, Ante Diem), leap year bissextile handling, and AUC (Ab Urbe Condita) year conversions.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -40,10 +40,11 @@
     "tempo-kit": "^5.0.0"
   },
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
-    "tempo-plugin",
-    "magmacomputing",
     "temporal",
+    "tempo-plugin",
     "plugin",
     "roman",
     "roman-calendar",

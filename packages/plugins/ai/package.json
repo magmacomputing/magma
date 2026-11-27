@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-ai",
-  "version": "2.3.2",
+  "version": "3.0.0",
   "description": "Tempo community plugin for LLM-powered natural language parsing.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -50,9 +50,11 @@
     "tempo-kit": "^5.0.0"
   },
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
+    "temporal",
     "tempo-plugin",
-    "magmacomputing",
     "ai",
     "parsing",
     "llm",

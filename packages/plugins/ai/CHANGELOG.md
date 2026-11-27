@@ -1,11 +1,16 @@
 # Changelog
 
-All notable changes to the `@magmacomputing/tempo-plugin-ai` project will be documented in this file.
+All notable changes to the `@tempo-kit/plugin-ai` project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.3.2] - Unreleased
+## [3.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-ai` to `@tempo-kit/plugin-ai`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 
 ### Changed & Fixed
 - **Nullish & Defined Guard Alignment (`v5.0.0`)**:
@@ -45,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed & Fixed
 - **Interactive REPL Sandbox Integration**:
-  - Fixed syntax issue in interactive browser REPL snippet by migrating from static imports to dynamic imports (`await import('@magmacomputing/tempo-plugin-ai')`) and `Tempo.use(AiPlugin)`.
+  - Fixed syntax issue in interactive browser REPL snippet by migrating from static imports to dynamic imports (`await import('@tempo-kit/plugin-ai')`) and `Tempo.use(AiPlugin)`.
   - Updated default AI REPL preset to demonstrate semantic calendar parsing (`"The Friday before Melbourne Cup next year"`), live reasoning capture (`t.ai.reasoning`), and provider telemetry with `debug: true`.
 - **Documentation Refinements**:
   - Reorganized documentation sidebar to place `AI Configuration & Onboarding Guide` at position #2 directly after Overview.

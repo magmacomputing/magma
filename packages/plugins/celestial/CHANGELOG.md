@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-celestial` to `@tempo-kit/plugin-celestial`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 ## [1.3.1] - 2026-11-08
 
 ### Maintenance
@@ -76,9 +82,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Production GA Release**:
-  - Promoted `@magmacomputing/tempo-plugin-celestial` from experimental status to official `v1.0.0` production release.
+  - Promoted `@tempo-kit/plugin-celestial` from experimental status to official `v1.0.0` production release.
 - **`/install` Subpath Side-Effect Entry Point**:
-  - Added dedicated `@magmacomputing/tempo-plugin-celestial/install` subpath for one-line side-effect installation (`import '@magmacomputing/tempo-plugin-celestial/install'`).
+  - Added dedicated `@tempo-kit/plugin-celestial/install` subpath for one-line side-effect installation (`import '@tempo-kit/plugin-celestial/install'`).
   - Automatically registers `CelestialPlugin` (`SolarTerm`, `LunarTerm`, `TidalTerm`) onto `Tempo` upon side-effect import while preserving 100% tree-shakeability for the main package entry point.
 
 ## [0.2.0] - 2026-09-09
@@ -90,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-09-02
 
 ### Added
-- **Experimental Initial Release**: Launch of `@magmacomputing/tempo-plugin-celestial` (`v0.1.0`), bringing location-aware solar day state calculations (`t.term.sun`, `t.term.solar`) and lunar phase/ephemeris calculations (`t.term.moon`, `t.term.lunar`) to Tempo.
+- **Experimental Initial Release**: Launch of `@tempo-kit/plugin-celestial` (`v0.1.0`), bringing location-aware solar day state calculations (`t.term.sun`, `t.term.solar`) and lunar phase/ephemeris calculations (`t.term.moon`, `t.term.lunar`) to Tempo.
 - **Tidal Term Resolution (`TidalTerm`)**: Introduced `TidalTerm` (`key: 'tide'`, `aliases: ['tides', 'tidal']`) for astronomical tide state resolution (`t.term.tide`, `t.term.tides`).
 - **Astronomical Tidal Snap Anchors**: Enables boundary snapping for Spring (`#tide.spring`), Neap (`#tide.neap`), and King (`#tide.king`) tides based on solar-lunar alignment and orbital perigee proximity.
 - **Location-Aware Moonrise & Moonset**: Added `t.term.lunar.moonrise` and `t.term.lunar.moonset` event resolution.

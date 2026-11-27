@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-sync",
-  "version": "1.1.2",
+  "version": "2.0.0",
   "description": "Tempo community plugin providing lock-free, highly precise cross-thread synchronization via SharedArrayBuffer and Atomics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -39,9 +39,11 @@
     "tempo-kit": "^5.0.0"
   },
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
+    "temporal",
     "tempo-plugin",
-    "magmacomputing",
     "sync",
     "sharedarraybuffer",
     "atomics",

@@ -1,9 +1,15 @@
 # Changelog
 
-All notable changes to the `@magmacomputing/tempo-plugin-spatial` project will be documented in this file.
+All notable changes to the `@tempo-kit/plugin-spatial` project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-spatial` to `@tempo-kit/plugin-spatial`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
 ## [1.0.1] - 2026-10-03
 
@@ -15,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-27
 
 ### Added
-- **GIS & Spatial Navigation Plugin (`@magmacomputing/tempo-plugin-spatial`)**:
+- **GIS & Spatial Navigation Plugin (`@tempo-kit/plugin-spatial`)**:
   - `Tempo.spatial` Deep-Frozen Static Namespace:
     - `distance(from, to, unit?)`: Great-Circle spherical distance calculation in `km`, `miles`, or `m` (Haversine formula).
     - `bearing(from, to, options?)`: Initial forward azimuth compass bearing (0° to 360° True North).
@@ -33,4 +39,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `t.isWithin(to, maxDistance, unit?)`: Evaluates if current instance is within proximity radius of target coordinates.
     - `t.inBoundingBox(bbox)`: Evaluates if current instance coordinates fall within bounding box.
   - Side-Effect Auto-Installation Subpath:
-    - Dedicated `@magmacomputing/tempo-plugin-spatial/install` subpath for one-line side-effect installation (`import '@magmacomputing/tempo-plugin-spatial/install'`).
+    - Dedicated `@tempo-kit/plugin-spatial/install` subpath for one-line side-effect installation (`import '@tempo-kit/plugin-spatial/install'`).
