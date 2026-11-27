@@ -8,6 +8,12 @@ All notable changes to the `@tempo-kit/plugin-sync` project will be documented i
 - Migrated package namespace from `@magmacomputing/tempo-plugin-sync` to `@tempo-kit/plugin-sync`.
 - Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-sync` to `@tempo-kit/plugin-sync`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 ## [1.1.2] - 2026-10-02
 
 ### Enhanced

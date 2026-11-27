@@ -8,6 +8,12 @@ All notable changes to the `@tempo-kit/plugin-batch` project will be documented 
 - Migrated package namespace from `@magmacomputing/tempo-plugin-batch` to `@tempo-kit/plugin-batch`.
 - Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-batch` to `@tempo-kit/plugin-batch`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 ## [1.2.1] - 2026-10-02
 
 ### Enhanced

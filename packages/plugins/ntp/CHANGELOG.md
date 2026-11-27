@@ -8,6 +8,12 @@ All notable changes to the `@tempo-kit/plugin-ntp` project will be documented in
 - Migrated package namespace from `@magmacomputing/tempo-plugin-ntp` to `@tempo-kit/plugin-ntp`.
 - Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-ntp` to `@tempo-kit/plugin-ntp`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 ## [1.1.0] - 2026-10-29
 
 ### Added

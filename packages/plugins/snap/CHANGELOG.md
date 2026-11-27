@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated package namespace from `@magmacomputing/tempo-plugin-snap` to `@tempo-kit/plugin-snap`.
 - Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-snap` to `@tempo-kit/plugin-snap`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 ## [1.4.2] - 2026-10-12
 
 ### Maintenance & Hardening

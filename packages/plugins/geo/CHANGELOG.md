@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migrated package namespace from `@magmacomputing/tempo-plugin-geo` to `@tempo-kit/plugin-geo`.
 - Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
+## [3.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-geo` to `@tempo-kit/plugin-geo`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
 ## [2.0.0] - 2026-10-23
 
 ### Breaking Changes
