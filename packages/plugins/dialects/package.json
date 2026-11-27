@@ -1,6 +1,6 @@
 {
 	"name": "@tempo-kit/plugin-dialects",
-	"version": "1.1.2",
+	"version": "2.0.0",
 	"type": "module",
 	"description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, POSIX strftime, and Oracle/SQL TO_CHAR",
 	"main": "dist/index.js",
@@ -15,10 +15,11 @@
 		"test": "vitest run -c ../vitest.shared.ts"
 	},
 	"keywords": [
+		"tempo-kit",
+		"tempo-kit-plugin",
 		"tempo",
-		"tempo-plugin",
-		"magmacomputing",
 		"temporal",
+		"tempo-plugin",
 		"plugin",
 		"dialects",
 		"luxon",

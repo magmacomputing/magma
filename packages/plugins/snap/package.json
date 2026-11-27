@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-snap",
-  "version": "1.4.2",
+  "version": "2.0.0",
   "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UIs, time-pickers, and telemetry aggregation",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -37,10 +37,11 @@
   },
   "devDependencies": {},
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
-    "tempo-plugin",
-    "magmacomputing",
     "temporal",
+    "tempo-plugin",
     "plugin",
     "snap",
     "round",

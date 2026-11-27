@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-spatial",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -53,9 +53,11 @@
     "tempo-kit": "^5.0.0"
   },
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
+    "temporal",
     "tempo-plugin",
-    "magmacomputing",
     "spatial",
     "gis",
     "haversine",

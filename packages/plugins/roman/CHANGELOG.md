@@ -1,9 +1,21 @@
 # Changelog
 
-All notable changes to the `@magmacomputing/tempo-plugin-roman` project will be documented in this file.
+All notable changes to the `@tempo-kit/plugin-roman` project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-roman` to `@tempo-kit/plugin-roman`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-roman` to `@tempo-kit/plugin-roman`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
 ## [1.0.0] - 2026-10-24
 
@@ -19,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ab Urbe Condita (AUC) year conversion engine mapping bidirectional Gregorian/Julian astronomical and historical BCE/CE years.
   - Attached static `Tempo.roman` namespace with `.toClassical()`, `.fromClassical()`, `.yearToAuc()`, `.aucToYear()`, `.getNonesDay()`, `.getIdesDay()`, and `.isLeapYear()`.
   - Added `Tempo.prototype.toRomanClassical()` and `Tempo.prototype.toAUC()` instance methods, along with `Tempo.prototype.auc` getter.
-  - Provided side-effect zero-boilerplate import via `@magmacomputing/tempo-plugin-roman/install`.
+  - Provided side-effect zero-boilerplate import via `@tempo-kit/plugin-roman/install`.
 - **Phase 2: Formatting Engine & Latin Declensions**:
   - Full Latin and abbreviated formatting tokens: `{roman:classical}`, `{roman:short}`, `{roman:auc}`, `{roman:nominative}`, `{roman:accusative}`, `{roman:ablative}`.
   - Added `.formatRoman()` method on `Tempo.prototype`.
@@ -31,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Bidirectional verification against calendar arithmetic to reject impossible Roman dates.
 - **Phase 4: Consular Fasti Catalog (509 BCE–541 CE)**:
   - Curated landmark seed catalog in core plugin bundle (~15 KB minified bundle, ~78% size reduction) providing out-of-the-box consular dating for major historical milestones.
-  - Dedicated subpath export `@magmacomputing/tempo-plugin-roman/consuls` for the complete 1,050-year Fasti consulares catalog (509 BCE–541 CE) via shared dynamic registry.
+  - Dedicated subpath export `@tempo-kit/plugin-roman/consuls` for the complete 1,050-year Fasti consulares catalog (509 BCE–541 CE) via shared dynamic registry.
   - Added consular formatting engine with Latin ablative absolute (`coss.` / `cos.`) and nominative case styles (`formatConsuls(year, style?)`).
   - Added `Tempo.roman.getConsuls(year)` and fuzzy search utility `Tempo.roman.findConsuls(query)`.
   - Added `{roman:consul}` format token support and `tempo.consuls` instance getter.

@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-geo",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -53,9 +53,11 @@
     "tempo-kit": "^5.0.0"
   },
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
+    "temporal",
     "tempo-plugin",
-    "magmacomputing",
     "geo",
     "geolocation",
     "coordinates",

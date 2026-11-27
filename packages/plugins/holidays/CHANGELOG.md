@@ -1,9 +1,21 @@
 # Changelog
 
-All notable changes to `@magmacomputing/tempo-plugin-holidays` will be documented in this file.
+All notable changes to `@tempo-kit/plugin-holidays` will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-holidays` to `@tempo-kit/plugin-holidays`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-holidays` to `@tempo-kit/plugin-holidays`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
 ## [1.0.3] - 2026-10-29
 
@@ -28,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2026-09-26
 
 ### Added
-- Initial bootstrap release of `@magmacomputing/tempo-plugin-holidays`.
+- Initial bootstrap release of `@tempo-kit/plugin-holidays`.
 - Zero-latency synchronous offline holiday calendars for major economies (US, AU, GB, CA, DE, FR, JP, NZ).
 - Astronomical Easter Computus calculations supporting floating Christian holidays (Good Friday, Easter Monday, Ascension, Pentecost/Whit Sunday, Whit Monday).
 - Weekend observation rules (Saturday → Friday / Sunday → Monday, Australian & UK substitute days, Japan Furikae Kyūjitsu, NZ Mondayisation).

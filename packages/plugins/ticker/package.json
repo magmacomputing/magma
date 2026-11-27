@@ -1,6 +1,6 @@
 {
   "name": "@tempo-kit/plugin-ticker",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -47,13 +47,14 @@
   },
   "devDependencies": {
     "tempo-kit": "^5.0.0",
-    "@tempo-kit/plugin-ntp": "^1.1.0"
+    "@tempo-kit/plugin-ntp": "^2.0.0"
   },
   "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
     "tempo",
-    "tempo-plugin",
-    "magmacomputing",
     "temporal",
+    "tempo-plugin",
     "ticker",
     "interval",
     "loop",

@@ -1,6 +1,18 @@
 # Changelog
 
-All notable changes to the `@magmacomputing/tempo-plugin-batch` project will be documented in this file.
+All notable changes to the `@tempo-kit/plugin-batch` project will be documented in this file.
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-batch` to `@tempo-kit/plugin-batch`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
+
+## [2.0.0] - 2026-11-27
+
+### Breaking Changes
+- Migrated package namespace from `@magmacomputing/tempo-plugin-batch` to `@tempo-kit/plugin-batch`.
+- Updated `peerDependencies` to `tempo-kit@^5.0.0`.
 
 ## [1.2.1] - 2026-10-02
 
@@ -12,7 +24,7 @@ All notable changes to the `@magmacomputing/tempo-plugin-batch` project will be 
 
 ### Added
 - **Subpath Side-Effect Installation (`/install`)**:
-  - Added dedicated `@magmacomputing/tempo-plugin-batch/install` entrypoint for zero-boilerplate side-effect registration on the global `Tempo` instance via `autoInstall`.
+  - Added dedicated `@tempo-kit/plugin-batch/install` entrypoint for zero-boilerplate side-effect registration on the global `Tempo` instance via `autoInstall`.
   - Configured `package.json` with `"sideEffects": ["./dist/install.js"]` to ensure the root package entrypoint remains 100% pure and tree-shakeable.
 
 ## [1.1.0] - 2026-09-08
