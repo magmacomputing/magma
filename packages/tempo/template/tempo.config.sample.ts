@@ -1,4 +1,4 @@
-import { defineConfig } from '@magmacomputing/tempo';
+import { defineConfig } from 'tempo-kit';
 
 /**
  * Tempo Configuration

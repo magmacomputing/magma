@@ -249,7 +249,7 @@
 
 			<div class="code-block">
 				<code><span class="keyword">import</span> <span class="string">'@js-temporal/polyfill'</span>;
-<span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo'</span>;
+<span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'tempo-kit'</span>;
 
 <span class="keyword">const</span> t = <span class="keyword">new</span> <span class="type">Tempo</span>(<span class="string">'next friday'</span>);
 t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span>);</code>
@@ -270,7 +270,7 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/tempo-kit@5.0.0"
+			"tempo-kit": "https://esm.sh/tempo-kit@5.0.0"
 		}
 	}
 	</script>
@@ -280,7 +280,7 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 			if (!globalThis.Temporal && Temporal)
 				globalThis.Temporal = Temporal;
 
-			const { Tempo } = await import('@magmacomputing/tempo');
+			const { Tempo } = await import('tempo-kit');
 
 			const t = new Tempo('next friday');
 			console.log('Tempo execution successful:', t.format('{mon} {dd:raw}'));

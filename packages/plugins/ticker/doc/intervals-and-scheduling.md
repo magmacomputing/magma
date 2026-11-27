@@ -75,7 +75,7 @@ using quarterlyTicker = Tempo.ticker({ '#quarter': '>' }, (t) => {
 
 ## 3. Cron Expressions (Standard 5-Field Syntax)
 
-Ticker natively accepts standard 5-part cron expressions (`minute hour day-of-month month day-of-week`) powered by `tempo-kit-fns`.
+Ticker natively accepts standard 5-part cron expressions (`minute hour day-of-month month day-of-week`) powered by `tempo-fns`.
 
 ### Passing Cron Strings
 

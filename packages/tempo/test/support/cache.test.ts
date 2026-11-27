@@ -184,7 +184,7 @@ describe('Tempo Core Caching Architecture', () => {
 			const S2 = S.extend({
 				cache: new Map([['custom_key', 'custom_val']]) as any
 			});
-			const rawCache = (S2 as any)[Symbol.for('magmacomputing/tempo/internal')]().cache;
+			const rawCache = (S2 as any)[Symbol.for('tempo-kit/internal')]().cache;
 			expect(rawCache).toBeInstanceOf(BoundedCache);
 			expect(rawCache.has('custom_key')).toBe(true);
 		});

@@ -22,7 +22,7 @@ To register a plugin, choose between explicit registration (`Tempo.use`) or zero
 
 ```typescript
 // 1. Explicit registration (Recommended for production apps & tree-shaking)
-import { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from 'tempo-kit/core';
 import { MyPlugin } from './my-plugin.js';
 import { HolidayPlugin } from './my-holiday-plugin.js';
 
@@ -30,8 +30,8 @@ Tempo.use(MyPlugin);
 Tempo.use(HolidayPlugin({ region: 'US-NY' }));
 
 // 2. Zero-boilerplate side-effect registration (Recommended for scripts & REPLs)
-import '@magmacomputing/tempo-plugin-geo/install';
-import '@magmacomputing/tempo-plugin-ai/install';
+import '@tempo-kit/plugin-geo/install';
+import '@tempo-kit/plugin-ai/install';
 ```
 
 ---
@@ -50,7 +50,7 @@ Tempo provides a dedicated step-by-step guide for developers wishing to author t
 To ensure your plugin is discoverable by the IDE, use **Module Augmentation** to extend the `Tempo` namespace and the `Tempo` class interface.
 
 ```typescript
-declare module '@magmacomputing/tempo/core' {
+declare module 'tempo-kit/core' {
   namespace Tempo {
     // 1. Define new types/interfaces here
     interface HolidayOptions { ... }
@@ -67,23 +67,23 @@ declare module '@magmacomputing/tempo/core' {
 ```
 
 > **Understanding Tempo Versions**:
-> - **`@magmacomputing/tempo/core` (Lite)**: A bare-bones engine with zero side-effects. This is the recommended choice for production builds and plugin authoring.
-> - **`@magmacomputing/tempo` (Full)**: The "Batteries Included" version which automatically imports and registers all standard modules.
+> - **`tempo-kit/core` (Lite)**: A bare-bones engine with zero side-effects. This is the recommended choice for production builds and plugin authoring.
+> - **`tempo-kit` (Full)**: The "Batteries Included" version which automatically imports and registers all standard modules.
 >
-> **Avoid Circular Dependencies**: When authoring a plugin, **never** import the `Tempo` class directly from the **Full** version (`@magmacomputing/tempo`). Doing so triggers the library's automatic registration sequence in a recursive loop, which will break your application's initialization. 
+> **Avoid Circular Dependencies**: When authoring a plugin, **never** import the `Tempo` class directly from the **Full** version (`tempo-kit`). Doing so triggers the library's automatic registration sequence in a recursive loop, which will break your application's initialization. 
 > 
 > Instead:
-> 1. **Use types**: `import type { Tempo } from '@magmacomputing/tempo/core'`.
+> 1. **Use types**: `import type { Tempo } from 'tempo-kit/core'`.
 > 2. **Use the argument**: Rely on the `TempoClass` argument passed into your plugin function for static method access.
-> 3. **Use the engine**: If you need a class reference (e.g., for `instanceof` checks), import only from the **Lite** engine (`@magmacomputing/tempo/core`).
+> 3. **Use the engine**: If you need a class reference (e.g., for `instanceof` checks), import only from the **Lite** engine (`tempo-kit/core`).
 
 ---
 
 Modern Tempo plugins are designed to be "plug-and-play." By using the `definePlugin` factory, a plugin registers itself with the global Tempo registry as soon as it's imported.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';   // 1. Load the `lite` engine
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker'; // 2. Import the plugin
+import { Tempo } from 'tempo-kit/core';   // 1. Load the `lite` engine
+import { TickerPlugin } from '@tempo-kit/plugin-ticker'; // 2. Import the plugin
 
 Tempo.init({ 
   plugins: [TickerPlugin]                             // 3. Register and activate plugin during init
@@ -94,7 +94,7 @@ const pulse = Tempo.ticker(1);
 ```
 
 > [!NOTE] Dynamic Extension vs Startup Registration
-> `Tempo.init({ plugins: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`@magmacomputing/tempo`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.use(Plugin)` directly rather than re-running `Tempo.init()`.
+> `Tempo.init({ plugins: [...] })` establishes baseline configuration at startup and performs initial registration of plugins. In full Tempo (`tempo-kit`), standard plugins are registered automatically upon import. To dynamically register custom plugins loaded later at runtime, use `Tempo.use(Plugin)` directly rather than re-running `Tempo.init()`.
 
 ---
 
@@ -122,7 +122,7 @@ Tempo provides `defineProperties` (and its single-property alias `defineProperty
 - **Strict Immutability Guard**: Because Tempo instances are immutable value objects, `set` accessors are strictly disallowed and will throw a `TempoError`.
 
 ```typescript
-import { Tempo, defineProperties } from '@magmacomputing/tempo';
+import { Tempo, defineProperties } from 'tempo-kit';
 
 const DateExtensions = defineProperties({
   // Auto-memoized getter (lazy per instance)
@@ -161,10 +161,10 @@ if (errorCondition) {
 This pattern ensures that Tempo remains robust in production environments while providing strict validation during development.
 
 ### 6. Unified Logging Hooks (`logWarn`, `logError`, `logDebug`)
-Plugins should avoid invoking raw `console.warn`, `console.error`, or `console.log` directly. Instead, import and use the standard logging hooks exported by `@magmacomputing/tempo/plugin/sdk`:
+Plugins should avoid invoking raw `console.warn`, `console.error`, or `console.log` directly. Instead, import and use the standard logging hooks exported by `tempo-kit/plugin/sdk`:
 
 ```typescript
-import { logWarn, logError, logDebug } from '@magmacomputing/tempo/plugin/sdk';
+import { logWarn, logError, logDebug } from 'tempo-kit/plugin/sdk';
 
 // Log operational warnings or errors while passing instance config
 logWarn("MyPlugin: Missing optional coordinate parameters.", this?.config);
@@ -177,12 +177,12 @@ Passing the instance configuration allows Tempo's logging subsystem to automatic
 
 The JavaScript ecosystem is divided between two architectural preferences: **Chained Fluent APIs** (like Tempo Plugins) and **Pure Standalone Functions** (for aggressive tree-shaking).
 
-To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`@magmacomputing/tempo-fns`** library.
+To support teams that mandate strict 0kb bundle-impacts and functional programming paradigms, Magma Computing provides the **`tempo-fns`** library.
 
 ```typescript
 // The Pure, Tree-shakeable approach:
-import { isFirstDayOfMonth } from '@magmacomputing/tempo-fns';
-import { Tempo } from '@magmacomputing/tempo/core';
+import { isFirstDayOfMonth } from 'tempo-fns';
+import { Tempo } from 'tempo-kit/core';
 
 if (isFirstDayOfMonth(new Tempo('2024-01-01'))) { ... }
 ```
@@ -198,8 +198,8 @@ If your plugin requires its own configuration, use `definePlugin` directly and e
 
 ```typescript
 // tempo-plugin-holiday/index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
-import type { TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin } from 'tempo-kit/plugin/sdk';
+import type { TempoPlugin } from 'tempo-kit/plugin/sdk';
 
 export interface HolidayPluginOptions {
   region?: string;
@@ -232,7 +232,7 @@ If your plugin provides multiple related components, wrap them in an aggregator 
 
 ```typescript
 // index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin } from 'tempo-kit/plugin/sdk';
 import { PluginA } from './plugin.a.js';
 import { PluginB } from './plugin.b.js';
 
@@ -261,11 +261,11 @@ For developers using your plugin, registration can be handled imperatively via `
 For standalone usage, pass the plugin directly to `Tempo.use()` using any pattern:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-import { HolidayPlugin } from '@magmacomputing/tempo-plugin-holidays';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
+import { Tempo } from 'tempo-kit';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
+import { HolidayPlugin } from '@tempo-kit/plugin-holidays';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
+import { GeoPlugin } from '@tempo-kit/plugin-geo';
 
 // Pattern 0: bare
 Tempo.use(TickerPlugin);
@@ -288,9 +288,9 @@ Tempo.use(
 All three patterns are supported directly in the `plugins` array of `tempo.config.ts` or `Tempo.init()`:
 
 ```typescript
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
+import { GeoPlugin } from '@tempo-kit/plugin-geo';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.init({
   plugins: [

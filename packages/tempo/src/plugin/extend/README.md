@@ -21,7 +21,7 @@ Always import mixins via explicit subpath imports:
 import '#tempo/plugin/extend/extend.recurrence.js';
 
 // Or in external consumption:
-import '@magmacomputing/tempo/extend/recurrence';
+import 'tempo-kit/extend/recurrence';
 ```
 
 ---

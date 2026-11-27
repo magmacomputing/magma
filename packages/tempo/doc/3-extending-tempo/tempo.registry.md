@@ -9,7 +9,7 @@ By standardizing these data stores under the `registry` namespace, you can deepl
 You can access active registries using the static `Tempo.registry` getter. These objects are **Read-Only Proxies**.
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 console.log(Tempo.registry.formats);
 // { '{iso}': '{yyyy}-{mm}-{dd}T{hh}:{mi}:{ss}', ... }

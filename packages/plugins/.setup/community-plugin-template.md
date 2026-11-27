@@ -21,8 +21,8 @@ Ensure the plugin's `package.json` contains the correct community configuration:
   > [!NOTE]
   > **Do not include `"src"` in `"files"`**. The build step (`tsup && tsc`) generates all production artifacts, source maps, and declaration types into `dist/`. Publishing `"src"` adds unnecessary weight to the npm package tarball without providing runtime or typing benefits.
 - **Dependencies (`peerDependencies` vs `devDependencies`)**:
-  - `peerDependencies`: Always declare `@magmacomputing/tempo` as a peer dependency (e.g. `"^4.5.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
-  - `devDependencies`: **Must** include `@magmacomputing/tempo` under `devDependencies` (e.g. `"^4.5.0"` matching the peer dependency version). This ensures that local TypeScript compilation (`tsc`) and bundling resolve all Tempo core types and ambient declarations during monorepo builds. Do **not** declare or import `@magmacomputing/library` directly in either `src/` or `test/` modules; access shared library helpers and types via `@magmacomputing/tempo/library` or `@magmacomputing/tempo/plugin/sdk` (mixing `@magmacomputing/library` with `@magmacomputing/tempo/library` causes `TS2717` declaration conflicts during `tsc --noEmit`).
+  - `peerDependencies`: Always declare `tempo-kit` as a peer dependency (e.g. `"^5.0.0"`). This informs package managers that the host application provides the core Tempo runtime, guaranteeing a single shared singleton instance across the application.
+  - `devDependencies`: **Must** include `tempo-kit` under `devDependencies` (e.g. `"^5.0.0"` matching the peer dependency version). This ensures that local TypeScript compilation (`tsc`) and bundling resolve all Tempo core types and ambient declarations during monorepo builds. Do **not** declare or import `@magmacomputing/library` directly in either `src/` or `test/` modules; access shared library helpers and types via `tempo-kit/library` or `tempo-kit/plugin/sdk` (mixing `@magmacomputing/library` with `tempo-kit/library` causes `TS2717` declaration conflicts during `tsc --noEmit`).
   - `dependencies`: Community plugins should keep production `dependencies` as lean as possible (or empty) to minimize supply-chain surface area.
 - **PublishConfig**: Configure public npm publishing:
   ```json
@@ -67,10 +67,10 @@ Ensure the plugin's `package.json` contains the correct community configuration:
 
 ## 2. Standard `/install` Subpath (`src/install.ts`)
 
-Every Tempo plugin must provide a dedicated `src/install.ts` entrypoint. This enables zero-boilerplate side-effect imports (`import '@magmacomputing/tempo-plugin-[name]/install'`) in scripts, REPLs, and rapid applications while keeping root imports 100% pure and tree-shakeable:
+Every Tempo plugin must provide a dedicated `src/install.ts` entrypoint. This enables zero-boilerplate side-effect imports (`import '@tempo-kit/plugin-[name]/install'`) in scripts, REPLs, and rapid applications while keeping root imports 100% pure and tree-shakeable:
 
 ```typescript
-import { autoInstall } from '@magmacomputing/tempo/plugin/sdk';
+import { autoInstall } from 'tempo-kit/plugin/sdk';
 import { MyPlugin } from './index.js';
 
 // Auto-register plugin onto Tempo upon side-effect import
@@ -124,7 +124,7 @@ And a root `tsconfig.json` that outputs type declarations:
    - `tsup` compiles and bundles the JavaScript artifacts (`ESM` + `IIFE`), and `tsc` emits declaration files directly into `dist/` based on `tsconfig.json`. This is fast, robust, and used across almost all Tempo community plugins.
 
 2. **Bundled DTS Pattern (`dts: true`)**:
-   - For complex, multi-directory plugins with extensive internal module structures (e.g., `@magmacomputing/tempo-plugin-ai` with `src/core/`, `src/functions/`, `src/types/`), you can specify `dts: true` in `tsup.config.ts` to bundle all types into a single rolled-up `dist/index.d.ts`.
+   - For complex, multi-directory plugins with extensive internal module structures (e.g., `@tempo-kit/plugin-ai` with `src/core/`, `src/functions/`, `src/types/`), you can specify `dts: true` in `tsup.config.ts` to bundle all types into a single rolled-up `dist/index.d.ts`.
    - When using `dts: true`, set your build script to `"build": "tsup && tsc --noEmit --emitDeclarationOnly false"` so that `tsc` performs type validation without overwriting `tsup`'s bundled declaration output.
    - **Immutability / Proxy Typing Note**: When returning payloads wrapped with `secure()`, preserve `secure()`'s deep-readonly public result type rather than casting back to a mutable type. Model return structures with explicit `readonly` modifiers (e.g., `readonly events: readonly TempoExtractedEvent[]` where nested fields such as `TempoExtractedEvent.label` remain `readonly`) and model `Tempo` instances directly so nested fields remain deeply immutable and type-safe.
 
@@ -147,7 +147,7 @@ To ensure your tests are properly type-checked in isolation, create a `test/tsco
 
 > [!TIP]
 > **Automatic Monorepo Vitest Resolution**:
-> All `@magmacomputing/tempo-plugin-*` packages are dynamically resolved from source (`packages/plugins/<name>/src/index.ts`) via global wildcard aliases in `vitest.shared.ts` and `vitest.config.mts`. You do **not** need to manually edit any Vitest configuration files when creating a new plugin.
+> All `@tempo-kit/plugin-*` packages are dynamically resolved from source (`packages/plugins/<name>/src/index.ts`) via global wildcard aliases in `vitest.shared.ts` and `vitest.config.mts`. You do **not** need to manually edit any Vitest configuration files when creating a new plugin.
 
 ## 5. Documentation Architecture (`README.md` & `doc/`)
 
@@ -161,7 +161,7 @@ Plugin documentation in `doc/` is organized into three distinct tiers:
    Every plugin has a canonical entrypoint providing:
    - **Hero Branding**: Logo (`![Tempo Plugin](/plugin-logo.svg)` on docs, constrained to 90px max-width; full raw GitHub URL on README) and centered badge row.
    - **Introduction & Value Proposition**: Clear explanation of what problem the plugin solves, its architectural benefits, and why it exists.
-   - **Installation & Quickstart**: Canonical package install command (`npm install @magmacomputing/tempo-plugin-[name]`) and minimal copyable initialization snippet.
+   - **Installation & Quickstart**: Canonical package install command (`npm install @tempo-kit/plugin-[name]`) and minimal copyable initialization snippet.
    - **Interactive Live REPL**: Embedded `<PluginRepl plugin="[name]" />` component (docs) or sandbox callout link (README) allowing users to execute code directly in the browser sandbox.
    - **Comprehensive API Surface Catalog**: Structured reference table outlining all exported methods, terms, namespaces, input types, and return types, cross-linking to relevant concept guides.
    - **Guides & Deep-Dives Directory**: Clear navigation links to all accompanying concept pages and the use-cases guide.
@@ -194,7 +194,7 @@ To maintain visual hierarchy and clean reading UX across VitePress:
    Sub-pages omit the large plugin hero logo and lead directly with an **eyebrow breadcrumb** pointing back to `./index.html`:
    ```markdown
    <div class="plugin-eyebrow">
-     <a href="./index.html">← @magmacomputing/tempo-plugin-[name]</a>
+     <a href="./index.html">← @tempo-kit/plugin-[name]</a>
    </div>
 
    <br>
@@ -231,11 +231,11 @@ Every plugin's `doc/index.md` must present a **consistent face** so readers movi
 | # | Element | Heading | Required | Notes |
 | :-: | :--- | :--- | :-: | :--- |
 | 1 | Logo | *(none)* `![Tempo Plugin](/plugin-logo.svg)` | Yes | First line of the file. |
-| 2 | Title | `# @magmacomputing/tempo-plugin-[name]` | Yes | Single H1 per page. |
+| 2 | Title | `# @tempo-kit/plugin-[name]` | Yes | Single H1 per page. |
 | 3 | Badges | *(none)* centered `<p align="center">` row | Yes | 4 badges (see below). |
 | 4 | Overview | *(none)* 1–2 sentence paragraph | Yes | Opens with what the plugin provides, linking to Tempo. Optional second paragraph or `::: warning` notice for critical caveats (e.g. security). |
 | 5 | Key Features | `## Key Features` | Yes | Bulleted list of **bold-lead** features, one line each. |
-| 6 | Installation | `## Installation` | Yes | `bash` block with `npm install @magmacomputing/tempo-plugin-[name]`. |
+| 6 | Installation | `## Installation` | Yes | `bash` block with `npm install @tempo-kit/plugin-[name]`. |
 | 7 | Quickstart | `## Quickstart` | Yes | `<PluginRepl plugin="[name]" />` **immediately** under the heading, then a runnable, validated TypeScript block. |
 | 8 | Reference *(optional)* | `## API Reference` / `## Configuration Options` | No | Plugin-specific tables or API catalog. Place **after** Quickstart and **before** Topic Guides. |
 | 9 | Topic Guides | `## Topic Guides` | Yes | Bulleted links: `[Title](./file.md) - one-line description`. Always include `use-cases-and-patterns.md`. |
@@ -244,7 +244,7 @@ Every plugin's `doc/index.md` must present a **consistent face** so readers movi
 ````markdown
 ![Tempo Plugin](/plugin-logo.svg)
 
-# @magmacomputing/tempo-plugin-[name]
+# @tempo-kit/plugin-[name]
 
 <p align="center"> ...4 badges... </p>
 
@@ -262,7 +262,7 @@ The **[Name] Plugin** provides ... for [Tempo](https://github.com/magmacomputing
 ## Installation
 
 ```bash
-npm install @magmacomputing/tempo-plugin-[name]
+npm install @tempo-kit/plugin-[name]
 ```
 
 ---
@@ -272,8 +272,8 @@ npm install @magmacomputing/tempo-plugin-[name]
 <PluginRepl plugin="[name]" />
 
 ```typescript
-import '@magmacomputing/tempo-plugin-[name]/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-[name]/install';
+import { Tempo } from 'tempo-kit';
 
 // minimal, validated example with expected output in comments
 ```
@@ -304,22 +304,22 @@ This is a **Community** plugin. It is completely free and open-source for person
 ### Primary Landing Page Structure Details (`README.md` & `doc/index.md`)
 
 - **Logo**: `![Tempo Plugin](https://raw.githubusercontent.com/magmacomputing/magma/main/packages/tempo/public/plugin-logo.svg)` (for README) or `![Tempo Plugin](/plugin-logo.svg)` (for docs, styled with max-width: 90px).
-- **Header**: `# @magmacomputing/tempo-plugin-[name]`
+- **Header**: `# @tempo-kit/plugin-[name]`
 - **Badges**: Standard visual indicators placed immediately below the Header. Badges must be aligned horizontally in a **single centered row** using `<p align="center">` with `style="display: inline-block; margin: 0 4px;"`:
   - **`README.md` (5 Badges)**: NPM Version, Peer Dependency, License, TypeScript Ready, and Docs VitePress:
     ```html
     <p align="center">
-      <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-[name]/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
+      <a href="https://www.npmjs.com/package/@tempo-kit/plugin-[name]"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-[name]?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-[name]/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-[name]"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-[name]?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a> <a href="https://magmacomputing.github.io/magma/doc/9-plugins/[name].index.html"><img src="https://img.shields.io/badge/Docs-VitePress-brightgreen?logo=vitepress&style=flat-square" alt="Documentation" style="display: inline-block; margin: 0 4px;"></a>
     </p>
     ```
   - **`doc/index.md` (4 Badges)**: NPM Version, Peer Dependency, License, and TypeScript Ready:
     ```html
     <p align="center">
-      <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/v/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo"><img src="https://img.shields.io/npm/dependency-version/@magmacomputing/tempo-plugin-[name]/peer/@magmacomputing/tempo?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]"><img src="https://img.shields.io/npm/l/@magmacomputing/tempo-plugin-[name]?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
+      <a href="https://www.npmjs.com/package/@tempo-kit/plugin-[name]"><img src="https://img.shields.io/npm/v/@tempo-kit/plugin-[name]?style=flat-square" alt="npm version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/tempo-kit"><img src="https://img.shields.io/npm/dependency-version/@tempo-kit/plugin-[name]/peer/tempo-kit?style=flat-square" alt="npm peer dependency version" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.npmjs.com/package/@tempo-kit/plugin-[name]"><img src="https://img.shields.io/npm/l/@tempo-kit/plugin-[name]?style=flat-square" alt="License" style="display: inline-block; margin: 0 4px;"></a> <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-Ready-blue?logo=typescript&style=flat-square" alt="TypeScript Ready" style="display: inline-block; margin: 0 4px;"></a>
     </p>
     ```
 - **Description**: A short, concise summary.
-- **Installation**: Code block with `npm install @magmacomputing/tempo-plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
+- **Installation**: Code block with `npm install @tempo-kit/plugin-[name]`. Do not use hard-coded peer-dependency text warnings.
 - **Quickstart & Live Interactive REPL Placement Strategy**:
   - **In `doc/index.md` (VitePress Documentation)**: 
     - Standardize under the **`## Quickstart`** heading.
@@ -436,7 +436,7 @@ When authoring a custom Term plugin that partitions time into ranges or named st
 2. **Augment `TempoTermRegistry`**:
    - Always augment the global `TempoTermRegistry` interface so developers get full TypeScript autocomplete and type safety for shorthand keys and scope objects:
      ```typescript
-     declare module '@magmacomputing/tempo' {
+     declare module 'tempo-kit' {
        interface TempoTermRegistry {
          cfqtr: FiscalKey;
          fiscalQuarter: {
@@ -453,13 +453,13 @@ When authoring a custom Term plugin that partitions time into ranges or named st
 > **Guideline for Future Agents & Developers: Base Class Lockdown & Immutability**
 >
 > 1. **Prefer a Namespace over Polluting the `Tempo` Class**: Never dump multiple loose methods or properties directly onto the `Tempo` root class. Group related static utilities under a single, cohesive namespace named after the plugin (e.g., `Tempo.geo.*`, `Tempo.sync.*`, `Tempo.roman.*`). This applies equally to formatting, parsing and conversion helpers: prefer `Tempo.roman.parse(...)` and `Tempo.roman.format(...)` over root-level `Tempo.fromRoman(...)` or `Tempo.formatRoman(...)`. Likewise, on instances, prefer a single namespaced property (e.g., `t.roman.*`) over several flat `t.toRoman…()` methods.
->    - *Exceptions*: A root-level member is acceptable only when it is a deliberate, first-class extension of the core API surface that users would reasonably expect beside the built-in constructors/factories (e.g., `Tempo.fromFormats()` from `@magmacomputing/tempo-plugin-dialects`). Such exceptions should be rare, kept to a minimum, justified in the plugin's documentation, and must never collide with existing or planned core member names.
+>    - *Exceptions*: A root-level member is acceptable only when it is a deliberate, first-class extension of the core API surface that users would reasonably expect beside the built-in constructors/factories (e.g., `Tempo.fromFormats()` from `@tempo-kit/plugin-dialects`). Such exceptions should be rare, kept to a minimum, justified in the plugin's documentation, and must never collide with existing or planned core member names.
 >    - *Do not overload existing option keys*: Do not re-use an established `Tempo.Options` key (such as `dialect`) for an unrelated purpose. Expose plugin-specific behavior through the plugin's own namespace instead.
 > 2. **Static Namespace Immutability**: Any static object or namespace attached to the `Tempo` base class **must be strictly immutable/frozen**:
->    - The namespace object itself (including any nested objects or child namespaces) must be recursively frozen using `deepFreeze()` (available directly from `@magmacomputing/tempo/plugin/sdk` or `@magmacomputing/tempo/library`).
+>    - The namespace object itself (including any nested objects or child namespaces) must be recursively frozen using `deepFreeze()` (available directly from `tempo-kit/plugin/sdk` or `tempo-kit/library`).
 >    - The property must be mounted onto `TempoClass` using `Object.defineProperty` with `writable: false`, `configurable: false`, and `enumerable: false` (or via the SDK's `attachStatics` utility).
 >    ```typescript
->    import { deepFreeze } from '@magmacomputing/tempo/plugin/sdk';
+>    import { deepFreeze } from 'tempo-kit/plugin/sdk';
 >
 >    Object.defineProperty(TempoClass, 'myNamespace', {
 >        value: deepFreeze(myNamespaceObject),
@@ -470,9 +470,9 @@ When authoring a custom Term plugin that partitions time into ranges or named st
 >    ```
 >    *Rationale*: This protects the host class from monkey-patching, accidental mutation, and tampering, while ensuring compatibility with Tempo's internal `@Immutable` and `@Securable` engines.
 > 3. **Fluent Immutable Instance Methods**: Instance methods attached to `Tempo.prototype` must adhere to Tempo's immutable design principles. Methods should return a **new** enriched or transformed `Tempo` instance (e.g., `return new TempoClass(this, { ... })`) rather than mutating `this` in place.
-> 4. **Standardized Logging & Diagnostic Output (`logWarn`, `logError`, `logDebug`)**: Plugins must **never** write directly to native `console.log`, `console.warn`, or `console.error`. Instead, import standard logging hooks from `@magmacomputing/tempo/plugin/sdk`:
+> 4. **Standardized Logging & Diagnostic Output (`logWarn`, `logError`, `logDebug`)**: Plugins must **never** write directly to native `console.log`, `console.warn`, or `console.error`. Instead, import standard logging hooks from `tempo-kit/plugin/sdk`:
 >    ```typescript
->    import { logWarn, logError, logDebug } from '@magmacomputing/tempo/plugin/sdk';
+>    import { logWarn, logError, logDebug } from 'tempo-kit/plugin/sdk';
 >    ```
 >    When logging diagnostic warnings, non-fatal operational errors, or debug details from within plugin methods or callbacks, pass the active `Tempo` instance configuration (`(t as any)?.config` or `(this as any)?.config`) as the second argument:
 >    ```typescript
@@ -522,7 +522,7 @@ npm install --package-lock-only
 
 ### A2. Register in Plugin CI Workflow (`.github/workflows/ci.yml`)
 
-The `plugins` job in `.github/workflows/ci.yml` uses an explicit plugin list. Whenever adding a new plugin, you **must** add `--workspace=@magmacomputing/tempo-plugin-[name]` to `Run plugin tests` and `[name]` to the `Typecheck plugin tests` loop in `.github/workflows/ci.yml`.
+The `plugins` job in `.github/workflows/ci.yml` uses an explicit plugin list. Whenever adding a new plugin, you **must** add `--workspace=@tempo-kit/plugin-[name]` to `Run plugin tests` and `[name]` to the `Typecheck plugin tests` loop in `.github/workflows/ci.yml`.
 
 ### B. Release Workflow Configuration (`.github/workflows/publish.yml`)
 
@@ -531,7 +531,7 @@ Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` prov
 1. **Add Checkbox Input (`inputs:`)**: Add `plugin_[name]` with `type: boolean` (default: `false`):
    ```yaml
    plugin_[name]:
-     description: '@magmacomputing/tempo-plugin-[name]'
+     description: '@tempo-kit/plugin-[name]'
      type: boolean
      default: false
    ```
@@ -541,14 +541,14 @@ Update `.github/workflows/publish.yml` to enable manual `workflow_dispatch` prov
    INPUT_PLUGIN_[NAME]: ${{ inputs.plugin_[name] }}
    ```
 
-3. **Add to Batch Release Array (`PKGS=(`)**: Include `"@magmacomputing/tempo-plugin-[name]"` in the all-packages list for `INPUT_ALL: true` / release triggers.
+3. **Add to Batch Release Array (`PKGS=(`)**: Include `"@tempo-kit/plugin-[name]"` in the all-packages list for `INPUT_ALL: true` / release triggers.
 
 4. **Add to Individual Resolution Logic**:
    ```bash
-   [ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@magmacomputing/tempo-plugin-[name]")
+   [ "$INPUT_PLUGIN_[NAME]" = "true" ] && PKGS+=("@tempo-kit/plugin-[name]")
    ```
 
-5. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@magmacomputing/tempo-plugin-[name]`.
+5. *(Optional)* Even without adding a dedicated checkbox, any new plugin can be immediately published via the workflow's **Custom packages** text box by typing `[name]` or `@tempo-kit/plugin-[name]`.
 
 ### C. REPL Playground & Interactive Documentation Integration (`packages/tempo/public/repl/`)
 
@@ -568,7 +568,7 @@ When introducing or retiring a plugin, register it across the browser REPL playg
 2. **Browser Import Map Registration (`public/repl/`)**:
    - Add the plugin's CDN mapping to the `<script type="importmap">` in both `packages/tempo/public/repl/index.html` and `packages/tempo/public/repl/showcase.html` using `@latest`:
      ```json
-     "@magmacomputing/tempo-plugin-[name]": "https://esm.sh/@magmacomputing/tempo-plugin-[name]@latest"
+     "@tempo-kit/plugin-[name]": "https://esm.sh/@tempo-kit/plugin-[name]@latest"
      ```
      > [!NOTE]
      > Always use `@latest` in import maps rather than semver operators like `@^1` or `@^0`, as browsers percent-encode special characters (e.g. `^` $\rightarrow$ `%5E`), causing CDN resolution errors on `esm.sh`.
@@ -579,8 +579,8 @@ When introducing or retiring a plugin, register it across the browser REPL playg
      [name]: {
        label: 'Preset: [Plugin Title & Features]',
        plugin: '[name]',
-       code: `// 🚀 [Plugin Name] Demo (@magmacomputing/tempo-plugin-[name])
-     const { [PluginExport] } = await import('@magmacomputing/tempo-plugin-[name]');
+       code: `// 🚀 [Plugin Name] Demo (@tempo-kit/plugin-[name])
+     const { [PluginExport] } = await import('@tempo-kit/plugin-[name]');
      Tempo.use([PluginExport]);
 
      // Runnable domain-specific example code...
@@ -611,7 +611,7 @@ NPM Trusted Publishing (OIDC) requires that a package **already exists** on the 
 Because npm cannot configure Trusted Publishers for non-existent packages, the initial bootstrap release (`v0.1.0`) must be published manually by an authenticated maintainer:
 1. Build the plugin and navigate to its workspace directory:
    ```bash
-   npm run build --workspace=@magmacomputing/tempo-plugin-[name]
+   npm run build --workspace=@tempo-kit/plugin-[name]
    cd packages/plugins/[name]
    ```
 2. Authenticate and publish the initial public version:
@@ -622,7 +622,7 @@ Because npm cannot configure Trusted Publishers for non-existent packages, the i
 
 ### Step 2: Configure NPM Trusted Publisher
 Once the package exists on `npmjs.com`, configure GitHub Actions OIDC for all future releases:
-1. **Navigate to Package Access**: Go to `https://www.npmjs.com/package/@magmacomputing/tempo-plugin-[name]/access`.
+1. **Navigate to Package Access**: Go to `https://www.npmjs.com/package/@tempo-kit/plugin-[name]/access`.
 2. **Add Publisher**: Under **Publishing Access** $\rightarrow$ **Trusted Publishers**, click **Add GitHub Actions Publisher**.
 3. **Configure Settings**:
    - **Organization / Owner**: `magmacomputing`

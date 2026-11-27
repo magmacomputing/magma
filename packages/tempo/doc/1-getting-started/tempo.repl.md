@@ -55,8 +55,8 @@ An instant scratchpad for testing custom algorithms, experimental plugin imports
 
 ### 1. Preloaded Official Plugins
 Both environments pre-register the core Tempo instance along with default official plugins:
-- `@magmacomputing/tempo-plugin-geo`
-- `@magmacomputing/tempo-plugin-celestial`
+- `@tempo-kit/plugin-geo`
+- `@tempo-kit/plugin-celestial`
 
 You can immediately access Terms, seasons, and celestial data without import boilerplate:
 ```javascript
@@ -66,17 +66,17 @@ console.log(t.term.lunar.phase);    // "First Quarter"
 ```
 
 ### 2. Dynamic Plugin Loading & Presets
-Need an additional plugin like `@magmacomputing/tempo-plugin-spatial`, `@magmacomputing/tempo-plugin-ticker`, or custom third-party modules? Select their preset from the preset dropdown or use standard dynamic imports in the Code REPL:
+Need an additional plugin like `@tempo-kit/plugin-spatial`, `@tempo-kit/plugin-ticker`, or custom third-party modules? Select their preset from the preset dropdown or use standard dynamic imports in the Code REPL:
 
 ```javascript
-const { SpatialPlugin } = await import('@magmacomputing/tempo-plugin-spatial');
+const { SpatialPlugin } = await import('@tempo-kit/plugin-spatial');
 Tempo.use(SpatialPlugin);
 
 console.log('Spatial plugin active!');
 ```
 
 ### 3. AI Semantic Parsing & Natural Language Scheduling
-Explore generative date parsing, conversational recurrence, and multi-point event scheduling powered by [`@magmacomputing/tempo-plugin-ai`](/doc/9-plugins/ai.index):
+Explore generative date parsing, conversational recurrence, and multi-point event scheduling powered by [`@tempo-kit/plugin-ai`](/doc/9-plugins/ai.index):
 - Select the **Preset: AI Semantic Parsing & Scheduling** from the preset dropdown.
 - **Supported Provider Configuration (BYOK)**: Provide an API key or local endpoint in `Tempo.ai.init({ providers: [...] })` before calling `Tempo.ai.parse` or `Tempo.ai.schedule`.
 - **External Resources & Free Keys**:

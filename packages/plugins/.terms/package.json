@@ -1,5 +1,5 @@
 {
-  "name": "@magmacomputing/tempo-terms",
+  "name": "@tempo-kit/builtin-terms",
   "version": "1.0.0",
   "private": true,
   "description": "Built-in Civic and Cultural Terms for tempo-kit (bundled natively under ./terms — not published separately)",

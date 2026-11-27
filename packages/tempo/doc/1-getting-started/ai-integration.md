@@ -26,7 +26,7 @@ In VS Code, configure GitHub Copilot Chat by adding a `.github/copilot-instructi
 
 ```markdown
 # Tempo AI Rules
-- Always use `Tempo` from `@magmacomputing/tempo`.
+- Always use `Tempo` from `tempo-kit`.
 - Never instantiate legacy JavaScript `Date`. Tempo expects native `Temporal` or polyfill.
 - All mutating methods (`.add()`, `.subtract()`, `.set()`) return a brand-new, frozen `Tempo` instance.
 - Refer to https://tempo.magmacomputing.com.au/llms.txt for full layout token grammar.
@@ -60,7 +60,7 @@ When asking AI assistants to generate custom layout patterns for non-standard da
 
 ### Generated Code (Actual Tempo Syntax):
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // 1. Register custom layout pattern using layout tokens
 Tempo.init({

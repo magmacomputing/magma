@@ -1425,12 +1425,14 @@ export class Tempo {
 				case 'term': {
 					if (!ensureModule(this, 'TermsModule')) return undefined;
 
-					const term = getRuntime().termMap.get(key);
+					const terms = this.#getHostTerms();
+					const term = terms.find((item: TermPlugin) => item.key === key)
+						?? terms.find((item: TermPlugin) => item.scope === key || asArray(item.aliases).includes(key));
 					if (term) {
 						const isKeyOnly = key === term.key ? Boolean(term.scope) : key !== term.scope;
 						const define = (keyOnly: boolean) => {
 							try {
-								const result = term.define.call(this, keyOnly);
+								const result = term.define.call(this, keyOnly, undefined, key);
 								const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
 								return isObject(res) ? secure(res) : res;
 							} catch (err: unknown) {
@@ -1462,6 +1464,10 @@ export class Tempo {
 		return proxy;
 	}
 
+	#getHostTerms(): TermPlugin[] {
+		return ((this.constructor as typeof Tempo)[$Internal]?.()?.pluginsDb?.terms ?? getRuntime().state?.pluginsDb?.terms ?? []) as TermPlugin[];
+	}
+
 	#discover(host: Internal.DelegatorHost, target: any) {
 		if (!_lifecycle.ready) return;
 		switch (host) {
@@ -1475,7 +1481,7 @@ export class Tempo {
 			}
 			case 'term': {
 				if (!ensureModule(this, 'TermsModule')) return;
-				Tempo.#terms.forEach(term => {
+				this.#getHostTerms().forEach(term => {
 					const define = (keyOnly: boolean, anchor?: any, alias?: string) => {
 						try {
 							const result = term.define ? term.define.call(this, keyOnly, anchor, alias) : undefined;

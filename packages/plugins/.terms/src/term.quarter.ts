@@ -1,5 +1,5 @@
 import { defineTerm, getTermRange, defineRange, resolveCycleWindow, resolveRangeOrdinal, resolveRangeDiff, resolveRangeFormat, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
-import { asArray } from 'tempo-lib';
+import { asArray, isFunction, isDefined } from 'tempo-lib';
 import type { Tempo } from 'tempo-kit';
 
 export const QUARTER_KEYS = Object.freeze(['Q1', 'Q2', 'Q3', 'Q4'] as const);
@@ -19,9 +19,9 @@ const groups = defineRange([
  */
 function toIsoTempo(target: any, fallback: Tempo): Tempo {
 	const ref = target ?? fallback;
-	const zdt = typeof ref?.toDateTime === 'function'
+	const zdt = isFunction(ref?.toDateTime)
 		? ref.toDateTime()
-		: (ref?.calendarId !== undefined && typeof ref?.withCalendar === 'function' ? ref : undefined);
+		: (isDefined(ref?.calendarId) && isFunction(ref?.withCalendar) ? ref : undefined);
 
 	if (zdt) {
 		const Host = fallback.constructor as any;

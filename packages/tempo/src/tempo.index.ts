@@ -1,7 +1,7 @@
 /**
  * Tempo Core Engine (Main Entry)
  * 
- * This is the primary export barrel for the `@magmacomputing/tempo` package.
+ * This is the primary export barrel for the `tempo-kit` package.
  * It registers the "batteries-included" modules (Parse, Format, Mutate, Duration, Terms)
  * and exports the initialized `Tempo` class alongside core types and utilities.
  */

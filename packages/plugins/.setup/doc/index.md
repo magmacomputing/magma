@@ -17,10 +17,10 @@ All official and community plugins are 100% open source under the MIT license an
 Tempo plugins are published as scoped packages on the standard npm registry (`npmjs.com`). Install plugins using your package manager of choice:
 
 ```bash
-npm install @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial  # npm
-pnpm add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial     # pnpm
-yarn add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial     # yarn
-bun add @magmacomputing/tempo @magmacomputing/tempo-plugin-ticker @magmacomputing/tempo-plugin-celestial      # bun
+npm install tempo-kit @tempo-kit/plugin-ticker @tempo-kit/plugin-celestial  # npm
+pnpm add tempo-kit @tempo-kit/plugin-ticker @tempo-kit/plugin-celestial     # pnpm
+yarn add tempo-kit @tempo-kit/plugin-ticker @tempo-kit/plugin-celestial     # yarn
+bun add tempo-kit @tempo-kit/plugin-ticker @tempo-kit/plugin-celestial      # bun
 ```
 
 ---
@@ -34,8 +34,8 @@ Tempo provides flexible registration options depending on your application struc
 Pass plugins directly to `Tempo.init()` during application initialization via the `plugins` array. This guarantees clean execution order regardless of import hoisting:
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
-import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+import { Tempo } from 'tempo-kit';
+import { TickerPlugin } from '@tempo-kit/plugin-ticker';
 
 Tempo.init({
   plugins: [TickerPlugin]
@@ -50,8 +50,8 @@ console.log(Tempo.tickers);
 Register plugins dynamically at runtime using `Tempo.use()`:
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+import { Tempo } from 'tempo-kit';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 Tempo.use(CelestialPlugin);
 
@@ -64,8 +64,8 @@ console.log(t.term.astro); // Discovers equinoxes and astronomical seasons
 All official and community plugins provide an `/install` entry point that auto-registers the plugin onto `Tempo` upon import:
 
 ```javascript
-import '@magmacomputing/tempo-plugin-celestial/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-celestial/install';
+import { Tempo } from 'tempo-kit';
 
 const t = new Tempo('2026-03-20', { sphere: 'north' });
 console.log(t.term.astro);
@@ -80,10 +80,10 @@ When using pre-bundled scripts directly in HTML via `<script>` tags, plugins att
 ```html
 <!-- 1. Core Temporal Polyfill & Tempo -->
 <script src="https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5.1/dist/index.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5/dist/tempo.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tempo-kit@5/dist/tempo.bundle.min.js"></script>
 
 <!-- 2. Plugin Script -->
-<script src="https://cdn.jsdelivr.net/npm/@magmacomputing/tempo-plugin-celestial@1/dist/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tempo-kit/plugin-celestial@1/dist/index.global.min.js"></script>
 
 <script>
   const { Tempo, plugins } = Magma;

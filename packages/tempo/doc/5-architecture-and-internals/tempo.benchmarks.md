@@ -56,8 +56,8 @@ This module is completely decoupled from the core to keep the bundle light, but 
 ### Usage
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
-import { BenchmarkModule } from '@magmacomputing/tempo/module/benchmark';
+import { Tempo } from 'tempo-kit';
+import { BenchmarkModule } from 'tempo-kit/module/benchmark';
 
 // 1. Configure your Tempo instance (e.g. plugins, timezone, etc)
 Tempo.init({ timeZone: 'America/New_York' });

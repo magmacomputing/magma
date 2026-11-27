@@ -336,11 +336,42 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							? { ...config, options: resolvedOptions }
 							: config;
 
+						const syncTermAliases = () => {
+							if (!config.scope || !config.ranges) return;
+							const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
+							if (!type) return;
+
+							const aliases: [string, any][] = [];
+							const monthKeys = Enum.keys(enums.MONTH);
+							config.ranges.forEach(r => {
+								if (!r.key) return;
+								let val: string | undefined;
+								if (isNotNullish(r.hour)) {
+									if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
+										val = `${r.hour}:${pad(r.minute ?? 0)}`;
+								} else if (r.month) {
+									if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
+										val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
+								}
+								if (val) aliases.push([r.key, val]);
+							});
+
+							if (aliases.length > 0) {
+								if (type === 'per') (TempoClass as any)[$setPeriods](state, aliases);
+								else if (type === 'evt') (TempoClass as any)[$setEvents](state, aliases);
+							}
+						};
+
+						const hasTermInState = state.pluginsDb?.terms?.some((t: TermPlugin) => t?.key === config.key) ?? false;
 						if (rt.termMap.get(config.key) === config) {
 							if (!isEmpty(resolvedOptions)) {
 								rt.termMap.set(config.key, termConfig);
 								if (config.scope) rt.termMap.set(config.scope, termConfig);
-								registerTerm(termConfig, (TempoClass as any)[$Internal]());
+								registerTerm(termConfig, state);
+								syncTermAliases();
+							} else if (!hasTermInState) {
+								registerTerm(termConfig, state);
+								syncTermAliases();
 							}
 							return;
 						}
@@ -352,7 +383,11 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 								if (!isEmpty(resolvedOptions)) {
 									rt.termMap.set(config.key, termConfig);
 									if (config.scope) rt.termMap.set(config.scope, termConfig);
-									registerTerm(termConfig, (TempoClass as any)[$Internal]());
+									registerTerm(termConfig, state);
+									syncTermAliases();
+								} else if (!hasTermInState) {
+									registerTerm(termConfig, state);
+									syncTermAliases();
 								}
 								return;
 							}
@@ -384,33 +419,7 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 						registerTerm(termConfig, (TempoClass as any)[$Internal]());
 
 						// 1a. sync with alias engine
-						if (config.scope && config.ranges) {
-							const type = config.scope === 'period' ? 'per' : (config.scope === 'event' ? 'evt' : undefined);
-							if (type) {
-								const aliases: [string, any][] = [];
-								const monthKeys = Enum.keys(enums.MONTH);
-								config.ranges.forEach(r => {
-									if (r.key) {
-										let val: string | undefined;
-										if (isNotNullish(r.hour)) {
-											if (Number.isInteger(r.hour) && r.hour >= 0 && r.hour <= 23)
-												val = `${r.hour}:${pad(r.minute ?? 0)}`;
-										} else if (r.month) {
-											if (Number.isInteger(r.month) && r.month >= 1 && r.month <= 12)
-												val = `${pad(r.day ?? 1)} ${monthKeys[r.month - 1]}`;
-										}
-
-										if (val) aliases.push([r.key, val]);
-									}
-								});
-
-								if (aliases.length > 0) {
-									const state = (TempoClass as any)[$Internal]();
-									if (type === 'per') (TempoClass as any)[$setPeriods](state, aliases);
-									else if (type === 'evt') (TempoClass as any)[$setEvents](state, aliases);
-								}
-							}
-						}
+						syncTermAliases();
 						break;
 					}
 					default: {

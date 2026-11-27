@@ -258,7 +258,7 @@ export type FormatRegistry = enums.FormatEnum;
  *
  * @example
  * // In a plugin's .d.ts:
- * declare module '@magmacomputing/tempo' {
+ * declare module 'tempo-kit' {
  *   interface TempoFormatTokens {
  *     'fiscal.quarter': true;
  *   }

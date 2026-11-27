@@ -3,7 +3,7 @@
  * 
  * This file serves as the single, unified public endpoint for external plugins and extensions.
  * It consolidates all necessary granular internal utilities (core, library, terms, etc.)
- * into one importable path (`@magmacomputing/tempo/plugin/sdk`).
+ * into one importable path (`tempo-kit/plugin/sdk`).
  * 
  * ARCHITECTURE NOTE:
  * By providing a single endpoint, we drastically simplify the `importmap` requirements

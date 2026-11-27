@@ -37,7 +37,7 @@ When you nominate a non-English `locale` (or an array of locales like `['fr-FR',
 - It injects these patterns into its lexer, allowing Tempo to instantly understand strings like `'15 Janvier 2024'` or `'15 febrero 2024'`.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // Tempo learns French and Spanish months & weekdays at runtime!
 // Custom relative modifier keywords ('próximo') and noise articles ('el') can be registered in the registry.

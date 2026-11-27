@@ -28,7 +28,7 @@ The safest and most efficient way to author a plugin is using the `definePlugin`
 
 ```typescript
 // src/index.ts
-import { definePlugin, type TempoPlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin, type TempoPlugin } from 'tempo-kit/plugin/sdk';
 
 export const BusinessDaysPlugin: TempoPlugin = definePlugin({
   name: 'BusinessDaysPlugin',
@@ -86,12 +86,12 @@ You must declare this augmentation in the same file that exports your plugin:
 
 ```typescript
 // src/index.ts
-import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin } from 'tempo-kit/plugin/sdk';
 
 // ... (plugin implementation) ...
 
 // Inform TypeScript that the core Tempo class now has this method
-declare module '@magmacomputing/tempo/core' {
+declare module 'tempo-kit/core' {
   interface Tempo {
     addBusinessDays(days?: number): Tempo;
   }
@@ -138,7 +138,7 @@ export const BusinessDaysPlugin = (pluginOptions: BusinessDayOptions = {}): Temp
 Your users can now import and register your plugin elegantly:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from 'tempo-kit/core';
 import { BusinessDaysPlugin } from 'my-business-days-plugin';
 
 Tempo.use(BusinessDaysPlugin({ skipHolidays: true }));

@@ -7,7 +7,7 @@ Tempo's strongest feature is its flexible, natural-language parsing engine. Whil
 If you only need Tempo's "Smart" parsing but want to keep your project lightweight, you can use the standalone `parse` function. This returns a native `Temporal.ZonedDateTime` without importing the full `Tempo` class.
 
 ```typescript
-import { parse } from '@magmacomputing/tempo/parse';
+import { parse } from 'tempo-kit/parse';
 
 // Returns a native Temporal.ZonedDateTime
 const zdt = parse('May 20, 2026 at 3pm', { timeZone: 'Australia/Sydney' });
@@ -57,7 +57,7 @@ Tempo provides three clean instantiation idioms powered by a single unified poly
 > While `new Tempo(...)` and `Tempo.from(...)` share identical polymorphic parsing capabilities, `Tempo.from()` eliminates the `new` keyword operator-precedence friction for method chaining and enables smooth integration in array transformations (e.g. `items.map(d => Tempo.from(d))`). Whenever sampling the current clock, use `Tempo.now()` for unambiguous, self-documenting intent.
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 // 1. Clock Sampling
 const current = Tempo.now({ timeZone: 'Australia/Sydney' });
@@ -108,17 +108,17 @@ new Tempo('1st day of 2026');                 // 1st day of 2026
 new Tempo('last day of the month');           // Last day of anchor/current month
 ```
 
-Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`@magmacomputing/tempo/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })` or per-instance via `new Tempo(date, { registry: { ordinals: { eleventh: 11 } } })`.
+Written ordinals are powered by the extensible `Tempo.enums.ORDINAL` enum (`tempo-kit/enums`), providing built-in mappings for `current` (0), `first` (1) through `tenth` (10), and `last` (-1). Custom ordinals can be registered globally via `Tempo.init({ registry: { ordinals: { eleventh: 11 } } })` or per-instance via `new Tempo(date, { registry: { ordinals: { eleventh: 11 } } })`.
 
-#### 💡 When to use Native Ordinal Parsing vs. `@magmacomputing/tempo-plugin-ai` (`parseAI`)
+#### 💡 When to use Native Ordinal Parsing vs. `@tempo-kit/plugin-ai` (`parseAI`)
 
 | Input Type & Scenario | Recommended Approach | Key Advantage |
 | :--- | :--- | :--- |
 | **Structured Expressions**<br>(e.g. `"3rd Wednesday of Oct"`, `"1st day of next month"`) | **Native `Tempo` Parsing** | **Deterministic $O(1)$ Speed**<br>Zero API latency, zero token costs, 100% offline processing. |
-| **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`tempo-plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
+| **Free-Form / Conversational Text**<br>(e.g. `"Schedule a call on the third Wednesday after my trip ends"`) | **`@tempo-kit/plugin-ai` (`parseAI`)** | **LLM Natural Language Reasoning**<br>Extracts context and conversational intent before passing dates to Tempo. |
 
 > [!TIP]
-> Always prefer native Tempo parsing for form inputs, search inputs, and predictable UI date controls. Reserve `@magmacomputing/tempo-plugin-ai` for conversational chat interfaces or unstructured email/document text processing.
+> Always prefer native Tempo parsing for form inputs, search inputs, and predictable UI date controls. Reserve `@tempo-kit/plugin-ai` for conversational chat interfaces or unstructured email/document text processing.
 
 ---
 
@@ -140,11 +140,11 @@ new Tempo('Recorded on 15 Sep 2026 at server-01', {
 > **Format Dialects & Migration**
 > Tempo's formatting and parsing engine uses consistent lower-case tokens (`{yyyy}`, `{mm}`, `{dd}`) to prevent common pitfalls—such as the subtle year-end shift between calendar year (`yyyy`) and ISO week-year (`YYYY`).
 >
-> If you are migrating an existing codebase or prefer familiar external formatting standards (such as Luxon, Moment, or POSIX `strftime`), the [`@magmacomputing/tempo-plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin provides drop-in support:
+> If you are migrating an existing codebase or prefer familiar external formatting standards (such as Luxon, Moment, or POSIX `strftime`), the [`@tempo-kit/plugin-dialects`](../../../plugins/dialects/doc/index.md) community plugin provides drop-in support:
 >
 > ```typescript
-> import { Tempo } from '@magmacomputing/tempo';
-> import '@magmacomputing/tempo-plugin-dialects/install';
+> import { Tempo } from 'tempo-kit';
+> import '@tempo-kit/plugin-dialects/install';
 >
 > // Parse using external masks
 > const t = new Tempo('2026-10-24', { format: 'YYYY-MM-DD', dialect: 'moment' });
@@ -195,11 +195,11 @@ The parsing engine is modular. Depending on which version of Tempo you are using
 | **Tempo Core** | **Opt-in**. You must call `Tempo.use(ParseModule)` to enable natural language support. |
 
 ### Enabling Smart Parsing in Core
-If you are using `@magmacomputing/tempo/core`, the constructor only supports basic ISO strings by default. To enable "next Tuesday" style parsing, you must extend it:
+If you are using `tempo-kit/core`, the constructor only supports basic ISO strings by default. To enable "next Tuesday" style parsing, you must extend it:
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { ParseModule } from '@magmacomputing/tempo/parse';
+import { Tempo } from 'tempo-kit/core';
+import { ParseModule } from 'tempo-kit/parse';
 
 Tempo.use(ParseModule);
 ```

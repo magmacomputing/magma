@@ -103,8 +103,8 @@ let initPromise = (async () => {
       registry.has = () => false
     }
 
-    const { Tempo } = await import('@magmacomputing/tempo')
-    const { TickerPlugin } = await import('@magmacomputing/tempo-plugin-ticker')
+    const { Tempo } = await import('tempo-kit')
+    const { TickerPlugin } = await import('@tempo-kit/plugin-ticker')
 
     if (import.meta.env.DEV) registry.has = originalHas
     

@@ -36,7 +36,7 @@ The library is organized into specialized modules, each designed for maximum eff
 The `getType` utility provides human-readable, proper-cased type names, even for custom classes that have been registered.
 
 ```typescript
-import { getType, isType } from '@magmacomputing/tempo/library';
+import { getType, isType } from 'tempo-kit/library';
 
 getType([]);            // "Array"
 getType(new Map());     // "Map"
@@ -51,7 +51,7 @@ if (isType(val, 'String', 'Number')) {
 Sort complex collections of objects by multiple fields with ease.
 
 ```typescript
-import { sortKey } from '@magmacomputing/tempo/library';
+import { sortKey } from 'tempo-kit/library';
 
 const users = [
   { name: 'Alice', age: 30 },
@@ -67,7 +67,7 @@ const sorted = sortKey(users, 'name', { field: 'age', dir: 'desc' });
 Unlike standard `JSON.stringify`, Magma's serialization handles complex types like `Temporal` and `BigInt` out of the box.
 
 ```typescript
-import { stringify, objectify } from '@magmacomputing/tempo/library';
+import { stringify, objectify } from 'tempo-kit/library';
 
 const data = {
   at: Temporal.Now.instant(),

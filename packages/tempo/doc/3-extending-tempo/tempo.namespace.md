@@ -15,8 +15,8 @@ Let's build an `audit` plugin. We want to add an `.audit` namespace that provide
 
 ```typescript
 // audit.ts
-import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
-import { Tempo } from '@magmacomputing/tempo/core';
+import { defineNamespace } from 'tempo-kit/plugin/sdk';
+import { Tempo } from 'tempo-kit/core';
 
 export const AuditNamespace = defineNamespace({
   // 1. Define the property name where this namespace will live on the Tempo instance
@@ -71,11 +71,11 @@ Just like standard plugins, you must inform TypeScript about your new namespace 
 
 ```typescript
 // audit.ts
-import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
+import { defineNamespace } from 'tempo-kit/plugin/sdk';
 
 // ... (AuditNamespace implementation) ...
 
-declare module '@magmacomputing/tempo/core' {
+declare module 'tempo-kit/core' {
   interface Tempo {
     audit: {
       retentionPeriod: string;
@@ -91,8 +91,8 @@ declare module '@magmacomputing/tempo/core' {
 Developers can now import your plugin, register it once, and enjoy your clean, isolated API!
 
 ```typescript
-import { Tempo } from '@magmacomputing/tempo/core';
-import { MutateModule } from '@magmacomputing/tempo/mutate';
+import { Tempo } from 'tempo-kit/core';
+import { MutateModule } from 'tempo-kit/mutate';
 import { AuditNamespace } from './audit.js';
 
 // Extend the core Tempo engine
@@ -125,8 +125,8 @@ A world-class plugin doesn't force developers to choose—it provides both! You 
 
 ```typescript
 // 1. The Pure Functions (The FP layer)
-import { Tempo } from '@magmacomputing/tempo/core';
-import { MutateModule } from '@magmacomputing/tempo/mutate';
+import { Tempo } from 'tempo-kit/core';
+import { MutateModule } from 'tempo-kit/mutate';
 
 Tempo.use(MutateModule);
 
@@ -156,8 +156,8 @@ If you are building a highly-specialized internal plugin and want to mathematica
 
 ```typescript
 // secret.ts
-import { defineNamespace } from '@magmacomputing/tempo/plugin/sdk';
-import type { Tempo } from '@magmacomputing/tempo/core';
+import { defineNamespace } from 'tempo-kit/plugin/sdk';
+import type { Tempo } from 'tempo-kit/core';
 
 export const InternalTools = Symbol('internal');
 
@@ -171,8 +171,8 @@ export const SecretPlugin = defineNamespace({
 
 ```typescript
 // Consumer's code
-import { Tempo } from '@magmacomputing/tempo/core';
-import { FormatModule } from '@magmacomputing/tempo/format';
+import { Tempo } from 'tempo-kit/core';
+import { FormatModule } from 'tempo-kit/format';
 // The consumer must import BOTH the Plugin (to extend Tempo) and the Symbol (to access the namespace)
 import { SecretPlugin, InternalTools } from './secret.js';
 

@@ -68,7 +68,7 @@ function launchRepl() {
               <path fill="#38bdf8" d="m117.414,140.581l-15.218,9.775c-13.306,8.914-21.292,23.876-21.292,39.892h76.511c0-16.016-7.986-30.978-21.292-39.892l-15.218-9.775c-1.074-0.644-2.416-0.644-3.491,0z"/>
             </g>
           </svg>
-          <span>{{ title || `Interactive Demo (@magmacomputing/tempo-plugin-${plugin})` }}</span>
+          <span>{{ title || `Interactive Demo (@tempo-kit/plugin-${plugin})` }}</span>
         </div>
         <a
           :href="fullReplLink"

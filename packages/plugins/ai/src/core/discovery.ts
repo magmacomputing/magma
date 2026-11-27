@@ -180,7 +180,7 @@ export function scanWellKnownEnvProviders(env: Record<string, string | undefined
  */
 export function getActiveTempoConfigAi(): AiConfig | undefined {
 	try {
-		const rt = (globalThis as any)[Symbol.for('magmacomputing/tempo/runtime')];
+		const rt = (globalThis as any)[Symbol.for('tempo-kit/runtime')];
 		const stateConfig = rt?.state?.config;
 		if (stateConfig?.pluginOptions?.ai)
 			return stateConfig.pluginOptions.ai;

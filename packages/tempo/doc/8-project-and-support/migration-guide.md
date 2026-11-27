@@ -126,7 +126,7 @@ To reduce token ambiguity and eliminate redundant aliases, format tokens and mod
   * Use the canonical `{yy}` token (or `{yyyy}` for 4-digit years).
 * **Legacy Offset Modifiers on `{tz}`:**
   * Legacy modifier cases (`offsetshort`, `offsetcompact`, `z`, `zz`, `zzz`, `zzzz`, `zzzzz`) on `{tz}` have been removed from the core formatter.
-  * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@magmacomputing/tempo-plugin-dialects` if LDML / Moment-style pattern emulation is required.
+  * Use canonical `{tz:offset}`, composable `{tz:offset:compact}`, `{tz:short}`, or `{tz:long}` in core (`{tz:offset:compact}` replaces legacy `{tz:offsetcompact}` and v4.7 `{tz:zzz}` for unpunctuated offsets like `+0530`), or load `@tempo-kit/plugin-dialects` if LDML / Moment-style pattern emulation is required.
 * **Removed Legacy Getter Tokens (`{day}`, `{nano}`):**
   * `{day}` (from removed `t.day`) and `{nano}` (from removed `t.nano`) have been removed.
   * Use `{dd}` or `{dd:raw}` in place of `{day}`. For `{nano}`, use `{ts}` with `{ timeStamp: 'ns' }` (for example, `format(zdt, '{ts}', { timeStamp: 'ns' })`, which works for both `Tempo` and native `Temporal` values), or `{epoch.ns}` when formatting `Tempo` instances (standalone `format(zdt, ...)` on native `Temporal` values leaves `{epoch.ns}` literal).
@@ -146,7 +146,7 @@ t.format('{yy}');
 ---
 
 ### 6. Utility & Support Exports
-* **`Enum` export removed:** The legacy `Enum` class export from `@magmacomputing/tempo` has been removed. Use native TypeScript enums, `as const` object literals, or the `@magmacomputing/tempo/library` enumerator utilities (`enumify`).
+* **`Enum` export removed:** The legacy `Enum` class export from `tempo-kit` has been removed. Use native TypeScript enums, `as const` object literals, or the `tempo-kit/library` enumerator utilities (`enumify`).
 * **`hasOwn` helper removed:** The internal re-export `hasOwn` from support utils has been removed. Use standard ECMAScript `Object.hasOwn(target, property)`.
 
 ---
@@ -179,8 +179,8 @@ In v5.0.0, the Term system undergoes a breaking architectural refinement to alig
 * **`QuarterTerm` (`qtr` / `quarter`) strictly ISO 8601-2 aligned:**
   * Calendar quarters strictly map to standard Gregorian calendar quarters (`Q1` = Jan 1, `Q2` = Apr 1, `Q3` = Jul 1, `Q4` = Oct 1) globally, completely decoupled from geographic hemisphere (`sphere`).
   * The legacy `fiscal` field on `QuarterTerm` scope has been removed.
-* **Dedicated `FiscalTerm` (`fqtr` / `fiscal`) — Superseding `@magmacomputing/tempo-plugin-finance`:**
-  * Financial, corporate, and jurisdictional fiscal quarters have moved into the built-in `FiscalTerm` plugin (`@magmacomputing/tempo/terms`), superseding the standalone `@magmacomputing/tempo-plugin-finance` package.
+* **Dedicated `FiscalTerm` (`fqtr` / `fiscal`) — Superseding `@tempo-kit/plugin-finance`:**
+  * Financial, corporate, and jurisdictional fiscal quarters have moved into the built-in `FiscalTerm` plugin (`tempo-kit/terms`), superseding the standalone `@tempo-kit/plugin-finance` package.
   * Standard range keys are `'FQ1'`, `'FQ2'`, `'FQ3'`, `'FQ4'` (replacing numeric `t.finance.fiscalQuarter` `1..4`).
   * Provides a direct numeric `year: number` (e.g. `2026`, replacing `t.finance.taxYear`).
   * Supports configurable options `{ startMonth?: number, startDay?: number, country?: string }` with automated jurisdictional defaults (including `timeZone` country inference) and resolved `config` metadata on `t.term.fiscal.config`.
@@ -211,7 +211,7 @@ t.term.quarter.span.end;   // Frozen Tempo instance
 t.term.quarter.span.progress; // Normalized float (0.0 .. 1.0)
 
 // ✅ v5.0.0 (Cultural & Astrological terms require explicit opt-in)
-import { ZodiacTerm, EasternTerm, CulturalTerms } from '@magmacomputing/tempo/terms';
+import { ZodiacTerm, EasternTerm, CulturalTerms } from 'tempo-kit/terms';
 
 // Option A: Register individual terms
 Tempo.use(ZodiacTerm);
@@ -225,7 +225,7 @@ tAstro.term.zdc; // 'Aquarius'
 tAstro.term.shengxiao.animal; // 'Horse'
 
 // ✅ v5.0.0 (Fiscal cycles use FiscalTerm)
-import { FiscalTerm } from '@magmacomputing/tempo/terms';
+import { FiscalTerm } from 'tempo-kit/terms';
 Tempo.use(FiscalTerm);
 
 const tFiscal = new Tempo('2026-02-15', { pluginOptions: { fiscal: { country: 'AU' } } });
@@ -246,7 +246,7 @@ In v4.0.0, core configuration options (`timeZone`, `locale`, `calendar`, `sphere
 
 ```typescript
 // ✅ v4.0.0 - Dynamic per-request timezone resolution
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 import { getActiveTenantTimezone } from './session';
 
 Tempo.init({
@@ -257,19 +257,19 @@ Tempo.init({
 
 ---
 
-## 🛠️ Plugin SDK Subpath (`@magmacomputing/tempo/plugin/sdk`)
+## 🛠️ Plugin SDK Subpath (`tempo-kit/plugin/sdk`)
 
-In v4.0.0, all custom plugin, term, module, and namespace development is standardized on `@magmacomputing/tempo/plugin/sdk`.
+In v4.0.0, all custom plugin, term, module, and namespace development is standardized on `tempo-kit/plugin/sdk`.
 
 - **Legacy Imports**: Deprecated `plugin-api.index.ts` and `#tempo/license` subpath imports have been removed.
-- **SDK Import**: Import `definePlugin`, `defineTerm`, `defineModule`, `defineNamespace`, `defineRange`, and evaluation utilities directly from `@magmacomputing/tempo/plugin/sdk`.
+- **SDK Import**: Import `definePlugin`, `defineTerm`, `defineModule`, `defineNamespace`, `defineRange`, and evaluation utilities directly from `tempo-kit/plugin/sdk`.
 
 ```typescript
 // ❌ v3.x (Deprecated)
-import { definePlugin } from '@magmacomputing/tempo/plugin-api';
+import { definePlugin } from 'tempo-kit/plugin-api';
 
 // ✅ v4.0.0
-import { definePlugin } from '@magmacomputing/tempo/plugin/sdk';
+import { definePlugin } from 'tempo-kit/plugin/sdk';
 ```
 
 ---
@@ -290,7 +290,6 @@ Tempo v4.0.0 Community Core is 100% open-source without commercial license valid
 
 - License keys (`licenseKey`, `TEMPO_LICENSE_KEY`) are no longer required or checked in the Community Edition.
 - `Tempo.ready()` returns `'none'` for community core compatibility.
-- Commercial plugin management and domain-locking hooks have been relocated into the `@magmacomputing/tempo-pro` enterprise package.
 
 ---
 
@@ -382,7 +381,7 @@ Tempo.init({
 
 # 🚀 Tempo v4.7.0 Updates: Format Masks & Dialects Migration
 
-Tempo v4.7.0 formalizes date formatting ergonomics, introduces seamless interop with external library formatting standards via `@magmacomputing/tempo-plugin-dialects`, and guides developers when unbraced masks are detected.
+Tempo v4.7.0 formalizes date formatting ergonomics, introduces seamless interop with external library formatting standards via `@tempo-kit/plugin-dialects`, and guides developers when unbraced masks are detected.
 
 ## 💡 The Braced Templating Model: "Template Strings for Dates"
 
@@ -407,27 +406,27 @@ In Tempo, native formatting masks follow an intuitive template-literal paradigm 
 
 If your codebase relies on external format strings (`YYYY-MM-DD`, `yyyy-MM-dd`, or `%Y-%m-%d`), you do not need to rewrite your masks.
 
-### 1. Install `@magmacomputing/tempo-plugin-dialects`
+### 1. Install `@tempo-kit/plugin-dialects`
 ```bash
-npm install @magmacomputing/tempo-plugin-dialects
+npm install @tempo-kit/plugin-dialects
 ```
 
 ### 2. Drop-in Replacement for Luxon (`toFormat`)
 ```typescript
-import '@magmacomputing/tempo-plugin-dialects/install';
-import { Tempo } from '@magmacomputing/tempo';
+import '@tempo-kit/plugin-dialects/install';
+import { Tempo } from 'tempo-kit';
 
 const t = new Tempo('2026-10-24');
 console.log(t.toFormat('yyyy-MM-dd HH:mm')); // Luxon standard drop-in
 ```
 
 ### 3. Automatic Unbraced Mask Routing & Migration Guard
-When `@magmacomputing/tempo-plugin-dialects` is registered, calling `t.format('YYYY-MM-DD')` automatically routes through the dialects compiler.
+When `@tempo-kit/plugin-dialects` is registered, calling `t.format('YYYY-MM-DD')` automatically routes through the dialects compiler.
 
 If an unbraced format mask is passed without the dialects plugin installed:
 ```typescript
 t.format('YYYY-MM-DD');
-// ❌ Throws: [Tempo] Formatting unbraced format mask 'YYYY-MM-DD' requires '@magmacomputing/tempo-plugin-dialects'.
+// ❌ Throws: [Tempo] Formatting unbraced format mask 'YYYY-MM-DD' requires '@tempo-kit/plugin-dialects'.
 ```
 This safeguards developers from accidental silent formatting bugs and immediately guides them to the right solution.
 
@@ -439,14 +438,14 @@ Tempo v3.x finalizes the plugin ecosystem by extracting advanced features into s
 
 ## 🔁 Migrating to Tempo v3.x (Ticker Extraction)
 
-The `TickerPlugin` has been extracted from the core engine into a standalone open-source Community plugin (`@magmacomputing/tempo-plugin-ticker`).
+The `TickerPlugin` has been extracted from the core engine into a standalone open-source Community plugin (`@tempo-kit/plugin-ticker`).
 
 **Action Required**:
-1. If you use `Tempo.ticker()`, install `@magmacomputing/tempo-plugin-ticker` alongside `@magmacomputing/tempo`.
+1. If you use `Tempo.ticker()`, install `@tempo-kit/plugin-ticker` alongside `tempo-kit`.
 2. Import and register the plugin in your application initialization:
    ```javascript
-   import { Tempo } from '@magmacomputing/tempo';
-   import { TickerPlugin } from '@magmacomputing/tempo-plugin-ticker';
+   import { Tempo } from 'tempo-kit';
+   import { TickerPlugin } from '@tempo-kit/plugin-ticker';
 
    Tempo.init({
      plugins: [TickerPlugin]
@@ -461,12 +460,12 @@ Tempo v2.x introduces architectural improvements and a more modular engine. Whil
 Tempo is now split into a `core` engine and optional modules.
 
 ### If you use the full package:
-If you import from `@magmacomputing/tempo`, everything (except Plugin extensions, like .ticker()) is included and works exactly like v1.x. No changes are required.
+If you import from `tempo-kit`, everything (except Plugin extensions, like .ticker()) is included and works exactly like v1.x. No changes are required.
 
 ### If you want a lean bundle:
 You can now import the core engine only:
 ```javascript
-import { Tempo } from '@magmacomputing/tempo/core';
+import { Tempo } from 'tempo-kit/core';
 ```
 If you do this, you must manually import the features you need. Built-in features now self-register on import via side-effects.
 
@@ -479,8 +478,8 @@ In v1.x, all features were always present.
 ### v2.x (Opt-in for Core)
 If using the Core engine, simply import the module to activate the feature:
 ```javascript
-import '@magmacomputing/tempo/duration';
-import '@magmacomputing/tempo/ticker';
+import 'tempo-kit/duration';
+import 'tempo-kit/ticker';
 ```
 
 ## 🗓️ Term Logic Refactor
@@ -505,8 +504,8 @@ Tempo v2.4.0 introduces standalone utility entry points for `parse` and `format`
 ### 🛠️ Standalone Imports
 You can now import lightweight, tree-shakable versions of our parsing and formatting engines without the `Tempo` class:
 ```javascript
-import { parse } from '@magmacomputing/tempo/parse';
-import { format } from '@magmacomputing/tempo/format';
+import { parse } from 'tempo-kit/parse';
+import { format } from 'tempo-kit/format';
 ```
 
 ### ⚠️ Reorganized Paths
@@ -514,10 +513,10 @@ We have reorganized the package structure to support these standalone entry poin
 
 **Action Required**:
 1.  **Use package subpath maps**: Update your imports to use the official entry points:
-    *   ❌ `@magmacomputing/tempo/module/parse`
-    *   ❌ `@magmacomputing/tempo/module/format`
-    *   ✅ `@magmacomputing/tempo/parse`
-    *   ✅ `@magmacomputing/tempo/format`
+    *   ❌ `tempo-kit/module/parse`
+    *   ❌ `tempo-kit/module/format`
+    *   ✅ `tempo-kit/parse`
+    *   ✅ `tempo-kit/format`
 2.  **Check your Import Maps**: If you use browser-side import maps, ensure they point to package subpath locations rather than internal folder paths. A maintained `importmap.json` is included in the package root (`packages/tempo/importmap.json`) as the sanctioned reference for each release.
 
     > Note: The shipped `packages/tempo/importmap.json` is the supported exception for version-locked internal mappings. Use it as-is for your installed Tempo version instead of hand-authoring `dist/` paths.
@@ -526,8 +525,8 @@ We have reorganized the package structure to support these standalone entry poin
 ```json
 {
     "imports": {
-        "@magmacomputing/tempo/parse": "./node_modules/@magmacomputing/tempo/parse",
-        "@magmacomputing/tempo/format": "./node_modules/@magmacomputing/tempo/format"
+        "tempo-kit/parse": "./node_modules/tempo-kit/parse",
+        "tempo-kit/format": "./node_modules/tempo-kit/format"
     }
 }
 ```
@@ -538,7 +537,7 @@ As Tempo grows, it has become much more efficient for our developers to logicall
 
 **Action Required**:
 1.  Review your browser `importmap` entries.
-2.  Replace any older internal paths with the current package subpath entries (for example, `@magmacomputing/tempo/duration`, `@magmacomputing/tempo/mutate`, `@magmacomputing/tempo/parse`, and `@magmacomputing/tempo/format`).
+2.  Replace any older internal paths with the current package subpath entries (for example, `tempo-kit/duration`, `tempo-kit/mutate`, `tempo-kit/parse`, and `tempo-kit/format`).
 3.  Do not pin imports in your code directly to internal folder layouts in `dist/`, since those paths may change as modules are reorganized.  Instead rely wholly on your import maps.
 
 ## 🔁 Migrating from version 2.6.0

@@ -227,7 +227,7 @@ Options:
 		return `    // ${comment}\n    "${id}": ${jsonStr}${comma}`;
 	}).join('\n');
 
-	const jsoncContent = `{\n  // Tempo AI Plugin - Dynamic Remote Provider Manifest v1.1\n  // Hosted at: https://tempo.magmacomputing.com.au/providers.v1.jsonc (and .json)\n  // Consumed automatically by @magmacomputing/tempo-plugin-ai during initAI()\n  "version": "1.1",\n  "updatedAt": "${updatedManifest.updatedAt}",\n  "providers": {\n${providerEntries}\n  }\n}\n`;
+	const jsoncContent = `{\n  // Tempo AI Plugin - Dynamic Remote Provider Manifest v1.1\n  // Hosted at: https://tempo.magmacomputing.com.au/providers.v1.jsonc (and .json)\n  // Consumed automatically by @tempo-kit/plugin-ai during initAI()\n  "version": "1.1",\n  "updatedAt": "${updatedManifest.updatedAt}",\n  "providers": {\n${providerEntries}\n  }\n}\n`;
 
 	writeFileSync(MANIFEST_JSONC_PATH, jsoncContent, 'utf8');
 	console.log(`💾 Saved: ${MANIFEST_JSONC_PATH}`);

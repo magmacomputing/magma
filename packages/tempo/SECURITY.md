@@ -11,7 +11,7 @@ The following table lists the versions of Magma projects that currently receive 
 
 ## Reporting a Vulnerability
 
-We take the security of Magma Computing projects and `@magmacomputing/tempo` seriously. If you believe you have discovered a security vulnerability, please follow responsible disclosure guidelines.
+We take the security of Magma Computing projects and `tempo-kit` seriously. If you believe you have discovered a security vulnerability, please follow responsible disclosure guidelines.
 
 ### How to Report
 
@@ -27,7 +27,7 @@ Alternatively, you may submit a private security advisory through the **Security
 To help us investigate and resolve the issue quickly, please include:
 - A detailed description of the vulnerability and potential impact.
 - Step-by-step instructions or proof-of-concept (PoC) code to reproduce the issue.
-- The package name and version affected (e.g. `@magmacomputing/tempo@4.0.1`).
+- The package name and version affected (e.g. `tempo-kit@4.0.1`).
 - Any potential mitigations or suggested fixes.
 
 ### Response Timeline

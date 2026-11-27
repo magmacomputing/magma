@@ -8,12 +8,12 @@ describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	});
 
 	it('should verify well-known Symbol.for identities for all 6 lifecycle hooks', () => {
-		expect(TermHook.parse).toBe(Symbol.for('magmacomputing/tempo/term/parse'));
-		expect(TermHook.ordinal).toBe(Symbol.for('magmacomputing/tempo/term/ordinal'));
-		expect(TermHook.step).toBe(Symbol.for('magmacomputing/tempo/term/step'));
-		expect(TermHook.diff).toBe(Symbol.for('magmacomputing/tempo/term/diff'));
-		expect(TermHook.bound).toBe(Symbol.for('magmacomputing/tempo/term/bound'));
-		expect(TermHook.format).toBe(Symbol.for('magmacomputing/tempo/term/format'));
+		expect(TermHook.parse).toBe(Symbol.for('tempo-kit/term/parse'));
+		expect(TermHook.ordinal).toBe(Symbol.for('tempo-kit/term/ordinal'));
+		expect(TermHook.step).toBe(Symbol.for('tempo-kit/term/step'));
+		expect(TermHook.diff).toBe(Symbol.for('tempo-kit/term/diff'));
+		expect(TermHook.bound).toBe(Symbol.for('tempo-kit/term/bound'));
+		expect(TermHook.format).toBe(Symbol.for('tempo-kit/term/format'));
 	});
 
 	it('should dispatch [TermHook.parse] during string parsing', () => {

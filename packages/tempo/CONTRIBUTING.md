@@ -25,7 +25,7 @@ npm install
 ### Building
 Tempo is a TypeScript project that compiles to **ES2022**. 
 ```bash
-npm run build -w @magmacomputing/tempo
+npm run build -w tempo-kit
 ```
 
 ## 🧪 Testing

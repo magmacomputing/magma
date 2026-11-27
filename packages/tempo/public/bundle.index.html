@@ -206,7 +206,7 @@
 			<div class="subtitle">Full Bundle Test</div>
 			
 			<div class="code-block">
-				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'@magmacomputing/tempo'</span>;
+				<code><span class="keyword">import</span> { <span class="type">Tempo</span> } <span class="keyword">from</span> <span class="string">'tempo-kit'</span>;
 
 <span class="keyword">const</span> t = <span class="keyword">new</span> <span class="type">Tempo</span>(<span class="string">'next friday'</span>);
 t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span>);</code>
@@ -227,14 +227,14 @@ t.<span class="method">format</span>(<span class="string">'{mon} {dd:raw}'</span
 	{
 		"imports": {
 			"jsbi": "https://cdn.jsdelivr.net/npm/jsbi@4.3.0/dist/jsbi.mjs",
-			"@magmacomputing/tempo": "https://cdn.jsdelivr.net/npm/@magmacomputing/tempo@5.0.0/dist/tempo.bundle.esm.js",
+			"tempo-kit": "https://cdn.jsdelivr.net/npm/tempo-kit@5.0.0/dist/tempo.bundle.esm.js",
 			"@js-temporal/polyfill": "https://cdn.jsdelivr.net/npm/@js-temporal/polyfill@0.5/dist/index.esm.js"
 		}
 	}
 	</script>
 	<script type="module">
 		import '@js-temporal/polyfill';
-		import { Tempo } from '@magmacomputing/tempo';
+		import { Tempo } from 'tempo-kit';
 		
 		try {
 			const t = new Tempo('next friday');

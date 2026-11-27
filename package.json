@@ -28,7 +28,7 @@
     "review:limit": "tempo-cli review-limit",
     "build:tempo": "npm run build:library && npm run build:terms && npm run build --workspace=tempo-kit",
     "build:library": "npm run build --workspace=tempo-lib",
-    "build:terms": "npm run build --workspace=@magmacomputing/tempo-terms",
+    "build:terms": "npm run build --workspace=@tempo-kit/builtin-terms",
     "build:std": "npm run build:terms",
     "build:functions": "npm run build --workspace=tempo-fns",
     "build:plugins": "npm run build:tempo && tempo-cli build-plugins",

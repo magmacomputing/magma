@@ -3,7 +3,7 @@
     "id": "celestial",
     "name": "Celestial Plugin",
     "description": "Tempo plugin to add Terms for location-aware solar twilight events, lunar phase tracking, astronomical seasons and tidal mechanics",
-    "packageName": "@magmacomputing/tempo-plugin-celestial",
+    "packageName": "@tempo-kit/plugin-celestial",
     "plan": "community",
     "status": "active",
     "version": "1.3.1"
@@ -12,7 +12,7 @@
     "id": "batch",
     "name": "Batch Plugin",
     "description": "Tempo community plugin bringing C-level parallelization to massive date arrays via SharedArrayBuffer and Worker Threads.",
-    "packageName": "@magmacomputing/tempo-plugin-batch",
+    "packageName": "@tempo-kit/plugin-batch",
     "plan": "community",
     "status": "active",
     "version": "1.2.1"
@@ -21,7 +21,7 @@
     "id": "snap",
     "name": "Snap Plugin",
     "description": "Tempo plugin for rounding and snapping dates to custom minute, hour, or sub-second intervals — ideal for calendar UIs, time-pickers, and telemetry aggregation",
-    "packageName": "@magmacomputing/tempo-plugin-snap",
+    "packageName": "@tempo-kit/plugin-snap",
     "plan": "community",
     "status": "active",
     "version": "1.4.2"
@@ -30,7 +30,7 @@
     "id": "sync",
     "name": "Sync Plugin",
     "description": "Tempo community plugin providing lock-free, highly precise cross-thread synchronization via SharedArrayBuffer and Atomics.",
-    "packageName": "@magmacomputing/tempo-plugin-sync",
+    "packageName": "@tempo-kit/plugin-sync",
     "plan": "community",
     "status": "active",
     "version": "1.1.2"
@@ -39,7 +39,7 @@
     "id": "ai",
     "name": "AI Plugin",
     "description": "Tempo community plugin for LLM-powered natural language parsing.",
-    "packageName": "@magmacomputing/tempo-plugin-ai",
+    "packageName": "@tempo-kit/plugin-ai",
     "plan": "community",
     "status": "active",
     "version": "2.3.2"
@@ -48,7 +48,7 @@
     "id": "ticker",
     "name": "Ticker Plugin",
     "description": "Tempo plugin that provides a high-performance continuous execution loop (Ticker) based on temporal mathematics.",
-    "packageName": "@magmacomputing/tempo-plugin-ticker",
+    "packageName": "@tempo-kit/plugin-ticker",
     "plan": "community",
     "status": "active",
     "version": "2.7.0"
@@ -57,7 +57,7 @@
     "id": "geo",
     "name": "Geo Plugin",
     "description": "Tempo community plugin for IP geolocation lookup, browser hardware location services, and coordinate resolution.",
-    "packageName": "@magmacomputing/tempo-plugin-geo",
+    "packageName": "@tempo-kit/plugin-geo",
     "plan": "community",
     "status": "active",
     "version": "2.0.0"
@@ -65,8 +65,8 @@
   {
     "id": "_terms",
     "name": "_terms Plugin",
-    "description": "Built-in Civic and Cultural Terms for @magmacomputing/tempo (bundled natively under ./terms — not published separately)",
-    "packageName": "@magmacomputing/tempo-terms",
+    "description": "Built-in Civic and Cultural Terms for tempo-kit (bundled natively under ./terms — not published separately)",
+    "packageName": "@tempo-kit/builtin-terms",
     "plan": "community",
     "status": "active",
     "version": "1.0.0",
@@ -76,7 +76,7 @@
     "id": "dialects",
     "name": "Dialects Plugin",
     "description": "Tempo Community Plugin: Format dialects for Unicode LDML/Luxon, Moment, POSIX strftime, and Oracle/SQL TO_CHAR",
-    "packageName": "@magmacomputing/tempo-plugin-dialects",
+    "packageName": "@tempo-kit/plugin-dialects",
     "version": "1.1.2",
     "plan": "community",
     "status": "active"
@@ -85,7 +85,7 @@
     "id": "holidays",
     "name": "Holidays Plugin",
     "description": "Regional bank holiday, public holiday, and business day SLA scheduling plugin for Tempo",
-    "packageName": "@magmacomputing/tempo-plugin-holidays",
+    "packageName": "@tempo-kit/plugin-holidays",
     "version": "1.0.3",
     "plan": "community",
     "status": "active"
@@ -94,7 +94,7 @@
     "id": "spatial",
     "name": "Spatial Plugin",
     "description": "Tempo community plugin for GIS spatial geometry, Great-Circle navigation, transit velocity, and impossible travel anomaly detection.",
-    "packageName": "@magmacomputing/tempo-plugin-spatial",
+    "packageName": "@tempo-kit/plugin-spatial",
     "version": "1.0.1",
     "plan": "community",
     "status": "active"
@@ -103,7 +103,7 @@
     "id": "ntp",
     "name": "Ntp Plugin",
     "description": "Tempo plugin providing client-server network time synchronization and monotonic clock drift compensation using Cristian's algorithm and HTTP Server-Timing headers.",
-    "packageName": "@magmacomputing/tempo-plugin-ntp",
+    "packageName": "@tempo-kit/plugin-ntp",
     "version": "1.1.0",
     "plan": "community",
     "status": "active"
@@ -112,7 +112,7 @@
     "id": "roman",
     "name": "Roman Plugin",
     "description": "Tempo community plugin for classical Roman calendar arithmetic (Kalends, Nones, Ides, Ante Diem), leap year bissextile handling, and AUC (Ab Urbe Condita) year conversions.",
-    "packageName": "@magmacomputing/tempo-plugin-roman",
+    "packageName": "@tempo-kit/plugin-roman",
     "version": "1.0.0",
     "plan": "community",
     "status": "active"
@@ -121,7 +121,7 @@
     "id": "signals",
     "name": "Signals Plugin",
     "description": "Tempo community plugin for reactive TC39 Signals, adaptive relative-time updates, interval state tracking, and global config reactivity.",
-    "packageName": "@magmacomputing/tempo-plugin-signals",
+    "packageName": "@tempo-kit/plugin-signals",
     "version": "1.0.0",
     "plan": "community",
     "status": "active"

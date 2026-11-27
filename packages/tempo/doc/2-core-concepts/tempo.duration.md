@@ -29,7 +29,7 @@ When architecting the modern ECMAScript **`Temporal` API**, the TC39 committee d
 Calculates the time remaining from the Tempo instance *until* a future date. The target can be a **`Tempo` instance**, a **`Temporal` object**, a **JS `Date`**, an **ISO string**, or a **natural-language string expression**.
 
 ```javascript
-import { Tempo } from '@magmacomputing/tempo';
+import { Tempo } from 'tempo-kit';
 
 const now = new Tempo('2026-05-10T08:00:00');
 const targetDate = new Tempo('2026-12-25'); // Tempo instance
