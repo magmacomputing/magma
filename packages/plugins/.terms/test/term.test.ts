@@ -90,5 +90,13 @@ describe(`${label}`, () => {
     expect((a.term as any).betaTerm).toBeUndefined();
     expect((b.term as any).betaTerm).toBe('B');
     expect((b.term as any).alphaTerm).toBeUndefined();
+
+    // Enumeration and strict mode discovery must also stay scoped to the host registry
+    Object.keys(a.term);
+    expect((a.term as any).betaTerm).toBeUndefined();
+
+    const aStrict = new SandboxA('2026-01-10', { mode: 'strict' });
+    expect((aStrict.term as any).alphaTerm).toBe('A');
+    expect((aStrict.term as any).betaTerm).toBeUndefined();
   })
 })
