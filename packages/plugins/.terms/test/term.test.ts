@@ -1,4 +1,5 @@
 import { Tempo } from '#tempo';
+import { defineTerm } from '#tempo/plugin/sdk';
 
 const label = 'term:';
 
@@ -39,5 +40,50 @@ describe(`${label}`, () => {
 
     expect(tod)
       .toBe('Midday')
+  })
+
+  test(`${label} shares boundary instances across same-range queries and lazily evaluates span metrics`, () => {
+    const t1 = new Tempo('2026-01-10', { timeZone: 'UTC' });
+    const t2 = new Tempo('2026-01-11', { timeZone: 'UTC' });
+
+    const s1 = t1.term.quarter.span;
+    const s2 = t2.term.quarter.span;
+
+    expect(s1.start).toBe(s2.start);
+    expect(s1.end).toBe(s2.end);
+
+    for (const prop of ['total', 'elapsed', 'remaining', 'progress'] as const) {
+      expect(typeof Object.getOwnPropertyDescriptor(s1, prop)?.get).toBe('function');
+    }
+
+    expect(s1.total).toBe(s1.total);
+    expect(s1.elapsed).toBe(s1.elapsed);
+    expect(s1.remaining).toBe(s1.remaining);
+    expect(s1.progress).toBe(s1.progress);
+    expect(s1.progress).toBeLessThan(s2.progress);
+
+    const t3 = new Tempo('2026-01-10', { timeZone: 'America/New_York' });
+    expect(t3.term.quarter.span.start).not.toBe(s1.start);
+
+    Tempo.init({ locale: 'fr-FR' });
+    const t4 = new Tempo('2026-01-10', { timeZone: 'UTC' });
+    expect(t4.term.quarter.span.start).not.toBe(s1.start);
+    expect(t4.term.quarter.span.start.locale).toBe('fr-FR');
+  })
+
+  test(`${label} isolates host-registered terms from other sandboxes`, () => {
+    const SandboxA = Tempo.extend();
+    const SandboxB = Tempo.extend();
+
+    SandboxA.use(defineTerm({ key: 'alphaTerm', define: () => 'A' }));
+    SandboxB.use(defineTerm({ key: 'betaTerm', define: () => 'B' }));
+
+    const a = new SandboxA('2026-01-10');
+    const b = new SandboxB('2026-01-10');
+
+    expect((a.term as any).alphaTerm).toBe('A');
+    expect((a.term as any).betaTerm).toBeUndefined();
+    expect((b.term as any).betaTerm).toBe('B');
+    expect((b.term as any).alphaTerm).toBeUndefined();
   })
 })

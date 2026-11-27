@@ -156,13 +156,13 @@ Tempo.terms
 
 In **Tempo Full** (`tempo-kit`), Civic Terms (`#quarter`, `#season`, `#timeOfDay`) are enabled by default. In **Tempo Core** (`tempo-kit/core`), you can opt-in explicitly:
 
-### 1. Explicit Module (Civic Terms)
-Enables standard Civic Terms via `TermsModule` from `tempo-kit`.
+### 1. Civic Terms Bundle (`tempo-kit/terms`)
+Enables standard Civic Terms (`#quarter`, `#season`, `#timeOfDay`) without loading Full Tempo's optional modules (`FormatModule`, `DurationModule`, etc.):
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { TermsModule } from 'tempo-kit';
+import { CivicTerms } from 'tempo-kit/terms';
 
-Tempo.use(TermsModule);
+Tempo.use(CivicTerms);
 ```
 
 ### 2. Cultural Term Bundle (`tempo-kit/terms`)

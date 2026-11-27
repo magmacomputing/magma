@@ -51,8 +51,9 @@ export function ensureModule(t: any, module: string, silent: boolean = false): b
 
 	if (isNullish(hostLogic) && !isTermsLoaded) {
 		const baseName = mod.endsWith('Module') ? mod.slice(0, -6) : mod;
-		const importPath = baseName === 'Terms' ? 'term' : baseName.toLowerCase();
-		const msg = `${mod} not loaded. (Did you forget to Tempo.use(${mod}) or import '#tempo/${importPath}' / 'tempo-kit/${importPath}'?)`;
+		const msg = baseName === 'Terms'
+			? `${mod} not loaded. (Did you forget to Tempo.use(CivicTerms) from 'tempo-kit/terms'?)`
+			: `${mod} not loaded. (Did you forget to Tempo.use(${mod}) or import 'tempo-kit/${baseName.toLowerCase()}'?)`;
 		if (!silent) logError(msg, t?.config);
 
 		if (silent) return false;

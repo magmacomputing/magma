@@ -66,6 +66,9 @@
 			"#tempo/config/*": [
 				"./packages/tempo/src/config/*"
 			],
+			"#tempo/plugin/sdk": [
+				"./packages/tempo/src/plugin/plugin.sdk.ts"
+			],
 			"#tempo": [
 				"./packages/tempo/src/tempo.index.ts"
 			],

@@ -336,11 +336,14 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 							? { ...config, options: resolvedOptions }
 							: config;
 
+						const hasTermInState = state.pluginsDb?.terms?.some((t: TermPlugin) => t?.key === config.key) ?? false;
 						if (rt.termMap.get(config.key) === config) {
 							if (!isEmpty(resolvedOptions)) {
 								rt.termMap.set(config.key, termConfig);
 								if (config.scope) rt.termMap.set(config.scope, termConfig);
-								registerTerm(termConfig, (TempoClass as any)[$Internal]());
+								registerTerm(termConfig, state);
+							} else if (!hasTermInState) {
+								registerTerm(termConfig, state);
 							}
 							return;
 						}
@@ -352,7 +355,9 @@ export function usePlugin(TempoClass: typeof Tempo, args: any[]): typeof Tempo {
 								if (!isEmpty(resolvedOptions)) {
 									rt.termMap.set(config.key, termConfig);
 									if (config.scope) rt.termMap.set(config.scope, termConfig);
-									registerTerm(termConfig, (TempoClass as any)[$Internal]());
+									registerTerm(termConfig, state);
+								} else if (!hasTermInState) {
+									registerTerm(termConfig, state);
 								}
 								return;
 							}

@@ -1,5 +1,6 @@
 import { toZonedDateTime, toInstant, getTemporalIds, instant } from '#library/temporal.library.js';
-import { isNotNullish, isFunction, isObject, isString, isUndefined, isNumber, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
+import { isNotNullish, isFunction, isObject, isString, isUndefined, isNumber, isBoolean, isBigInt, isNull, isZonedDateTime, isPlainObject, isText, isSafeKey, isNullish } from '#library/assertion.library.js';
+import { BoundedCache } from '#library/cache.class.js';
 import { secure } from '#library/proxy.library.js';
 import { sortKey, byKey } from '#library/array.library.js';
 import { compare } from '#library/number.library.js';
@@ -16,6 +17,12 @@ import { SCHEMA, getLargestUnit, logWarn } from '../../support/support.util.js';
 import type { Tempo } from '../../tempo.class.js';
 import type { TermPlugin, Range, ResolvedRange, TermSpan, TermFactory } from './term.type.js';
 import { evaluate } from '#library/evaluation.library.js';
+
+const DEFAULT_BOUNDARY_CACHE_SIZE = 256;
+const boundaryCache = new WeakMap<object, BoundedCache<string, Tempo>>();
+const boundaryObjIds = new WeakMap<object, number>();
+const frozenValueKeys = new WeakMap<object, string>();
+let nextBoundaryObjId = 1;
 
 /**
  * ## defineTerm
@@ -108,45 +115,52 @@ function getHostOptions(source: any) {
 
 export function defineSpan(tempo: Tempo, start: Tempo, end: Tempo, anchor?: any): TermSpan {
 	const hostTempo = isTempo(tempo) ? tempo : start;
-	const Host = getHost(hostTempo);
-	const refTempo = isTempo(anchor)
-		? anchor
-		: (isZonedDateTime(anchor) && Host ? new Host(anchor, getHostOptions(hostTempo)) : hostTempo);
-	const refZdt = refTempo.toDateTime();
-	let total: any;
-	let elapsed: any;
-	let remaining: any;
+	let _refTempo: Tempo | undefined;
+	const getRefTempo = (): Tempo => {
+		if (_refTempo)
+			return _refTempo;
+		if (isTempo(anchor))
+			return (_refTempo = anchor as unknown as Tempo);
+		const Host = getHost(hostTempo);
+		if (isZonedDateTime(anchor) && Host)
+			return (_refTempo = new Host(anchor, getHostOptions(hostTempo)));
+		return (_refTempo = hostTempo);
+	};
 
-	if (ensureModule(hostTempo, 'DurationModule', true)) {
-		total = start.until(end);
-		elapsed = start.until(refTempo);
-		remaining = refTempo.until(end);
-	} else if (isFunction((getHost(hostTempo) as any)?.duration)) {
-		const startZdt = start.toDateTime();
-		const endZdt = end.toDateTime();
-		total = (getHost(hostTempo) as any).duration(startZdt.until(endZdt));
-		elapsed = (getHost(hostTempo) as any).duration(startZdt.until(refZdt));
-		remaining = (getHost(hostTempo) as any).duration(refZdt.until(endZdt));
-	} else {
-		const startZdt = start.toDateTime();
-		const endZdt = end.toDateTime();
-		total = startZdt.until(endZdt);
-		elapsed = startZdt.until(refZdt);
-		remaining = refZdt.until(endZdt);
-	}
+	const computeDuration = (from: Tempo, to: Tempo) => {
+		if (ensureModule(hostTempo, 'DurationModule', true))
+			return from.until(to);
+		const Host = getHost(hostTempo) as any;
+		if (isFunction(Host?.duration))
+			return Host.duration(from.toDateTime().until(to.toDateTime()));
+		return from.toDateTime().until(to.toDateTime());
+	};
 
-	const totalNs = (end.toDateTime().epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
-	const elapsedNs = (refZdt.epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
-	const rawProgress = totalNs > 0n ? Number(elapsedNs) / Number(totalNs) : 0;
-	const progress = Math.round(Math.max(0, Math.min(1, rawProgress)) * 10000) / 10000;
+	let _total: any;
+	let _elapsed: any;
+	let _remaining: any;
+	let _progress: number | undefined;
 
 	return {
 		start,
 		end,
-		total,
-		elapsed,
-		remaining,
-		progress
+		get total() {
+			return (_total ??= computeDuration(start, end));
+		},
+		get elapsed() {
+			return (_elapsed ??= computeDuration(start, getRefTempo()));
+		},
+		get remaining() {
+			return (_remaining ??= computeDuration(getRefTempo(), end));
+		},
+		get progress() {
+			if (!isUndefined(_progress))
+				return _progress;
+			const totalNs = (end.toDateTime().epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
+			const elapsedNs = (getRefTempo().toDateTime().epochNanoseconds as bigint) - (start.toDateTime().epochNanoseconds as bigint);
+			const rawProgress = totalNs > 0n ? Number(elapsedNs) / Number(totalNs) : 0;
+			return (_progress = Math.round(Math.max(0, Math.min(1, rawProgress)) * 10000) / 10000);
+		},
 	};
 }
 
@@ -170,6 +184,83 @@ function defineTermConfig(config?: Record<string, any>): Readonly<Record<string,
 	if (!isPlainObject(config)) return undefined;
 	const entries = Object.entries(config).filter(([, value]) => !isUndefined(value));
 	return entries.length > 0 ? Object.freeze(Object.fromEntries(entries)) : undefined;
+}
+
+function getBoundaryObjectId(obj: object): string {
+	let id = boundaryObjIds.get(obj);
+	if (isUndefined(id)) {
+		id = nextBoundaryObjId++;
+		boundaryObjIds.set(obj, id);
+	}
+	return `#${id}`;
+}
+
+function serializeBoundaryValue(val: unknown, depth = 0, seen = new Set<object>()): string | undefined {
+	if (isUndefined(val))
+		return 'u';
+	if (isNull(val))
+		return 'null';
+	if (isBigInt(val))
+		return `${val}n`;
+	if (isString(val) || isNumber(val) || isBoolean(val))
+		return JSON.stringify(val);
+	if (!isObject(val) && !Array.isArray(val) && !isFunction(val))
+		return undefined;
+
+	const obj = val as object;
+	if (isFunction(obj))
+		return getBoundaryObjectId(obj);
+
+	const cachedFrozen = frozenValueKeys.get(obj);
+	if (!isUndefined(cachedFrozen))
+		return cachedFrozen;
+
+	if (depth >= 4 || seen.has(obj))
+		return getBoundaryObjectId(obj);
+
+	seen.add(obj);
+	let result: string | undefined;
+	if (Array.isArray(obj)) {
+		const items: string[] = [];
+		for (const item of obj) {
+			const encoded = serializeBoundaryValue(item, depth + 1, seen);
+			if (isUndefined(encoded)) {
+				seen.delete(obj);
+				return undefined;
+			}
+			items.push(encoded);
+		}
+		result = `[${items.join(',')}]`;
+	} else if (isPlainObject(obj) || Object.isFrozen(obj)) {
+		const keys = Object.keys(obj).sort();
+		const parts: string[] = [];
+		for (const k of keys) {
+			const propVal = (obj as Record<string, unknown>)[k];
+			if (isUndefined(propVal))
+				continue;
+			const encoded = serializeBoundaryValue(propVal, depth + 1, seen);
+			if (isUndefined(encoded)) {
+				seen.delete(obj);
+				return undefined;
+			}
+			parts.push(`${JSON.stringify(k)}:${encoded}`);
+		}
+		result = `{${parts.join('|')}}`;
+	} else {
+		result = getBoundaryObjectId(obj);
+	}
+	seen.delete(obj);
+
+	if (Object.isFrozen(obj) && !isUndefined(result))
+		frozenValueKeys.set(obj, result);
+
+	return result;
+}
+
+function getBoundaryOptionsKey(options: unknown): string | undefined {
+	if (isUndefined(options))
+		return '';
+	return serializeBoundaryValue(options);
 }
 
 /**
@@ -198,6 +289,10 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const rolloverIndex = Math.max(0, unitIndex - 1);
 	const rolloverUnit = SCHEMA[rolloverIndex][0];
 
+	const Host = getHost(tempo);
+	const hostOptions = getHostOptions(tempo);
+	const hostOptionsKey = getBoundaryOptionsKey(hostOptions);
+
 	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
 		if (range.span?.start)
 			return range.span.start;
@@ -215,12 +310,28 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 				obj[u] = isNumber(fallback) ? fallback : (i <= 2 ? 1 : 0);
 			}
 		}
-		// @ts-ignore
+
 		const [timeZone, calendar] = getTemporalIds(anchor.timeZoneId, anchor.calendarId);
 		const resZdt = toZonedDateTime({ ...obj, timeZone, calendar });
 
-		// @ts-ignore
-		return new (getHost(tempo))(resZdt, getHostOptions(tempo));
+		if (Host && !isUndefined(hostOptionsKey)) {
+			const cacheOwner = (Host as any)[sym.$Internal]?.() ?? Host;
+			let cache = boundaryCache.get(cacheOwner);
+			if (!cache) {
+				cache = new BoundedCache<string, Tempo>(DEFAULT_BOUNDARY_CACHE_SIZE, Infinity);
+				boundaryCache.set(cacheOwner, cache);
+			}
+			const key = `${resZdt.epochNanoseconds.toString()}|${timeZone}|${calendar}|${hostOptionsKey}`;
+			const cached = cache.get(key);
+			if (cached)
+				return cached;
+			const created = new Host(resZdt, hostOptions) as Tempo;
+			cache.set(key, created);
+			return created;
+		}
+
+
+		return new Host(resZdt, hostOptions);
 	};
 
 	const hasSpans = list.some(r => r.span?.start);
