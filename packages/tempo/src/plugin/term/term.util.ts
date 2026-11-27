@@ -292,6 +292,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 	const Host = getHost(tempo);
 	const hostOptions = getHostOptions(tempo);
 	const hostOptionsKey = getBoundaryOptionsKey(hostOptions);
+	const effectiveLocale = isTempo(tempo) ? (tempo as any).locale : evaluate(Host?.config?.locale);
 
 	const resolve = (range: Range, anchor: Temporal.ZonedDateTime) => {
 		if (range.span?.start)
@@ -321,7 +322,7 @@ export function getTermRange(tempo: Tempo, list: Range[] | readonly Range[], key
 				cache = new BoundedCache<string, Tempo>(DEFAULT_BOUNDARY_CACHE_SIZE, Infinity);
 				boundaryCache.set(cacheOwner, cache);
 			}
-			const key = `${resZdt.epochNanoseconds.toString()}|${timeZone}|${calendar}|${hostOptionsKey}`;
+			const key = `${resZdt.epochNanoseconds.toString()}|${timeZone}|${calendar}|${effectiveLocale ?? ''}|${hostOptionsKey}`;
 			const cached = cache.get(key);
 			if (cached)
 				return cached;

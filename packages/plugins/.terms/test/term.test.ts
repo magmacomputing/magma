@@ -65,6 +65,11 @@ describe(`${label}`, () => {
     const t3 = new Tempo('2026-01-10', { timeZone: 'America/New_York' });
     expect(t3.term.quarter.span.start).not.toBe(s1.start);
 
+    Tempo.use({ options: { locale: 'de-DE' } });
+    const t3b = new Tempo('2026-01-10', { timeZone: 'UTC' });
+    expect(t3b.term.quarter.span.start).not.toBe(s1.start);
+    expect(t3b.term.quarter.span.start.locale).toBe('de-DE');
+
     Tempo.init({ locale: 'fr-FR' });
     const t4 = new Tempo('2026-01-10', { timeZone: 'UTC' });
     expect(t4.term.quarter.span.start).not.toBe(s1.start);

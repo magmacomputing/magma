@@ -1426,12 +1426,13 @@ export class Tempo {
 					if (!ensureModule(this, 'TermsModule')) return undefined;
 
 					const terms = (this.constructor as typeof Tempo)[$Internal]?.()?.pluginsDb?.terms ?? getRuntime().state?.pluginsDb?.terms;
-					const term = terms?.find((item: TermPlugin) => item.key === key || item.scope === key || asArray(item.aliases).includes(key));
+					const term = terms?.find((item: TermPlugin) => item.key === key)
+						?? terms?.find((item: TermPlugin) => item.scope === key || asArray(item.aliases).includes(key));
 					if (term) {
 						const isKeyOnly = key === term.key ? Boolean(term.scope) : key !== term.scope;
 						const define = (keyOnly: boolean) => {
 							try {
-								const result = term.define.call(this, keyOnly);
+								const result = term.define.call(this, keyOnly, undefined, key);
 								const res = Array.isArray(result) ? getTermRange(this, result, keyOnly) : result;
 								return isObject(res) ? secure(res) : res;
 							} catch (err: unknown) {

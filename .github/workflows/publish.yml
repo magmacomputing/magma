@@ -237,7 +237,6 @@ jobs:
       - name: Publish Package(s) with Provenance
         env:
           INPUT_TAG: ${{ inputs.tag || 'auto' }}
-          NODE_AUTH_TOKEN: ${{ secrets.TEMPO_NPM_TOKEN || secrets.NPM_TOKEN }}
         run: |
           publish_pkg() {
             local pkg="$1"
