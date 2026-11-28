@@ -697,23 +697,24 @@
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo",
-			"@magmacomputing/tempo/terms": "https://esm.sh/@magmacomputing/tempo/terms",
-			"@magmacomputing/tempo-fns": "https://esm.sh/@magmacomputing/tempo-fns",
-			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai",
-			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial",
-			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects",
-			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo",
-			"@magmacomputing/tempo-plugin-holidays": "https://esm.sh/@magmacomputing/tempo-plugin-holidays",
-			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap",
-			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial",
-			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync",
-			"@magmacomputing/tempo-plugin-ntp": "https://esm.sh/@magmacomputing/tempo-plugin-ntp",
-			"@magmacomputing/tempo-plugin-roman": "https://esm.sh/@magmacomputing/tempo-plugin-roman",
-			"@magmacomputing/tempo-plugin-roman/consuls": "https://esm.sh/@magmacomputing/tempo-plugin-roman/consuls",
-			"@magmacomputing/tempo-plugin-signals": "https://esm.sh/@magmacomputing/tempo-plugin-signals",
-			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker"
+			"tempo-kit": "https://esm.sh/tempo-kit",
+			"tempo-kit/terms": "https://esm.sh/tempo-kit/terms",
+			"tempo-fns": "https://esm.sh/tempo-fns",
+			"@tempo-kit/plugin-ai": "https://esm.sh/@tempo-kit/plugin-ai",
+			"@tempo-kit/plugin-batch": "https://esm.sh/@tempo-kit/plugin-batch",
+			"@tempo-kit/plugin-celestial": "https://esm.sh/@tempo-kit/plugin-celestial",
+			"@tempo-kit/plugin-cultural": "https://esm.sh/@tempo-kit/plugin-cultural",
+			"@tempo-kit/plugin-dialects": "https://esm.sh/@tempo-kit/plugin-dialects",
+			"@tempo-kit/plugin-geo": "https://esm.sh/@tempo-kit/plugin-geo",
+			"@tempo-kit/plugin-holidays": "https://esm.sh/@tempo-kit/plugin-holidays",
+			"@tempo-kit/plugin-snap": "https://esm.sh/@tempo-kit/plugin-snap",
+			"@tempo-kit/plugin-spatial": "https://esm.sh/@tempo-kit/plugin-spatial",
+			"@tempo-kit/plugin-sync": "https://esm.sh/@tempo-kit/plugin-sync",
+			"@tempo-kit/plugin-ntp": "https://esm.sh/@tempo-kit/plugin-ntp",
+			"@tempo-kit/plugin-roman": "https://esm.sh/@tempo-kit/plugin-roman",
+			"@tempo-kit/plugin-roman/consuls": "https://esm.sh/@tempo-kit/plugin-roman/consuls",
+			"@tempo-kit/plugin-signals": "https://esm.sh/@tempo-kit/plugin-signals",
+			"@tempo-kit/plugin-ticker": "https://esm.sh/@tempo-kit/plugin-ticker"
 		}
 	}
 	</script>
@@ -953,13 +954,13 @@
 			const embedTitle = document.getElementById('embedTitle');
 			if (embedTitle && pluginParam) {
 				embedTitle.textContent = isPluginMode
-					? `Tempo + @magmacomputing/tempo-plugin-${pluginName}`
+					? `Tempo + @tempo-kit/plugin-${pluginName}`
 					: `Tempo REPL · ${activeSnippetMeta.label}`;
 			}
 		} else if (isPluginMode) {
 			const headerBadge = document.getElementById('headerBadge');
 			if (headerBadge)
-				headerBadge.textContent = `@magmacomputing/tempo-plugin-${pluginName}`;
+				headerBadge.textContent = `@tempo-kit/plugin-${pluginName}`;
 		}
 
 		const codeEditor = document.getElementById('codeEditor');
@@ -1005,9 +1006,9 @@
 				if (!globalThis.Temporal && Temporal) globalThis.Temporal = Temporal;
 
 				statusText.textContent = 'Loading Tempo core & plugins...';
-				const { Tempo } = await import('@magmacomputing/tempo');
-				const { GeoPlugin } = await import('@magmacomputing/tempo-plugin-geo');
-				const { CelestialPlugin } = await import('@magmacomputing/tempo-plugin-celestial');
+				const { Tempo } = await import('tempo-kit');
+				const { GeoPlugin } = await import('@tempo-kit/plugin-geo');
+				const { CelestialPlugin } = await import('@tempo-kit/plugin-celestial');
 
 				// Register default plugins
 				Tempo.use(GeoPlugin);

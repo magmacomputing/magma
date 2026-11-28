@@ -1,18 +1,16 @@
 name: Deploy Documentation
 on:
   workflow_dispatch:
-  # Temporarily paused during v5 active development to prevent premature GH Pages updates.
-  # Re-enable upon official v5 release.
-  # push:
-  #   branches: [main]
-  #   paths:
-  #     - 'packages/tempo/**'
-  #     - 'packages/functions/**'
-  #     - 'packages/plugins/**'
-  #     - 'packages/library/**'
-  #     - '.github/workflows/deploy-docs.yml'
-  #     - 'package.json'
-  #     - 'package-lock.json'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/tempo/**'
+      - 'packages/functions/**'
+      - 'packages/plugins/**'
+      - 'packages/library/**'
+      - '.github/workflows/deploy-docs.yml'
+      - 'package.json'
+      - 'package-lock.json'
 
 permissions:
   contents: read
