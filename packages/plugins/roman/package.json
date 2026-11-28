@@ -32,10 +32,6 @@
   "peerDependencies": {
     "tempo-kit": "^5.0.0"
   },
-  "tempo": {
-    "vendorVariantId": "tempo-plugin-roman",
-    "plan": "community"
-  },
   "devDependencies": {
     "tempo-kit": "^5.0.0"
   },

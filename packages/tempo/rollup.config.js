@@ -184,6 +184,9 @@ export default [
 	{
 		input: entryPoints,
 		external: ['@js-temporal/polyfill'],
+		treeshake: {
+			moduleSideEffects: (id) => !id.includes('/library/') || id.includes('/temporal/'),
+		},
 		output: {
 			dir: 'dist',
 			format: 'es',

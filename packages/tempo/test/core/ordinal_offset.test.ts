@@ -1,6 +1,6 @@
 import { inspect } from 'node:util';
 import { Tempo } from '#tempo/core';
-import { Enum } from '#library/enumerate.library.js';
+import { Enum } from 'tempo-kit/library';
 import { delegator } from '#library/proxy.library.js';
 import { FormatModule } from '#tempo/format';
 import { parseWeekday, parseDate, resolveNumber } from '#tempo/engine/engine.lexer.js';

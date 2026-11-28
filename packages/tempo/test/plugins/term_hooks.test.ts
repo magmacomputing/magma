@@ -1,6 +1,7 @@
 import { Tempo, TermHook } from '#tempo';
 import { defineTerm } from '#tempo/plugin/term/term.util.js';
-import { ZodiacTerm, EasternTerm, TimelineTerm } from '#tempo/terms';
+import { TimelineTerm } from '#tempo/terms';
+import { ZodiacTerm, EasternTerm } from '@tempo-kit/plugin-cultural';
 
 describe('Term Plugin Lifecycle Hooks (Phase 1)', () => {
 	beforeEach(() => {

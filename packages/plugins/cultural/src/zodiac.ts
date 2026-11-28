@@ -89,7 +89,7 @@ export const ZodiacTerm = /*#__PURE__*/ defineTerm({
 
 	[TermHook.format](this: any, token: string, tempo: Tempo) {
 		return resolveRangeFormat(this, token, tempo);
-	}
+	},
 });
 
 export const SunSignTerm = ZodiacTerm;
@@ -103,4 +103,3 @@ declare module 'tempo-kit' {
 		zodiac: WesternZodiacScope;
 	}
 }
-

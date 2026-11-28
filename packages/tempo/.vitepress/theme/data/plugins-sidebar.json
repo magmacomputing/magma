@@ -131,6 +131,20 @@
     ]
   },
   {
+    "text": "Cultural Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/cultural.index"
+      },
+      {
+        "text": "Use Cases & Production Patterns",
+        "link": "/doc/9-plugins/cultural.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Dialects Plugin",
     "collapsed": true,
     "items": [

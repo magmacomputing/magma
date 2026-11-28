@@ -7,11 +7,6 @@ import {
 	SEASON_KEYS,
 	TimelineTerm,
 	TIMEOFDAY_KEYS,
-	ZodiacTerm,
-	ZODIAC_KEYS,
-	EasternTerm,
-	EASTERN_ANIMAL_KEYS,
-	CulturalTerms,
 } from '../src/index.js';
 
 describe('Term Unified Logic (Mutation & Identity)', () => {
@@ -247,7 +242,8 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect(Object.isFrozen(QUARTER_KEYS)).toBe(true);
 
 			const t = new Tempo(testDate, { catch: true });
-			expect(t.term.quarter.keys).toBe(QUARTER_KEYS);
+			expect(t.term.quarter.keys).toStrictEqual(QUARTER_KEYS);
+			expect(Object.isFrozen(t.term.quarter.keys)).toBe(true);
 			expect((t.term.quarter as any).quarters).toBeUndefined();
 		});
 
@@ -257,7 +253,8 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect(Object.isFrozen(SEASON_KEYS)).toBe(true);
 
 			const t = new Tempo(testDate, { catch: true, sphere: 'north' });
-			expect(t.term.season.keys).toBe(SEASON_KEYS);
+			expect(t.term.season.keys).toStrictEqual(SEASON_KEYS);
+			expect(Object.isFrozen(t.term.season.keys)).toBe(true);
 			expect((t.term.season as any).seasons).toBeUndefined();
 		});
 
@@ -268,35 +265,10 @@ describe('Term Unified Logic (Mutation & Identity)', () => {
 			expect(Object.isFrozen(TIMEOFDAY_KEYS)).toBe(true);
 
 			const t = new Tempo(testDate, { catch: true });
-			expect(t.term.timeOfDay.keys).toBe(TIMEOFDAY_KEYS);
+			expect(t.term.timeOfDay.keys).toStrictEqual(TIMEOFDAY_KEYS);
+			expect(Object.isFrozen(t.term.timeOfDay.keys)).toBe(true);
 			expect((t.term.timeOfDay as any).periods).toBeUndefined();
 			expect((t.term.timeOfDay as any).timesOfDay).toBeUndefined();
-		});
-
-		it('ZodiacTerm exposes frozen keys reference without redundant plural properties', () => {
-			Tempo.use(CulturalTerms);
-			expect(ZodiacTerm.keys).toBe(ZODIAC_KEYS);
-			expect((ZodiacTerm as any).signs).toBeUndefined();
-			expect((ZodiacTerm as any).zodiacs).toBeUndefined();
-			expect(Object.isFrozen(ZODIAC_KEYS)).toBe(true);
-
-			const t = new Tempo(testDate, { catch: true });
-			expect(t.term.zodiac.keys).toBe(ZODIAC_KEYS);
-			expect((t.term.zodiac as any).signs).toBeUndefined();
-			expect((t.term.zodiac as any).zodiacs).toBeUndefined();
-		});
-
-		it('EasternTerm exposes frozen keys reference without redundant plural properties', () => {
-			Tempo.use(CulturalTerms);
-			expect(EasternTerm.keys).toBe(EASTERN_ANIMAL_KEYS);
-			expect((EasternTerm as any).animals).toBeUndefined();
-			expect((EasternTerm as any).signs).toBeUndefined();
-			expect(Object.isFrozen(EASTERN_ANIMAL_KEYS)).toBe(true);
-
-			const t = new Tempo(testDate, { catch: true });
-			expect(t.term.shengxiao.keys).toBe(EASTERN_ANIMAL_KEYS);
-			expect((t.term.shengxiao as any).animals).toBeUndefined();
-			expect((t.term.shengxiao as any).signs).toBeUndefined();
 		});
 
 		it('QuarterTerm resolves ISO calendar quarters even when Tempo uses a non-ISO calendar', () => {
