@@ -182,18 +182,18 @@ jobs:
                 elif [[ "$item" == @tempo-kit/plugin-* ]]; then
                   pname="${item#@tempo-kit/plugin-}"
                   case "$pname" in
-                    ticker|ntp|signals|sync|snap|batch|celestial|geo|holidays|roman|spatial|ai|dialects) PKGS+=("$item") ;;
+                    ticker|ntp|signals|sync|snap|batch|celestial|cultural|geo|holidays|roman|spatial|ai|dialects) PKGS+=("$item") ;;
                     *) PKGS+=("@magmacomputing/tempo-plugin-$pname") ;;
                   esac
                 elif [[ "$item" == @magmacomputing/* ]]; then
                   pname="${item#@magmacomputing/tempo-plugin-}"
                   case "$pname" in
-                    ticker|ntp|signals|sync|snap|batch|celestial|geo|holidays|roman|spatial|ai|dialects) PKGS+=("@tempo-kit/plugin-$pname") ;;
+                    ticker|ntp|signals|sync|snap|batch|celestial|cultural|geo|holidays|roman|spatial|ai|dialects) PKGS+=("@tempo-kit/plugin-$pname") ;;
                     *) PKGS+=("$item") ;;
                   esac
                 else
                   case "$item" in
-                    ticker|ntp|signals|sync|snap|batch|celestial|geo|holidays|roman|spatial|ai|dialects) PKGS+=("@tempo-kit/plugin-$item") ;;
+                    ticker|ntp|signals|sync|snap|batch|celestial|cultural|geo|holidays|roman|spatial|ai|dialects) PKGS+=("@tempo-kit/plugin-$item") ;;
                     *) PKGS+=("@magmacomputing/tempo-plugin-$item") ;;
                   esac
                 fi

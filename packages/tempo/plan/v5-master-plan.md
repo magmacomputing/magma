@@ -40,9 +40,9 @@ graph TD
   - Split `getRuntime` import in `@magmacomputing/tempo-plugin-dialects` to preserve dual `^4.7.0 || ^5.0.0` peer dependency support.
 - [x] **Review Remediation**:
   - Resolve all 7 CodeRabbit review findings on PR #110 with localized unit test and monorepo build verification.
-- [x] **`Tempo.derive()` Prototypal Sandbox Architecture**:
-  - Transitioned legacy `Tempo.create()` to `Tempo.derive()` (Option A: clean break) aligning conceptual parity with `Enum.derive()`.
-  - Non-destructive prototypal sandbox inheritance with full `[Symbol.dispose]` explicit resource management (`using`) and scoped callbacks (`Tempo.derive(fn)` / `Tempo.derive(options, fn)`).
+- [x] **`Tempo.extend()` Prototypal Sandbox Architecture**:
+  - Transitioned legacy `Tempo.create()` to `Tempo.extend()` (Option A: clean break) aligning conceptual parity with `Enum.extend()`.
+  - Non-destructive prototypal sandbox inheritance with full `[Symbol.dispose]` explicit resource management (`using`) and scoped callbacks (`Tempo.extend(fn)` / `Tempo.extend(options, fn)`).
 
 ---
 
@@ -199,5 +199,5 @@ To ensure Core Tempo remains clean, modern, and unburdened by legacy runtime shi
   - [x] **2. Execute Release Prep**: Major-bump the 12 previously published plugins (keep `signals` at `1.0.0`), refresh `keywords`, write terse `CHANGELOG.md` entries, and run `npm run lock:sync`. *(Merged as PR #124)*
   - [ ] **3a. Bootstrap New Packages Locally (`--tag next`) & Link OIDC**: Publish an initial pre-release (`--access public --tag next`, e.g. `5.0.0-rc.0` / `5.0.0-beta.0`) via interactive `npm login` for every brand-new package name not yet on npm (`tempo-kit`, `@tempo-kit/builtin-terms`, `@tempo-kit/plugin-*`, plus `tempo-fns` / `tempo-lib` if unpublished), configure **Trusted Publisher** (`magmacomputing/magma` → `publish.yml`) on npmjs.com for each package, and remove `TEMPO_NPM_TOKEN` / `NPM_TOKEN` from GitHub Secrets.
   - [ ] **3b. Publish `v5.0.0` GA via Pure-OIDC (`publish.yml`)**: Publish `tempo-kit`, `tempo-fns`, `@tempo-kit/builtin-terms`, and all 13 `@tempo-kit/plugin-*` packages via `publish.yml` OIDC Trusted Publishing (plus `@magmacomputing/*` `v5.0.0` bridge stubs if launching dual-publish together).
-  - [ ] **4. Deploy v5 Docs Immediately (`workflow_dispatch`)**: Trigger `.github/workflows/deploy-docs.yml` manually right after `v5.0.0` GA publishes so the live GitHub Pages site (`llms.txt`, `/v4/` split, and `tempo-kit` README links on npmjs.com) matches v5 within minutes.
-  - [ ] **5. Merge Post-Publish REPL PR & Re-enable Pages Auto-Deploy**: Update `packages/tempo/public/repl/{index.html,showcase.html,plugins.manifest.js,snippets.manifest.js}` to `tempo-kit`, `tempo-fns`, and `@tempo-kit/plugin-*` with the published npm versions (verifying `esm.sh` loads cleanly), and uncomment the `push` trigger in `.github/workflows/deploy-docs.yml` so Pages stays synced automatically.
+  - [ ] **4. Deploy v5 Docs Immediatly (`workflow_dispatch`)**: Trigger `.github/workflows/deploy-docs.yml` manually right after `v5.0.0` GA publishes so the live GitHub Pages site (`llms.txt`, `/v4/` split, and `tempo-kit` README links on npmjs.com) matches v5 within minutes.
+  - [ ] **5. Merge Post-Publish REPL PR & Re-enable Pages Auto-Deploy**: Run `tempo-cli catalog-sync`, update `packages/tempo/public/repl/{index.html,showcase.html,plugins.manifest.js,snippets.manifest.js}` and `.vitepress/theme/data/snippets.manifest.js` to `tempo-kit`, `tempo-fns`, and `@tempo-kit/plugin-*` (including `@tempo-kit/plugin-cultural` + preset snippet) with the published npm versions (verifying `esm.sh` loads cleanly), and uncomment the `push` trigger in `.github/workflows/deploy-docs.yml` so Pages stays synced automatically.

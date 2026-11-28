@@ -131,6 +131,20 @@
     ]
   },
   {
+    "text": "Cultural Plugin",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/doc/9-plugins/cultural.index"
+      },
+      {
+        "text": "Use Cases & Production Patterns",
+        "link": "/doc/9-plugins/cultural.use-cases-and-patterns"
+      }
+    ]
+  },
+  {
     "text": "Dialects Plugin",
     "collapsed": true,
     "items": [
@@ -339,16 +353,6 @@
       {
         "text": "Production Use Cases & Architectural Patterns",
         "link": "/doc/9-plugins/ticker.use-cases-and-patterns"
-      }
-    ]
-  },
-  {
-    "text": "Single-Feature Community Plugins",
-    "collapsed": true,
-    "items": [
-      {
-        "text": "Cultural Terms (@tempo-kit/plugin-cultural)",
-        "link": "/doc/9-plugins/cultural.index"
       }
     ]
   }

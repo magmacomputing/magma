@@ -48,7 +48,7 @@
     "docs:build": "npm run docs:build --workspace=tempo-kit",
     "docs:preview": "npm run docs:preview --workspace=tempo-kit",
     "docs:push": "npm run docs:push --workspace=tempo-kit",
-    "test:dist": "npm run build:library && npm run build:tempo && TEST_DIST=true vitest run",
+    "test:dist": "npm run build:library && npm run build:tempo && npm run build --workspace=@tempo-kit/plugin-cultural && TEST_DIST=true vitest run",
     "update:check": "npx npm-check-updates --workspaces --root",
     "update:patch": "npx npm-check-updates --workspaces --root --target patch -u",
     "update:minor": "npx npm-check-updates --workspaces --root --target minor -u",

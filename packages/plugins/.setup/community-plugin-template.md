@@ -6,7 +6,7 @@ This template outlines the standard operating procedure for preparing and publis
 
 Ensure the plugin's `package.json` contains the correct community configuration:
 
-- **Version**: Set to `"1.0.0"` for the initial plugin release. For local bootstrap publishing to establish npm registry presence prior to configuring GitHub Actions Trusted Publisher, maintainers may temporarily adjust `package.json` to `0.1.0`, publish locally, and revert via `git stash; git stash drop` before executing the official `v1.0.0` provenance release in CI.
+- **Version**: Set to `"1.0.0"` for the initial plugin release. For local bootstrap publishing to establish npm registry presence prior to configuring GitHub Actions Trusted Publisher, maintainers may temporarily adjust `package.json` to `"1.0.0-rc.0"`, publish locally with `npm publish --access public --tag next` (so `latest` stays untouched), and revert via `git stash; git stash drop` before executing the official `v1.0.0` provenance release in CI.
 - **License**: Must strictly be `"MIT"`.
 - **Type**: Set `"type": "module"`.
 - **Files**: Include the published files array (omit `"src"` as `"dist"` contains all compiled JavaScript bundles and TypeScript `.d.ts` type definitions):
