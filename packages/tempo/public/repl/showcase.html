@@ -709,23 +709,24 @@
 	{
 		"imports": {
 			"@js-temporal/polyfill": "https://esm.sh/@js-temporal/polyfill@0.5.1",
-			"@magmacomputing/tempo": "https://esm.sh/@magmacomputing/tempo",
-			"@magmacomputing/tempo/terms": "https://esm.sh/@magmacomputing/tempo/terms",
-			"@magmacomputing/tempo-fns": "https://esm.sh/@magmacomputing/tempo-fns",
-			"@magmacomputing/tempo-plugin-ai": "https://esm.sh/@magmacomputing/tempo-plugin-ai",
-			"@magmacomputing/tempo-plugin-batch": "https://esm.sh/@magmacomputing/tempo-plugin-batch",
-			"@magmacomputing/tempo-plugin-celestial": "https://esm.sh/@magmacomputing/tempo-plugin-celestial",
-			"@magmacomputing/tempo-plugin-dialects": "https://esm.sh/@magmacomputing/tempo-plugin-dialects",
-			"@magmacomputing/tempo-plugin-geo": "https://esm.sh/@magmacomputing/tempo-plugin-geo",
-			"@magmacomputing/tempo-plugin-holidays": "https://esm.sh/@magmacomputing/tempo-plugin-holidays",
-			"@magmacomputing/tempo-plugin-snap": "https://esm.sh/@magmacomputing/tempo-plugin-snap",
-			"@magmacomputing/tempo-plugin-spatial": "https://esm.sh/@magmacomputing/tempo-plugin-spatial",
-			"@magmacomputing/tempo-plugin-sync": "https://esm.sh/@magmacomputing/tempo-plugin-sync",
-			"@magmacomputing/tempo-plugin-ntp": "https://esm.sh/@magmacomputing/tempo-plugin-ntp",
-			"@magmacomputing/tempo-plugin-roman": "https://esm.sh/@magmacomputing/tempo-plugin-roman",
-			"@magmacomputing/tempo-plugin-roman/consuls": "https://esm.sh/@magmacomputing/tempo-plugin-roman/consuls",
-			"@magmacomputing/tempo-plugin-signals": "https://esm.sh/@magmacomputing/tempo-plugin-signals",
-			"@magmacomputing/tempo-plugin-ticker": "https://esm.sh/@magmacomputing/tempo-plugin-ticker"
+			"tempo-kit": "https://esm.sh/tempo-kit",
+			"tempo-kit/terms": "https://esm.sh/tempo-kit/terms",
+			"tempo-fns": "https://esm.sh/tempo-fns",
+			"@tempo-kit/plugin-ai": "https://esm.sh/@tempo-kit/plugin-ai",
+			"@tempo-kit/plugin-batch": "https://esm.sh/@tempo-kit/plugin-batch",
+			"@tempo-kit/plugin-celestial": "https://esm.sh/@tempo-kit/plugin-celestial",
+			"@tempo-kit/plugin-cultural": "https://esm.sh/@tempo-kit/plugin-cultural",
+			"@tempo-kit/plugin-dialects": "https://esm.sh/@tempo-kit/plugin-dialects",
+			"@tempo-kit/plugin-geo": "https://esm.sh/@tempo-kit/plugin-geo",
+			"@tempo-kit/plugin-holidays": "https://esm.sh/@tempo-kit/plugin-holidays",
+			"@tempo-kit/plugin-snap": "https://esm.sh/@tempo-kit/plugin-snap",
+			"@tempo-kit/plugin-spatial": "https://esm.sh/@tempo-kit/plugin-spatial",
+			"@tempo-kit/plugin-sync": "https://esm.sh/@tempo-kit/plugin-sync",
+			"@tempo-kit/plugin-ntp": "https://esm.sh/@tempo-kit/plugin-ntp",
+			"@tempo-kit/plugin-roman": "https://esm.sh/@tempo-kit/plugin-roman",
+			"@tempo-kit/plugin-roman/consuls": "https://esm.sh/@tempo-kit/plugin-roman/consuls",
+			"@tempo-kit/plugin-signals": "https://esm.sh/@tempo-kit/plugin-signals",
+			"@tempo-kit/plugin-ticker": "https://esm.sh/@tempo-kit/plugin-ticker"
 		}
 	}
 	</script>
@@ -941,7 +942,7 @@
 					<div class="card-header">
 						<div class="card-title-group">
 							<span class="card-title cyan">2. Geolocation & Natural Solar Time</span>
-							<span class="badge badge-cyan">@magmacomputing/tempo-plugin-geo</span>
+							<span class="badge badge-cyan">@tempo-kit/plugin-geo</span>
 						</div>
 						<div style="display: flex; align-items: center; gap: 8px;">
 							<button id="btnDetectIp" class="btn-copy" style="background: rgba(56, 189, 248, 0.2);">
@@ -1138,10 +1139,10 @@
 		import { Temporal } from '@js-temporal/polyfill';
 		if (!globalThis.Temporal) globalThis.Temporal = Temporal;
 
-		import { Tempo } from '@magmacomputing/tempo';
-		import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
-		import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
-		import { DialectsPlugin, DIALECT } from '@magmacomputing/tempo-plugin-dialects';
+		import { Tempo } from 'tempo-kit';
+		import { GeoPlugin } from '@tempo-kit/plugin-geo';
+		import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
+		import { DialectsPlugin, DIALECT } from '@tempo-kit/plugin-dialects';
 
 		// 1. Initialize Tempo with event registry aliases
 		Tempo.init({
@@ -1358,7 +1359,7 @@
 				mutCodeSnippet += ';';
 
 				// Core TypeScript Code Snippet
-				outputCode.textContent = `import { Tempo } from '@magmacomputing/tempo';
+				outputCode.textContent = `import { Tempo } from 'tempo-kit';
 
 // 1. Parse Anchor
 const t = new Tempo('${baseExpr}');
@@ -1445,9 +1446,9 @@ console.log('Relative Phrase:', t.since(target, { unit: 'days', numeric: 'auto' 
 				}
 
 				// Plugins TypeScript Snippet
-				outputCode.textContent = `import { Tempo } from '@magmacomputing/tempo';
-import { GeoPlugin } from '@magmacomputing/tempo-plugin-geo';
-import { CelestialPlugin } from '@magmacomputing/tempo-plugin-celestial';
+				outputCode.textContent = `import { Tempo } from 'tempo-kit';
+import { GeoPlugin } from '@tempo-kit/plugin-geo';
+import { CelestialPlugin } from '@tempo-kit/plugin-celestial';
 
 // Register official plugins
 Tempo.use(GeoPlugin);

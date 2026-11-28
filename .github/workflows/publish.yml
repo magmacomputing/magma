@@ -8,7 +8,7 @@ on:
         type: boolean
         default: false
       tempo:
-        description: 'tempo (core)'
+        description: 'tempo-kit (core)'
         type: boolean
         default: false
       tempo_fns:
@@ -16,59 +16,59 @@ on:
         type: boolean
         default: false
       plugin_ai:
-        description: 'tempo-plugin-ai'
+        description: '@tempo-kit/plugin-ai'
         type: boolean
         default: false
       plugin_batch:
-        description: 'tempo-plugin-batch'
+        description: '@tempo-kit/plugin-batch'
         type: boolean
         default: false
       plugin_celestial:
-        description: 'tempo-plugin-celestial'
+        description: '@tempo-kit/plugin-celestial'
         type: boolean
         default: false
       plugin_cultural:
-        description: 'tempo-plugin-cultural'
+        description: '@tempo-kit/plugin-cultural'
         type: boolean
         default: false
       plugin_dialects:
-        description: 'tempo-plugin-dialects'
+        description: '@tempo-kit/plugin-dialects'
         type: boolean
         default: false
       plugin_geo:
-        description: 'tempo-plugin-geo'
+        description: '@tempo-kit/plugin-geo'
         type: boolean
         default: false
       plugin_holidays:
-        description: 'tempo-plugin-holidays'
+        description: '@tempo-kit/plugin-holidays'
         type: boolean
         default: false
       plugin_ntp:
-        description: 'tempo-plugin-ntp'
+        description: '@tempo-kit/plugin-ntp'
         type: boolean
         default: false
       plugin_roman:
-        description: 'tempo-plugin-roman'
+        description: '@tempo-kit/plugin-roman'
         type: boolean
         default: false
       plugin_signals:
-        description: 'tempo-plugin-signals'
+        description: '@tempo-kit/plugin-signals'
         type: boolean
         default: false
       plugin_snap:
-        description: 'tempo-plugin-snap'
+        description: '@tempo-kit/plugin-snap'
         type: boolean
         default: false
       plugin_spatial:
-        description: 'tempo-plugin-spatial'
+        description: '@tempo-kit/plugin-spatial'
         type: boolean
         default: false
       plugin_sync:
-        description: 'tempo-plugin-sync'
+        description: '@tempo-kit/plugin-sync'
         type: boolean
         default: false
       plugin_ticker:
-        description: 'tempo-plugin-ticker'
+        description: '@tempo-kit/plugin-ticker'
         type: boolean
         default: false
       custom:
