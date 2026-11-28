@@ -10,10 +10,13 @@
 
 ---
 
-## 1. Localized East Asian Lunar Zodiac Badges (`cn` / `jp` / `kr` / `vn`)
+## 1. Localized East Asian Zodiac Badges (`cn` / `jp` / `kr` / `vn`)
 
 ### The Challenge
-East Asian New Year campaigns and localization pipelines share the 12-year Sexagenary cycle, but regional audiences expect localized animal names and characters—such as **Cat (`Mão / Mèo`)** instead of **Rabbit** in Vietnam, **Sheep** instead of **Goat** in Japan/Korea, and **Wild Boar** instead of **Pig** in Japan.
+East Asian New Year campaigns and localization pipelines share the 12-year zodiac animal cycle (paired with the 5 elements in the 60-year sexagenary cycle), but regional audiences expect localized animal names and characters—such as **Cat (`Mão / Mèo`)** instead of **Rabbit** in Vietnam, **Sheep** instead of **Goat** in Japan/Korea, and **Wild Boar** instead of **Pig** in Japan.
+
+> [!NOTE]
+> `EasternTerm` derives its animal, element, and `.span` boundaries (`YYYY-01-01` to `(YYYY+1)-01-01`) from the **Gregorian calendar year** (`t.yy`), not the lunisolar New Year boundary. Dates in January or early February prior to Lunar New Year will resolve to that Gregorian year's sign.
 
 ### Implementation Pattern
 

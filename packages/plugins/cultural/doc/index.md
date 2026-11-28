@@ -9,7 +9,10 @@
 A lightweight Tempo community plugin providing traditional and cultural calendar Terms:
 
 - **`ZodiacTerm`** (`#zdc`, `#zodiac`, `#sunSign`, `#starSign`) — Western Tropical Zodiac signs with symbols, emojis, traits, shorthand navigation, ordinals, and formatting.
-- **`EasternTerm`** (`#sign`, `#shengxiao`, `#lunarSign`, `#eastern`) — East Asian Sexagenary Lunar Zodiac cycle with 5 elements, Yin/Yang polarity, and regional variants (`cn`, `jp`, `kr`, `vn`).
+- **`EasternTerm`** (`#sign`, `#shengxiao`, `#lunarSign`, `#eastern`) — East Asian Sexagenary Zodiac cycle with 5 elements, Yin/Yang polarity, and regional variants (`cn`, `jp`, `kr`, `vn`).
+
+> [!NOTE]
+> `EasternTerm` selects the zodiac animal and `.span` boundaries (`YYYY-01-01` → `(YYYY+1)-01-01`) using the **Gregorian calendar year** (`t.yy`) rather than the lunisolar New Year boundary. Dates in January or early February prior to Lunar New Year resolve to the Gregorian year's sign.
 
 ## Installation
 

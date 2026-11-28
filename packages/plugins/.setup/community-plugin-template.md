@@ -607,18 +607,20 @@ When introducing or retiring a plugin, register it across the browser REPL playg
 
 NPM Trusted Publishing (OIDC) requires that a package **already exists** on the npm registry before its access settings can be configured. Therefore, introducing a new plugin involves a one-time bootstrap step followed by configuring automated CI releases:
 
-### Step 1: Manual Initial Publish (Bootstrap)
-Because npm cannot configure Trusted Publishers for non-existent packages, the initial bootstrap release (`v0.1.0`) must be published manually by an authenticated maintainer:
-1. Build the plugin and navigate to its workspace directory:
+### Step 1: Manual Initial Publish (Bootstrap on `main`)
+Because npm cannot configure Trusted Publishers for non-existent packages, keep `"version": "1.0.0"` in the PR merged to `main`, then perform a one-time local bootstrap publish from the fetched `main` branch using a temporary pre-release version (`1.0.0-rc.0`) and `--tag next` (so npm's `latest` dist-tag remains reserved for `v1.0.0`):
+1. On your local `main` branch, temporarily change `"version"` in `packages/plugins/[name]/package.json` to `"1.0.0-rc.0"` (do **not** commit this change).
+2. Build the plugin and navigate to its workspace directory:
    ```bash
    npm run build --workspace=@tempo-kit/plugin-[name]
    cd packages/plugins/[name]
    ```
-2. Authenticate and publish the initial public version:
+3. Authenticate and publish the temporary bootstrap pre-release under the `next` dist-tag:
    ```bash
    npm login
-   npm publish --access public
+   npm publish --access public --tag next
    ```
+4. Revert `packages/plugins/[name]/package.json` back to `"1.0.0"` locally (e.g., `git stash; git stash drop` or `git checkout -- packages/plugins/[name]/package.json`).
 
 ### Step 2: Configure NPM Trusted Publisher
 Once the package exists on `npmjs.com`, configure GitHub Actions OIDC for all future releases:
@@ -630,5 +632,5 @@ Once the package exists on `npmjs.com`, configure GitHub Actions OIDC for all fu
    - **Workflow filename**: `publish.yml`
    - **Environment**: *(leave blank unless using environment-gated deployments)*
 
-### Step 3: Subsequent Releases via CI (`1.0.0`+)
-Once configured, bump the package version to `1.0.0` (or subsequent versions) and trigger `.github/workflows/publish.yml` (`workflow_dispatch` or batch release). The release will be cryptographically signed and published with Sigstore provenance (`--provenance`) without requiring long-lived npm tokens.
+### Step 3: Official `v1.0.0` Release via CI (with Provenance)
+With `main` still cleanly at `"1.0.0"`, trigger `.github/workflows/publish.yml` (`workflow_dispatch` or batch release). GitHub Actions will publish `v1.0.0` under the `latest` dist-tag, cryptographically signed with Sigstore provenance (`--provenance`) without requiring long-lived npm tokens.
