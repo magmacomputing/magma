@@ -1,10 +1,10 @@
 import { Tempo } from 'tempo-kit';
-import { CulturalTerms, EasternTerm } from '../src/index.js';
+import { CulturalPlugin, CulturalTerms, ZodiacTerm, ZODIAC_KEYS, EasternTerm, EASTERN_ANIMAL_KEYS } from '../src/index.js';
 
 describe('Eastern Zodiac & Western Zodiac Terms', () => {
 	beforeEach(() => {
 		Tempo.init();
-		Tempo.use(CulturalTerms);
+		Tempo.use(CulturalPlugin);
 	});
 
 	it('resolves Western Tropical Zodiac signs with emojis (zdc, zodiac, sunSign, starSign)', () => {
@@ -133,5 +133,23 @@ describe('Eastern Zodiac & Western Zodiac Terms', () => {
 		expect(scope).toBeDefined();
 		expect(scope.animal).toBe('Dog');
 		expect(scope.span.start.format('{yyyy}')).toBe('1970');
+	});
+
+	it('exposes frozen keys references without redundant plural properties', () => {
+		Tempo.init();
+		Tempo.use(CulturalTerms);
+		expect(ZodiacTerm.keys).toBe(ZODIAC_KEYS);
+		expect((ZodiacTerm as any).signs).toBeUndefined();
+		expect((ZodiacTerm as any).zodiacs).toBeUndefined();
+		expect(Object.isFrozen(ZODIAC_KEYS)).toBe(true);
+
+		expect(EasternTerm.keys).toBe(EASTERN_ANIMAL_KEYS);
+		expect((EasternTerm as any).animals).toBeUndefined();
+		expect((EasternTerm as any).signs).toBeUndefined();
+		expect(Object.isFrozen(EASTERN_ANIMAL_KEYS)).toBe(true);
+
+		const t = new Tempo('2024-05-15T12:00:00+10:00[Australia/Sydney]', { catch: true });
+		expect(t.term.zodiac.keys).toBe(ZODIAC_KEYS);
+		expect(t.term.shengxiao.keys).toBe(EASTERN_ANIMAL_KEYS);
 	});
 });

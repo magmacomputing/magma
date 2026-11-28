@@ -1,5 +1,5 @@
 import { Tempo } from '#tempo';
-import { ZodiacTerm } from '#tempo/terms';
+import { ZodiacTerm } from '@tempo-kit/plugin-cultural';
 
 const label = 'discovery.getters:';
 

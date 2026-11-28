@@ -98,11 +98,11 @@ tTropics.term.season.label // → 'Long Wet' ('Long Wet', 'Long Dry', 'Short Wet
 
 ### `zdc` / `zodiac` — Astrological Zodiac
 
-Determines the Western astrological sign for the date when `ZodiacTerm` is registered (`EasternTerm` provides the Chinese/lunar zodiac).
+Determines the Western astrological sign for the date when `ZodiacTerm` is registered from `@tempo-kit/plugin-cultural` (`EasternTerm` provides the Chinese/lunar zodiac).
 
 ```ts
-import { ZodiacTerm, EasternTerm } from 'tempo-kit/terms';
-Tempo.use([ZodiacTerm, EasternTerm]);
+import { CulturalPlugin, ZodiacTerm, EasternTerm } from '@tempo-kit/plugin-cultural';
+Tempo.use(CulturalPlugin); // or Tempo.use([ZodiacTerm, EasternTerm])
 
 const t = new Tempo('14-Mar-2025');
 
@@ -165,13 +165,13 @@ import { CivicTerms } from 'tempo-kit/terms';
 Tempo.use(CivicTerms);
 ```
 
-### 2. Cultural Term Bundle (`tempo-kit/terms`)
-Loads cultural terms (`ZodiacTerm`, `EasternTerm`, etc.) without affecting default core bundle size:
+### 2. Cultural Term Plugin (`@tempo-kit/plugin-cultural`)
+Loads traditional/cultural terms (`ZodiacTerm`, `EasternTerm`) as a standalone plugin without affecting core bundle size:
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { CulturalTerms } from 'tempo-kit/terms';
+import { CulturalPlugin } from '@tempo-kit/plugin-cultural';
 
-Tempo.use(CulturalTerms);
+Tempo.use(CulturalPlugin);
 ```
 
 ### 3. Surgical Opt-in (Individual Terms)

@@ -174,8 +174,8 @@ In v5.0.0, the Term system undergoes a breaking architectural refinement to alig
 
 * **Opt-in Requirement for Cultural & Astrological Terms:**
   * `TermsModule` now registers only standard `CivicTerms` (`QuarterTerm`, `SeasonTerm`, `TimelineTerm`) by default.
-  * Cultural, astrological, and corporate terms (`ZodiacTerm`, `EasternTerm`, `FiscalTerm`) are now opt-in and must be explicitly imported and registered via `Tempo.use(...)` or en masse with `CulturalTerms`.
-  * Code relying on automatic `t.term.zodiac` or `t.term.shengxiao` registration will evaluate to `undefined` unless explicitly registered.
+  * Cultural and astrological terms (`ZodiacTerm`, `EasternTerm`) have been extracted into the standalone `@tempo-kit/plugin-cultural` package, while corporate fiscal quarters (`FiscalTerm`) are opt-in via `tempo-kit/terms`.
+  * Code relying on automatic `t.term.zodiac` or `t.term.shengxiao` registration will evaluate to `undefined` unless `@tempo-kit/plugin-cultural` is installed and registered.
 * **`QuarterTerm` (`qtr` / `quarter`) strictly ISO 8601-2 aligned:**
   * Calendar quarters strictly map to standard Gregorian calendar quarters (`Q1` = Jan 1, `Q2` = Apr 1, `Q3` = Jul 1, `Q4` = Oct 1) globally, completely decoupled from geographic hemisphere (`sphere`).
   * The legacy `fiscal` field on `QuarterTerm` scope has been removed.
@@ -210,15 +210,15 @@ t.term.quarter.span.start; // Frozen Tempo instance
 t.term.quarter.span.end;   // Frozen Tempo instance
 t.term.quarter.span.progress; // Normalized float (0.0 .. 1.0)
 
-// ✅ v5.0.0 (Cultural & Astrological terms require explicit opt-in)
-import { ZodiacTerm, EasternTerm, CulturalTerms } from 'tempo-kit/terms';
+// ✅ v5.0.0 (Cultural & Astrological terms live in @tempo-kit/plugin-cultural)
+import { CulturalPlugin, ZodiacTerm, EasternTerm } from '@tempo-kit/plugin-cultural';
 
 // Option A: Register individual terms
 Tempo.use(ZodiacTerm);
 Tempo.use(EasternTerm);
 
-// Option B: Register all cultural terms at once
-Tempo.use(CulturalTerms);
+// Option B: Register the full cultural plugin
+Tempo.use(CulturalPlugin);
 
 const tAstro = new Tempo('2026-02-15');
 tAstro.term.zdc; // 'Aquarius'

@@ -125,5 +125,14 @@
     "version": "1.0.0",
     "plan": "community",
     "status": "active"
+  },
+  {
+    "id": "cultural",
+    "name": "Cultural Plugin",
+    "description": "Tempo community plugin for traditional and cultural calendar terms — Western Tropical Zodiac (ZodiacTerm) and East Asian Sexagenary Lunar Zodiac (EasternTerm) with regional variants.",
+    "packageName": "@tempo-kit/plugin-cultural",
+    "version": "1.0.0",
+    "plan": "community",
+    "status": "active"
   }
 ]

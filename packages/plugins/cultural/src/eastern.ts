@@ -1,5 +1,5 @@
 import { defineTerm, defineSpan, resolveRangeFormat, TermHook, type TermSpan } from 'tempo-kit/plugin/sdk';
-import { isNumber } from 'tempo-lib';
+import { isNumber } from 'tempo-kit/library';
 import { getChineseZodiac as getChineseZodiacFn } from 'tempo-fns';
 import type { Tempo } from 'tempo-kit';
 
@@ -204,14 +204,13 @@ export const EasternTerm = /*#__PURE__*/ defineTerm({
 	},
 	define(this: Tempo, keyOnly?: boolean, anchor?: any) {
 		const scopeObj = getEasternScope(this, anchor);
-		if (keyOnly === true || keyOnly === undefined) {
-			return scopeObj.key;
-		}
-		return scopeObj;
+		return (keyOnly === true || keyOnly === undefined)
+			? scopeObj.key
+			: scopeObj;
 	},
 	[TermHook.format](this: any, token: string, tempo: Tempo) {
 		return resolveRangeFormat(this, token, tempo);
-	}
+	},
 });
 
 export const LunarSignTerm = EasternTerm;

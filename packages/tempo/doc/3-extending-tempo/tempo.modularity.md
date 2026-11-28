@@ -63,13 +63,13 @@ Tempo.use(CivicTerms);
 > [!NOTE] Registry Resets (`Tempo.init`)
 > Calling `Tempo.init()` clears and re-initializes the term registry. If your application calls `Tempo.init()`, either pass `CivicTerms` in `Tempo.init({ plugins: [CivicTerms] })` or call `Tempo.use(CivicTerms)` after `Tempo.init()`.
 
-#### 2. Opt-In Term Bundles (`tempo-kit/terms`)
-Import only the specific term bundles or individual terms you need:
+#### 2. Opt-In Term Bundles (`tempo-kit/terms` & `@tempo-kit/plugin-cultural`)
+Import only the specific built-in or plugin term bundles you need:
 ```typescript
 import { Tempo } from 'tempo-kit/core';
-import { CulturalTerms } from 'tempo-kit/terms';
+import { FiscalTerm } from 'tempo-kit/terms';
 
-Tempo.use(CulturalTerms);
+Tempo.use(FiscalTerm);
 ```
 
 #### 3. The Surgical Strike (Data-Only)

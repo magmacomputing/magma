@@ -48,10 +48,6 @@
   "devDependencies": {
     "tempo-kit": "^5.0.0"
   },
-  "tempo": {
-    "vendorVariantId": "tempo-plugin-celestial",
-    "plan": "community"
-  },
   "keywords": [
     "tempo-kit",
     "tempo-kit-plugin",

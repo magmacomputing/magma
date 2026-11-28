@@ -38,10 +38,6 @@
     "test": "vitest run -c ../vitest.shared.ts",
     "prepublishOnly": "tempo-cli prepublish"
   },
-  "tempo": {
-    "vendorVariantId": "tempo-plugin-geo",
-    "plan": "community"
-  },
   "dependencies": {
     "tempo-fns": "^1.2.0"
   },

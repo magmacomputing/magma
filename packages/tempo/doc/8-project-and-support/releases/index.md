@@ -2,7 +2,8 @@
 
 Explore the evolution of Tempo through its version history.
 
-- [Version 4.x (Current)](./v4.x) - 100% Open-Source Community Core, Dynamic Functional Context (DFC), and API unification.
+- [Version 5.x (Current)](./v5.x) - `tempo-kit` namespace, `Tempo.now()` instance factory, `Tempo.derive()`, Civic/Cultural Terms split, and `.span` metrics.
+- [Version 4.x (LTS)](./v4.x) - 100% Open-Source Community Core, Dynamic Functional Context (DFC), and API unification.
 - [Version 3.x](./v3.x) - Removal of deprecated shorthands and major engine hardening.
 - [Version 2.x](./v2.x) - Modular architecture, Shorthand engine, and Ticker stability.
 - [Version 1.x (Legacy)](./v1.x) - Initial public release and Temporal polyfill integration.

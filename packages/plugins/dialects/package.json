@@ -50,10 +50,6 @@
 		"registry": "https://registry.npmjs.org/",
 		"access": "public"
 	},
-	"tempo": {
-		"vendorVariantId": "tempo-plugin-dialects",
-		"plan": "community"
-	},
 	"peerDependencies": {
 		"tempo-kit": "^5.0.0"
 	},

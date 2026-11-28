@@ -166,16 +166,6 @@
       "import": "./dist/term/term.season.js",
       "default": "./dist/term/term.season.js"
     },
-    "./terms/zodiac": {
-      "types": "./dist/term/term.zodiac.d.ts",
-      "import": "./dist/term/term.zodiac.js",
-      "default": "./dist/term/term.zodiac.js"
-    },
-    "./terms/eastern": {
-      "types": "./dist/term/term.eastern.d.ts",
-      "import": "./dist/term/term.eastern.js",
-      "default": "./dist/term/term.eastern.js"
-    },
     "./terms/timeline": {
       "types": "./dist/term/term.timeline.d.ts",
       "import": "./dist/term/term.timeline.js",

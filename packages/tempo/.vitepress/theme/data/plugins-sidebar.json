@@ -341,5 +341,15 @@
         "link": "/doc/9-plugins/ticker.use-cases-and-patterns"
       }
     ]
+  },
+  {
+    "text": "Single-Feature Community Plugins",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Cultural Terms (@tempo-kit/plugin-cultural)",
+        "link": "/doc/9-plugins/cultural.index"
+      }
+    ]
   }
 ]

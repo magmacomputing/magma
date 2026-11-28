@@ -27,6 +27,10 @@ on:
         description: 'tempo-plugin-celestial'
         type: boolean
         default: false
+      plugin_cultural:
+        description: 'tempo-plugin-cultural'
+        type: boolean
+        default: false
       plugin_dialects:
         description: 'tempo-plugin-dialects'
         type: boolean
@@ -115,6 +119,7 @@ jobs:
           INPUT_PLUGIN_AI: ${{ inputs.plugin_ai }}
           INPUT_PLUGIN_BATCH: ${{ inputs.plugin_batch }}
           INPUT_PLUGIN_CELESTIAL: ${{ inputs.plugin_celestial }}
+          INPUT_PLUGIN_CULTURAL: ${{ inputs.plugin_cultural }}
           INPUT_PLUGIN_DIALECTS: ${{ inputs.plugin_dialects }}
           INPUT_PLUGIN_GEO: ${{ inputs.plugin_geo }}
           INPUT_PLUGIN_HOLIDAYS: ${{ inputs.plugin_holidays }}
@@ -134,6 +139,7 @@ jobs:
               "tempo-kit"
               "tempo-fns"
               "@tempo-kit/plugin-celestial"
+              "@tempo-kit/plugin-cultural"
               "@tempo-kit/plugin-ai"
               "@tempo-kit/plugin-batch"
               "@tempo-kit/plugin-geo"
@@ -153,6 +159,7 @@ jobs:
             [ "$INPUT_PLUGIN_AI" = "true" ] && PKGS+=("@tempo-kit/plugin-ai")
             [ "$INPUT_PLUGIN_BATCH" = "true" ] && PKGS+=("@tempo-kit/plugin-batch")
             [ "$INPUT_PLUGIN_CELESTIAL" = "true" ] && PKGS+=("@tempo-kit/plugin-celestial")
+            [ "$INPUT_PLUGIN_CULTURAL" = "true" ] && PKGS+=("@tempo-kit/plugin-cultural")
             [ "$INPUT_PLUGIN_DIALECTS" = "true" ] && PKGS+=("@tempo-kit/plugin-dialects")
             [ "$INPUT_PLUGIN_GEO" = "true" ] && PKGS+=("@tempo-kit/plugin-geo")
             [ "$INPUT_PLUGIN_HOLIDAYS" = "true" ] && PKGS+=("@tempo-kit/plugin-holidays")

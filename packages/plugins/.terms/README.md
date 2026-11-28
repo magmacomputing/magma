@@ -13,11 +13,9 @@ At build time, the Rollup pipeline inlines these terms directly into the Tempo b
 | Key | Scope | Description |
 |---|---|---|
 | `Quarter` | `calendar` | ISO 8601-2 calendar quarters (Q1, Q2, Q3, Q4) — Core (`CivicTerms`) |
-| `Fiscal` | `fiscal` | Jurisdictional & corporate fiscal quarters (FQ1, FQ2, FQ3, FQ4) — Opt-in (`CulturalTerms` / `./terms`) |
+| `Fiscal` | `fiscal` | Jurisdictional & corporate fiscal quarters (FQ1, FQ2, FQ3, FQ4) — Opt-in (`./terms`) |
 | `Season` | `meteorological` | Meteorological & tropical seasons (Spring, Summer, Autumn, Winter, Wet, Dry) — Core (`CivicTerms`) |
 | `Timeline` | `timeOfDay` | Daily time-of-day periods (Morning, Midday, Afternoon, Evening, Night) — Core (`CivicTerms`) |
-| `Zodiac` | `astrological` | Western Zodiac sun signs — Opt-in (`CulturalTerms` / `./terms`) |
-| `Eastern` | `shengxiao` | Eastern Lunar Zodiac cycle — Opt-in (`CulturalTerms` / `./terms`) |
 
 ## Usage for End-Users
 Civic terms are bundled natively and auto-loaded when importing Tempo:
@@ -25,17 +23,16 @@ Civic terms are bundled natively and auto-loaded when importing Tempo:
 import { Tempo } from 'tempo-kit';
 // The CivicTerms are auto-loaded and available natively on the Tempo instance.
 ```
-Or to import cultural or standard terms manually via the explicit `./terms` sub-path:
+Or import opt-in built-in terms (such as `FiscalTerm`) via the `./terms` sub-path:
 ```ts
 import { Tempo } from 'tempo-kit';
 
-// Import cultural terms collectively
-import { CulturalTerms } from 'tempo-kit/terms';
-Tempo.use(CulturalTerms);
+import { FiscalTerm } from 'tempo-kit/terms';
+Tempo.use(FiscalTerm);
 
-// Or import a specific term individually
-import { ZodiacTerm } from 'tempo-kit/terms/zodiac';
-Tempo.use(ZodiacTerm);
+// Or import a specific civic term individually
+import { QuarterTerm } from 'tempo-kit/terms/quarter';
+Tempo.use(QuarterTerm);
 ```
 
 ## Contributing

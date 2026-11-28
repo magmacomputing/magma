@@ -1,0 +1,77 @@
+{
+  "name": "@tempo-kit/plugin-cultural",
+  "version": "1.0.0",
+  "description": "Tempo community plugin for traditional and cultural calendar terms — Western Tropical Zodiac (ZodiacTerm) and East Asian Sexagenary Lunar Zodiac (EasternTerm) with regional variants.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "./dist/install.js"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/magmacomputing/magma.git",
+    "directory": "packages/plugins/cultural"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc",
+    "test": "vitest run -c ../vitest.shared.ts",
+    "prepublishOnly": "tempo-cli prepublish"
+  },
+  "dependencies": {
+    "tempo-fns": "^1.2.0"
+  },
+  "peerDependencies": {
+    "tempo-kit": "^5.0.0"
+  },
+  "devDependencies": {
+    "tempo-kit": "^5.0.0"
+  },
+  "keywords": [
+    "tempo-kit",
+    "tempo-kit-plugin",
+    "tempo",
+    "temporal",
+    "tempo-plugin",
+    "cultural",
+    "zodiac",
+    "eastern-zodiac",
+    "shengxiao",
+    "astrology",
+    "calendar",
+    "typescript"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./zodiac": {
+      "types": "./dist/zodiac.d.ts",
+      "import": "./dist/zodiac.js",
+      "default": "./dist/zodiac.js"
+    },
+    "./eastern": {
+      "types": "./dist/eastern.d.ts",
+      "import": "./dist/eastern.js",
+      "default": "./dist/eastern.js"
+    },
+    "./install": {
+      "types": "./dist/install.d.ts",
+      "import": "./dist/install.js",
+      "default": "./dist/install.js"
+    }
+  }
+}
